@@ -549,6 +549,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <div class="sublbl" style="margin-top:20px">Bottom of the Notes column</div>
     <div class="opts" id="nBottom">
       <button type="button" class="seg" data-b="jars">🫙 Reward jars</button>
+      <button type="button" class="seg" data-b="today">☀️ Today</button>
       <button type="button" class="seg" data-b="upnext">📅 Up next</button>
       <button type="button" class="seg" data-b="none">Nothing</button>
     </div>
@@ -1039,17 +1040,19 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   function renderBottom() {
     var box = $('bottom'), mode = state.notesBottom || 'jars', n = (state.jars || []).length;
     var hide = mode === 'none' || (mode === 'jars' && !n && !EDIT);   // nothing to show on the wall
-    box.className = 'bottom ' + (mode === 'upnext' ? 'upnext' : 'jarsmode') + (hide ? ' off' : '');
-    $('botHead').textContent = mode === 'upnext' ? 'Up Next' : 'Reward Jars';
-    if (mode === 'upnext') loadUpnext();
+    var list = mode === 'upnext' || mode === 'today';
+    box.className = 'bottom ' + (list ? 'upnext' : 'jarsmode') + (hide ? ' off' : '');
+    $('botHead').textContent = mode === 'upnext' ? 'Up Next' : mode === 'today' ? 'Today' : 'Reward Jars';
+    if (list) loadUpnext();
     setTimeout(fitMeals, 0);
   }
   var DOW3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   function loadUpnext() {
     return api('/api/upnext').then(function (u) {
       var ul = $('upnext'); ul.innerHTML = '';
-      var last = '';
-      (u.events || []).forEach(function (e) {
+      var last = '', todayOnly = state.notesBottom === 'today';
+      (u.events || []).filter(function (e) { return !todayOnly || e.date === u.today; }).forEach(function (e) {
+        if (todayOnly) last = e.date;   // no day headings: it's all today
         if (e.date !== last) {
           last = e.date;
           var dd = new Date(e.date + 'T12:00:00Z'), rel = e.date === u.today ? 'Today' : e.date === addDays(u.today, 1) ? 'Tomorrow' : DOW3[dd.getUTCDay()] + ' ' + dd.getUTCDate();
@@ -1061,14 +1064,14 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         if (e.color) li.style.color = readable(e.color);
         ul.appendChild(li);
       });
-      if (!ul.children.length) ul.appendChild(el('li', 'none', 'Nothing in the next two weeks'));
+      if (!ul.children.length) ul.appendChild(el('li', 'none', todayOnly ? 'Nothing else planned today' : 'Nothing in the next two weeks'));
       // drop whole lines that don't fit rather than cutting one in half
       var items = Array.prototype.slice.call(ul.children);
       for (var i = items.length - 1; i > 0 && ul.scrollHeight > ul.clientHeight + 1; i--) items[i].style.display = 'none';
       if (items[i] && items[i].classList.contains('d')) items[i].style.display = 'none';   // no day heading left on its own
     }).catch(function () {});
   }
-  setInterval(function () { if (state.notesBottom === 'upnext') loadUpnext(); }, 5 * 60 * 1000);
+  setInterval(function () { if (state.notesBottom === 'upnext' || state.notesBottom === 'today') loadUpnext(); }, 5 * 60 * 1000);
   function loadJars() { return api('/api/jars').then(function (l) { state.jars = l; renderJars(); }).catch(function () {}); }
   // iPad: tap a jar to fill it
   var jarOpen = null, jarSave = null;
@@ -3496,7 +3499,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     es.addEventListener('calendar', function (m) {
       var d = JSON.parse(m.data);
       loadCountdowns();
-      if (state.notesBottom === 'upnext') loadUpnext();
+      if (state.notesBottom === 'upnext' || state.notesBottom === 'today') loadUpnext();
       if (d.ym === state.ym || d.ym === 'any') api('/api/month?ym=' + state.ym).then(renderMonth).catch(function () {});
     });
   }

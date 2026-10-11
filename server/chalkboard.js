@@ -768,7 +768,7 @@ app.post('/api/trash', (req, res) => {
 });
 app.post('/api/notes', (req, res) => {
   const b = (req.body || {}).bottom;
-  const cfg = { bottom: ['jars', 'upnext', 'none'].includes(b) ? b : 'jars' };
+  const cfg = { bottom: ['jars', 'upnext', 'today', 'none'].includes(b) ? b : 'jars' };
   qKvSet.run('notes', JSON.stringify(cfg));
   broadcast('extras', {});
   res.json(cfg);

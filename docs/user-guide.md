@@ -37,7 +37,7 @@ The bottom bar on the tablet has **⚙️ Settings**, **🎨 Board style**, **�
 ### ⚙️ Settings
 - **Calendar:** shows which calendar the board uses. With Google Calendar this is where you sign in and pick the calendar (see [google-calendar.md](google-calendar.md)).
 - **Trash & recycling:** the trash pickup day (or none), and recycling **same day as trash**, **every other week** (pick the date of the next pickup), **a different day each week**, or **don't show**. Saved as soon as you change it.
-- **Bottom of the Notes column:** **🫙 Reward jars**, **📅 Up next** (the next events over two weeks, grouped by day, so a busy day is readable at a glance), or **Nothing** (the Meal Plan gets the space).
+- **Bottom of the Notes column:** **🫙 Reward jars**, **☀️ Today** (everything still to come today), **📅 Up next** (the next events over two weeks, grouped by day), or **Nothing** (the Meal Plan gets the space).
 
 ### Reward jars (optional, up to 4)
 - **Add a jar:** the small dashed **+** above the jars (or **+ Reward jar** when there are none). **Remove** is on each jar's card. With no jars, the jar area disappears and the Meal Plan gets the space; with 3–4 jars they shrink to fit one row.
