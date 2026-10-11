@@ -4,7 +4,7 @@ The wall display only shows the board; everything is edited from a tablet or pho
 
 ## The tablet (editor)
 
-The bottom bar on the tablet has **🎨 Board style**, **📷 Photos**, **Draw** and **+ Add event**. Zoom with **− / + / Fit** at the top right (or pinch). Everything saved on the tablet shows on the wall within a second or two.
+The bottom bar on the tablet has **⚙️ Settings**, **🎨 Board style**, **📷 Photos**, **Draw** and **+ Add event**. Zoom with **− / + / Fit** at the top right (or pinch). Everything saved on the tablet shows on the wall within a second or two.
 
 ### Events (your calendar)
 - **Add:** tap **+ Add event** (or tap a day, then **Add**). Pick what, day, time and length, or tick **All day** (with an optional **Through** date for multi-day events like trips).
@@ -12,12 +12,12 @@ The bottom bar on the tablet has **🎨 Board style**, **📷 Photos**, **Draw**
 - **⭐ Count down to this:** adds the event to the countdown list in Notes.
 - Long event names wrap onto a second line when the day has room; when a day is full they shorten but keep the time.
 - **Color on the board:** pick a color for the event. Colors too dark to read on the board are lightened automatically (same hue). It's board-only (your calendar never sees it). The dashed circle means "use the board style's normal color". For repeating events it follows Just this one / All of them.
-- Adds, edits and deletes go to your real calendar (iCloud, Nextcloud, …), so they show on everyone's phones too.
+- Adds, edits and deletes go to your real calendar (iCloud, Google, Nextcloud, …), so they show on everyone's phones too.
 
 ### Automatic on the calendar (nothing to do)
 - **US holidays** appear in light blue italics with an icon (board only, never written to your calendar).
 - **Countdowns** in Notes: the next 3 things within 60 days — big holidays, any event with "birthday" or "bday" in the title (🎂), and anything ticked ⭐.
-- **Trash day** label on the right weekday, and **weather** (today / tomorrow) in Notes.
+- **Trash / recycling** labels on the right days (set in ⚙️ Settings), and **weather** (today / tomorrow) in Notes.
 
 ### Drawing and decorating (tap **Draw**)
 - **Chalk** or **Posca** marker, color dots (rainbow **+** for any color; recent custom colors are remembered), and the dot button for size.
@@ -33,9 +33,14 @@ The bottom bar on the tablet has **🎨 Board style**, **📷 Photos**, **Draw**
 ### Meal Plan
 - Tap **Meal Plan** in Notes. Add meals (Enter adds the next line), tick ones that are done (they get crossed out), **Clear all** for a new week. A long list shrinks to fit, then ends with "+N more".
 
+### ⚙️ Settings
+- **Calendar:** shows which calendar the board uses. With Google Calendar this is where you sign in and pick the calendar (see [google-calendar.md](google-calendar.md)).
+- **Trash & recycling:** the trash pickup day (or none), and recycling **same day as trash**, **every other week** (pick the date of the next pickup), **a different day each week**, or **don't show**. Saved as soon as you change it.
+- **Bottom of the Notes column:** **🫙 Reward jars**, **📅 Up next** (the next events over two weeks, grouped by day, so a busy day is readable at a glance), or **Nothing** (the Meal Plan gets the space).
+
 ### Reward jars (optional, up to 4)
-- **Add a jar:** the small dashed **+** above the jars (or **+ Reward jar** when there are none). **Remove jar** is on each jar's card. With no jars, the jar area disappears and the Meal Plan gets the space; with 3–4 jars they shrink to fit one row.
-- Tap a jar: **+ / −** adds or removes a piece (it drops in on the wall), change the **name**, the **goal**, and **what goes in** (hearts, rainbows, stars, lightning, critters…). **🎉 Reward! Empty the jar** celebrates and resets it.
+- **Add a jar:** the small dashed **+** above the jars (or **+ Reward jar** when there are none). **Remove** is on each jar's card. With no jars, the jar area disappears and the Meal Plan gets the space; with 3–4 jars they shrink to fit one row.
+- Tap a jar: **+ / −** adds or removes a piece (it drops in on the wall), change the **name**, the **goal**, and **what goes in** (hearts, rainbows, stars, lightning, critters…). **🎉 Reward!** celebrates and empties it.
 
 ### 🎨 Board style
 - **Presets:** Classic (the original look), Pastel, Bold, Simple, Autumn, Winter, Holiday, Scrawl.
@@ -45,16 +50,18 @@ The bottom bar on the tablet has **🎨 Board style**, **📷 Photos**, **Draw**
 
 ### 📷 Photos
 - Photos come from an iCloud **Shared Album** (set `PHOTO_ALBUM_URL`). To add or remove photos, add or remove them in that album from any phone. The board checks every 15 minutes, or tap **↻ Check album now**.
-- **Photos beside the month name:** up to four polaroids, framed on people's faces. One changes every 40 seconds. They skip any spot that has a drawing on it, and never show the same photo twice at once.
+- **Beside the month name, per month:** **Random photos**, **Photos I pick** (tap up to 8 in the grid; they show in that order), or **Art instead** (no photos, so you can draw or stamp clipart there). The choice is saved for the month you're looking at; months you haven't set use the "usually" choice.
+- **Photos there:** up to four polaroids, framed on people's faces. One changes every 40 seconds. They skip any spot that has a drawing on it, and never show the same photo twice at once.
 - **Slideshow overnight:** start and end times (default 9 PM–6 AM), **brightness** (Dim 30% / Medium 50% / Bright 70% / Full), and **new photo every** 10 s–1 min.
 - **▶ Preview slideshow** plays it on the tablet (tap to close).
 - The top line shows how many photos the board has and when it last checked (or a ⚠ if something's wrong).
 
 
 ## The wall display (read-only)
-- The wall can't change anything. Tapping does nothing **except during the slideshow**:
-  - **One tap:** shows the calendar for 5 minutes, then the slideshow comes back.
-  - **Double tap** (while peeking): back to the slideshow straight away.
+- The wall can't change anything, but it responds to taps:
+  - **Tap a day:** shows everything on that day in a big list (handy when a day is too full to read). Tap anywhere to close; it closes by itself after 30 seconds.
+  - **Double tap:** turns the photo frame (slideshow) on, any time of day. **Tap** the photos to go back to the calendar.
+  - **During the overnight slideshow:** one tap shows the calendar for 5 minutes; a double tap goes back to the slideshow straight away.
 - **Slideshow:** picks at random between a single photo and 2–3 photo collages, framed on faces (whole photo on a blurred backdrop when people are too spread out to crop). The clock and date sit on a frosted panel in whichever corner covers the fewest faces.
 - **Weather motion:** gentle rain, snow or storm animation for ~20 seconds every 10 minutes when it's actually happening.
 - **Offline dot** (bottom corner) if the wall loses the server or the calendar.

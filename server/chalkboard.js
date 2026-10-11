@@ -38,7 +38,19 @@ const CHALK_PIN = (ENV.CHALK_PIN || '').trim();
 if (!/^\d{4,8}$/.test(CHALK_PIN)) {
   console.error('Chalk Planner: CHALK_PIN (4-8 digits) is not set - editing is OPEN to the whole network');
 }
-if (!ICLOUD_USER || !ICLOUD_PASS || !CAL_NAME) {
+// Calendar provider: any CalDAV server (iCloud, Nextcloud, Fastmail...) with a password,
+// or Google Calendar (Google's CalDAV with a Google sign-in instead of a password).
+const PROVIDER = (ENV.CALENDAR_PROVIDER || (ENV.GOOGLE_CLIENT_ID ? 'google' : 'caldav')).toLowerCase() === 'google' ? 'google' : 'caldav';
+const G = {
+  id: ENV.GOOGLE_CLIENT_ID || '', secret: ENV.GOOGLE_CLIENT_SECRET || '',
+  redirect: ENV.GOOGLE_REDIRECT_URI || 'http://localhost',   // default: paste the address back (works without HTTPS)
+  auth: ENV.GOOGLE_AUTH_URL || 'https://accounts.google.com/o/oauth2/v2/auth',
+  token: ENV.GOOGLE_TOKEN_URL || 'https://oauth2.googleapis.com/token',
+  api: ENV.GOOGLE_API_BASE || 'https://www.googleapis.com',
+  dav: ENV.GOOGLE_CALDAV_BASE || 'https://apidata.googleusercontent.com'
+};
+if (PROVIDER === 'google' && !G.id) console.error('Chalk Planner: CALENDAR_PROVIDER=google but GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set');
+if (PROVIDER === 'caldav' && (!ICLOUD_USER || !ICLOUD_PASS || !CAL_NAME)) {
   console.error('Chalk Planner: CALDAV_USER / CALDAV_PASSWORD / CALDAV_CALENDAR are not set - no calendar events');
 }
 const CALDAV_URL = ENV.CALDAV_URL || 'https://caldav.icloud.com/';
@@ -155,23 +167,59 @@ function monthGrid(ym) {
 }
 
 // ---------------------------------------------------------------------------
-// iCloud CalDAV
+// Calendar over CalDAV (iCloud, Nextcloud, Fastmail... or Google with OAuth)
 // ---------------------------------------------------------------------------
 let calUrl = null;
+
+// Google sign-in: the refresh token and chosen calendar live in DATA_DIR/google-auth.json (mode 600)
+const G_FILE = path.join(DATA_DIR, 'google-auth.json');
+let gAccess = null;   // { token, exp }
+function gLoad() { try { return JSON.parse(fs.readFileSync(G_FILE, 'utf8')); } catch { return {}; } }
+function gSave(o) { fs.writeFileSync(G_FILE, JSON.stringify(o), { mode: 0o600 }); fs.chmodSync(G_FILE, 0o600); }
+async function gTokenRequest(params) {
+  const r = await fetch(G.token, {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: G.id, client_secret: G.secret, ...params }), signal: AbortSignal.timeout(20000)
+  });
+  const j = await r.json().catch(() => ({}));
+  return { ok: r.ok, status: r.status, j };
+}
+async function gToken() {
+  if (gAccess && gAccess.exp > Date.now() + 60 * 1000) return gAccess.token;
+  const st = gLoad();
+  if (!st.refresh) throw new Error(st.problem || 'Google isn’t connected yet - connect it in ⚙ Settings on the tablet');
+  const { ok, status, j } = await gTokenRequest({ refresh_token: st.refresh, grant_type: 'refresh_token' });
+  if (!ok) {
+    if (j.error === 'invalid_grant') {   // revoked, or a project left in "Testing" (sign-ins expire after 7 days)
+      gSave({ ...st, refresh: null, problem: 'Google sign-in expired or was removed - reconnect in ⚙ Settings' });
+    }
+    throw new Error(`Google sign-in failed (${j.error || status}) - reconnect in ⚙ Settings`);
+  }
+  gAccess = { token: j.access_token, exp: Date.now() + (j.expires_in || 3600) * 1000 };
+  return gAccess.token;
+}
+async function authHeader() { return PROVIDER === 'google' ? `Bearer ${await gToken()}` : AUTH; }
+const sameUrl = (u, base) => { try { return decodeURIComponent(u).startsWith(decodeURIComponent(base)); } catch { return false; } };
 
 async function dav(url, method, body, depth = '0', extraHeaders = {}) {
   const r = await fetch(url, {
     method,
-    headers: { Authorization: AUTH, 'Content-Type': 'application/xml; charset=utf-8', Depth: depth, ...extraHeaders },
+    headers: { Authorization: await authHeader(), 'Content-Type': 'application/xml; charset=utf-8', Depth: depth, ...extraHeaders },
     body,
     signal: AbortSignal.timeout(20000)
   });
-  if (!(r.ok || r.status === 207)) throw new Error(`iCloud ${method} returned ${r.status}`);
+  if (!(r.ok || r.status === 207)) throw new Error(`Calendar ${method} returned ${r.status}`);
   return r.text();
 }
 
 async function findCalendar() {
   if (calUrl) return calUrl;
+  if (PROVIDER === 'google') {
+    const st = gLoad();
+    if (!st.calendarId) throw new Error(st.refresh ? 'Pick which Google calendar to show in ⚙ Settings on the tablet' : (st.problem || 'Google isn’t connected yet - connect it in ⚙ Settings on the tablet'));
+    calUrl = `${G.dav}/caldav/v2/${encodeURIComponent(st.calendarId)}/events/`;
+    return calUrl;
+  }
   const p = await dav(CALDAV_URL, 'PROPFIND',
     '<d:propfind xmlns:d="DAV:"><d:prop><d:current-user-principal/></d:prop></d:propfind>');
   const principal = (p.match(/current-user-principal[^>]*>\s*<(?:\w+:)?href[^>]*>([^<]+)</) || p.match(/>(\/[0-9]+\/principal\/)</) || [])[1];
@@ -195,7 +243,7 @@ async function findCalendar() {
       return calUrl;
     }
   }
-  throw new Error(`Calendar "${CAL_NAME}" not found in iCloud`);
+  throw new Error(`Calendar "${CAL_NAME}" not found on the server`);
 }
 
 // Turn one occurrence into what the board needs.
@@ -310,11 +358,11 @@ async function addEvent({ title, date, allDay, time, minutes, through }) {
 
   const r = await fetch(`${url}${uid}.ics`, {
     method: 'PUT',
-    headers: { Authorization: AUTH, 'Content-Type': 'text/calendar; charset=utf-8', 'If-None-Match': '*' },
+    headers: { Authorization: await authHeader(), 'Content-Type': 'text/calendar; charset=utf-8', 'If-None-Match': '*' },
     body: lines.join('\r\n') + '\r\n',
     signal: AbortSignal.timeout(20000)
   });
-  if (!r.ok) throw new Error(`iCloud refused the event (${r.status})`);
+  if (!r.ok) throw new Error(`The calendar refused the event (${r.status})`);
   monthCache.clear();
   return new URL(`${url}${uid}.ics`).pathname;
 }
@@ -474,8 +522,8 @@ function rebuildExdates(cal, master, originalText, occ) {
 async function changeEvent(ref, scope, change) {
   const base = await findCalendar();
   const url = new URL(ref.href, base).toString();
-  if (!url.startsWith(base)) throw new Error('That event isn’t in the family calendar');
-  const g = await fetch(url, { headers: { Authorization: AUTH }, signal: AbortSignal.timeout(20000) });
+  if (!sameUrl(url, base)) throw new Error('That event isn’t in the family calendar');
+  const g = await fetch(url, { headers: { Authorization: await authHeader() }, signal: AbortSignal.timeout(20000) });
   if (g.status === 404) { monthCache.clear(); throw new Error('That event was already removed'); }
   if (!g.ok) throw new Error(`Calendar returned ${g.status}`);
   const etag = g.headers.get('etag') || ref.etag;
@@ -484,7 +532,7 @@ async function changeEvent(ref, scope, change) {
     throw new Error('Someone changed this event a moment ago - the board has refreshed, try again');
   }
   const result = applyEventChange(await g.text(), ref, scope, change);
-  const headers = { Authorization: AUTH };
+  const headers = { Authorization: await authHeader() };
   if (etag) headers['If-Match'] = etag;
   let r;
   if (result.del) {
@@ -534,14 +582,50 @@ async function weather() {
   return weatherCache;
 }
 
+// Trash & recycling: set from the tablet (⚙ Settings); TRASH_DAY in .env is only the starting value.
+//   { day: 0-6 | null, recycle: { mode: 'same' | 'day' | 'biweekly' | 'off', day: 0-6, anchor: 'YYYY-MM-DD' } }
+// 'biweekly' = every other week on recycle.day, counting from anchor (a known pickup date).
 const DOW = ['Sun', 'Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat'];
-function trash() {
-  if (TRASH_DAY === null) return null;
-  const t = nyParts(new Date());
-  const dow = new Date(Date.UTC(t.y, t.m - 1, t.d)).getUTCDay();
-  const days = (TRASH_DAY - dow + 7) % 7;
-  return { days, label: days === 0 ? 'Pickup today' : days === 1 ? 'Tomorrow - cans out tonight' : `${DOW[TRASH_DAY]} · in ${days} days` };
+function trashCfg() {
+  const r = qKvGet.get('trash');
+  return r ? JSON.parse(r.data) : { day: TRASH_DAY, recycle: { mode: 'same' } };
 }
+// Which part of the bottom of the Notes column shows: the reward jars, or "Up next" events
+function notesCfg() { const r = qKvGet.get('notes'); return r ? JSON.parse(r.data) : { bottom: 'jars' }; }
+function cleanTrash(b) {
+  const d = v => (Number.isInteger(+v) && +v >= 0 && +v <= 6 && v !== '' && v !== null ? +v : null);
+  const r = (b && b.recycle) || {};
+  const mode = ['same', 'day', 'biweekly', 'off'].includes(r.mode) ? r.mode : 'same';
+  const out = { day: d(b && b.day), recycle: { mode } };
+  if (mode === 'day' || mode === 'biweekly') out.recycle.day = d(r.day) ?? out.day ?? 0;
+  if (mode === 'biweekly') out.recycle.anchor = isDate(r.anchor) ? r.anchor : nyParts(new Date()).dateStr;
+  return out;
+}
+const dayNum = ds => Date.UTC(+ds.slice(0, 4), +ds.slice(5, 7) - 1, +ds.slice(8, 10)) / 864e5;
+function binsOn(cfg, ds) {   // what goes out on this date
+  const dow = new Date(dayNum(ds) * 864e5).getUTCDay(), r = cfg.recycle || { mode: 'same' }, out = [];
+  if (cfg.day === dow) out.push('trash');
+  if ((r.mode === 'same' && cfg.day === dow) || (r.mode === 'day' && r.day === dow) ||
+      (r.mode === 'biweekly' && r.day === dow && (((dayNum(ds) - dayNum(r.anchor)) / 7) % 2 + 2) % 2 === 0)) out.push('recycle');
+  return out;
+}
+function trash() {
+  const cfg = trashCfg(), r = cfg.recycle || { mode: 'same' };
+  if (cfg.day === null && (r.mode === 'same' || r.mode === 'off')) return null;
+  const today = nyParts(new Date()).dateStr;
+  const next = kind => { for (let i = 0; i < 21; i++) { const ds = addDays(today, i); if (binsOn(cfg, ds).includes(kind)) return { i, ds }; } return null; };
+  const when = (n, dayIdx) => (n.i === 0 ? 'today' : n.i === 1 ? 'tomorrow' : `${DOW[dayIdx]} · in ${n.i} days`);
+  const t = cfg.day === null ? null : next('trash'), rc = r.mode === 'off' ? null : next('recycle');
+  const dow = n => new Date(dayNum(n.ds) * 864e5).getUTCDay();
+  if (t && (r.mode === 'same' || (rc && rc.ds === t.ds))) {   // both go out together next time
+    return { title: r.mode === 'off' ? 'Trash' : 'Trash & recycling', days: t.i, label: t.i === 0 ? 'Pickup today' : t.i === 1 ? 'Tomorrow - cans out tonight' : when(t, dow(t)),
+      sub: null, cfg };
+  }
+  if (t && !rc) return { title: 'Trash', days: t.i, label: t.i === 0 ? 'Pickup today' : t.i === 1 ? 'Tomorrow - cans out tonight' : when(t, dow(t)), sub: null, cfg };
+  if (!t && rc) return { title: 'Recycling', days: rc.i, label: rc.i === 0 ? 'Pickup today' : rc.i === 1 ? 'Tomorrow - bin out tonight' : when(rc, dow(rc)), sub: null, cfg };
+  return { title: 'Trash', days: t.i, label: t.i === 0 ? 'Pickup today' : t.i === 1 ? 'Tomorrow - cans out tonight' : when(t, dow(t)), sub: `♻️ Recycling ${when(rc, dow(rc))}`, cfg };   // different days: trash big, recycling below
+}
+
 
 // ---------------------------------------------------------------------------
 // Live updates (Server-Sent Events)
@@ -673,7 +757,40 @@ app.get('/api/month', async (req, res) => {
 app.get('/api/extras', async (req, res) => {
   let w = null;
   try { w = await weather(); } catch (e) { /* board still works without weather */ }
-  res.json({ weather: w, trash: trash(), trashDay: TRASH_DAY });
+  const cfg = trashCfg();
+  res.json({ weather: w, trash: trash(), trashDay: cfg.day, bins: cfg, notes: notesCfg() });
+});
+app.post('/api/trash', (req, res) => {
+  const cfg = cleanTrash(req.body || {});
+  qKvSet.run('trash', JSON.stringify(cfg));
+  broadcast('extras', {});
+  res.json(trash() || { cfg });
+});
+app.post('/api/notes', (req, res) => {
+  const b = (req.body || {}).bottom;
+  const cfg = { bottom: ['jars', 'upnext', 'none'].includes(b) ? b : 'jars' };
+  qKvSet.run('notes', JSON.stringify(cfg));
+  broadcast('extras', {});
+  res.json(cfg);
+});
+
+// "Up next": the next events from today on (two weeks ahead), for the bottom of the Notes column
+app.get('/api/upnext', async (req, res) => {
+  try {
+    const now = nyParts(new Date()), today = now.dateStr, nowMin = now.h * 60 + now.mi, until = addDays(today, 14);
+    const yms = [...new Set([today.slice(0, 7), until.slice(0, 7)])];
+    const colors = eventColors(), all = [];
+    for (const ym of yms) for (const e of await eventsForMonth(ym)) {
+      if (e.end < today || e.start > until) continue;
+      if (e.start === today && !e.allDay && e.sort + (e.minutes || 60) < nowMin) continue;   // already over
+      const c = e.ref && (colors[cdKey(e.ref)] || colors[`${e.ref.href}|`]);
+      all.push({ date: e.start < today ? today : e.start, title: e.title, time: e.allDay ? null : e.time, sort: e.allDay ? -1 : e.sort, color: c || null });
+    }
+    const seen = new Set();
+    const list = all.sort((a, b) => (a.date === b.date ? a.sort - b.sort : a.date < b.date ? -1 : 1))
+      .filter(e => { const k = e.date + e.title + e.time; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 12);
+    res.json({ today, events: list });
+  } catch (e) { res.json({ today: nyParts(new Date()).dateStr, events: [], error: e.message }); }
 });
 
 // ---------------------------------------------------------------------------
@@ -730,6 +847,86 @@ function holidaysBetween(from, to) {
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Calendar settings (tablet ⚙ Settings). Google sign-in uses OAuth with PKCE; by default
+// Google sends the browser to http://localhost (nothing there) and the address is pasted
+// back here, so it works without HTTPS. With GOOGLE_REDIRECT_URI=https://<board>/oauth/google/callback
+// it completes by itself.
+// ---------------------------------------------------------------------------
+app.get('/api/calendar/status', (req, res) => {
+  if (PROVIDER === 'google') {
+    const st = gLoad();
+    return res.json({ provider: 'google', configured: !!G.id, connected: !!st.refresh, calendar: st.calendarName || null,
+      problem: st.refresh ? null : st.problem || null, paste: !/\/oauth\/google\/callback$/.test(G.redirect), redirect: G.redirect });
+  }
+  res.json({ provider: 'caldav', configured: !!(ICLOUD_USER && ICLOUD_PASS && CAL_NAME), calendar: CAL_NAME || null });
+});
+const gPending = new Map();   // state -> { verifier, at }
+app.post('/api/google/start', (req, res) => {
+  if (PROVIDER !== 'google' || !G.id) return res.status(400).json({ error: 'Google isn’t set up on the server yet (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env)' });
+  for (const [k, v] of gPending) if (Date.now() - v.at > 15 * 60 * 1000) gPending.delete(k);
+  const state = crypto.randomBytes(16).toString('hex'), verifier = crypto.randomBytes(32).toString('base64url');
+  gPending.set(state, { verifier, at: Date.now() });
+  const u = new URL(G.auth);
+  u.search = new URLSearchParams({
+    client_id: G.id, redirect_uri: G.redirect, response_type: 'code', scope: 'https://www.googleapis.com/auth/calendar',
+    access_type: 'offline', prompt: 'consent', state,
+    code_challenge: crypto.createHash('sha256').update(verifier).digest('base64url'), code_challenge_method: 'S256'
+  }).toString();
+  res.json({ url: u.toString() });
+});
+async function gFinish(code, state) {
+  const p = gPending.get(state);
+  if (!p) throw new Error('That sign-in has expired or was already used - start again');
+  gPending.delete(state);
+  const { ok, status, j } = await gTokenRequest({ code, redirect_uri: G.redirect, grant_type: 'authorization_code', code_verifier: p.verifier });
+  if (!ok) throw new Error(`Google didn’t accept the sign-in (${j.error_description || j.error || status})`);
+  if (!j.refresh_token) throw new Error('Google didn’t give the board a lasting sign-in - remove the app at myaccount.google.com/connections and try again');
+  const st = gLoad();
+  gSave({ refresh: j.refresh_token, calendarId: st.calendarId || null, calendarName: st.calendarName || null, at: Date.now() });
+  gAccess = { token: j.access_token, exp: Date.now() + (j.expires_in || 3600) * 1000 };
+  calUrl = null; monthCache.clear();
+  broadcast('calendar', { ym: 'any' });
+}
+app.post('/api/google/finish', async (req, res) => {
+  const raw = String((req.body || {}).pasted || '').trim();
+  let u = null;
+  try { u = new URL(raw); } catch { /* not an address */ }
+  if (u && u.searchParams.get('error')) return res.status(400).json({ error: `Google said: ${u.searchParams.get('error')}` });
+  const code = u && u.searchParams.get('code'), state = u && u.searchParams.get('state');
+  if (!code || !state) return res.status(400).json({ error: `Paste the whole address from the browser's address bar (it starts with ${G.redirect})` });
+  try { await gFinish(code, state); res.json({ ok: true }); } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.get('/oauth/google/callback', async (req, res) => {
+  if (req.query.error) return res.status(400).type('text').send(`Google said: ${req.query.error}. Go back to the tablet and try again.`);
+  try { await gFinish(String(req.query.code || ''), String(req.query.state || '')); res.redirect('/edit#settings'); }
+  catch (e) { res.status(400).type('text').send(`${e.message}. Go back to the tablet and try again.`); }
+});
+app.post('/api/google/calendars', async (req, res) => {
+  try {
+    const r = await fetch(`${G.api}/calendar/v3/users/me/calendarList?minAccessRole=writer`, { headers: { Authorization: `Bearer ${await gToken()}` }, signal: AbortSignal.timeout(20000) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((j.error && j.error.message) || `Google returned ${r.status}`);
+    res.json((j.items || []).map(c => ({ id: c.id, name: c.summaryOverride || c.summary || c.id, primary: !!c.primary, color: c.backgroundColor || null })));
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.post('/api/google/calendar', (req, res) => {
+  const { id, name } = req.body || {};
+  if (typeof id !== 'string' || !id || id.length > 300) return res.status(400).json({ error: 'bad calendar' });
+  const st = gLoad();
+  if (!st.refresh) return res.status(400).json({ error: 'Connect Google first' });
+  gSave({ ...st, calendarId: id, calendarName: String(name || id).slice(0, 100) });
+  calUrl = null; monthCache.clear();
+  broadcast('calendar', { ym: 'any' });
+  res.json({ ok: true });
+});
+app.post('/api/google/disconnect', (req, res) => {
+  fs.rmSync(G_FILE, { force: true });
+  gAccess = null; calUrl = null; monthCache.clear();
+  broadcast('calendar', { ym: 'any' });
+  res.json({ ok: true });
+});
+
 // Countdowns: big holidays + birthdays (automatic) + events you marks
 // ---------------------------------------------------------------------------
 const cdKey = ref => `${ref.href}|${ref.rid || ''}`;
@@ -1057,14 +1254,23 @@ app.get('/api/meta', (req, res) => {
   res.json(metaFor(req.query.ym));
 });
 
+// What goes beside the month title: photos (random, or the ones chosen) or art (no photos)
+function cleanSide(v) {
+  if (!v || typeof v !== 'object') return undefined;
+  const mode = v.mode === 'art' ? 'art' : 'photos';
+  const ids = (Array.isArray(v.ids) ? v.ids : []).filter(id => typeof id === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(id)).slice(0, 8);
+  return mode === 'art' ? { mode } : { mode, pick: v.pick === 'chosen' && ids.length ? 'chosen' : 'random', ids };
+}
 app.post('/api/meta', (req, res) => {
-  const { ym, hideTitle, title, makeDefault } = req.body || {};
+  const { ym, hideTitle, title, makeDefault, side } = req.body || {};
   if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
   const row = qMetaGet.get(ym);
   const cur = row ? JSON.parse(row.data) : {};
   const meta = { hideTitle: hideTitle === undefined ? !!cur.hideTitle : !!hideTitle };
   const t = title === undefined ? cur.title : cleanTitle(title);
   if (t) meta.title = t;
+  const sd = side === undefined ? cur.side : side === null ? undefined : cleanSide(side);   // null = back to the usual setting
+  if (sd) meta.side = sd;
   if (makeDefault && t) { qKvSet.run('titleDefault', JSON.stringify(t)); delete meta.title; }
   qMetaSet.run(ym, JSON.stringify(meta));
   if (makeDefault) broadcast('meta', { ym: '*' });

@@ -129,7 +129,7 @@ body.display .cork > *{display:none}
 .pill.add{border-color:var(--yellow);color:var(--yellow)}
 .tools{display:none;align-items:center;gap:2px;background:#161616;border-radius:24px;padding:0 6px;box-shadow:0 2px 4px rgba(0,0,0,.35)}
 body.drawing .tools{display:flex}
-body.drawing #addBtn,body.drawing #photosBtn,body.drawing #styleBtn{display:none}
+body.drawing #addBtn,body.drawing #photosBtn,body.drawing #styleBtn,body.drawing #settingsBtn{display:none}
 body.display #photosBtn{display:none}
 .tool:disabled{opacity:.3;cursor:default}
 .tool.medium{width:auto;padding:0 10px;border-radius:22px;font-family:'Kalam',cursive;font-size:15px;font-weight:700;gap:5px}
@@ -156,15 +156,27 @@ body.noart #gifLayer{display:none}
 .gifgrid label.gtile input{display:none}
 .jars{flex:none;display:flex;justify-content:space-around;gap:6px;padding-top:4px}
 .jars:empty{display:none}
-.jar{position:relative;width:96px;text-align:center;min-width:0}
-.jars.n3 .jar{width:62px}.jars.n3 .jar svg{width:60px;height:82px;margin:0 auto}.jars.n3 .jar .jn{font-size:15px}
-.jars.n4 .jar{width:47px}.jars.n4 .jar svg{width:46px;height:63px;margin:0 auto}.jars.n4 .jar .jn{font-size:13px}.jars.n4 .jar .jc{font-size:11px}
+.jar{position:relative;width:78px;text-align:center;min-width:0}
+.bottom{flex:none;display:flex;flex-direction:column;gap:4px}
+.bottom.off{display:none}
+.bottom .bh{margin:4px 0 0;font-family:'Dancing Script',cursive;font-weight:700;font-size:26px;line-height:1;color:var(--pink);text-align:center}
+.bottom.upnext .jars,.bottom.jarsmode .upnext{display:none}
+.upnext{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;max-height:150px;overflow:hidden}
+.bottom.upnext{flex:1 1 0;min-height:0}   /* Meal Plan and Up Next share the space */
+.bottom.upnext .upnext{flex:1 1 auto;min-height:0;max-height:none}
+.upnext li{font-size:14px;line-height:1.38;color:var(--chalk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none}
+.upnext li.d{font-size:12px;color:var(--yellow);margin-top:2px}
+.upnext li.d:first-child{margin-top:0}
+.upnext li .t{color:rgba(237,234,224,.7);margin-right:5px}
+.upnext li.none{color:rgba(237,234,224,.5);text-align:center}
+.jars.n3 .jar{width:60px}.jars.n3 .jar svg{width:54px;height:74px;margin:0 auto}.jars.n3 .jar .jn{font-size:15px}
+.jars.n4 .jar{width:46px}.jars.n4 .jar svg{width:42px;height:58px;margin:0 auto}.jars.n4 .jar .jn{font-size:13px}.jars.n4 .jar .jc{font-size:11px}
 .jar .jn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .jaradd{position:absolute;right:-2px;top:-6px;width:30px;height:30px;border-radius:50%;border:1.5px dashed rgba(237,234,224,.45);background:transparent;color:rgba(237,234,224,.7);font:700 18px 'Kalam',cursive;cursor:pointer;padding:0;line-height:1}
 .jars.n0 .jaradd{position:static;width:auto;height:34px;border-radius:17px;padding:0 14px;font-size:15px;margin:0 auto}
 body.display .jaradd{display:none}
 body.edit:not(.drawing) .jar{cursor:pointer}
-.jar svg{width:96px;height:132px;display:block;overflow:visible}
+.jar svg{width:72px;height:99px;display:block;overflow:visible;margin:0 auto}
 .jar .jn{font-size:17px;font-weight:700;line-height:1;margin-top:1px}
 .jar .jc{font-size:13px;color:rgba(237,234,224,.6);line-height:1.2}
 .jar.full .jc{color:var(--yellow)}
@@ -186,7 +198,8 @@ body.noart #ptitle{display:none}
 .tp img.on{opacity:1}
 body.display{touch-action:manipulation}
 #slides{position:fixed;inset:0;z-index:60;background:#000;opacity:0;visibility:hidden;transition:opacity 2.5s,visibility 0s 2.5s;overflow:hidden;cursor:pointer}
-#slides.on{opacity:1;visibility:visible;transition:opacity 2.5s}
+#slides.on{opacity:1;visibility:visible;transition:opacity 2.5s;pointer-events:auto}
+#slides:not(.on){pointer-events:none}   /* while it fades out, taps go to the calendar */
 #slides .sl{position:absolute;inset:0;opacity:0;transition:opacity 2s}
 #slides .sl.on{opacity:1}
 #slides .tile{position:absolute;overflow:hidden;background:#0d0d0d}
@@ -213,6 +226,27 @@ body.edit #slides .tapx{display:block}
 #thmodal .card{width:min(470px,60vw);max-height:94vh;overflow-y:auto;padding:18px 20px}
 .about{margin-top:14px;font-size:13px;color:rgba(237,234,224,.55);text-align:center}
 .about a{color:rgba(237,234,224,.8)}
+.pickgrid{display:none;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;margin-top:10px;max-height:260px;overflow-y:auto}
+.pickgrid.on{display:grid}
+.pickgrid button{position:relative;aspect-ratio:4/3;padding:0;border:3px solid transparent;border-radius:8px;overflow:hidden;background:#222;cursor:pointer}
+.pickgrid button img{width:100%;height:100%;object-fit:cover;display:block}
+.pickgrid button.on{border-color:var(--yellow)}
+.pickgrid button b{display:none;position:absolute;top:3px;right:3px;min-width:22px;height:22px;border-radius:11px;background:var(--yellow);color:#141414;font:700 14px/22px 'Kalam',cursive}
+.pickgrid button.on b{display:block}
+#setmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
+#setmodal.open{display:flex}
+#setmodal .card{width:min(560px,94vw);max-height:94vh;overflow-y:auto}
+.calstat{font-size:18px;margin:6px 0 4px;color:var(--chalk)}
+.calstat .ok{color:var(--green)}
+.calstat .warn{color:#F7A1A1}
+.gsteps{margin:8px 0 0;padding-left:22px;font-size:16px;color:rgba(237,234,224,.85);line-height:1.4}
+.gsteps li{margin-bottom:12px}
+.gsteps .seg{margin:4px 0}
+.gsteps input{width:100%;height:42px;margin:6px 0;background:transparent;border:none;border-bottom:2px dashed rgba(237,234,224,.6);color:var(--yellow);font:16px ui-monospace,Menlo,monospace;outline:none}
+.gcals{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.gcals button{text-align:left;min-height:46px;padding:6px 14px;border-radius:12px;border:2px solid rgba(201,180,122,.45);background:transparent;color:var(--chalk);font:18px 'Kalam',cursive;cursor:pointer;display:flex;align-items:center;gap:10px}
+.gcals button.on{border-color:var(--yellow);color:var(--yellow)}
+.gcals button i{width:14px;height:14px;border-radius:50%;flex:none}
 .presets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .presets button{height:64px;border-radius:10px;border:2px solid rgba(237,234,224,.25);background:#101010;color:var(--chalk);cursor:pointer;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .presets button.on{border-color:var(--yellow)}
@@ -229,6 +263,8 @@ body.edit #slides .tapx{display:block}
 #jmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
 #jmodal.open{display:flex}
 #jmodal .card{width:min(520px,94vw);max-height:94vh;overflow-y:auto}
+#jmodal .actions{flex-wrap:wrap;gap:8px}
+#jmodal .actions .btn{height:auto;min-height:48px;padding:8px 18px;line-height:1.15;white-space:nowrap}
 .jcount{display:flex;align-items:center;justify-content:center;gap:28px;margin:4px 0 6px}
 .jcount #jNum{font-size:54px;font-weight:700;line-height:1;text-align:center;color:var(--yellow)}
 .jbig{width:76px;height:76px;border-radius:50%;border:2px solid rgba(237,234,224,.5);background:transparent;color:var(--chalk);font:700 40px/1 'Kalam',cursive;cursor:pointer}
@@ -294,6 +330,9 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
 #scopeWrap{display:none;gap:8px;margin-top:14px}
 #scopeWrap.on{display:flex}
 #dmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
+body.display #dmodal .actions{display:none}
+body.display #dmodal .daylist button{pointer-events:none;font-size:22px}
+body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;text-align:center;margin-top:14px;font-size:15px;color:rgba(237,234,224,.55)}
 #dmodal.open{display:flex}
 .daylist{display:flex;flex-direction:column;gap:8px;margin-top:6px;max-height:50vh;overflow-y:auto}
 .daylist button{text-align:left;min-height:48px;padding:6px 14px;border-radius:12px;border:1.5px solid rgba(201,180,122,.45);background:transparent;color:var(--chalk);font-family:'Kalam',cursive;font-size:19px;cursor:pointer}
@@ -379,7 +418,7 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
       <div class="info"><span id="wTomIcon"></span><div><div class="lbl" id="wTomLbl">Tomorrow</div><div class="val chalk" id="wTom" style="color:var(--blue)">&nbsp;</div></div></div>
       <div class="info">
         <svg width="34" height="36" viewBox="0 0 40 44" fill="none" stroke="#A9D8A0" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11h26M15 11V6h10v5M10 11l2 27h16l2-27M17 18v14M23 18v14"/></svg>
-        <div><div class="lbl">Trash &amp; recycling</div><div class="val chalk" id="trash" style="color:var(--green)">&nbsp;</div></div>
+        <div><div class="lbl" id="trashLbl">Trash &amp; recycling</div><div class="val chalk" id="trash" style="color:var(--green)">&nbsp;</div><div class="lbl" id="trashSub"></div></div>
       </div>
       <div class="cdown" id="cdown" aria-label="Coming up"></div>
       <div class="rule"></div>
@@ -387,7 +426,12 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
         <h2 class="mh">Meal Plan</h2>
         <ul id="mealList"></ul>
       </div>
-      <div class="jars" id="jars" aria-label="Reward jars"></div>
+      <div class="bottom" id="bottom">
+        <div class="rule"></div>
+        <h2 class="bh" id="botHead">Reward Jars</h2>
+        <div class="jars" id="jars" aria-label="Reward jars"></div>
+        <ul class="upnext" id="upnext" aria-label="Up next"></ul>
+      </div>
     </div>
     <div id="ptitle" aria-hidden="true"></div>
     <canvas id="art" width="2504" height="1284"></canvas>
@@ -418,6 +462,7 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
       <button class="tool" id="redoBtn" aria-label="Redo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
       <button class="tool" id="clearBtn" aria-label="Wipe this month's art"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
     </div>
+    <button class="pill" id="settingsBtn" aria-label="Settings">⚙️</button>
     <button class="pill" id="styleBtn" aria-label="Board style">🎨</button>
     <button class="pill" id="photosBtn" aria-label="Photos">📷</button>
     <button class="pill" id="drawBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg><span id="drawLabel">Draw</span></button>
@@ -438,7 +483,15 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
   <form class="card" id="pForm">
     <h3 id="pTitle">Photos</h3>
     <div class="sublbl" id="pInfo" style="margin-top:0"></div>
-    <label class="check"><input type="checkbox" id="pFrame"> Photos beside the month name</label>
+    <div class="sublbl" id="pMonthLbl">Beside the month name</div>
+    <div class="opts" id="pSide">
+      <button type="button" class="seg" data-side="random">🎲 Random photos</button>
+      <button type="button" class="seg" data-side="chosen">✓ Photos I pick</button>
+      <button type="button" class="seg" data-side="art">✏️ Art instead</button>
+    </div>
+    <div class="pickgrid" id="pPick"></div>
+    <div class="sublbl" id="pSideHint" style="margin-top:6px"></div>
+    <label class="check"><input type="checkbox" id="pFrame"> Usually show photos there (months you haven't set)</label>
     <label class="check"><input type="checkbox" id="pNight"> Slideshow overnight</label>
     <div class="row" id="pTimes">
       <div><label for="pFrom">Starts</label><input type="time" id="pFrom"></div>
@@ -458,6 +511,47 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
       <button type="submit" class="btn go" id="pSave">Save</button>
     </div>
   </form>
+</div>
+
+<div id="setmodal" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="card">
+    <h3 id="setTitle">Settings</h3>
+    <div class="sublbl" style="margin-top:0">Calendar</div>
+    <div id="calStat" class="calstat"></div>
+    <div id="gConnect" hidden>
+      <ol class="gsteps">
+        <li><button type="button" class="seg" id="gStart">Sign in with Google</button><br>Opens Google. Choose the account that has the family calendar and allow access.</li>
+        <li id="gPasteStep">Google then sends you to a page that <b>won't load</b>. That's expected. Copy the whole address from the address bar and paste it here:
+          <input type="text" id="gPaste" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="http://localhost/?state=…&amp;code=…">
+          <button type="button" class="seg" id="gFinish">Connect</button></li>
+      </ol>
+    </div>
+    <div id="gPick" hidden>
+      <div class="sublbl">Which calendar should the board show?</div>
+      <div class="gcals" id="gCals"></div>
+    </div>
+    <div class="sublbl" style="margin-top:20px">Trash &amp; recycling</div>
+    <div class="row">
+      <div><label for="tDay">Trash pickup</label><select id="tDay"></select></div>
+      <div><label for="rMode">Recycling</label><select id="rMode"><option value="same">Same day as trash</option><option value="biweekly">Every other week</option><option value="day">A different day each week</option><option value="off">Don't show</option></select></div>
+    </div>
+    <div class="row" id="rMore">
+      <div id="rDayW"><label for="rDay">Recycling day</label><select id="rDay"></select></div>
+      <div id="rAnchorW"><label for="rAnchor">Next recycling pickup</label><input type="date" id="rAnchor"></div>
+    </div>
+    <div class="sublbl" style="margin-top:20px">Bottom of the Notes column</div>
+    <div class="opts" id="nBottom">
+      <button type="button" class="seg" data-b="jars">🫙 Reward jars</button>
+      <button type="button" class="seg" data-b="upnext">📅 Up next</button>
+      <button type="button" class="seg" data-b="none">Nothing</button>
+    </div>
+    <div class="sublbl" id="setSaved" style="min-height:20px"></div>
+    <div class="err" id="setErr"></div>
+    <div class="actions">
+      <button type="button" class="btn del" id="gDisconnect" hidden>Disconnect Google</button>
+      <button type="button" class="btn go" id="setClose">Done</button>
+    </div>
+  </div>
 </div>
 
 <div id="thmodal" role="dialog" aria-modal="true" aria-labelledby="thTitle">
@@ -576,8 +670,8 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
     <div class="sublbl">What goes in</div>
     <div class="opts" id="jPieces"></div>
     <div class="actions">
-      <button type="button" class="btn" id="jRemove">Remove jar</button>
-      <button type="button" class="btn del" id="jReward">🎉 Reward! Empty the jar</button>
+      <button type="button" class="btn" id="jRemove">Remove</button>
+      <button type="button" class="btn del" id="jReward">🎉 Reward!</button>
       <button type="button" class="btn go" id="jClose">Done</button>
     </div>
   </div>
@@ -932,8 +1026,42 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
       var add = el('button', 'jaradd', n ? '+' : '+ Reward jar'); add.type = 'button'; add.setAttribute('aria-label', 'Add a reward jar');
       box.appendChild(add);
     }
+    if (typeof renderBottom === 'function' && state.notesBottom !== undefined) renderBottom();
     if (typeof fitMeals === 'function') setTimeout(fitMeals, 0);
   }
+  function renderBottom() {
+    var box = $('bottom'), mode = state.notesBottom || 'jars', n = (state.jars || []).length;
+    var hide = mode === 'none' || (mode === 'jars' && !n && !EDIT);   // nothing to show on the wall
+    box.className = 'bottom ' + (mode === 'upnext' ? 'upnext' : 'jarsmode') + (hide ? ' off' : '');
+    $('botHead').textContent = mode === 'upnext' ? 'Up Next' : 'Reward Jars';
+    if (mode === 'upnext') loadUpnext();
+    setTimeout(fitMeals, 0);
+  }
+  var DOW3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  function loadUpnext() {
+    return api('/api/upnext').then(function (u) {
+      var ul = $('upnext'); ul.innerHTML = '';
+      var last = '';
+      (u.events || []).forEach(function (e) {
+        if (e.date !== last) {
+          last = e.date;
+          var dd = new Date(e.date + 'T12:00:00Z'), rel = e.date === u.today ? 'Today' : e.date === addDays(u.today, 1) ? 'Tomorrow' : DOW3[dd.getUTCDay()] + ' ' + dd.getUTCDate();
+          ul.appendChild(el('li', 'd', rel));
+        }
+        var li = el('li', 'chalk');
+        if (e.time) li.appendChild(el('span', 't', e.time));
+        li.appendChild(document.createTextNode(e.title));
+        if (e.color) li.style.color = readable(e.color);
+        ul.appendChild(li);
+      });
+      if (!ul.children.length) ul.appendChild(el('li', 'none', 'Nothing in the next two weeks'));
+      // drop whole lines that don't fit rather than cutting one in half
+      var items = Array.prototype.slice.call(ul.children);
+      for (var i = items.length - 1; i > 0 && ul.scrollHeight > ul.clientHeight + 1; i--) items[i].style.display = 'none';
+      if (items[i] && items[i].classList.contains('d')) items[i].style.display = 'none';   // no day heading left on its own
+    }).catch(function () {});
+  }
+  setInterval(function () { if (state.notesBottom === 'upnext') loadUpnext(); }, 5 * 60 * 1000);
   function loadJars() { return api('/api/jars').then(function (l) { state.jars = l; renderJars(); }).catch(function () {}); }
   // iPad: tap a jar to fill it
   var jarOpen = null, jarSave = null;
@@ -984,7 +1112,7 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
     $('jGoalDown').addEventListener('click', function () { jarChange(function (j) { j.goal = Math.max(3, j.goal - 1); }); });
     $('jName').addEventListener('input', function () { var v = this.value; jarChange(function (j) { j.name = v.trim() || j.name; }); });
     $('jReward').addEventListener('click', function () {
-      var j = curJar(); if (!j || !confirm('Reward time for ' + j.name + '? This empties the jar.')) return;
+      var j = curJar(); if (!j || !confirm('Reward time for ' + j.name + '? This celebrates and empties the jar.')) return;
       jarChange(function (x) { x.count = 0; });
     });
     $('jClose').addEventListener('click', function () { $('jmodal').classList.remove('open'); });
@@ -1008,6 +1136,7 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
     fitMeals();
   }
   // Shrink the list until it fits; if it still can't, end it with "+N more" instead of a cut-off line
+  if (window.ResizeObserver) new ResizeObserver(function () { fitMeals(); }).observe($('meals'));
   function fitMeals() {
     var box = $('meals'), ul = $('mealList'), head = box.querySelector('.mh');
     var lis = Array.prototype.slice.call(ul.children).filter(function (li) { return !li.classList.contains('empty-meals'); });
@@ -1118,16 +1247,28 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
   // measured from the real layout (title width, arrows, the iPad's title
   // button), and any spot your drawing or a GIF already uses is skipped.
   var tp = { key: '', slots: [], turn: 0, timer: null, bag: [] };
+  // This month's choice beside the title: null (usual setting), {mode:'art'} or {mode:'photos', pick:'random'|'chosen', ids}
+  if (Q.has('debug')) window.__ph = ph;   // test hook
+  function tpSide() { return (state.meta && state.meta.side) || null; }
+  function tpPool() {
+    var sd = tpSide();
+    if (sd && sd.mode === 'photos' && sd.pick === 'chosen') {
+      var mine = (sd.ids || []).map(function (id) { return ph.list.filter(function (p) { return p.id === id; })[0]; }).filter(Boolean);
+      if (mine.length) return mine;   // chosen photos that are still in the album
+    }
+    return ph.list;
+  }
   function tpNext(slot) {
-    if (!ph.list.length) return null;
-    if (!tp.bag.length) { tp.bag = ph.list.map(function (_, i) { return i; }); for (var i = tp.bag.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = tp.bag[i]; tp.bag[i] = tp.bag[j]; tp.bag[j] = t; } }
+    var pool = tpPool();
+    if (!pool.length) return null;
+    if (!tp.bag.length) { tp.bag = pool.map(function (_, i) { return i; }); for (var i = tp.bag.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = tp.bag[i]; tp.bag[i] = tp.bag[j]; tp.bag[j] = t; } }
     var shown = tp.slots.filter(function (s) { return s !== slot && s.id; }).map(function (s) { return s.id; });
     for (var k = tp.bag.length - 1; k >= 0; k--) {   // avoid showing the same photo twice at once
-      var p = ph.list[tp.bag[k]];
+      var p = pool[tp.bag[k]];
       if (p && shown.indexOf(p.id) < 0) { tp.bag.splice(k, 1); return p; }
     }
-    if (ph.list.length > shown.length) { tp.bag = []; return tpNext(slot); }   // only repeats left in this round: start a fresh one
-    return ph.list[tp.bag.pop()] || ph.list[0];
+    if (pool.length > shown.length) { tp.bag = []; return tpNext(slot); }   // only repeats left in this round: start a fresh one
+    return pool[tp.bag.pop()] || pool[0];
   }
   function tpSet(slot) {
     var p = tpNext(slot); if (!p) return;
@@ -1164,11 +1305,12 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
   }
   function layoutTitlePhotos() {
     var layer = $('ptitle'); if (!layer) return;
-    var want = ph.list.length && ph.cfg.frame ? tpSpots() : [];
-    if (want.length > ph.list.length) want = ph.list.length === 1 ? want.slice(0, 1) : [want[0], want[want.length - 1], want[1], want[2]].filter(Boolean).slice(0, ph.list.length);   // never more frames than photos, so none repeat
-    var key = JSON.stringify(want);
+    var sd = tpSide(), pool = tpPool(), on = sd ? sd.mode === 'photos' : !!ph.cfg.frame;   // 'art' months leave the space for drawing
+    var want = pool.length && on ? tpSpots() : [];
+    if (want.length > pool.length) want = pool.length === 1 ? want.slice(0, 1) : [want[0], want[want.length - 1], want[1], want[2]].filter(Boolean).slice(0, pool.length);   // never more frames than photos, so none repeat
+    var key = JSON.stringify(want) + '|' + pool.map(function (p) { return p.id; }).join(',');
     if (key === tp.key) return;
-    tp.key = key; layer.innerHTML = ''; tp.slots = [];
+    tp.key = key; layer.innerHTML = ''; tp.slots = []; tp.bag = [];
     want.forEach(function (sp) {
       var box = el('div', 'tp'), phd = el('div', 'ph'), a = el('img'), b = el('img');
       a.alt = b.alt = ''; phd.appendChild(a); phd.appendChild(b); box.appendChild(phd);
@@ -1318,9 +1460,10 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
     else setTimeout(function () { if (!ph.slideOn) document.querySelectorAll('#slides .sl').forEach(function (s) { s.classList.remove('on'); }); }, 2600);
   }
   function checkSlides() {
+    if (ph.manual && !ph.list.length) ph.manual = false;
     $('sDim').style.opacity = String(1 - (ph.cfg.dim || 50) / 100);
     $('sClock').style.opacity = String(Math.min(1, 0.6 + (ph.cfg.dim || 50) / 100 * 0.5));   // the clock dims less than the photos so it stays readable
-    setSlides(ph.preview ? true : nightNow() && ph.list.length > 0 && Date.now() > (ph.peekUntil || 0));
+    setSlides(ph.preview || ph.manual ? true : nightNow() && ph.list.length > 0 && Date.now() > (ph.peekUntil || 0));
   }
   setInterval(checkSlides, 30 * 1000);
   setInterval(function () { if (ph.slideOn) slideClock(); }, 10 * 1000);
@@ -1331,17 +1474,46 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
   $('slides').addEventListener('click', function () {
     if (Date.now() - (ph.resumedAt || 0) < 1500) return;   // the tail end of the double tap that just brought it back
     if (ph.preview) ph.preview = false;
+    else if (!EDIT && ph.manual) {   // leaving the photo frame turned on by double tap
+      ph.manual = false; ph.exitAt = Date.now();
+      if (nightNow()) { ph.peekUntil = Date.now() + 5 * 60 * 1000; ph.peekAt = Date.now(); }
+    }
     else if (!EDIT) { ph.peekUntil = Date.now() + 5 * 60 * 1000; ph.peekAt = Date.now(); }   // a tap on the wall shows the calendar for 5 minutes
     checkSlides();
   });
-  if (!EDIT) {   // while peeking, a double tap anywhere puts the slideshow straight back
-    var lastTap = 0;
+  if (!EDIT) {
+    // On the wall:  tap a day = see everything on it;  double tap = photo frame on
+    // (during a night-time peek, back to the slideshow);  a tap on the photo frame turns it off.
+    var lastTap = 0, singleTimer = null;
+    var dateAt = function (e) {
+      var wk = e.target.closest && e.target.closest('.week'); if (!wk) return null;
+      var r = wk.getBoundingClientRect(), col = Math.floor((e.clientX - r.left) / r.width * 7), cells = wk.querySelectorAll('.day');
+      return cells[col] ? cells[col].dataset.date : null;
+    };
     document.addEventListener('pointerup', function (e) {
-      if (ph.slideOn || !(ph.peekUntil > Date.now()) || Date.now() - (ph.peekAt || 0) < 700) return;
-      if (e.timeStamp - lastTap < 500) { ph.peekUntil = 0; lastTap = 0; ph.resumedAt = Date.now(); checkSlides(); }
-      else lastTap = e.timeStamp;
+      if ($('dmodal').classList.contains('open')) { closeDayView(); lastTap = 0; return; }   // any tap closes the day view
+      if (ph.slideOn) return;
+      if (Date.now() - (ph.peekAt || 0) < 700 || Date.now() - (ph.exitAt || 0) < 900) { lastTap = 0; return; }   // the tap that just left the slideshow
+      if (e.timeStamp - lastTap < 450) {
+        clearTimeout(singleTimer); lastTap = 0;
+        if (ph.peekUntil > Date.now()) { ph.peekUntil = 0; ph.resumedAt = Date.now(); checkSlides(); }
+        else if (ph.list.length) { ph.manual = true; ph.resumedAt = Date.now(); checkSlides(); }
+      } else {
+        lastTap = e.timeStamp;
+        var ds = dateAt(e);
+        clearTimeout(singleTimer);
+        if (ds) singleTimer = setTimeout(function () { openDayView(ds); }, 460);   // wait: it might be a double tap
+      }
     });
   }
+  var dayViewTimer = null;
+  function openDayView(ds) {
+    openDay(ds);
+    if (!$('dList').children.length) $('dList').appendChild(el('div', 'empty', 'Nothing planned'));
+    clearTimeout(dayViewTimer);
+    dayViewTimer = setTimeout(closeDayView, 30 * 1000);
+  }
+  function closeDayView() { clearTimeout(dayViewTimer); $('dmodal').classList.remove('open'); }
 
   if (EDIT) {
     var pTimes = function () { $('pTimes').style.opacity = $('pNight').checked ? '1' : '.4'; };
@@ -1357,7 +1529,43 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
       $('pFrame').checked = !!c.frame; $('pNight').checked = !!c.night;
       $('pFrom').value = c.from || '21:00'; $('pTo').value = c.to || '06:00'; $('pEvery').value = String(c.every || 20); $('pDim').value = String(c.dim || 50);
       $('pInfo').textContent = pInfo(); $('pErr').textContent = ''; pTimes();
+      var sd = tpSide();
+      sideDraft = sd ? JSON.parse(JSON.stringify(sd)) : { mode: c.frame ? 'photos' : 'art', pick: 'random', ids: [] };
+      sideDraft.ids = sideDraft.ids || []; sideStart = JSON.stringify(sideDraft);
+      $('pMonthLbl').textContent = 'Beside the month name in ' + MONTHS[+state.ym.slice(5) - 1];
+      drawSide();
       $('pmodal').classList.add('open');
+    });
+    // This month: random photos, photos she picks (up to 8, in order), or art
+    var sideDraft = null, sideStart = '';
+    var drawSide = function () {
+      var key = sideDraft.mode === 'art' ? 'art' : sideDraft.pick === 'chosen' ? 'chosen' : 'random';
+      Array.prototype.forEach.call(document.querySelectorAll('#pSide .seg'), function (b) { b.classList.toggle('on', b.dataset.side === key); });
+      var grid = $('pPick'); grid.classList.toggle('on', key === 'chosen'); grid.innerHTML = '';
+      if (key === 'chosen') {
+        ph.list.forEach(function (p) {
+          var b = el('button'), img = el('img'), n = sideDraft.ids.indexOf(p.id);
+          b.type = 'button'; b.className = n >= 0 ? 'on' : ''; img.loading = 'lazy'; img.alt = ''; img.src = phSrc(p);
+          b.appendChild(img); b.appendChild(el('b', null, n >= 0 ? String(n + 1) : ''));
+          b.addEventListener('click', function () {
+            var i = sideDraft.ids.indexOf(p.id);
+            if (i >= 0) sideDraft.ids.splice(i, 1); else if (sideDraft.ids.length < 8) sideDraft.ids.push(p.id);
+            drawSide();
+          });
+          grid.appendChild(b);
+        });
+      }
+      $('pSideHint').textContent = key === 'art' ? 'No photos this month: the space is free for clip art or drawing (tap Draw).'
+        : key === 'chosen' ? (ph.list.length ? 'Tap up to 8 photos (' + sideDraft.ids.length + ' picked). Up to 4 show at a time.' : 'No photos in the album yet.')
+        : 'A random mix from the album, changing every so often.';
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('#pSide .seg'), function (b) {
+      b.addEventListener('click', function () {
+        var k = b.dataset.side;
+        sideDraft.mode = k === 'art' ? 'art' : 'photos';
+        if (k !== 'art') sideDraft.pick = k;
+        drawSide();
+      });
     });
     $('pNight').addEventListener('change', pTimes);
     $('pCancel').addEventListener('click', function () { $('pmodal').classList.remove('open'); });
@@ -1375,7 +1583,13 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
       e.preventDefault();
       $('pSave').disabled = true;
       post('/api/photos/settings', { frame: $('pFrame').checked, night: $('pNight').checked, from: $('pFrom').value, to: $('pTo').value, every: +$('pEvery').value, dim: +$('pDim').value })
-        .then(function (c) { ph.cfg = c; applyPhotos(); $('pmodal').classList.remove('open'); })
+        .then(function (c) {
+          ph.cfg = c;
+          if (JSON.stringify(sideDraft) === sideStart) return;
+          if (sideDraft.mode === 'photos' && sideDraft.pick === 'chosen' && !sideDraft.ids.length) sideDraft.pick = 'random';
+          return post('/api/meta', { ym: state.ym, side: sideDraft }).then(function (m) { state.meta = m; });
+        })
+        .then(function () { applyPhotos(); $('pmodal').classList.remove('open'); })
         .catch(function (err) { $('pErr').textContent = err.message; })
         .then(function () { $('pSave').disabled = false; });
     });
@@ -1421,9 +1635,15 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
     loadCountdowns();
     return api('/api/extras').then(function (x) {
       setWeatherMotion(x.weather && x.weather.now && x.weather.now.kind);
-      state.trashDay = x.trashDay;
+      state.trashDay = x.trashDay; state.bins = x.bins || null;
       $('trash').closest('.info').style.display = x.trash ? '' : 'none';   // trash day is optional
-      if (x.trash) $('trash').textContent = x.trash.label;
+      if (x.trash) {
+        $('trashLbl').textContent = x.trash.title || 'Trash & recycling';
+        $('trash').textContent = x.trash.label;
+        $('trashSub').textContent = x.trash.sub || ''; $('trashSub').style.display = x.trash.sub ? '' : 'none';
+      }
+      state.notesBottom = (x.notes && x.notes.bottom) || 'jars';
+      renderBottom();
       if (x.weather) {
         var w = x.weather;
         $('wNowIcon').innerHTML = icon(w.now.kind, '#F2D479');
@@ -1451,6 +1671,17 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
     var t = ev.holiday ? ev.icon + ' ' + ev.title : ev.title;
     if (!ev.holiday && /birthday|bday/i.test(t) && t.indexOf('🎂') < 0) t = '🎂 ' + t;
     return ev.allDay || ev.holiday ? t : t + ' @ ' + ev.time;
+  }
+  // Which bins go out on a date (mirrors the server's schedule rules)
+  function binsFor(ds) {
+    var b = state.bins;
+    if (!b) return state.trashDay != null && new Date(ds + 'T12:00:00Z').getUTCDay() === state.trashDay ? ['trash'] : [];
+    var dn = function (x) { return Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5; };
+    var dow = new Date(dn(ds) * 864e5).getUTCDay(), r = b.recycle || { mode: 'same' }, out = [];
+    if (b.day === dow) out.push('trash');
+    if ((r.mode === 'same' && b.day === dow) || (r.mode === 'day' && r.day === dow) ||
+        (r.mode === 'biweekly' && r.day === dow && r.anchor && ((((dn(ds) - dn(r.anchor)) / 7) % 2) + 2) % 2 === 0)) out.push('recycle');
+    return out;
   }
   function renderMonth(data) {
     state.lastMonth = data;
@@ -1515,9 +1746,11 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
         cell.appendChild(num);
 
         var top = el('div', 'top');
-        if (state.trashDay != null && d === state.trashDay) {
-          top.innerHTML = '<svg width="12" height="14" viewBox="0 0 40 44" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11h26M15 11V6h10v5M10 11l2 27h16l2-27"/></svg>';
-          top.appendChild(document.createTextNode('Trash'));
+        var bins = binsFor(ds);
+        if (bins.length) {
+          var same = state.bins && state.bins.recycle && state.bins.recycle.mode === 'same';
+          top.innerHTML = bins.indexOf('trash') >= 0 ? '<svg width="12" height="14" viewBox="0 0 40 44" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11h26M15 11V6h10v5M10 11l2 27h16l2-27"/></svg>' : '♻️';
+          top.appendChild(document.createTextNode(bins.length === 2 && !same ? 'Trash + recycling' : bins[0] === 'trash' ? 'Trash' : 'Recycling'));
         }
         cell.appendChild(top);
         var laneCount = dayLanes[d];
@@ -1736,6 +1969,122 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
   }
   loadTheme();
 
+  // ---- ⚙ Settings: which calendar the board shows (Google sign-in lives here) ----
+  if (EDIT) {
+    var calSt = {};
+    var drawCal = function () {
+      var c = calSt, st = $('calStat');
+      st.innerHTML = '';
+      if (c.provider === 'google') {
+        if (!c.configured) st.appendChild(el('span', 'warn', 'Google Calendar isn’t set up on the server yet (GOOGLE_CLIENT_ID in .env).'));
+        else if (c.connected) { st.appendChild(el('span', 'ok', '✓ Google connected')); st.appendChild(document.createTextNode(c.calendar ? ' · showing “' + c.calendar + '”' : ' · now pick a calendar')); }
+        else st.appendChild(el('span', c.problem ? 'warn' : '', c.problem || 'Google Calendar: not connected yet'));
+      } else {
+        st.textContent = c.calendar ? 'Showing “' + c.calendar + '” (CalDAV, set in the server’s .env)' : 'No calendar set up (CalDAV settings in the server’s .env).';
+      }
+      var g = c.provider === 'google' && c.configured;
+      $('gConnect').hidden = !(g && !c.connected);
+      $('gPasteStep').hidden = !c.paste;
+      $('gPick').hidden = !(g && c.connected);
+      $('gDisconnect').hidden = !(g && (c.connected || c.problem));
+      if (g && c.connected) loadCals();
+    };
+    var loadCals = function () {
+      var box = $('gCals'); box.textContent = 'Loading your calendars…';
+      post('/api/google/calendars', {}).then(function (list) {
+        box.innerHTML = '';
+        list.forEach(function (cal) {
+          var b = el('button', calSt.calendar === cal.name ? 'on' : ''); b.type = 'button';
+          var dot = el('i'); dot.style.background = cal.color || 'var(--chalk)'; b.appendChild(dot);
+          b.appendChild(document.createTextNode(cal.name + (cal.primary ? ' (main)' : '')));
+          b.addEventListener('click', function () {
+            post('/api/google/calendar', { id: cal.id, name: cal.name }).then(function () { calSt.calendar = cal.name; drawCal(); loadMonth(state.ym); })
+              .catch(function (e) { $('setErr').textContent = e.message; });
+          });
+          box.appendChild(b);
+        });
+        if (!list.length) box.textContent = 'No calendars you can edit were found on this Google account.';
+      }).catch(function (e) { box.textContent = ''; $('setErr').textContent = e.message; });
+    };
+    // trash & recycling + bottom of Notes: saved as soon as they change
+    var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    var fillDays = function (sel, none) {
+      sel.innerHTML = '';
+      if (none) { var o = el('option', null, 'No pickup'); o.value = ''; sel.appendChild(o); }
+      DAYS.forEach(function (d, i) { var o = el('option', null, d); o.value = String(i); sel.appendChild(o); });
+    };
+    fillDays($('tDay'), true); fillDays($('rDay'));
+    var saved = function (msg) { $('setSaved').textContent = msg; clearTimeout(saved.t); saved.t = setTimeout(function () { $('setSaved').textContent = ''; }, 2500); };
+    var drawBins = function () {
+      var m = $('rMode').value;
+      $('rMore').style.display = m === 'day' || m === 'biweekly' ? '' : 'none';
+      $('rDayW').style.display = m === 'day' ? '' : 'none';
+      $('rAnchorW').style.display = m === 'biweekly' ? '' : 'none';
+    };
+    var loadBins = function () {
+      var b = state.bins || { day: state.trashDay, recycle: { mode: 'same' } }, r = b.recycle || { mode: 'same' };
+      $('tDay').value = b.day == null ? '' : String(b.day);
+      $('rMode').value = r.mode || 'same';
+      $('rDay').value = String(r.day != null ? r.day : b.day != null ? b.day : 1);
+      $('rAnchor').value = r.mode === 'biweekly' && r.anchor ? nextAnchor(r.anchor) : '';
+      drawBins();
+      Array.prototype.forEach.call(document.querySelectorAll('#nBottom .seg'), function (x) { x.classList.toggle('on', x.dataset.b === (state.notesBottom || 'jars')); });
+    };
+    var nextAnchor = function (a) {   // show the next upcoming pickup in that every-other-week series
+      var t = state.today || a, d = a;
+      while (d < t) d = addDays(d, 14);
+      return d;
+    };
+    var saveBins = function () {
+      var m = $('rMode').value, an = $('rAnchor').value;
+      if (m === 'biweekly' && !an) { $('setErr').textContent = 'Pick the date of the next recycling pickup.'; return; }
+      $('setErr').textContent = '';
+      var body = { day: $('tDay').value === '' ? null : +$('tDay').value, recycle: { mode: m } };
+      if (m === 'day') body.recycle.day = +$('rDay').value;
+      if (m === 'biweekly') { body.recycle.anchor = an; body.recycle.day = new Date(an + 'T12:00:00Z').getUTCDay(); }
+      post('/api/trash', body).then(function () { saved('Saved ✓'); loadExtras().then(function () { if (state.lastMonth) renderMonth(state.lastMonth); }); })
+        .catch(function (e) { $('setErr').textContent = e.message; });
+    };
+    ['tDay', 'rDay', 'rAnchor'].forEach(function (id) { $(id).addEventListener('change', saveBins); });
+    $('rMode').addEventListener('change', function () {
+      drawBins();
+      if ($('rMode').value === 'biweekly' && !$('rAnchor').value) { $('rAnchor').focus(); return; }   // wait for the date
+      saveBins();
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#nBottom .seg'), function (b) {
+      b.addEventListener('click', function () {
+        post('/api/notes', { bottom: b.dataset.b }).then(function (c) { state.notesBottom = c.bottom; loadBins(); renderBottom(); saved('Saved ✓'); })
+          .catch(function (e) { $('setErr').textContent = e.message; });
+      });
+    });
+    var openSettings = function () {
+      $('setErr').textContent = ''; $('gPaste').value = ''; loadBins();
+      api('/api/calendar/status').then(function (c) { calSt = c; drawCal(); }).catch(function (e) { $('setErr').textContent = e.message; });
+      $('setmodal').classList.add('open');
+    };
+    $('settingsBtn').addEventListener('click', function () { if (!state.drawing) openSettings(); });
+    $('setClose').addEventListener('click', function () { $('setmodal').classList.remove('open'); });
+    $('gStart').addEventListener('click', function () {
+      $('setErr').textContent = '';
+      var win = window.open('', '_blank');   // open now (inside the tap) so it isn't blocked, then point it at Google
+      post('/api/google/start', {}).then(function (r) {
+        if (win) win.location = r.url; else location.href = r.url;
+        if (calSt.paste) setTimeout(function () { $('gPaste').focus(); }, 400);
+      }).catch(function (e) { if (win) win.close(); $('setErr').textContent = e.message; });
+    });
+    $('gFinish').addEventListener('click', function () {
+      $('gFinish').disabled = true; $('setErr').textContent = '';
+      post('/api/google/finish', { pasted: $('gPaste').value }).then(openSettings)
+        .catch(function (e) { $('setErr').textContent = e.message; })
+        .then(function () { $('gFinish').disabled = false; });
+    });
+    $('gDisconnect').addEventListener('click', function () {
+      if (!confirm('Disconnect Google? The board stops showing the calendar until you connect again.')) return;
+      post('/api/google/disconnect', {}).then(openSettings).catch(function (e) { $('setErr').textContent = e.message; });
+    });
+    if (location.hash === '#settings') setTimeout(openSettings, 600);   // back from Google's sign-in page
+  }
+
   // Per-month options (hand-lettered title)
   state.meta = {};
   var DEFAULT_TITLE = { f: 7, c: '#F6B3CB', o: '#F3A35E', z: 68 };
@@ -1757,10 +2106,10 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
     if (EDIT) $('titleBtn').textContent = '✎ Month title';
   }
   function loadMeta(ym) {
-    return api('/api/meta?ym=' + ym).then(function (m) { if (ym === state.ym) { state.meta = m || {}; applyTitle(); } }).catch(function () {});
+    return api('/api/meta?ym=' + ym).then(function (m) { if (ym === state.ym) { state.meta = m || {}; applyTitle(); layoutTitlePhotos(); } }).catch(function () {});
   }
   function loadMonth(ym) {
-    if (ym !== state.ym) { resetHistory(); state.meta = {}; applyTitle(); }
+    if (ym !== state.ym) { resetHistory(); state.meta = {}; applyTitle(); setTimeout(layoutTitlePhotos, 0); }
     state.ym = ym;
     status('');
     loadMeta(ym);
@@ -3116,14 +3465,16 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
     es.addEventListener('meta', function (m) {
       var d = JSON.parse(m.data);
       if (d.ym === '*') loadMeta(state.ym);
-      else if (d.ym === state.ym) { state.meta = d.meta || {}; applyTitle(); }
+      else if (d.ym === state.ym) { state.meta = d.meta || {}; applyTitle(); layoutTitlePhotos(); }
     });
     es.addEventListener('countdowns', function () { loadCountdowns(); });
     es.addEventListener('photos', function () { loadPhotos(); });
     es.addEventListener('theme', function (m) { state.theme = JSON.parse(m.data); if (!state.themeDraft) applyTheme(state.theme); });
+    es.addEventListener('extras', function () { loadExtras().then(function () { if (state.lastMonth) renderMonth(state.lastMonth); }); });
     es.addEventListener('calendar', function (m) {
       var d = JSON.parse(m.data);
       loadCountdowns();
+      if (state.notesBottom === 'upnext') loadUpnext();
       if (d.ym === state.ym || d.ym === 'any') api('/api/month?ym=' + state.ym).then(renderMonth).catch(function () {});
     });
   }

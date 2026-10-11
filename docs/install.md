@@ -47,10 +47,11 @@ Edit `.env` in the install folder (root-only), then `systemctl restart family-ch
 | Setting | What it does |
 |---|---|
 | `CALDAV_URL`, `CALDAV_USER`, `CALDAV_PASSWORD`, `CALDAV_CALENDAR` | Your calendar. iCloud: `https://caldav.icloud.com/`, your Apple ID, an **app-specific password** (account.apple.com → Sign-In and Security), and the calendar's name exactly as shown. |
+| `CALENDAR_PROVIDER`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Use a **Google Calendar** instead. Setup takes ~15 minutes: see **[google-calendar.md](google-calendar.md)**. |
 | `CHALK_PIN` | Tablet editing PIN, 4–8 digits. Changing it signs every tablet out. |
 | `TIMEZONE` | e.g. `America/Chicago`. Decides what "today" is. |
 | `LATITUDE`, `LONGITUDE`, `TEMP_UNIT` | Weather in the Notes column (Open-Meteo, no key). Empty = no weather. |
-| `TRASH_DAY` | 0 = Sunday … 6 = Saturday. Empty = hidden. |
+| `TRASH_DAY` | Starting trash day, 0 = Sunday … 6 = Saturday. Empty = hidden. After that, trash and recycling days are set on the tablet (⚙ Settings). |
 | `HOLIDAYS` | `us` or `none`. Holidays only show on the board; they're never added to your calendar. |
 | `PHOTO_ALBUM_URL` | An iCloud Shared Album link (album → Share → link, with access set so **anyone with the link can view**). |
 | `BOARD_TITLE` | Name shown in the browser and on home-screen icons. |
