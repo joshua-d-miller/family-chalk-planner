@@ -37,7 +37,7 @@ The bottom bar on the tablet has **⚙️ Settings**, **🎨 Board style**, **�
 ### ⚙️ Settings
 - **Calendar:** shows which calendar the board uses. With Google Calendar this is where you sign in and pick the calendar (see [google-calendar.md](google-calendar.md)).
 - **Trash & recycling:** the trash pickup day (or none), and recycling **same day as trash**, **every other week** (pick the date of the next pickup), **a different day each week**, or **don't show**. Saved as soon as you change it.
-- **Bottom of the Notes column:** **🫙 Reward jars**, **☀️ Today** (everything still to come today), **📅 Up next** (the next events over two weeks, grouped by day), or **Nothing** (the Meal Plan gets the space).
+- **Bottom of the Notes column:** what it shows normally: **🫙 Reward jars**, **☀️ Today** (everything still to come today), **📅 Up next** (the next events over two weeks, grouped by day), **📷 Photos** (a polaroid from the album that changes every 40 seconds — nice when the month title has art instead of photos), or **Nothing** (the Meal Plan gets the space).
 
 ### Reward jars (optional, up to 4)
 - **Add a jar:** the small dashed **+** above the jars (or **+ Reward jar** when there are none). **Remove** is on each jar's card. With no jars, the jar area disappears and the Meal Plan gets the space; with 3–4 jars they shrink to fit one row.
@@ -61,6 +61,7 @@ The bottom bar on the tablet has **⚙️ Settings**, **🎨 Board style**, **�
 ## The wall display (read-only)
 - The wall can't change anything, but it responds to taps:
   - **Tap a day:** shows everything on that day in a big list (handy when a day is too full to read). Tap anywhere to close; it closes by itself after 30 seconds.
+  - **The small switch next to the Jars / Today / Up Next heading** (🫙 ☀️ 📅 📷), or a swipe across that area, shows one of the others. After 3 minutes it goes back to the normal choice.
   - **Double tap:** turns the photo frame (slideshow) on, any time of day. **Tap** the photos to go back to the calendar.
   - **During the overnight slideshow:** one tap shows the calendar for 5 minutes; a double tap goes back to the slideshow straight away.
 - **Slideshow:** picks at random between a single photo and 2–3 photo collages, framed on faces (whole photo on a blurred backdrop when people are too spread out to crop). The clock and date sit on a frosted panel in whichever corner covers the fewest faces.

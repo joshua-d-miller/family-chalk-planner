@@ -161,6 +161,27 @@ body.noart #gifLayer{display:none}
 .bottom.off{display:none}
 .bottom .bh{margin:4px 0 0;font-family:'Dancing Script',cursive;font-weight:700;font-size:26px;line-height:1;color:var(--pink);text-align:center}
 .bottom.upnext .jars,.bottom.jarsmode .upnext{display:none}
+.bottom .bphoto,.bottom.photomode .jars,.bottom.photomode .upnext,.bottom.photomode .bh{display:none}
+.bottom.photomode{flex:1 1 0;min-height:0}
+.bottom.photomode .bphoto{display:block;flex:1 1 auto;min-height:90px;position:relative;margin:6px 8px 4px;background:#EFEADF;box-shadow:0 4px 9px rgba(0,0,0,.55);transform:rotate(-1.5deg)}
+.bphoto::before{content:'';position:absolute;top:-6px;left:50%;width:40px;height:12px;margin-left:-20px;background:rgba(242,212,121,.5);transform:rotate(4deg);z-index:2}
+.bphoto .ph{position:absolute;left:6px;top:6px;right:6px;bottom:16px;overflow:hidden;background:#1d1d1d}
+.bphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1.6s}
+.bphoto img.on{opacity:1}
+.bphoto img{pointer-events:none;-webkit-user-drag:none}
+body.display .bottom{touch-action:none}   /* swipes go to the switch, not the page */
+/* the switch between jars / today / up next / photos (tap or swipe, also on the wall) */
+.bottom{position:relative}
+.bhead{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}
+.bottom.hasswitch .bhead{justify-content:space-between}
+.bottom.hasswitch .bh{text-align:left;font-size:21px;white-space:nowrap;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;margin:0}
+.bslide{flex:none;display:flex;gap:0;padding:1px;border-radius:15px;background:#1c1c1a;border:1.5px solid rgba(201,180,122,.5)}   /* next to the heading, takes no extra height */
+.bottom.photomode .bhead{display:flex;justify-content:center}
+.bslide:empty{display:none}
+
+.bslide button{position:relative;border:none;background:transparent;border-radius:12px;width:24px;height:22px;padding:0;font-size:13px;line-height:22px;cursor:pointer;opacity:.55;touch-action:manipulation;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif}
+.bslide button.on{background:rgba(201,180,122,.35);opacity:1}
+.bslide button::after{content:'';position:absolute;inset:-8px 0}   /* easier to hit */
 .upnext{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;max-height:150px;overflow:hidden}
 .bottom.upnext{flex:1 1 0;min-height:0}   /* Meal Plan and Up Next share the space */
 .bottom.upnext .upnext{flex:1 1 auto;min-height:0;max-height:none}
@@ -432,7 +453,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       </div>
       <div class="bottom" id="bottom">
         <div class="rule"></div>
-        <h2 class="bh" id="botHead">Reward Jars</h2>
+        <div class="bhead"><h2 class="bh" id="botHead">Reward Jars</h2><div class="bslide" id="bSlide" role="tablist" aria-label="Show in this space"></div></div>
+        <div class="bphoto" id="bPhoto"><div class="ph"><img alt=""><img alt=""></div></div>
         <div class="jars" id="jars" aria-label="Reward jars"></div>
         <ul class="upnext" id="upnext" aria-label="Up next"></ul>
       </div>
@@ -546,11 +568,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <div id="rDayW"><label for="rDay">Recycling day</label><select id="rDay"></select></div>
       <div id="rAnchorW"><label for="rAnchor">Next recycling pickup</label><input type="date" id="rAnchor"></div>
     </div>
-    <div class="sublbl" style="margin-top:20px">Bottom of the Notes column</div>
+    <div class="sublbl" style="margin-top:20px">Bottom of the Notes column (what it shows normally; tap the switch above it, or swipe, to see the others)</div>
     <div class="opts" id="nBottom">
       <button type="button" class="seg" data-b="jars">🫙 Reward jars</button>
       <button type="button" class="seg" data-b="today">☀️ Today</button>
       <button type="button" class="seg" data-b="upnext">📅 Up next</button>
+      <button type="button" class="seg" data-b="photos">📷 Photos</button>
       <button type="button" class="seg" data-b="none">Nothing</button>
     </div>
     <div class="sublbl" id="setSaved" style="min-height:20px"></div>
@@ -1037,14 +1060,74 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     if (typeof renderBottom === 'function' && state.notesBottom !== undefined) renderBottom();
     if (typeof fitMeals === 'function') setTimeout(fitMeals, 0);
   }
+  // Bottom of Notes: the saved choice (⚙ Settings) is the default; the little switch above it
+  // (tap, or swipe across) shows another for a while, then it goes back to the default.
+  var BOTTOM_LABELS = { jars: '🫙 Jars', today: '☀️ Today', upnext: '📅 Up next', photos: '📷 Photos' };
+  var bottomBackTimer = null;
+  function bottomModes() {
+    var out = [];
+    if ((state.jars || []).length || (EDIT && state.notesBottom === 'jars')) out.push('jars');
+    out.push('today', 'upnext');
+    if (typeof ph !== 'undefined' && ph.list && ph.list.length) out.push('photos');
+    return out;
+  }
+  function showBottom(m) {
+    state.bottomView = m === state.notesBottom ? null : m;
+    clearTimeout(bottomBackTimer);
+    if (state.bottomView) bottomBackTimer = setTimeout(function () { state.bottomView = null; renderBottom(); }, 3 * 60 * 1000);
+    renderBottom();
+  }
   function renderBottom() {
-    var box = $('bottom'), mode = state.notesBottom || 'jars', n = (state.jars || []).length;
-    var hide = mode === 'none' || (mode === 'jars' && !n && !EDIT);   // nothing to show on the wall
+    var box = $('bottom'), def = state.notesBottom || 'jars', modes = bottomModes();
+    if (def === 'none') { box.className = 'bottom off'; setTimeout(fitMeals, 0); return; }
+    if (modes.indexOf(def) < 0) def = modes[0];
+    var mode = state.bottomView && modes.indexOf(state.bottomView) >= 0 ? state.bottomView : def;
     var list = mode === 'upnext' || mode === 'today';
-    box.className = 'bottom ' + (list ? 'upnext' : 'jarsmode') + (hide ? ' off' : '');
-    $('botHead').textContent = mode === 'upnext' ? 'Up Next' : mode === 'today' ? 'Today' : 'Reward Jars';
+    box.className = 'bottom ' + (list ? 'upnext' : mode === 'photos' ? 'photomode' : 'jarsmode');
+    box.dataset.mode = mode;
+    $('botHead').textContent = mode === 'upnext' ? 'Up Next' : mode === 'today' ? 'Today' : modes.length > 1 ? 'Jars' : 'Reward Jars';   // short when the switch shares the line
+    var sw = $('bSlide'); sw.innerHTML = '';
+    if (modes.length > 1) box.classList.add('hasswitch');
+    if (modes.length > 1) modes.forEach(function (m) {
+      var b = el('button', m === mode ? 'on' : '', BOTTOM_LABELS[m].split(' ')[0]); b.type = 'button'; b.setAttribute('role', 'tab');
+      b.title = BOTTOM_LABELS[m].replace(/^\S+ /, ''); b.setAttribute('aria-label', b.title);
+      b.setAttribute('aria-selected', m === mode ? 'true' : 'false');
+      b.addEventListener('click', function (e) { e.stopPropagation(); showBottom(m); });
+      sw.appendChild(b);
+    });
     if (list) loadUpnext();
+    bottomPhoto(mode === 'photos');
     setTimeout(fitMeals, 0);
+  }
+  // swipe across the bottom section to go to the next / previous view
+  (function () {
+    var sx = null, sy = 0;
+    $('bottom').addEventListener('pointerdown', function (e) { sx = e.clientX; sy = e.clientY; });
+    $('bottom').addEventListener('pointerup', function (e) {
+      if (sx === null) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy; sx = null;
+      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      var modes = bottomModes(), cur = $('bottom').dataset.mode, i = modes.indexOf(cur);
+      if (i < 0 || modes.length < 2) return;
+      showBottom(modes[(i + (dx < 0 ? 1 : modes.length - 1)) % modes.length]);
+    });
+  })();
+  var bp = { timer: null, id: null };
+  function bottomPhoto(on) {
+    clearInterval(bp.timer); bp.timer = null;
+    if (!on) return;
+    var next = function () {
+      var list = (ph.list || []).filter(function (p) { return p.id !== bp.id; });
+      if (!list.length) list = ph.list || [];
+      var p = list[Math.floor(Math.random() * list.length)]; if (!p) return;
+      var box = document.querySelector('#bPhoto .ph'), imgs = box.querySelectorAll('img');
+      var cur = imgs[0].classList.contains('on') ? imgs[0] : imgs[1], off = cur === imgs[0] ? imgs[1] : imgs[0];
+      var fr = frameFor(p, box.clientWidth || 200, box.clientHeight || 200);
+      off.onload = function () { off.classList.add('on'); cur.classList.remove('on'); };
+      off.style.objectPosition = fr.pos; off.src = phSrc(p); bp.id = p.id;
+    };
+    next();
+    bp.timer = setInterval(next, 40 * 1000);
   }
   var DOW3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   function loadUpnext() {
@@ -1334,6 +1417,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   function applyPhotos() {
     tp.bag = []; tp.key = '';
+    if (typeof renderBottom === 'function' && state.notesBottom !== undefined) renderBottom();
     layoutTitlePhotos();
     checkSlides();
   }
@@ -1502,6 +1586,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     };
     document.addEventListener('pointerup', function (e) {
       if ($('dmodal').classList.contains('open')) { closeDayView(); lastTap = 0; return; }   // any tap closes the day view
+      if (e.target.closest && e.target.closest('#bottom')) { lastTap = 0; return; }   // the Notes switch / swipe
       if (ph.slideOn) return;
       if (Date.now() - (ph.peekAt || 0) < 700 || Date.now() - (ph.exitAt || 0) < 900) { lastTap = 0; return; }   // the tap that just left the slideshow
       if (e.timeStamp - lastTap < 450) {
