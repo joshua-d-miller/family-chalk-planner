@@ -26,7 +26,7 @@ const TRASH_DAY = /^[0-6]$/.test(ENV.TRASH_DAY || '') ? +ENV.TRASH_DAY : null;  
 const HOLIDAYS = (ENV.HOLIDAYS || 'us').toLowerCase();   // 'us' or 'none'
 const BOARD_TITLE = String(ENV.BOARD_TITLE || 'Family Chalk Planner').slice(0, 60);
 // AGPL: people using the board can get its source. Point this at your fork if you change the code.
-const SOURCE_URL = /^https?:\/\/[^\s"<>]+$/.test(ENV.SOURCE_URL || '') ? ENV.SOURCE_URL : 'https://github.com/OWNER/family-chalk-planner';
+const SOURCE_URL = /^https?:\/\/[^\s"<>]+$/.test(ENV.SOURCE_URL || '') ? ENV.SOURCE_URL : 'https://github.com/joshua-d-miller/family-chalk-planner';
 const APP_DIR = path.join(__dirname, '..');
 const DATA_DIR = ENV.DATA_DIR || path.join(APP_DIR, 'data');
 fs.mkdirSync(DATA_DIR, { recursive: true });

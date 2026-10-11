@@ -3,7 +3,7 @@
 # like and run this from inside it. It only adds what can't live in the repo folder:
 # Node.js 22 (if missing), a service user, and the systemd service pointing back at this folder.
 #
-#   git clone https://github.com/OWNER/family-chalk-planner.git /opt/family-chalk-planner
+#   git clone https://github.com/joshua-d-miller/family-chalk-planner.git /opt/family-chalk-planner
 #   sudo bash /opt/family-chalk-planner/deploy/install.sh
 #
 # Settings live in <repo>/.env (root-only) and data in <repo>/data; both are git-ignored, so

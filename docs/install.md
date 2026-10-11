@@ -15,7 +15,7 @@ As root on the machine or in the container:
 
 ```bash
 apt-get update && apt-get install -y git
-git clone https://github.com/OWNER/family-chalk-planner.git /opt/family-chalk-planner
+git clone https://github.com/joshua-d-miller/family-chalk-planner.git /opt/family-chalk-planner
 bash /opt/family-chalk-planner/deploy/install.sh
 ```
 
@@ -34,7 +34,7 @@ On GitHub: repository → **Settings → Deploy keys → Add deploy key**, paste
 
 ```bash
 ssh -o StrictHostKeyChecking=accept-new -T github-fcp   # says "successfully authenticated"
-git clone github-fcp:OWNER/family-chalk-planner.git /opt/family-chalk-planner
+git clone github-fcp:joshua-d-miller/family-chalk-planner.git /opt/family-chalk-planner
 bash /opt/family-chalk-planner/deploy/install.sh
 ```
 

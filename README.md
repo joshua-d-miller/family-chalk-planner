@@ -15,7 +15,7 @@ A chalkboard-style family wall calendar for a wall-mounted screen, edited from a
 On a Debian/Ubuntu LXC, VM, Raspberry Pi (64-bit OS) or other small Linux box, the git checkout *is* the install:
 
 ```bash
-git clone https://github.com/OWNER/family-chalk-planner.git /opt/family-chalk-planner
+git clone https://github.com/joshua-d-miller/family-chalk-planner.git /opt/family-chalk-planner
 sudo bash /opt/family-chalk-planner/deploy/install.sh
 ```
 
