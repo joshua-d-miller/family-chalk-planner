@@ -1,96 +1,124 @@
-# Using a Google Calendar
+# Connecting a Google Calendar
 
-The board can show and edit a Google Calendar instead of a CalDAV calendar (iCloud, Nextcloud, …). Adds, edits and deletes made on the tablet go straight to Google, so they show up on everyone's phones.
+This guide connects the board to a Google Calendar so it shows your events, and so you can add, change and delete them from the tablet. Changes show up on everyone's phones too.
 
-Google doesn't allow app passwords for calendars, so you create a small, free "app" in Google Cloud that belongs only to you. It takes about 15 minutes, once. Nothing is billed and no credit card is needed.
+**Time:** about 15 minutes, once.  **Cost:** free. No credit card and no billing account are needed. If Google offers a "free trial" or asks for a card along the way, skip it.
 
-> **Status: new.** This works against a test setup but hasn't had much real-world use yet. If a step below doesn't match what you see, please note where you got stuck and what the screen said.
+## Why there are so many steps
+Apple lets you make an "app-specific password" for your calendar. Google stopped allowing that in 2024. Now every program that edits a Google Calendar has to use a proper "Sign in with Google" button, and each program needs its own small registration with Google.
 
-## What you need
-- The Google account that owns (or can edit) the family calendar.
-- Access to the board's `.env` file on the server (`/opt/family-chalk-planner/.env`).
-- The tablet with `/edit` open.
+So in parts 1–3 you register your own copy of the board with Google. It belongs only to you: nobody else, including whoever wrote this software, can see your calendar through it.
 
-## 1. Create a Google Cloud project
-1. Go to [console.cloud.google.com](https://console.cloud.google.com/) and sign in with the Google account.
-2. Accept the terms if asked. At the top, open the project picker → **New project**. Name it something like `Family Chalk Planner` → **Create**. Make sure it's selected at the top afterwards.
+## Before you start
+- Use a **computer** for parts 1–3 (Google's setup pages are hard to use on a phone).
+- Know which **Google account** has the family calendar. If several people share it, use the account that owns it, or one it's shared with using "Make changes to events".
+- Open a blank note (Notepad, Notes…) to keep two codes you'll copy in part 3.
+- For part 4 you need to be able to edit the board's settings file on the server. If someone else installed the board for you, they may need to do part 4.
 
-## 2. Turn on the two calendar APIs
-In the search bar at the top, search for each of these, open it, and press **Enable**:
-1. **CalDAV API** (the board reads and writes events through this one)
-2. **Google Calendar API** (used to list your calendars so you can pick one)
+---
 
-## 3. Set up the consent screen
-1. Menu → **APIs & Services** → **OAuth consent screen** (newer consoles call it **Google Auth Platform**). Press **Get started** if shown.
-2. **App name:** `Family Chalk Planner`. **User support email:** your address. → Next.
-3. **Audience:** **External**. → Next.
-4. **Contact information:** your address. → Next → agree → **Create**.
-5. Open **Audience** (or the consent screen page) and press **Publish app** → **Confirm**, so the status says **In production**.
+## Part 1: Create a project
+1. Go to **[console.cloud.google.com](https://console.cloud.google.com/)** and sign in with the Google account from above.
+2. The first time, Google asks you to pick your country and agree to the terms. Tick the box and press **Agree and continue**.
+3. At the top left, next to "Google Cloud", press the **project picker** (it may say "Select a project"). In the window that opens, press **New project** (top right).
+4. **Project name:** `Family Chalk Planner`. Leave everything else as it is. Press **Create**.
+5. Wait a few seconds. A notification appears; press **Select project**. Check that the top left now says **Family Chalk Planner**. (Every step below happens inside this project.)
 
-**Why publish?** While an app is in "Testing", Google signs the board out every 7 days. Publishing doesn't make anything public and doesn't need Google's review for a personal app like this; it only removes that 7-day limit. You'll just see an "unverified app" warning when you sign in (step 6).
+## Part 2: Turn on the calendar features
+1. In the **search bar** at the top of the page, type `CalDAV API` and choose **CalDAV API** from the results.
+2. Press the blue **Enable** button. Wait until the page changes.
+3. Search again for `Google Calendar API`, choose it, and press **Enable**.
 
-You don't need to add scopes here; the board asks for calendar access when you sign in.
+Both must be on. If you skip the CalDAV one, the board signs in but shows no events.
 
-## 4. Create the sign-in key (OAuth client)
-1. **APIs & Services** → **Credentials** (or **Google Auth Platform → Clients**) → **Create credentials / Create client** → **OAuth client ID**.
-2. **Application type: Desktop app.** Name: `Chalk board`. → **Create**.
-3. Copy the **Client ID** and **Client secret** shown (you can see them again later under Clients).
+## Part 3: Register the board with Google
+**3a. Describe the app** (this is what you'll see on Google's sign-in page)
+1. In the search bar, type `Google Auth Platform` and open it. (Older screens call this "OAuth consent screen".)
+2. Press **Get started**.
+3. **App information:** App name `Family Chalk Planner`; User support email: pick your email. Press **Next**.
+4. **Audience:** choose **External**. Press **Next**. (Internal only appears for work/school Google accounts; with a normal Gmail account, External is the right choice.)
+5. **Contact information:** type your email. Press **Next**.
+6. Tick the box to agree to the user data policy, then press **Continue** and **Create**.
 
-Desktop app is the simple choice: it works over plain `http://` on your home network. (For the alternative with HTTPS, see [Sign-in without pasting](#sign-in-without-pasting-optional) below.)
+**3b. Publish it** (so you don't get signed out every week)
+1. In the left menu, choose **Audience**.
+2. Under "Publishing status" it says **Testing**. Press **Publish app**, then **Confirm**. It should now say **In production**.
 
-## 5. Put the key in `.env`
-On the server, edit `/opt/family-chalk-planner/.env` and add:
+This does **not** make anything public, and Google doesn't need to review it for personal use. It only stops Google from signing the board out every 7 days, which it does while an app is in Testing.
 
-```bash
-CALENDAR_PROVIDER=google
-GOOGLE_CLIENT_ID=1234567890-abc...apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=GOCSPX-...
-```
+**3c. Create the sign-in key**
+1. In the left menu, choose **Clients**, then **Create client** (at the top).
+2. **Application type:** choose **Desktop app**. (Not "Web application". See "Signing in without pasting" at the end for when Web is used.)
+3. **Name:** `Chalk board`. Press **Create**.
+4. A window shows your **Client ID** and **Client secret**. **Copy both into your note now.** Press **Download JSON** too, as a backup.
 
-The `CALDAV_*` lines are ignored in Google mode; you can leave them or delete them. Then:
+**Important:** Google shows the client secret **only once**. If you close the window without copying it, open the client, press **Add secret** to make a new one, and copy that.
 
-```bash
-systemctl restart family-chalk-planner
-```
+Keep the secret private: don't post it, email it or paste it into a chat.
 
-Keep the secret in that file only (it's readable by root and the service only). Don't paste it into chats or tickets.
+## Part 4: Give the codes to the board
+The board's settings file is called `.env` and lives in the folder the board was installed in (normally `/opt/family-chalk-planner`).
 
-## 6. Connect from the tablet
-1. On the tablet, open `/edit`, enter the PIN, and tap **⚙️** in the bottom bar.
-2. Tap **Sign in with Google**. A new tab opens on Google.
-3. Choose the account that has the family calendar.
-4. You'll see **"Google hasn't verified this app."** That's expected: it's *your* app from step 4. Tap **Advanced** → **Go to Family Chalk Planner (unsafe)**.
-5. Allow **See, edit, share, and permanently delete all the calendars you can access**, then **Continue**. (The board only touches the one calendar you pick next, but Google has no narrower option that allows editing.)
-6. Google sends the tab to an address starting with `http://localhost/?state=…` and the page **won't load**. That's expected. Copy the **whole address** from the address bar.
-7. Back in the board's tab, paste it into the box and tap **Connect**.
-8. Pick the calendar the board should show. Done: the wall picks it up within a few seconds.
+1. Open a terminal on the board's server. (On Proxmox: select the board's container → **Console**.)
+2. Open the settings file:
+   ```bash
+   nano /opt/family-chalk-planner/.env
+   ```
+3. Find the section that starts `# --- Or: Google Calendar`. Change these three lines so they no longer start with `#`, and paste your two codes after the `=` (no spaces, no quotes):
+   ```bash
+   CALENDAR_PROVIDER=google
+   GOOGLE_CLIENT_ID=1234567890-abcdefg.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxx
+   ```
+   Leave the `GOOGLE_REDIRECT_URI` line with its `#`. The `CALDAV_` lines don't matter in Google mode.
+4. Save and close: press **Ctrl+O**, **Enter**, then **Ctrl+X**.
+5. Restart the board so it reads the new settings:
+   ```bash
+   systemctl restart family-chalk-planner
+   ```
 
-The address you paste is single-use and only works for a few minutes. If Connect says it expired, just tap Sign in again.
+## Part 5: Sign in from the tablet
+1. On the tablet, open the board's edit page (`/edit`), enter the PIN, and tap **⚙️** in the bottom bar.
+2. Tap **Sign in with Google**. A new tab opens on Google's sign-in page.
+3. Choose the Google account with the family calendar.
+4. Google warns **"Google hasn't verified this app"**. That's expected: the app is the one you registered yourself in part 3. Tap **Advanced**, then **Go to Family Chalk Planner (unsafe)**.
+5. Google lists what the board may do with your calendars. Tap **Continue** (or tick the box first, if there is one). Google only offers "all your calendars" for editing access; the board only uses the one calendar you pick in step 8.
+6. The tab then shows an error like **"Safari can't open the page"** or **"This site can't be reached"**. **This is expected.** Everything Google needs to tell the board is in that page's address, which starts with `http://localhost/?state=`.
+   - Tap the **address bar** to show the full address, then **Select All** → **Copy**.
+7. Switch back to the board's tab. Paste the address into the box and tap **Connect**.
+8. A list of your calendars appears. Tap the family calendar. The wall shows it within a few seconds.
 
-## Day to day
-- Event colors, countdowns, drawings and everything else work the same as with iCloud.
-- To switch calendars later: ⚙️ → tap a different calendar.
-- **Disconnect Google** (⚙️) forgets the sign-in on the board. To also revoke it on Google's side: [myaccount.google.com/permissions](https://myaccount.google.com/permissions) → Family Chalk Planner → remove access.
+Do steps 2–7 within about 10 minutes. If Connect says the sign-in has expired, tap **Sign in with Google** and go through it again.
 
-## Troubleshooting
-| What you see | What to do |
+---
+
+## Later
+- **Show a different calendar:** ⚙️ → tap another calendar in the list.
+- **Disconnect:** ⚙️ → **Disconnect Google**. To also remove the board's access on Google's side: [myaccount.google.com/connections](https://myaccount.google.com/connections) → Family Chalk Planner → delete.
+- **Don't delete the Google Cloud project.** The board needs it for as long as it uses your calendar. Google deletes sign-in keys that go unused for 6 months; a board that's running uses its key every hour, so that only happens if the board is off for that long.
+
+## If something goes wrong
+| What you see | What it means / what to do |
 |---|---|
-| ⚙️ says "isn't set up on the server yet" | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` are missing from `.env`, or the service wasn't restarted. |
-| Google shows **Error 400: redirect_uri_mismatch** | The OAuth client isn't a **Desktop app**. Create a Desktop client (step 4) and use its ID and secret, or follow "Sign-in without pasting" for a Web client. |
-| Google shows **access_denied** / "has not completed the Google verification process" | The app is still in **Testing**. Publish it (step 3.5), or add your Google account under **Audience → Test users**. |
-| "Google sign-in expired or was removed - reconnect" on the board | The access was revoked, the password changed, or the app was in Testing for 7 days. ⚙️ → Sign in with Google again. |
-| Calendar list is empty | The account can only *view* those calendars. The board lists calendars you can edit; ask the owner to share with "Make changes to events". |
-| Events don't load / "403" in the log | One of the APIs in step 2 isn't enabled (CalDAV API is the one people miss). Enabling it can take a minute or two to take effect. |
-| Something else | `journalctl -u family-chalk-planner -n 50` on the server shows the error. |
+| ⚙️ says Google "isn't set up on the server yet" | The codes aren't in `.env`, a line still starts with `#`, or the board wasn't restarted (part 4). |
+| Google: **Error 400: redirect_uri_mismatch** | The key was made as "Web application". Make a new one as **Desktop app** (part 3c) and put the new codes in `.env`. |
+| Google: **Error 403: access_denied**, or "has not completed the Google verification process" | The app is still in **Testing**. Publish it (part 3b). |
+| Google: **invalid_client** | The ID or secret in `.env` has a typo, a space, or quotes. Copy them again. Lost the secret? Make a new one (part 3c). |
+| Connect: "Paste the whole address" | Only part of the address was copied. Tap the address bar, **Select All**, **Copy**, and paste again. |
+| Connect: "expired or was already used" | Start again from **Sign in with Google**. |
+| The calendar list is empty | This account can only *view* those calendars. Use the account that owns the calendar, or ask the owner to share it with you using "Make changes to events". |
+| Signed in, but no events show | The **CalDAV API** isn't turned on (part 2). After turning it on, wait a couple of minutes. |
+| The board says "Google sign-in expired or was removed - reconnect" | Access was removed, the Google password changed, or the app was in Testing for 7 days. ⚙️ → **Sign in with Google** again. |
+| Anything else | On the server, run `journalctl -u family-chalk-planner -n 50` and look at the last lines. |
 
-## Sign-in without pasting (optional)
-If the board has a real HTTPS address (for example `https://board.home.example` through a reverse proxy, see [install.md](install.md#5-https-and-a-nice-name-optional)), Google can send the tablet straight back to it:
+## Signing in without pasting (optional, for HTTPS setups)
+If the board has its own **https://** address on your network (for example `https://board.home.example` through a reverse proxy, see [install.md](install.md#5-https-and-a-nice-name-optional)), Google can send the tablet straight back to the board, so step 6–7 of part 5 aren't needed:
 
-1. Create the OAuth client as **Web application** instead of Desktop app, and under **Authorized redirect URIs** add `https://board.home.example/oauth/google/callback` (your address).
-2. In `.env`, add `GOOGLE_REDIRECT_URI=https://board.home.example/oauth/google/callback` alongside the ID and secret, and restart.
-3. ⚙️ → Sign in with Google: after you allow access you land back on the board's Settings, already connected. No paste box.
+1. Create the key in part 3c as **Web application** instead, and under **Authorized redirect URIs** add `https://board.home.example/oauth/google/callback` (with your address).
+2. In `.env`, also set `GOOGLE_REDIRECT_URI=https://board.home.example/oauth/google/callback`, and restart.
+3. ⚙️ → **Sign in with Google**. After you allow access, you land back in the board's Settings, already connected.
 
-Google only accepts `https://` redirect addresses for Web clients (besides `localhost`), which is why the paste method is the default.
+Google only accepts `https://` addresses here, which is why pasting is the default.
 
-## What's stored
-The board keeps one Google *refresh token* in `data/google-auth.json` (readable only by the service). It never sees your Google password. Backups of `data/` include this file, so treat them as private.
+## What the board keeps
+The board stores one Google sign-in token in `data/google-auth.json` (readable only by the board's service). It never sees your Google password. Backups of the `data/` folder include this token, so keep them private.
