@@ -1,0 +1,2 @@
+# Face finder for photo framing (optional). Installed into face/venv by deploy/setup-face.sh
+opencv-python-headless==4.10.0.84

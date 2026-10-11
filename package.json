@@ -1,0 +1,17 @@
+{
+  "name": "family-chalk-planner",
+  "version": "0.1.0",
+  "description": "A chalkboard-style family wall calendar: CalDAV events, chalk art, photos, meal plan and reward jars, edited from a tablet.",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "main": "server/chalkboard.js",
+  "scripts": {
+    "start": "node server/chalkboard.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=22.5" },
+  "dependencies": {
+    "express": "4.22.3",
+    "ical.js": "1.5.0"
+  }
+}

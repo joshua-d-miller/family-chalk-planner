@@ -1,0 +1,11 @@
+node_modules/
+data/
+*.env
+!.env.example
+face/venv/
+face/yunet.onnx
+face/__pycache__/
+*.db
+*.db-wal
+*.db-shm
+.DS_Store

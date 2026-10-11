@@ -1,0 +1,19 @@
+[Unit]
+Description=Family Chalk Planner (family wall calendar)
+Documentation=https://github.com/OWNER/family-chalk-planner
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=chalkplanner
+Group=chalkplanner
+WorkingDirectory=/opt/family-chalk-planner
+EnvironmentFile=/etc/family-chalk-planner/planner.env
+ExecStart=/usr/bin/env node /opt/family-chalk-planner/server/chalkboard.js
+Restart=on-failure
+RestartSec=5
+# Sandboxing lives in hardening.conf (installed only where the host supports it)
+
+[Install]
+WantedBy=multi-user.target
