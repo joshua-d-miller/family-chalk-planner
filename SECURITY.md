@@ -13,7 +13,7 @@ rather than a public issue.
 - **Reading** (what the wall shows) does not need a login. Anyone who can reach the board on
   your network can see the calendar. Keep it off the internet, or put it behind a reverse
   proxy access list (planned: wall pairing with its own device token).
-- **Secrets** live in `/etc/family-chalk-planner/planner.env` (root-only, mode 600).
+- **Secrets** live in `.env` in the install folder (root-only, mode 600, ignored by git).
 - **The service** runs as its own unprivileged user, can't modify its own code, and (where
   systemd sandboxing is available) can only write to its data folder.
 - **Uploads** are size-limited and checked to really be images; file routes only accept

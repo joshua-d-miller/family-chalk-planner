@@ -12,16 +12,16 @@ A chalkboard-style family wall calendar for a wall-mounted screen, edited from a
 
 ## Install
 
-On a Debian/Ubuntu LXC, VM, Raspberry Pi (64-bit OS) or other small Linux box, as root:
+On a Debian/Ubuntu LXC, VM, Raspberry Pi (64-bit OS) or other small Linux box, the git checkout *is* the install:
 
 ```bash
-git clone https://github.com/OWNER/family-chalk-planner.git /tmp/fcp
-bash /tmp/fcp/deploy/install.sh --repo https://github.com/OWNER/family-chalk-planner.git
+git clone https://github.com/OWNER/family-chalk-planner.git /opt/family-chalk-planner
+sudo bash /opt/family-chalk-planner/deploy/install.sh
 ```
 
-The installer sets up Node.js 22, a locked-down service user, and an optional face finder for photo framing. It also generates your editing PIN and prints the addresses to open. Then fill in your calendar and location in `/etc/family-chalk-planner/planner.env` and run `systemctl restart family-chalk-planner`.
+The installer adds Node.js 22 if it's missing, a locked-down service user, a systemd service that runs straight from that folder, and the optional face finder for photo framing. It also generates your editing PIN and prints the addresses to open. Then fill in your calendar and location in `/opt/family-chalk-planner/.env` and run `systemctl restart family-chalk-planner`.
 
-To update: `/opt/family-chalk-planner/deploy/update.sh`. It rolls back automatically if the new version doesn't start.
+Settings (`.env`) and data (`data/`) stay in the same folder and are ignored by git, so updating is just a pull: `sudo /opt/family-chalk-planner/deploy/update.sh`. It runs `git pull`, restarts, and rolls back automatically if the new version doesn't start.
 
 See **[docs/install.md](docs/install.md)** for the details: Proxmox, private repos, HTTPS, the wall display, backups, and moving an older setup over.
 

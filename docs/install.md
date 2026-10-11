@@ -9,28 +9,24 @@
 In the Proxmox UI: **Create CT** → unprivileged, Debian 12 or 13 template, 1 core, 512 MB RAM, 4 GB disk, DHCP or a fixed IP. Under **Options → Features**, turning on **nesting** lets the installer apply systemd sandboxing; without it the service still runs, just with less isolation.
 
 ## 2. Install
+The folder you clone into *is* the install. Settings and data live inside it too (`.env` and `data/`, both ignored by git), so updates are a simple pull. Don't run `git clean -x` in it: that would delete `.env` and `data/`.
+
 As root on the machine or in the container:
 
 ```bash
 apt-get update && apt-get install -y git
-git clone https://github.com/OWNER/family-chalk-planner.git /tmp/fcp
-bash /tmp/fcp/deploy/install.sh --repo https://github.com/OWNER/family-chalk-planner.git
+git clone https://github.com/OWNER/family-chalk-planner.git /opt/family-chalk-planner
+bash /opt/family-chalk-planner/deploy/install.sh
 ```
 
-Options: `--no-face` skips the photo face finder; `--branch v0.2.0` installs a specific release.
+Any folder works (for example `/home/pi/family-chalk-planner` on a Pi; the checkout stays owned by whoever cloned it). Options: `--no-face` skips the photo face finder, `--data DIR` keeps data elsewhere, `--no-start` sets up without starting. If you move the folder later, run `deploy/install.sh --unit-only` from its new location.
 
 ### Private repository (before the project is public)
 Give the machine a read-only **deploy key**:
 
 ```bash
 ssh-keygen -t ed25519 -N '' -C "family-chalk-planner@$(hostname)" -f /root/.ssh/fcp_deploy
-cat >> /root/.ssh/config <<'EOF'
-Host github-fcp
-  HostName github.com
-  User git
-  IdentityFile /root/.ssh/fcp_deploy
-  IdentitiesOnly yes
-EOF
+printf 'Host github-fcp\n  HostName github.com\n  User git\n  IdentityFile /root/.ssh/fcp_deploy\n  IdentitiesOnly yes\n' >> /root/.ssh/config
 cat /root/.ssh/fcp_deploy.pub
 ```
 
@@ -38,15 +34,15 @@ On GitHub: repository → **Settings → Deploy keys → Add deploy key**, paste
 
 ```bash
 ssh -o StrictHostKeyChecking=accept-new -T github-fcp   # says "successfully authenticated"
-git clone github-fcp:OWNER/family-chalk-planner.git /tmp/fcp
-bash /tmp/fcp/deploy/install.sh --repo github-fcp:OWNER/family-chalk-planner.git
+git clone github-fcp:OWNER/family-chalk-planner.git /opt/family-chalk-planner
+bash /opt/family-chalk-planner/deploy/install.sh
 ```
 
-### Without git (copying the files by hand)
-Download the code (GitHub → Code → Download ZIP), copy it to the machine, unzip it, and run `bash deploy/install.sh --source /path/to/family-chalk-planner`. To update later, repeat with the new copy and `--force`; your settings and data are kept.
+### Without git
+Download the code (GitHub → Code → Download ZIP), unzip it where it should live, and run `bash deploy/install.sh` inside it. To update, replace the code files with a newer copy (keep `.env` and `data/`) and restart the service. With git, `update.sh` does this for you.
 
 ## 3. Settings
-Edit `/etc/family-chalk-planner/planner.env` (root-only), then `systemctl restart family-chalk-planner`.
+Edit `.env` in the install folder (root-only), then `systemctl restart family-chalk-planner`.
 
 | Setting | What it does |
 |---|---|
@@ -77,25 +73,26 @@ Keep it on your home network. Anyone who can reach the wall address can see the 
 
 ## Updating
 ```bash
-/opt/family-chalk-planner/deploy/update.sh            # update and restart; rolls back if it fails
+/opt/family-chalk-planner/deploy/update.sh            # git pull + restart; rolls back if it fails
 /opt/family-chalk-planner/deploy/update.sh --check    # just show what's new
 ```
 The wall reloads itself; tablets show an "update" banner.
 
 ## Backups
-Every night the board writes a consistent copy of its database to `BACKUP_DIR` (default `/var/lib/family-chalk-planner/backup`) and keeps 14 of them. Uploaded GIFs live in `BACKUP_DIR/media`. Back up that folder and `/etc/family-chalk-planner/` with your usual tools. The photo cache and face finder can always be rebuilt, so they don't need backing up.
+Every night the board writes a consistent copy of its database to `BACKUP_DIR` (default `data/backup`) and keeps 14 of them. Uploaded GIFs live in `BACKUP_DIR/media`. Back up that folder and `.env` with your usual tools. The photo cache and face finder can always be rebuilt, so they don't need backing up.
 
 **Restore:**
 ```bash
 systemctl stop family-chalk-planner
-cp /var/lib/family-chalk-planner/backup/chalkboard-YYYY-MM-DD.db /var/lib/family-chalk-planner/chalkboard.db
-rm -f /var/lib/family-chalk-planner/chalkboard.db-wal /var/lib/family-chalk-planner/chalkboard.db-shm
-chown chalkplanner: /var/lib/family-chalk-planner/chalkboard.db
+cd /opt/family-chalk-planner/data
+cp backup/chalkboard-YYYY-MM-DD.db chalkboard.db
+rm -f chalkboard.db-wal chalkboard.db-shm
+chown chalkplanner: chalkboard.db
 systemctl start family-chalk-planner
 ```
 
 ## Moving an older setup over
-If the board used to run inside another Node app (the original setup, where that app's `server.js` ended with `require('./chalkboard')`), install with `--no-start` and then run:
+If the board used to run inside another Node app (the original setup, where that app's `server.js` ended with `require('./chalkboard')`), clone and install with `--no-start`, then run:
 
 ```bash
 bash /opt/family-chalk-planner/deploy/migrate-from-homelab-api.sh --old /opt/homelab-api \

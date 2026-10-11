@@ -1,19 +1,20 @@
+# Template: deploy/install.sh fills in the @...@ values and writes the result to
+# /etc/systemd/system/family-chalk-planner.service. Don't copy this file by hand.
 [Unit]
 Description=Family Chalk Planner (family wall calendar)
-Documentation=https://github.com/OWNER/family-chalk-planner
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=chalkplanner
-Group=chalkplanner
-WorkingDirectory=/opt/family-chalk-planner
-EnvironmentFile=/etc/family-chalk-planner/planner.env
-ExecStart=/usr/bin/env node /opt/family-chalk-planner/server/chalkboard.js
+User=@USER@
+Group=@USER@
+WorkingDirectory=@APP_DIR@
+EnvironmentFile=@ENV_FILE@
+ExecStart=@NODE@ @APP_DIR@/server/chalkboard.js
 Restart=on-failure
 RestartSec=5
-# Sandboxing lives in hardening.conf (installed only where the host supports it)
+# Sandboxing lives in family-chalk-planner.service.d/hardening.conf (added where supported)
 
 [Install]
 WantedBy=multi-user.target

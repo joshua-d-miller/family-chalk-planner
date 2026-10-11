@@ -2,8 +2,8 @@
 # Move a board that ran inside another Node app (the original "homelab-api" setup, where
 # server.js ended with require('./chalkboard')) into its own family-chalk-planner service.
 #
-# 1. Install first without starting:  bash deploy/install.sh --repo ... --no-start
-# 2. Then:  bash /opt/family-chalk-planner/deploy/migrate-from-homelab-api.sh [options]
+# 1. Clone the repo and install without starting:  bash <repo>/deploy/install.sh --no-start
+# 2. Then:  bash <repo>/deploy/migrate-from-homelab-api.sh [options]
 #      --old DIR          the old app folder            (default /opt/homelab-api)
 #      --old-service NAME the old systemd service       (default homelab-api)
 #      --timezone TZ --latitude N --longitude N --trash-day 0-6 --title "..."
@@ -11,7 +11,8 @@
 #      --rollback         undo: stop the new service, put the old setup back
 set -euo pipefail
 OLD=/opt/homelab-api OLD_SVC=homelab-api KEEP_BACKUPS=yes ROLLBACK=no
-APP_DIR="${APP_DIR:-/opt/family-chalk-planner}" ENV_FILE="${ENV_FILE:-/etc/family-chalk-planner/planner.env}" SERVICE=family-chalk-planner SVC_USER="${SVC_USER:-chalkplanner}"
+APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="${ENV_FILE:-$APP_DIR/.env}" SERVICE=family-chalk-planner SVC_USER="${SVC_USER:-chalkplanner}"
 declare -A SET=()
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -41,9 +42,9 @@ if [ "$ROLLBACK" = yes ]; then
 fi
 
 [ -f "$OLD/chalkboard.db" ] || die "no $OLD/chalkboard.db - is --old right?"
-[ -f "$APP_DIR/server/chalkboard.js" ] || die "install first: deploy/install.sh --no-start"
-[ -f "$ENV_FILE" ] || die "missing $ENV_FILE"
-DATA_DIR="$(sed -n 's/^DATA_DIR=//p' "$ENV_FILE" | tr -d '"' | tail -1)"; DATA_DIR="${DATA_DIR:-/var/lib/family-chalk-planner}"
+[ -f "$APP_DIR/server/chalkboard.js" ] || die "run this from inside the family-chalk-planner folder"
+[ -f "$ENV_FILE" ] || die "missing $ENV_FILE - run deploy/install.sh --no-start first"
+DATA_DIR="$(sed -n 's/^DATA_DIR=//p' "$ENV_FILE" | tr -d '"' | tail -1)"; DATA_DIR="${DATA_DIR:-$APP_DIR/data}"
 
 set_env() {
   local k="$1" v="$2" tmp
