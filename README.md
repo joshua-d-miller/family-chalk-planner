@@ -5,7 +5,7 @@ A chalkboard-style family wall calendar for a wall-mounted screen, edited from a
 - **Your real calendar.** Events come from Google Calendar or any CalDAV calendar (iCloud, Nextcloud, Fastmail, Radicale…). Add, edit and delete from the tablet, including repeating events ("just this one" or "all of them").
 - **Draw on it.** Chalk and paint-marker drawing, typed or hand-lettered month titles, stamps, ~35 hand-drawn clipart pieces, an emoji library, icon search, and GIFs. The art is saved per month.
 - **A Notes column.** Weather, trash and recycling days, countdowns to holidays, birthdays and starred events, a meal plan, and either up to four kids' reward jars or an "Up next" list of coming events.
-- **Photos.** Polaroids pinned beside the month name (random or hand-picked per month, or leave the space for art), and an overnight slideshow with collages framed on people's faces, all from an iCloud shared album.
+- **Photos.** Polaroids pinned beside the month name (random or hand-picked per month, or leave the space for art), and an overnight slideshow with collages framed on people's faces, all from an iCloud or Google Photos shared album.
 - **Make it yours.** Board styles (presets plus per-part fonts and colors), per-event colors, and a today marker that can be a chalk ring, circle, heart, star or box.
 - **Live.** Changes made on the tablet appear on the wall within a second. The wall updates itself when you install a new version.
 - **Small and private.** It runs on your own network as one Node.js service with a SQLite file. No account and no cloud service of its own.

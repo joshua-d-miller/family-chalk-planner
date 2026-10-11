@@ -1466,11 +1466,14 @@ app.get('/api/stream', (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Photos: an iCloud Shared Album (link sharing, "anyone with the link") feeds
-// the Notes photo frame and the overnight slideshow. The album is read the
-// same way Apple's own web page reads it (CloudKit, no Apple ID login), and
-// every photo is copied into photo-cache/ so the wall never waits on iCloud.
-// PHOTO_ALBUM_URL = the album's share link.
+// Photos: a shared album feeds the photos beside the month name and the
+// overnight slideshow. PHOTO_ALBUM_URL = the album's share link, either
+//  - an iCloud Shared Album (link sharing, "anyone with the link"), read the way
+//    Apple's own web page reads it (CloudKit, no Apple ID login), or
+//  - a Google Photos shared album (Share -> Create link), read the way Google's
+//    own album page reads it (no Google sign-in).
+// Neither is an official API, so either company could change it without notice.
+// Every photo is copied into photo-cache/ so the wall never waits on the album.
 // ---------------------------------------------------------------------------
 const PHOTO_DIR = path.join(DATA_DIR, 'photo-cache');
 // Face finding (optional): OpenCV's YuNet model run by face/facefocus.py in its
@@ -1490,6 +1493,9 @@ function findFaces(files) {
   });
 }
 const PHOTO_URL = (process.env.PHOTO_ALBUM_URL || '').trim();
+const PHOTO_KIND = /^https:\/\/(photos\.app\.goo\.gl|goo\.gl\/photos|photos\.google\.com\/(u\/\d+\/)?share)\//i.test(PHOTO_URL) || process.env.PHOTO_GOOGLE_HOST ? 'google' : 'icloud';
+const GP_HOST = process.env.PHOTO_GOOGLE_HOST || 'https://photos.google.com';   // override only for testing
+const GP_UA = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36', 'Accept-Language': 'en' };
 const CK = 'database/1/com.apple.photos.cloud/production';
 const CK_HOST = process.env.PHOTO_CK_HOST || 'https://ckdatabasews.icloud.com';   // override only for testing
 const photoState = { list: [], synced: 0, error: null, running: false };
@@ -1542,12 +1548,49 @@ function photoAssets(records) {
   return out.sort((a, b) => b.date - a.date);
 }
 
-async function syncPhotos() {
-  if (!PHOTO_URL || photoState.running) return;
+// Google Photos shared album -> [{id, url, w, h, date}], newest first.
+// Each item is [itemId, [imageUrl, w, h, ...], takenMs, hash, ?, addedMs, ..., {extra}].
+// Image URLs take size options: "=w2048-h2048" = fit inside 2048 px, already upright.
+function gpItems(items) {
+  const out = [];
+  for (const e of items || []) {
+    if (!Array.isArray(e) || typeof e[0] !== 'string' || !Array.isArray(e[1]) || typeof e[1][0] !== 'string') continue;
+    const extra = e.find(x => x && typeof x === 'object' && !Array.isArray(x)) || {};
+    if ('76647426' in extra) continue;   // a video
+    const [url, w, h] = e[1];
+    out.push({ id: 'g' + crypto.createHash('sha1').update(e[0]).digest('hex').slice(0, 23), url: url + '=w2048-h2048', w: +w || 0, h: +h || 0, date: +e[2] || +e[5] || 0 });
+  }
+  return out;
+}
+async function googleAlbum() {
+  const page = await fetch(PHOTO_URL.replace(/^https:\/\/photos\.google\.com/i, GP_HOST), { headers: GP_UA, redirect: 'follow', signal: AbortSignal.timeout(30000) });
+  if (page.status === 404) throw new Error('Google Photos album not found - check the link, and that link sharing is on');
+  if (!page.ok) throw new Error(`Google Photos said ${page.status}`);
+  const html = await page.text();
+  const at = new URL(page.url), id = (/\/share\/([\w-]{10,})/.exec(at.pathname) || [])[1], key = at.searchParams.get('key');
+  if (!id || !key) throw new Error('That Google Photos link doesn’t open a shared album (Share -> Create link)');
+  // first page is in the page itself; later pages come from the same call Google's page makes
+  let items = [], next = null;
+  const m = /AF_initDataCallback\(\{key: 'ds:1'[\s\S]*?data:([\s\S]*?), sideChannel: \{\}\}\);<\/script>/.exec(html);
+  if (m) { try { const d = JSON.parse(m[1]); items = d[1] || []; next = d[2] || null; } catch { /* fall through to the call below */ } }
+  const rpc = async token => {
+    const body = new URLSearchParams({ 'f.req': JSON.stringify([[['snAcKc', JSON.stringify([id, token, null, key])]]]) });
+    const r = await fetch(`${GP_HOST}/_/PhotosUi/data/batchexecute`, { method: 'POST', headers: { ...GP_UA, 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, body, signal: AbortSignal.timeout(30000) });
+    if (!r.ok) throw new Error(`Google Photos said ${r.status}`);
+    const list = JSON.parse((await r.text()).replace(/^\)\]\}'/, ''));
+    const hit = list.find(x => Array.isArray(x) && x[1] === 'snAcKc');
+    if (!hit || !hit[2]) throw new Error('Google Photos sent something unexpected (it may have changed how albums work)');
+    const d = JSON.parse(hit[2]);
+    return { items: d[1] || [], next: d[2] || null };
+  };
+  if (!m) ({ items, next } = await rpc(null));
+  for (let i = 0; next && i < 40; i++) { const p = await rpc(next); items = items.concat(p.items); next = p.next; }
+  return gpItems(items).sort((a, b) => b.date - a.date);
+}
+async function icloudAlbum() {
   const guid = (/\/album\/([A-Za-z0-9_-]{10,})/.exec(PHOTO_URL) || [])[1];
-  if (!guid) { photoState.error = 'PHOTO_ALBUM_URL doesn’t look like a shared album link'; return; }
-  photoState.running = true;
-  try {
+  if (!guid) throw new Error('PHOTO_ALBUM_URL doesn’t look like an iCloud or Google Photos shared album link');
+  {
     const res = (await ckPost(`${CK_HOST}/${CK}/public/records/resolve?remapEnums=true`, { shortGUIDs: [{ value: guid, shouldFetchRootRecord: true }] })).results[0];
     if (!res || !res.anonymousPublicAccess) throw new Error('album isn’t shared by link (set “anyone with the link”)');
     const part = String(res.anonymousPublicAccess.databasePartition || '');
@@ -1559,16 +1602,34 @@ async function syncPhotos() {
       records = records.concat(z.records || []);
       syncToken = z.syncToken; more = z.moreComing;
     }
-    const assets = photoAssets(records);
+    return photoAssets(records);
+  }
+}
+// only download from the album service's own image hosts
+const photoHostOk = u => (PHOTO_KIND === 'google'
+  ? !!process.env.PHOTO_GOOGLE_HOST || /^https:\/\/lh\d\.googleusercontent\.com\//.test(u)
+  : !!process.env.PHOTO_CK_HOST || /^https:\/\/[a-z0-9.-]+\.(icloud-content\.com|icloud\.com)\//.test(u));
+const isJpegPng = b => b.length > 8 && ((b[0] === 0xff && b[1] === 0xd8) || b.readUInt32BE(0) === 0x89504e47);
+async function getImage(url) {
+  const r = await fetch(url, { headers: PHOTO_KIND === 'google' ? { ...GP_UA, Accept: 'image/jpeg,image/png' } : {}, signal: AbortSignal.timeout(60000) });
+  if (!r.ok) return null;
+  let buf = Buffer.from(await r.arrayBuffer());
+  if (!isJpegPng(buf) && PHOTO_KIND === 'google' && !url.endsWith('-rj')) return getImage(url + '-rj');   // ask Google for JPEG explicitly
+  return isJpegPng(buf) ? buf : null;   // JPEG or PNG only (the wall can't show HEIC)
+}
+
+async function syncPhotos() {
+  if (!PHOTO_URL || photoState.running) return;
+  photoState.running = true;
+  try {
+    const assets = PHOTO_KIND === 'google' ? await googleAlbum() : await icloudAlbum();
     fs.mkdirSync(PHOTO_DIR, { recursive: true });
     for (const a of assets) {
       const file = path.join(PHOTO_DIR, `${a.id}.jpg`);
       if (fs.existsSync(file)) continue;
-      if (!process.env.PHOTO_CK_HOST && !/^https:\/\/[a-z0-9.-]+\.(icloud-content\.com|icloud\.com)\//.test(a.url)) continue;
-      const r = await fetch(a.url, { signal: AbortSignal.timeout(60000) });
-      if (!r.ok) continue;
-      const buf = Buffer.from(await r.arrayBuffer());
-      if (!(buf[0] === 0xff && buf[1] === 0xd8) && buf.readUInt32BE(0) !== 0x89504e47) continue;   // JPEG or PNG only (the wall can't show HEIC)
+      if (!photoHostOk(a.url)) continue;
+      const buf = await getImage(a.url);
+      if (!buf) continue;
       fs.writeFileSync(file + '.part', buf);
       fs.renameSync(file + '.part', file);
     }

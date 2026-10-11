@@ -49,7 +49,7 @@ The bottom bar on the tablet has **⚙️ Settings**, **🎨 Board style**, **�
 - The month title keeps its own style (Month title button).
 
 ### 📷 Photos
-- Photos come from an iCloud **Shared Album** (set `PHOTO_ALBUM_URL`). To add or remove photos, add or remove them in that album from any phone. The board checks every 15 minutes, or tap **↻ Check album now**.
+- Photos come from an iCloud or Google Photos **shared album** (set `PHOTO_ALBUM_URL`, see [photos.md](photos.md)). To add or remove photos, add or remove them in that album from any phone. The board checks every 15 minutes, or tap **↻ Check album now**.
 - **Beside the month name, per month:** **Random photos**, **Photos I pick** (tap up to 8 in the grid; they show in that order), or **Art instead** (no photos, so you can draw or stamp clipart there). The choice is saved for the month you're looking at; months you haven't set use the "usually" choice.
 - **Photos there:** up to four polaroids, framed on people's faces. One changes every 40 seconds. They skip any spot that has a drawing on it, and never show the same photo twice at once.
 - **Slideshow overnight:** start and end times (default 9 PM–6 AM), **brightness** (Dim 30% / Medium 50% / Bright 70% / Full), and **new photo every** 10 s–1 min.

@@ -53,7 +53,7 @@ Edit `.env` in the install folder (root-only), then `systemctl restart family-ch
 | `LATITUDE`, `LONGITUDE`, `TEMP_UNIT` | Weather in the Notes column (Open-Meteo, no key). Empty = no weather. |
 | `TRASH_DAY` | Starting trash day, 0 = Sunday … 6 = Saturday. Empty = hidden. After that, trash and recycling days are set on the tablet (⚙ Settings). |
 | `HOLIDAYS` | `us` or `none`. Holidays only show on the board; they're never added to your calendar. |
-| `PHOTO_ALBUM_URL` | An iCloud Shared Album link (album → Share → link, with access set so **anyone with the link can view**). |
+| `PHOTO_ALBUM_URL` | The share link of an **iCloud Shared Album** (Public Website on) or a **Google Photos shared album**. See **[photos.md](photos.md)**. |
 | `BOARD_TITLE` | Name shown in the browser and on home-screen icons. |
 | `PORT`, `BIND`, `DATA_DIR`, `BACKUP_DIR`, `SOURCE_URL` | Server details; the defaults are fine. |
 

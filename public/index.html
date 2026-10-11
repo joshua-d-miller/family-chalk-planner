@@ -1202,7 +1202,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   function loadCountdowns() { return api('/api/countdowns').then(renderCountdowns).catch(function () {}); }
 
-  // ---- Photos: polaroid in Notes + overnight slideshow, from the shared iCloud album ----
+  // ---- Photos: polaroids beside the month name + overnight slideshow, from the shared album (iCloud or Google Photos) ----
   var MONTHS3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var ph = { list: [], cfg: {}, info: {}, bag: [], frameIdx: -1, frameTimer: null, slideTimer: null, slideOn: false, preview: false, slideCur: 0 };
   function phSrc(p) { return '/api/photos/img/' + p.id; }
