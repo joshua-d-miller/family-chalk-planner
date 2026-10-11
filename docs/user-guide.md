@@ -22,9 +22,10 @@ The bottom bar on the tablet has **⚙️ Settings**, **🎨 Board style**, **�
 ### Drawing and decorating (tap **Draw**)
 - **Chalk** or **Posca** marker, color dots (rainbow **+** for any color; recent custom colors are remembered), and the dot button for size.
 - **Aa** writes typed text in a choice of fonts.
-- **Select** (dashed square): drag around anything to select it, then press and drag to move it. The bar that appears has **★ Save as stamp**, **🎨 Color** (line and fill), **Copy**, **Erase**, and **✕** to finish.
+- **Select** (dashed square): drag around anything to select it, then press and drag to move it. The bar that appears has **★ Save as stamp**, **🎨 Color** (line and fill), **− / +** (smaller / bigger), **Copy**, **Erase**, and **✕** to finish. Or drag the **pink dot** at the corner to resize freely (works on clipart, stamps, GIFs, text and drawings).
 - **★ Stamps / clipart:** your saved stamps, ~35 hand-drawn pieces, an emoji library, **Find more** (thousands of icons, with line and fill colors), and **GIFs** (your own uploads plus animated emoji). Each GIF can play **gently** (now and then), **always**, or stay **still**.
 - **Eraser**, **Undo / Redo**, and the trash can to **wipe this month's art**.
+- The drawing covers the whole board, so you can write or draw across several days ("Grandma visiting" over a week) or anywhere in the margins.
 - Art is saved per month, so each month starts fresh.
 
 ### Month title

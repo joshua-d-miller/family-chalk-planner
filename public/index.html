@@ -365,6 +365,10 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 #tPreview{margin-top:14px;min-height:80px;max-height:140px;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;white-space:pre-wrap;line-height:1.15;border:1.5px dashed rgba(201,180,122,.4);border-radius:8px;padding:6px}
 #selbar{position:absolute;z-index:7;display:none;gap:6px;padding:5px;background:#1b1b1b;border:1.5px solid var(--pink);border-radius:24px;box-shadow:0 4px 12px rgba(0,0,0,.5)}
 #selbar.on{display:flex}
+#selbar #selSmaller,#selbar #selBigger{width:38px;padding:0;justify-content:center;font-size:24px;font-family:system-ui,sans-serif}
+#selGrip{position:absolute;z-index:7;display:none;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:var(--pink);border:3px solid #1b1b1b;box-shadow:0 2px 8px rgba(0,0,0,.6);touch-action:none;cursor:nwse-resize}
+#selGrip::after{content:'';position:absolute;inset:-14px}   /* bigger target for a finger */
+#selGrip.on{display:block}
 #selbar button{height:38px;padding:0 14px;border-radius:19px;border:none;background:transparent;color:var(--chalk);font-family:'Kalam',cursive;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px}
 #selbar button.star{background:var(--pink);color:#141414}
 #lmodal,#smodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
@@ -440,9 +444,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <div id="wx" aria-hidden="true"></div>
     <div id="status"></div>
     <div id="offline" aria-live="polite"><span></span><b id="offlineTxt">Offline</b></div>
+    <div id="selGrip" aria-label="Drag to resize"></div>
     <div id="selbar">
       <button type="button" class="star" id="selSave">★ Save as stamp</button>
       <button type="button" id="selColor">🎨 Color</button>
+      <button type="button" id="selSmaller" aria-label="Make smaller">−</button>
+      <button type="button" id="selBigger" aria-label="Make bigger">+</button>
       <button type="button" id="selCopy">Copy</button>
       <button type="button" id="selErase">Erase</button>
       <button type="button" id="selDone" aria-label="Done">✕</button>
@@ -2421,13 +2428,15 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
 
   // ---- Selection ----
-  var selection = [], band = null, selMove = null;
+  var selection = [], band = null, selMove = null, selScale = null;
   function selItems() { return state.strokes.filter(function (x) { return selection.indexOf(x.id) >= 0; }); }
   function selBox() { var it = selItems(); return it.length ? unionBox(it) : null; }
   function placeSelBar() {
     if (!EDIT) return;
-    var bar = $('selbar'), b = selBox();
-    if (!b || selMove) { bar.classList.remove('on'); return; }
+    var bar = $('selbar'), b = selBox(), grip = $('selGrip');
+    if (b && !selMove) { grip.classList.add('on'); grip.style.left = Math.min(SLATE_W - 16, b.x2 + 6) + 'px'; grip.style.top = Math.min(SLATE_H - 16, b.y2 + 6) + 'px'; }
+    else if (!selScale) grip.classList.remove('on');
+    if (!b || selMove || selScale) { bar.classList.remove('on'); return; }
     bar.classList.add('on');
     var w = bar.offsetWidth || 360;
     bar.style.left = Math.max(6, Math.min(SLATE_W - w - 6, (b.x1 + b.x2) / 2 - w / 2)) + 'px';
@@ -2435,8 +2444,21 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   function setSelection(ids) {
     selection = ids.filter(function (id) { return id != null; });
-    if (!selection.length && EDIT) $('selbar').classList.remove('on');
+    if (!selection.length && EDIT) { $('selbar').classList.remove('on'); $('selGrip').classList.remove('on'); }
     redrawArt();
+  }
+  // Resize what's selected around its middle: the grip (drag) or − / + on the bar
+  var SCALE_MIN = 0.15, SCALE_MAX = 6;
+  function scaleSel(orig, k) {
+    var b = unionBox(orig), cx = (b.x1 + b.x2) / 2, cy = (b.y1 + b.y2) / 2, out = {};
+    orig.forEach(function (o) { out[o.id] = xform(o, 0, 0, k, cx, cy); });
+    state.strokes = state.strokes.map(function (x) { return out[x.id] || x; });
+  }
+  function resizeBy(k) {
+    var before = selItems().map(snap); if (!before.length) return;
+    scaleSel(before, k);
+    var after = selItems().map(snap);
+    record({ t: 'upd', before: before, after: after }); doUpdate(after); redrawArt();
   }
 
   // ---- Pointer handling (edit page only) ----
@@ -3434,7 +3456,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       if (d.ym !== state.ym) return;
       state.strokes = state.strokes.filter(function (s) { return d.ids.indexOf(s.id) < 0; });
       selection = selection.filter(function (id) { return d.ids.indexOf(id) < 0; });
-      if (EDIT && !selection.length) $('selbar').classList.remove('on');
+      if (EDIT && !selection.length) { $('selbar').classList.remove('on'); $('selGrip').classList.remove('on'); }
       if (USE_ART_SVG) svgRemove(d.ids); else redrawArt();
     });
     es.addEventListener('restore', function (m) {
@@ -3536,6 +3558,35 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     setToolExt = setTool;
     $('stampsBtn').addEventListener('click', openLibrary);
     $('selDone').addEventListener('click', function () { setSelection([]); });
+    $('selSmaller').addEventListener('click', function () { resizeBy(0.8); });
+    $('selBigger').addEventListener('click', function () { resizeBy(1.25); });
+    // drag the pink dot at the corner: farther from the middle = bigger
+    var grip = $('selGrip');
+    grip.addEventListener('pointerdown', function (e) {
+      var orig = selItems().map(snap); if (!orig.length) return;
+      var b = unionBox(orig), cx = (b.x1 + b.x2) / 2, cy = (b.y1 + b.y2) / 2, p = toBoard(e);
+      selScale = { orig: orig, cx: cx, cy: cy, d0: Math.max(10, Math.hypot(p[0] - cx, p[1] - cy)), k: 1, id: e.pointerId };
+      try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+      $('selbar').classList.remove('on');
+      e.preventDefault(); e.stopPropagation();
+    });
+    grip.addEventListener('pointermove', function (e) {
+      if (!selScale || e.pointerId !== selScale.id) return;
+      var p = toBoard(e), k = Math.hypot(p[0] - selScale.cx, p[1] - selScale.cy) / selScale.d0;
+      selScale.k = Math.max(SCALE_MIN, Math.min(SCALE_MAX, k));
+      scaleSel(selScale.orig, selScale.k);
+      redrawArt();
+      e.preventDefault(); e.stopPropagation();
+    });
+    var endScale = function (e) {
+      if (!selScale || e.pointerId !== selScale.id) return;
+      var sc = selScale; selScale = null;
+      if (Math.abs(sc.k - 1) > 0.02) { var after = selItems().map(snap); record({ t: 'upd', before: sc.orig, after: after }); doUpdate(after); }
+      else state.strokes = state.strokes.map(function (x) { var o = sc.orig.filter(function (y) { return y.id === x.id; })[0]; return o || x; });
+      redrawArt();
+    };
+    grip.addEventListener('pointerup', endScale);
+    grip.addEventListener('pointercancel', endScale);
     $('selErase').addEventListener('click', function () {
       var gone = selItems().map(snap); if (!gone.length) return;
       setSelection([]); record({ t: 'del', items: gone }); doDelete(gone);
