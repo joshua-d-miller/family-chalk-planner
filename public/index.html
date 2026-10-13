@@ -334,16 +334,29 @@ body.edit #zoom{display:flex}
   font-family:'Kalam',cursive;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 #zoom #zFit{width:auto;padding:0 14px;border-radius:22px;font-size:15px}
 #zoom #zFit:disabled{opacity:.35}
-#pinpad{position:fixed;inset:0;z-index:40;background:rgba(10,8,6,.92);display:none;align-items:center;justify-content:center}
-#pinpad.open{display:flex}
-#pinpad .card{width:min(380px,92vw);text-align:center}
-#pinpad .dots{display:flex;justify-content:center;gap:14px;margin:6px 0 4px;min-height:26px}
-#pinpad .dots span{width:18px;height:18px;border-radius:50%;border:2px solid var(--chalk)}
-#pinpad .dots span.on{background:var(--yellow);border-color:var(--yellow)}
-#pinpad .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
-#pinpad .keys button{height:66px;border-radius:33px;border:2px solid rgba(237,234,224,.35);background:transparent;color:var(--chalk);font-family:'Kalam',cursive;font-size:30px;font-weight:700;cursor:pointer}
-#pinpad .keys button:active{background:rgba(242,212,121,.2)}
-#pinpad .keys button.sm{font-size:18px}
+#pairpad{position:fixed;inset:0;z-index:90;background:rgba(10,8,6,.96);display:none;align-items:center;justify-content:center}
+#pairpad.open{display:flex}
+#pairpad .card{width:min(560px,92vw);text-align:center}
+#pairpad .ptext{font-size:18px;line-height:1.4;color:var(--chalk);margin:8px 0}
+#pairpad .ptext.dim{color:rgba(237,234,224,.6);font-size:16px}
+#pairpad .pcode{font:700 64px ui-monospace,Menlo,Consolas,monospace;letter-spacing:6px;color:var(--yellow);margin:10px 0}
+#pairpad input{width:100%;height:46px;margin:6px 0;background:transparent;border:none;border-bottom:2px dashed rgba(237,234,224,.6);color:var(--yellow);font:20px 'Kalam',cursive;outline:none;text-align:center}
+#pairpad a,#signpad a{color:var(--yellow)}
+#signpad{position:fixed;inset:0;z-index:89;background:rgba(10,8,6,.96);display:none;align-items:center;justify-content:center}
+#signpad.open{display:flex}
+#signpad .card{width:min(460px,92vw);text-align:center}
+#signpad .ptext{font-size:17px;line-height:1.4;color:var(--chalk);margin:6px 0}
+#signpad .ptext.dim{color:rgba(237,234,224,.6)}#signpad .small{font-size:14px;margin-top:14px}
+#signpad input{width:100%;height:46px;margin:5px 0;background:transparent;border:none;border-bottom:2px dashed rgba(237,234,224,.5);color:var(--yellow);font:19px 'Kalam',cursive;outline:none;text-align:center}
+#signpad .btn{margin-top:10px;min-width:200px}
+#signpad .or{display:flex;align-items:center;gap:10px;color:rgba(237,234,224,.5);margin:12px 0 2px}#signpad .or::before,#signpad .or::after{content:'';flex:1;border-top:1px solid rgba(201,180,122,.35)}
+#acctmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:21}
+#acctmodal.open{display:flex}
+#acctmodal .card{width:min(420px,92vw)}
+.acctbtns{display:flex;flex-direction:column;gap:8px;margin-top:8px}.acctbtns .seg{text-align:center;text-decoration:none;display:block}
+/* family touch screen: everything except drawing, board style, photos and settings */
+body.family #drawBtn,body.family #styleBtn,body.family #settingsBtn,body.family #photosBtn,body.family #titleBtn,body.family #acctBtn{display:none!important}
+body:not(.isadmin) #settingsBtn{display:none!important}   /* calendar and board settings: admins (signed in to the console) */
 #pinErr{color:#F7A1A1;min-height:22px;margin-top:8px;font-size:16px}
 body.edit:not(.drawing) .bar{pointer-events:auto;cursor:pointer}
 body.edit:not(.drawing) .day .ev,body.edit:not(.drawing) .day .more{cursor:pointer}
@@ -491,6 +504,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <button class="tool" id="redoBtn" aria-label="Redo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
       <button class="tool" id="clearBtn" aria-label="Wipe this month's art"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
     </div>
+    <button class="pill" id="acctBtn" aria-label="Account">👤</button>
     <button class="pill" id="settingsBtn" aria-label="Settings">⚙️</button>
     <button class="pill" id="styleBtn" aria-label="Board style">🎨</button>
     <button class="pill" id="photosBtn" aria-label="Photos">📷</button>
@@ -545,6 +559,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 <div id="setmodal" role="dialog" aria-modal="true" aria-labelledby="setTitle">
   <div class="card">
     <h3 id="setTitle">Settings</h3>
+    <a href="/admin" class="seg" id="devicesBtn" style="margin-bottom:10px;display:inline-block;text-decoration:none">🛠 Admin console: screens &amp; people</a>
     <div class="sublbl" style="margin-top:0">Calendar</div>
     <div id="calStat" class="calstat"></div>
     <div id="gConnect" hidden>
@@ -718,15 +733,54 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     </div>
   </div>
 </div>
-
-<div id="pinpad" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
+<div id="signpad" role="dialog" aria-modal="true" aria-labelledby="signTitle">
   <div class="card">
-    <h3 id="pinTitle">Enter the PIN</h3>
-    <div class="dots" id="pinDots"></div>
-    <div id="pinErr"></div>
-    <div class="keys" id="pinKeys"></div>
+    <h3 id="signTitle">Sign in to edit</h3>
+    <p class="ptext dim" id="signWhy"></p>
+    <div id="signPk" hidden>
+      <button type="button" class="btn go" id="signPkGo">Sign in with a passkey</button>
+      <div class="or">or</div>
+    </div>
+    <input type="text" id="signUser" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Username">
+    <input type="password" id="signPw" autocomplete="current-password" placeholder="Password">
+    <input type="text" id="signCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="Code from your authenticator app">
+    <button type="button" class="btn go" id="signGo">Sign in</button>
+    <div class="err" id="signErr"></div>
+    <p class="ptext dim small"><a href="/" id="signToWall">Just show the board</a> · <a href="#" id="signPair">Pair this screen</a> (wall or shared touch screen)</p>
   </div>
 </div>
+
+<div id="acctmodal" role="dialog" aria-modal="true" aria-labelledby="acctTitle">
+  <div class="card">
+    <h3 id="acctTitle">👤 <span id="acctName"></span></h3>
+    <div class="acctbtns">
+      <button type="button" class="seg" id="acctPk">🔑 Add a passkey on this device</button>
+      <a href="/admin" id="acctAdmin" class="seg">🛠 Admin console</a>
+      <button type="button" class="seg" id="acctOut">Sign out</button>
+    </div>
+    <div class="err" id="acctErr"></div>
+    <div class="actions"><button type="button" class="btn go" id="acctClose">Done</button></div>
+  </div>
+</div>
+
+<div id="pairpad" role="dialog" aria-modal="true" aria-labelledby="pairTitle">
+  <div class="card">
+    <h3 id="pairTitle">Pair this screen</h3>
+    <div id="pairWait">
+      <p class="ptext">In the admin console (<b>/admin</b> on your phone or computer) → <b>📺 Screens</b>, enter this code:</p>
+      <div class="pcode" id="pairCode">····-····</div>
+      <p class="ptext dim" id="pairNote">Waiting… (the code changes every 15 minutes)</p>
+    </div>
+    <p class="ptext dim" id="pairFirst" hidden>First time? Open <b>/admin</b> on a phone or computer to create the admin account.</p>
+    <p class="ptext dim" id="pairSignin" hidden><a href="/edit" id="pairToSignin">Sign in to edit instead</a></p>
+    <div id="pairErr" class="err"></div>
+    <div id="pairRole" hidden>
+      <p class="ptext">This screen is paired as <b id="pairRoleName"></b>, so it can only show the board. Sign in to edit.</p>
+      <button type="button" class="btn go" id="pairToWall">Show the board</button>
+    </div>
+  </div>
+</div>
+
 
 <div id="lmodal" role="dialog" aria-modal="true" aria-labelledby="lTitle">
   <div class="card">
@@ -871,13 +925,16 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   function api(path, opts) {
     opts = opts || {};
     var h = opts.headers || {}, tok = getToken();
-    if (tok) h['X-Chalk-Token'] = tok;
+    if (tok) h['X-Chalk-Token'] = tok;   // only from older PIN sign-ins: the server turns it into a paired device
+    if (opts.method && opts.method !== 'GET') h['X-Chalk'] = '1';
     opts.headers = h;
     return fetch(path, opts).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
         if (!r.ok) {
           var err = new Error(j.error || ('HTTP ' + r.status)); err.status = r.status; err.body = j;
-          if (r.status === 401 && j.pin && EDIT) showPin('Please enter the PIN again');
+          if (r.status === 401 && j.pair) { if (EDIT) showSignIn(); else showPair(); }
+          else if (r.status === 401 && j.admin) status('Settings need the admin console sign-in: open /admin');
+          else if (r.status === 401 || (r.status === 403 && j.signin)) { if (EDIT) showSignIn('Your sign-in ended - sign in again'); }
           throw err;
         }
         return j;
@@ -2178,6 +2235,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       post('/api/google/disconnect', {}).then(openSettings).catch(function (e) { $('setErr').textContent = e.message; });
     });
     if (location.hash === '#settings') setTimeout(openSettings, 600);   // back from Google's sign-in page
+
   }
 
   // Per-month options (hand-lettered title)
@@ -3292,7 +3350,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     } else renderAnim($('gQuery').value);
   }
   function rawUpload(blob) {
-    var h = { 'Content-Type': blob.type || 'application/octet-stream' }, tok = getToken();
+    var h = { 'Content-Type': blob.type || 'application/octet-stream', 'X-Chalk': '1' }, tok = getToken();
     if (tok) h['X-Chalk-Token'] = tok;
     return fetch('/api/media', { method: 'POST', headers: h, body: blob }).then(function (r) {
       return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j.src; });
@@ -3580,6 +3638,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     es.addEventListener('countdowns', function () { loadCountdowns(); });
     es.addEventListener('photos', function () { loadPhotos(); });
     es.addEventListener('theme', function (m) { state.theme = JSON.parse(m.data); if (!state.themeDraft) applyTheme(state.theme); });
+    es.addEventListener('devices', function () {
+      api('/api/whoami').then(function (w) { if (w.rank !== state.rank) location.reload(); }).catch(function () {});   // removed, or its role changed
+    });
     es.addEventListener('extras', function () { loadExtras().then(function () { if (state.lastMonth) renderMonth(state.lastMonth); }); });
     es.addEventListener('calendar', function (m) {
       var d = JSON.parse(m.data);
@@ -3866,51 +3927,89 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       .then(function () { $('evSave').disabled = false; });
   });
 
-  // ---- PIN pad (edit page only) ----
-  var pin = { len: 4, entry: '', busy: false };
-  function drawDots() {
-    var d = $('pinDots'); d.innerHTML = '';
-    for (var i = 0; i < pin.len; i++) d.appendChild(el('span', i < pin.entry.length ? 'on' : null));
+  // ---- Pairing: this device shows a code until an admin approves it ----
+  var pairing = { timer: null, shown: false };
+  function showPair() {
+    if (pairing.shown) return;
+    pairing.shown = true;
+    $('pairpad').classList.add('open');
+    $('pairWait').hidden = false; $('pairRole').hidden = true;
+    api('/api/whoami').then(function (w) { $('pairFirst').hidden = !w.firstRun; $('pairSignin').hidden = w.firstRun; }).catch(function () {});
+    var start = function () {
+      fetch('/api/pair/start', { method: 'POST', headers: { 'X-Chalk': '1' } }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (x) {
+          if (!x.ok) { $('pairErr').textContent = x.j.error || 'Can’t start pairing'; return; }
+          $('pairErr').textContent = ''; $('pairCode').textContent = x.j.code;
+        }).catch(function () { $('pairErr').textContent = 'Can’t reach the board server'; });
+    };
+    start();
+    clearInterval(pairing.timer);
+    pairing.timer = setInterval(function () {
+      fetch('/api/pair/status').then(function (r) { return r.json(); }).then(function (st) {
+        if (st.state === 'paired') { clearInterval(pairing.timer); $('pairNote').textContent = 'Paired ✓'; setTimeout(function () { location.reload(); }, 600); }
+        else if (st.state === 'expired') start();
+      }).catch(function () {});
+    }, 2500);
   }
-  function showPin(msg) {
-    pin.entry = ''; drawDots();
-    $('pinErr').textContent = msg || '';
-    $('pinpad').classList.add('open');
+  $('pairToWall').addEventListener('click', function () { location.href = '/'; });
+  // ---- Signing in (people) ----
+  function showSignIn(why) {
+    $('pairpad').classList.remove('open');
+    $('signWhy').textContent = why || '';
+    $('signPk').hidden = !(state.who && state.who.passkeys && window.chalkPasskey && window.chalkPasskey.supported);
+    $('signpad').classList.add('open');
   }
-  function pinKey(k) {
-    if (pin.busy) return;
-    if (k === 'clr') pin.entry = '';
-    else if (k === 'del') pin.entry = pin.entry.slice(0, -1);
-    else if (pin.entry.length < pin.len) pin.entry += k;
-    drawDots();
-    if (pin.entry.length === pin.len) {
-      pin.busy = true;
-      fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: pin.entry }) })
-        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-        .then(function (res) {
-          if (res.ok && res.j.token) { setToken(res.j.token); $('pinpad').classList.remove('open'); status(''); }
-          else { $('pinErr').textContent = res.j.error || 'That PIN didn’t work'; pin.entry = ''; drawDots(); }
-        })
-        .catch(function () { $('pinErr').textContent = 'Can’t reach the board server'; pin.entry = ''; drawDots(); })
-        .then(function () { pin.busy = false; });
+  $('signPkGo').addEventListener('click', function () {
+    $('signErr').textContent = ''; $('signPkGo').disabled = true;
+    window.chalkPasskey.signIn('edit').then(function () { location.reload(); })
+      .catch(function (e) { $('signErr').textContent = e.message; }).then(function () { $('signPkGo').disabled = false; });
+  });
+  $('signGo').addEventListener('click', function () {
+    $('signErr').textContent = ''; $('signGo').disabled = true;
+    post('/api/account/login', { username: $('signUser').value, password: $('signPw').value, code: $('signCode').value, kind: 'edit' })
+      .then(function () { location.reload(); })
+      .catch(function (e) { $('signErr').textContent = e.message; $('signCode').value = ''; }).then(function () { $('signGo').disabled = false; });
+  });
+  $('signCode').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('signGo').click(); });
+  $('signPair').addEventListener('click', function (e) { e.preventDefault(); $('signpad').classList.remove('open'); location.href = '/?pair'; });
+  // 👤 account menu (signed-in people)
+  $('acctBtn').addEventListener('click', function () {
+    var w = state.who || {};
+    $('acctName').textContent = w.user ? w.user.name : '';
+    $('acctPk').hidden = !(w.passkeys && window.chalkPasskey && window.chalkPasskey.supported);
+    $('acctAdmin').hidden = !(w.user && w.user.role === 'admin');
+    $('acctErr').textContent = '';
+    $('acctmodal').classList.add('open');
+  });
+  $('acctClose').addEventListener('click', function () { $('acctmodal').classList.remove('open'); });
+  $('acctPk').addEventListener('click', function () {
+    $('acctPk').disabled = true;
+    window.chalkPasskey.register().then(function () { $('acctErr').textContent = ''; $('acctPk').textContent = '🔑 Passkey added ✓'; })
+      .catch(function (e) {
+        if (e.status === 401) { $('acctmodal').classList.remove('open'); showSignIn('For safety, sign in again, then add the passkey (👤 → Add a passkey).'); }
+        else $('acctErr').textContent = e.message;
+      }).then(function () { $('acctPk').disabled = false; });
+  });
+  $('acctOut').addEventListener('click', function () { post('/api/account/logout', {}).then(function () { location.reload(); }); });
+
+  // Who is this? A paired screen (view / family), a signed-in person (editor / admin), or nobody yet.
+  state.role = null;
+  var whoReady = api('/api/whoami').then(function (w) {
+    state.who = w; state.rank = w.rank;
+    state.role = w.editor ? 'editor' : w.device ? w.device.role : null;
+    if (w.admin) document.body.classList.add('isadmin');
+    if (!EDIT) {
+      if (Q.has('pair') && !w.device) { showPair(); return w; }
+      if (!w.rank) { if (w.firstRun) location.replace('/admin'); else showPair(); return w; }
+      if (state.role === 'family') location.replace('/edit');   // a family screen edits right on the board
+      return w;
     }
-  }
-  if (EDIT) {
-    ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clr', '0', 'del'].forEach(function (k) {
-      var b = el('button', k.length > 1 ? 'sm' : null, k === 'clr' ? 'Clear' : k === 'del' ? '⌫' : k);
-      b.type = 'button';
-      b.addEventListener('click', function () { pinKey(k); });
-      $('pinKeys').appendChild(b);
-    });
-    document.addEventListener('keydown', function (e) {
-      if (!$('pinpad').classList.contains('open')) return;
-      if (/^\d$/.test(e.key)) pinKey(e.key); else if (e.key === 'Backspace') pinKey('del');
-    });
-    api('/api/auth').then(function (a) {
-      pin.len = a.length || 4;
-      if (a.required && !a.ok) showPin();
-    }).catch(function () {});
-  }
+    if (w.editor) return w;   // full editor
+    if (state.role === 'family') { document.body.classList.add('family'); return w; }
+    if (w.firstRun) { location.replace('/admin'); return w; }
+    showSignIn(state.role === 'view' ? 'This screen is paired to show the board only. Sign in to edit.' : '');
+    return w;
+  }).catch(function () { return {}; });
 
   // ---- Start, and keep fresh -----------------------------------------------------
   api('/api/today').then(function (t) {
@@ -3936,5 +4035,6 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   setInterval(loadExtras, 10 * 60 * 1000);
 })();
 </script>
+<script src="/passkey.js"></script>
 </body>
 </html>

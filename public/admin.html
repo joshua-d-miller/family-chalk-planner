@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Admin console</title>
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#191917;--card:#22221f;--line:rgba(201,180,122,.4);--chalk:#EDEAE0;--dim:rgba(237,234,224,.62);--pink:#F6B3CB;--yellow:#F2D479;--green:#A9D8A0;--red:#F7A1A1}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--chalk);font:17px/1.45 'Kalam',system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:22px 16px 60px}
+h1{font:700 40px/1.1 'Dancing Script',cursive;color:var(--pink);margin:6px 0 4px}
+h2{font:700 26px/1.2 'Dancing Script',cursive;color:var(--pink);margin:0 0 8px}
+.sub{color:var(--dim);margin:0 0 18px}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:18px;margin:14px 0}
+label{display:block;font-size:14px;color:var(--dim);margin:10px 0 2px}
+input,select{width:100%;height:44px;padding:0 12px;border-radius:10px;border:1.5px solid var(--line);background:#141412;color:var(--chalk);font:17px 'Kalam',system-ui,sans-serif}
+input:focus,select:focus{outline:2px solid var(--yellow);outline-offset:1px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1 1 180px}
+button{height:44px;padding:0 18px;border-radius:22px;border:1.5px solid var(--line);background:transparent;color:var(--chalk);font:700 16px 'Kalam',system-ui,sans-serif;cursor:pointer}
+button.go{background:var(--yellow);border-color:var(--yellow);color:#191917}
+button.pk{background:var(--pink);border-color:var(--pink);color:#191917}
+button.del{border-color:rgba(247,161,161,.6);color:var(--red)}
+button.sm{height:34px;padding:0 12px;font-size:14px}
+button:disabled{opacity:.5;cursor:default}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center}
+.err{color:var(--red);min-height:22px;margin-top:8px}
+.ok{color:var(--green)}
+.dim{color:var(--dim)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}
+.tabs button.on{background:rgba(242,212,121,.18);border-color:var(--yellow);color:var(--yellow)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.item{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px}
+.item .line{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.item .line input{flex:1 1 160px;height:38px}
+.item .line select{flex:0 0 150px;height:38px}
+.item .meta{font-size:13px;color:var(--dim);margin-top:4px}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.seg button.on{background:rgba(242,212,121,.18);border-color:var(--yellow);color:var(--yellow)}
+.qr{background:#fff;border-radius:12px;padding:10px;width:220px;max-width:70vw;margin:10px auto}
+.qr svg{display:block;width:100%;height:auto}
+.secret{font:16px ui-monospace,Menlo,Consolas,monospace;letter-spacing:1px;text-align:center;word-break:break-all;color:var(--yellow)}
+.link{font:14px ui-monospace,Menlo,Consolas,monospace;word-break:break-all;background:#141412;border-radius:10px;padding:10px;margin-top:8px;color:var(--yellow)}
+.badge{display:inline-block;min-width:20px;height:20px;line-height:20px;border-radius:10px;background:var(--red);color:#191917;font-size:12px;padding:0 6px;margin-left:4px}
+.alert{border-left:4px solid var(--yellow)}.alert.alert-alert{border-left-color:var(--red)}.alert.alert-info{border-left-color:rgba(237,234,224,.35)}
+.sub-list{margin-top:8px;padding-top:6px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:6px}
+.sub-item{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}.sub-item .grow{flex:1 1 220px}
+.here{color:var(--green);font-weight:700}
+.log{font-size:14px}.log .item{padding:8px 10px}.log .when{color:var(--dim);font-size:13px}
+.ev{display:inline-block;border-radius:8px;padding:0 7px;background:rgba(237,234,224,.08);font-size:12px;margin-right:4px}
+.ev.bad{background:rgba(247,161,161,.2);color:var(--red)}.ev.good{background:rgba(169,216,160,.15);color:var(--green)}
+.nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.or{display:flex;align-items:center;gap:10px;color:var(--dim);margin:14px 0 2px}.or::before,.or::after{content:'';flex:1;border-top:1px solid var(--line)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">Admin console</h1>
+  <p class="sub" id="subtitle"></p>
+
+  <!-- first run: create the admin -->
+  <section class="card" id="vSetup" hidden>
+    <h2>Create the admin account</h2>
+    <p class="dim">Enter the setup code from the server (in the install output, the log, or <code>data/setup-code.txt</code>), then choose your sign-in.</p>
+    <label for="suCode">Setup code</label><input id="suCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD-EFGH">
+    <div class="row">
+      <div><label for="suUser">Username</label><input id="suUser" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+      <div><label for="suName">Your name</label><input id="suName" autocomplete="name"></div>
+    </div>
+    <div class="row">
+      <div><label for="suPw">Password (10+ characters)</label><input id="suPw" type="password" autocomplete="new-password"></div>
+      <div><label for="suPw2">Password again</label><input id="suPw2" type="password" autocomplete="new-password"></div>
+    </div>
+    <div class="actions"><button class="go" id="suGo">Next: authenticator app</button></div>
+    <div class="err" id="suErr"></div>
+  </section>
+
+  <!-- invite link -->
+  <section class="card" id="vJoin" hidden>
+    <h2 id="joinTitle">Welcome!</h2>
+    <p class="dim" id="joinText"></p>
+    <div class="row">
+      <div><label for="joPw">Choose a password (10+ characters)</label><input id="joPw" type="password" autocomplete="new-password"></div>
+      <div><label for="joPw2">Password again</label><input id="joPw2" type="password" autocomplete="new-password"></div>
+    </div>
+    <div class="actions"><button class="go" id="joGo">Next: authenticator app</button></div>
+    <div class="err" id="joErr"></div>
+  </section>
+
+  <!-- authenticator app (setup, invite, or moving to a new phone) -->
+  <section class="card" id="vEnroll" hidden>
+    <h2>Add the board to your authenticator app</h2>
+    <p class="dim">In Google Authenticator, Microsoft Authenticator, 1Password, Authy or similar: add an account and scan this code (or type the key below). Then enter the 6-digit code it shows.</p>
+    <div class="qr" id="enQr"></div>
+    <div class="secret" id="enSecret"></div>
+    <label for="enCode">6-digit code</label><input id="enCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7">
+    <div class="actions"><button class="go" id="enGo">Finish</button></div>
+    <div class="err" id="enErr"></div>
+  </section>
+
+  <!-- offer a passkey right after joining -->
+  <section class="card" id="vOfferPk" hidden>
+    <h2>You’re in ✓</h2>
+    <p class="dim" id="offerText">Next time, sign in with Face ID, Touch ID or your fingerprint instead of typing codes: add a passkey on this device.</p>
+    <div class="actions">
+      <button class="pk" id="offerPk">Add a passkey on this device</button>
+      <button id="offerSkip">Not now</button>
+    </div>
+    <div class="err" id="offerErr"></div>
+  </section>
+
+  <!-- sign in -->
+  <section class="card" id="vLogin" hidden>
+    <h2>Sign in</h2>
+    <p class="dim" id="loginWhy">The admin console asks for a fresh sign-in.</p>
+    <div id="loginPk" hidden>
+      <div class="actions"><button class="pk" id="pkGo">Sign in with a passkey</button></div>
+      <div class="or">or</div>
+    </div>
+    <div class="row">
+      <div><label for="liUser">Username</label><input id="liUser" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+      <div><label for="liPw">Password</label><input id="liPw" type="password" autocomplete="current-password"></div>
+    </div>
+    <label for="liCode">Code from your authenticator app</label><input id="liCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7">
+    <div class="actions"><button class="go" id="liGo">Sign in</button><a class="dim" href="/edit">Back to the board</a></div>
+    <div class="err" id="liErr"></div>
+    <p class="dim" style="font-size:14px;margin-top:14px">Can’t sign in at all? Another admin can send you a new invite link. If there’s no other admin, run <code>deploy/reset-admin.sh</code> on the server: it removes every account and paired screen and prints a new setup code.</p>
+  </section>
+
+  <!-- the console -->
+  <section id="vConsole" hidden>
+    <div class="top">
+      <div class="tabs" id="tabs">
+        <button data-t="screens" class="on">📺 Screens</button>
+        <button data-t="people">👪 People</button>
+        <button data-t="security">🛡 Security <span id="secBadge" class="badge" hidden></span></button>
+        <button data-t="account">👤 My account</button>
+      </div>
+      <div class="actions" style="margin:0">
+        <a href="/edit#settings"><button class="sm">⚙️ Board settings</button></a>
+        <button class="sm" id="logout">Sign out</button>
+      </div>
+    </div>
+
+    <div id="tScreens">
+      <div class="card">
+        <h2>Pair a screen</h2>
+        <p class="dim">Open the board on the screen (wall display, touch screen, spare tablet). It shows a code: type it here.</p>
+        <div class="row">
+          <div><label for="dvCode">Code on the screen</label><input id="dvCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD-EFGH"></div>
+          <div><label for="dvName">Name</label><input id="dvName" autocomplete="off" placeholder="Kitchen wall"></div>
+        </div>
+        <div class="seg" id="dvRole">
+          <button data-r="view" class="on">👀 View only</button>
+          <button data-r="family">✋ Family</button>
+        </div>
+        <p class="dim" id="dvHelp"></p>
+        <div class="actions"><button class="go" id="dvGo">Pair it</button></div>
+        <div class="err" id="dvErr"></div>
+        <div id="dvWaiting"></div>
+      </div>
+      <div class="card"><h2>Paired screens</h2><div class="list" id="dvList"></div></div>
+    </div>
+
+    <div id="tPeople" hidden>
+      <div class="card">
+        <h2>Invite someone</h2>
+        <p class="dim">They get a link to choose a password, set up an authenticator app, and add a passkey. Send it to them yourself (text or email); it works once, for 3 days.</p>
+        <div class="row">
+          <div><label for="ivUser">Username</label><input id="ivUser" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="tarin"></div>
+          <div><label for="ivName">Name</label><input id="ivName" autocomplete="off" placeholder="Tarin"></div>
+        </div>
+        <div class="seg" id="ivRole">
+          <button data-r="editor" class="on">🎨 Editor</button>
+          <button data-r="admin">🔑 Admin</button>
+        </div>
+        <p class="dim" id="ivHelp"></p>
+        <div class="actions"><button class="go" id="ivGo">Make invite link</button></div>
+        <div class="err" id="ivErr"></div>
+        <div id="ivOut" hidden><div class="link" id="ivLink"></div><div class="actions"><button class="sm" id="ivCopy">Copy link</button></div></div>
+      </div>
+      <div class="card"><h2>People</h2><div class="list" id="ppList"></div></div>
+    </div>
+
+    <div id="tSecurity" hidden>
+      <div class="card">
+        <h2>Needs a look</h2>
+        <div class="list" id="secAlerts"></div>
+      </div>
+      <div class="card">
+        <h2>Automatic cleanup</h2>
+        <p class="dim">Set a number to 0 to turn that rule off.</p>
+        <div class="nums">
+          <div><label for="sfIdle">Tablets sign in again after this many days unused</label><input id="sfIdle" type="number" min="1" data-k="signinIdleDays"></div>
+          <div><label for="sfMax">…and at the latest every this many days (0 = never)</label><input id="sfMax" type="number" min="0" data-k="signinMaxDays"></div>
+          <div><label for="sfScreenFlag">Flag screens not seen for (days)</label><input id="sfScreenFlag" type="number" min="0" data-k="screenFlagDays"></div>
+          <div><label for="sfScreenRemove">Remove screens not seen for (days; 0 = never)</label><input id="sfScreenRemove" type="number" min="0" data-k="screenRemoveDays"></div>
+          <div><label for="sfPasskey">Flag passkeys unused for (days)</label><input id="sfPasskey" type="number" min="0" data-k="passkeyFlagDays"></div>
+          <div><label for="sfPerson">Flag people not signed in for (days)</label><input id="sfPerson" type="number" min="0" data-k="personFlagDays"></div>
+          <div><label for="sfLog">Keep the activity log (days)</label><input id="sfLog" type="number" min="7" data-k="logDays"></div>
+        </div>
+        <p class="dim" style="font-size:14px">Always automatic: admin console sign-ins end after 30 quiet minutes (12 hours at most); invite links end after 3 days; paired screens stay paired for good until you remove them (unless you set an automatic limit above); and people who never finished their invite are removed when it expires.</p>
+        <div class="actions"><button class="go" id="sfSave">Save</button><span class="ok" id="sfOk"></span></div>
+        <div class="err" id="sfErr"></div>
+      </div>
+      <div class="card">
+        <div class="top"><h2 style="margin:0">Activity</h2>
+          <select id="logFilter" style="width:auto;height:36px">
+            <option value="">Everything</option><option value="signin">Sign-ins</option><option value="signin.failed">Failed sign-ins</option>
+            <option value="screen">Screens</option><option value="person">People</option><option value="passkey">Passkeys</option><option value="other">Settings &amp; resets</option>
+          </select></div>
+        <div class="list log" id="secLog"></div>
+      </div>
+    </div>
+
+    <div id="tAccount" hidden>
+      <div class="card">
+        <h2>Passkeys</h2>
+        <p class="dim" id="pkWhy"></p>
+        <div class="list" id="pkList"></div>
+        <div class="actions"><button class="pk" id="pkAdd">Add a passkey on this device</button></div>
+        <div class="err" id="pkErr"></div>
+      </div>
+      <div class="card">
+        <h2>Where you’re signed in</h2>
+        <div class="list" id="mySess"></div>
+        <div class="err" id="mySessErr"></div>
+      </div>
+      <div class="card">
+        <h2>Password</h2>
+        <div class="row">
+          <div><label for="cpCur">Current password</label><input id="cpCur" type="password" autocomplete="current-password"></div>
+          <div><label for="cpNew">New password (10+ characters)</label><input id="cpNew" type="password" autocomplete="new-password"></div>
+        </div>
+        <div class="actions"><button class="go" id="cpGo">Change password</button><span class="ok" id="cpOk"></span></div>
+        <div class="err" id="cpErr"></div>
+      </div>
+      <div class="card">
+        <h2>Authenticator app</h2>
+        <p class="dim">New phone? Move your codes to a new authenticator app. Other sign-ins end when you finish.</p>
+        <label for="taPw">Your password</label><input id="taPw" type="password" autocomplete="current-password">
+        <div class="actions"><button id="taGo">Set up a new authenticator</button></div>
+        <div class="err" id="taErr"></div>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="/passkey.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function api(path, body) {
+    var opts = body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' }, body: JSON.stringify(body) };
+    return fetch(path, opts).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) { var e = new Error(j.error || ('HTTP ' + r.status)); e.status = r.status; e.body = j; if (r.status === 401 && j.admin) showLogin('The admin console asks for a fresh sign-in after 30 quiet minutes.'); throw e; }
+        return j;
+      });
+    });
+  }
+  var who = {}, VIEWS = ['vSetup', 'vJoin', 'vEnroll', 'vOfferPk', 'vLogin', 'vConsole'];
+  function show(v) { VIEWS.forEach(function (x) { $(x).hidden = x !== v; }); window.scrollTo(0, 0); }
+  var ago = function (t) { if (!t) return 'never'; var m = Math.round((Date.now() - t) / 60000); return m < 2 ? 'just now' : m < 60 ? m + ' min ago' : m < 2880 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' days ago'; };
+  var pkReady = function () { return who.passkeys && window.chalkPasskey && window.chalkPasskey.supported; };
+  function busy(btn, p) { btn.disabled = true; return p.then(function (x) { btn.disabled = false; return x; }, function (e) { btn.disabled = false; throw e; }); }
+
+  // ---- authenticator enrollment (shared by setup, invites and "new phone") ----
+  var enrollTok = null, afterEnroll = null;
+  function showEnroll(r, then) {
+    enrollTok = r.enroll; afterEnroll = then;
+    $('enQr').innerHTML = r.qr;   // server-made SVG
+    $('enSecret').textContent = r.secret; $('enCode').value = ''; $('enErr').textContent = '';
+    show('vEnroll'); setTimeout(function () { $('enCode').focus(); }, 100);
+  }
+  $('enGo').addEventListener('click', function () {
+    busy($('enGo'), api('/api/account/enroll', { enroll: enrollTok, code: $('enCode').value }))
+      .then(function (r) { afterEnroll && afterEnroll(r); })
+      .catch(function (e) { $('enErr').textContent = e.message; });
+  });
+  $('enCode').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('enGo').click(); });
+  function offerPasskey(next, text) {
+    if (!pkReady()) return next();
+    if (text) $('offerText').textContent = text;
+    show('vOfferPk');
+    $('offerPk').onclick = function () {
+      busy($('offerPk'), window.chalkPasskey.register()).then(next).catch(function (e) { $('offerErr').textContent = e.message; });
+    };
+    $('offerSkip').onclick = next;
+  }
+
+  // ---- first run ----
+  $('suGo').addEventListener('click', function () {
+    if ($('suPw').value !== $('suPw2').value) { $('suErr').textContent = 'The two passwords don’t match'; return; }
+    busy($('suGo'), api('/api/account/setup', { code: $('suCode').value, username: $('suUser').value, name: $('suName').value, password: $('suPw').value }))
+      .then(function (r) { showEnroll(r, function () { refresh().then(function () { offerPasskey(openConsole); }); }); })
+      .catch(function (e) { $('suErr').textContent = e.message; });
+  });
+
+  // ---- invite link: /join#code ----
+  var inviteCode = location.pathname === '/join' ? location.hash.slice(1) : '';
+  $('joGo').addEventListener('click', function () {
+    if ($('joPw').value !== $('joPw2').value) { $('joErr').textContent = 'The two passwords don’t match'; return; }
+    busy($('joGo'), api('/api/account/join', { invite: inviteCode, password: $('joPw').value }))
+      .then(function (r) {
+        showEnroll(r, function (done) {
+          refresh().then(function () {
+            offerPasskey(function () { location.href = done.role === 'admin' ? '/admin' : '/edit'; }, 'On this tablet or phone, sign in to the board with Face ID, Touch ID or your fingerprint next time: add a passkey now.');
+          });
+        });
+      })
+      .catch(function (e) { $('joErr').textContent = e.message; });
+  });
+
+  // ---- sign in ----
+  function showLogin(why) {
+    if (why) $('loginWhy').textContent = why;
+    $('loginPk').hidden = !pkReady();
+    $('liErr').textContent = ''; $('liCode').value = '';
+    show('vLogin');
+  }
+  $('pkGo').addEventListener('click', function () {
+    busy($('pkGo'), window.chalkPasskey.signIn('admin')).then(function () { refresh().then(openConsole); }).catch(function (e) { $('liErr').textContent = e.message; });
+  });
+  $('liGo').addEventListener('click', function () {
+    busy($('liGo'), api('/api/account/login', { username: $('liUser').value, password: $('liPw').value, code: $('liCode').value, kind: 'admin' }))
+      .then(function () { $('liPw').value = ''; refresh().then(openConsole); })
+      .catch(function (e) { $('liErr').textContent = e.message; });
+  });
+  $('liCode').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('liGo').click(); });
+  $('logout').addEventListener('click', function () { api('/api/account/logout', {}).then(function () { location.href = '/admin'; }); });
+
+  // ---- console ----
+  function tab(t) {
+    Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.classList.toggle('on', b.dataset.t === t); });
+    $('tScreens').hidden = t !== 'screens'; $('tPeople').hidden = t !== 'people'; $('tAccount').hidden = t !== 'account'; $('tSecurity').hidden = t !== 'security';
+    if (t === 'screens') loadScreens(); else if (t === 'people') loadPeople(); else if (t === 'security') loadSecurity(); else loadAccount();
+    try { history.replaceState(null, '', '/admin#' + t); } catch (e) {}
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.addEventListener('click', function () { tab(b.dataset.t); }); });
+  window.addEventListener('hashchange', function () {   // links like /admin#security
+    var t = location.hash.slice(1);
+    if (!$('vConsole').hidden && ['screens', 'people', 'security', 'account'].indexOf(t) >= 0) tab(t);
+  });
+  function openConsole() {
+    $('subtitle').textContent = 'Signed in as ' + (who.user ? who.user.name + ' (' + who.user.username + ')' : '');
+    show('vConsole');
+    var t = location.hash.slice(1);
+    tab(['screens', 'people', 'security', 'account'].indexOf(t) >= 0 ? t : 'screens');
+    loadBadge();
+  }
+  function segs(id, help, texts) {
+    var state = { v: document.querySelector('#' + id + ' button.on').dataset.r };
+    var draw = function () { Array.prototype.forEach.call(document.querySelectorAll('#' + id + ' button'), function (b) { b.classList.toggle('on', b.dataset.r === state.v); }); $(help).textContent = texts[state.v]; };
+    Array.prototype.forEach.call(document.querySelectorAll('#' + id + ' button'), function (b) { b.addEventListener('click', function () { state.v = b.dataset.r; draw(); }); });
+    draw();
+    return state;
+  }
+  var SCREEN_ROLES = { view: '👀 View only', family: '✋ Family' };
+  var dvRole = segs('dvRole', 'dvHelp', { view: 'Shows the board. Nothing can be changed on it (a wall display).', family: 'Shows the board and can add or change events, the meal plan, reward jars and countdowns. No drawing or settings (a shared touch screen).' });
+  var PEOPLE_ROLES = { editor: '🎨 Editor', admin: '🔑 Admin' };
+  var ivRole = segs('ivRole', 'ivHelp', { editor: 'Can do everything on the board: events, drawing, board style, photos.', admin: 'Editor, plus this console: screens, people, calendar and board settings.' });
+
+  function loadScreens() {
+    return api('/api/devices').then(function (d) {
+      var w = $('dvWaiting'); w.innerHTML = '';
+      d.waiting.forEach(function (p) { w.appendChild(el('p', 'dim', '⏳ ' + p.agent + ' is showing a code (' + ago(p.created) + ') - type it above.')); });
+      var list = $('dvList'); list.innerHTML = '';
+      if (!d.devices.length) list.appendChild(el('p', 'dim', 'No screens paired yet.'));
+      d.devices.forEach(function (x) {
+        var it = el('div', 'item'), line = el('div', 'line');
+        var nm = el('input'); nm.value = x.name; nm.setAttribute('aria-label', 'Screen name');
+        nm.addEventListener('change', function () { api('/api/devices/update', { id: x.id, name: nm.value }).catch(function (e) { $('dvErr').textContent = e.message; }); });
+        var sel = el('select'); sel.setAttribute('aria-label', 'What it may do');
+        Object.keys(SCREEN_ROLES).forEach(function (r) { var o = el('option', null, SCREEN_ROLES[r]); o.value = r; sel.appendChild(o); });
+        sel.value = x.role;
+        sel.addEventListener('change', function () { api('/api/devices/update', { id: x.id, role: sel.value }).catch(function (e) { $('dvErr').textContent = e.message; sel.value = x.role; }); });
+        var rm = el('button', 'sm del', 'Remove');
+        rm.addEventListener('click', function () { if (confirm('Remove “' + x.name + '”? It stops showing the board until it’s paired again.')) api('/api/devices/remove', { id: x.id }).then(loadScreens).catch(function (e) { $('dvErr').textContent = e.message; }); });
+        line.appendChild(nm); line.appendChild(sel); line.appendChild(rm); it.appendChild(line);
+        it.appendChild(el('div', 'meta', x.agent + ' · paired ' + new Date(x.created).toLocaleDateString() + ' · last seen ' + ago(x.last_seen)));
+        list.appendChild(it);
+      });
+    }).catch(function (e) { if (!(e.body && e.body.admin)) $('dvErr').textContent = e.message; });
+  }
+  $('dvGo').addEventListener('click', function () {
+    $('dvErr').textContent = '';
+    busy($('dvGo'), api('/api/devices/approve', { code: $('dvCode').value, name: $('dvName').value, role: dvRole.v }))
+      .then(function () { $('dvCode').value = ''; $('dvName').value = ''; loadScreens(); })
+      .catch(function (e) { $('dvErr').textContent = e.message; });
+  });
+  setInterval(function () { if (!$('vConsole').hidden && !$('tScreens').hidden) loadScreens(); }, 10000);
+
+  function loadPeople() {
+    return api('/api/users').then(function (d) {
+      var list = $('ppList'); list.innerHTML = '';
+      d.users.forEach(function (u) {
+        var it = el('div', 'item'), line = el('div', 'line');
+        var nm = el('input'); nm.value = u.name; nm.setAttribute('aria-label', 'Name');
+        nm.addEventListener('change', function () { api('/api/users/update', { id: u.id, name: nm.value }).catch(function (e) { $('ivErr').textContent = e.message; }); });
+        var sel = el('select'); sel.setAttribute('aria-label', 'Role');
+        Object.keys(PEOPLE_ROLES).forEach(function (r) { var o = el('option', null, PEOPLE_ROLES[r]); o.value = r; sel.appendChild(o); });
+        sel.value = u.role;
+        sel.addEventListener('change', function () { api('/api/users/update', { id: u.id, role: sel.value }).catch(function (e) { $('ivErr').textContent = e.message; sel.value = u.role; }); });
+        line.appendChild(nm); line.appendChild(sel); it.appendChild(line);
+        var status = !u.totp_ok ? (u.invited ? 'invite sent, not set up yet' : 'not set up') : (u.passkeys ? u.passkeys + ' passkey' + (u.passkeys > 1 ? 's' : '') : 'no passkeys') + ' · signed in on ' + u.signedIn + ' device' + (u.signedIn === 1 ? '' : 's') + ' · last sign-in ' + ago(u.last_login);
+        it.appendChild(el('div', 'meta', '@' + u.username + (u.id === d.me ? ' (you)' : '') + ' · ' + status));
+        var acts = el('div', 'actions');
+        if (u.id !== d.me) {
+          var so = el('button', 'sm', 'Sign out everywhere'); so.hidden = !u.totp_ok;
+          so.addEventListener('click', function () { api('/api/users/signout', { id: u.id }).then(loadPeople).catch(function (e) { $('ivErr').textContent = e.message; }); });
+          var ri = el('button', 'sm', 'New invite link');
+          ri.title = 'Forgot their password or lost their phone: clears their password, authenticator and passkeys and makes a new link';
+          ri.addEventListener('click', function () {
+            if (!confirm('Start over for ' + u.name + '? Their password, authenticator and passkeys are cleared and they get a new invite link.')) return;
+            api('/api/users/reinvite', { id: u.id }).then(function (r) { showLink(r.link); loadPeople(); }).catch(function (e) { $('ivErr').textContent = e.message; });
+          });
+          var rm = el('button', 'sm del', 'Remove');
+          rm.addEventListener('click', function () { if (confirm('Remove ' + u.name + '? They’re signed out everywhere.')) api('/api/users/remove', { id: u.id }).then(loadPeople).catch(function (e) { $('ivErr').textContent = e.message; }); });
+          acts.appendChild(so); acts.appendChild(ri); acts.appendChild(rm);
+        }
+        if (u.totp_ok) {
+          var more = el('button', 'sm', 'Sign-ins & passkeys ▾'), box = el('div', 'sub-list'); box.hidden = true;
+          more.addEventListener('click', function () { box.hidden = !box.hidden; if (!box.hidden) loadPersonDetail(u, box); });
+          acts.insertBefore(more, acts.firstChild);
+          it.appendChild(acts); it.appendChild(box);
+        } else it.appendChild(acts);
+        list.appendChild(it);
+      });
+    }).catch(function (e) { if (!(e.body && e.body.admin)) $('ivErr').textContent = e.message; });
+  }
+  var KIND = { edit: 'board', admin: 'admin console' };
+  function sessLine(sx, onEnd) {
+    var row = el('div', 'sub-item');
+    row.appendChild(el('span', 'grow', '💻 ' + sx.agent + ' · ' + KIND[sx.kind] + ' · from ' + (sx.ip || '?') + ' · signed in ' + new Date(sx.created).toLocaleDateString() + ' · last active ' + ago(sx.last_seen) + ' · ends ' + new Date(sx.expires).toLocaleDateString()));
+    if (sx.here) row.appendChild(el('span', 'here', 'this device'));
+    var b = el('button', 'sm del', sx.here ? 'Sign out here' : 'End this sign-in'); b.addEventListener('click', function () { onEnd(sx); }); row.appendChild(b);
+    return row;
+  }
+  function loadPersonDetail(u, box) {
+    box.innerHTML = ''; box.appendChild(el('div', 'dim', 'Loading…'));
+    api('/api/users/' + encodeURIComponent(u.id)).then(function (d) {
+      box.innerHTML = '';
+      box.appendChild(el('div', 'dim', 'Signed in on:'));
+      if (!d.sessions.length) box.appendChild(el('div', 'dim', '— nowhere right now'));
+      d.sessions.forEach(function (sx) {
+        box.appendChild(sessLine(sx, function () { api('/api/users/sessions/remove', { id: sx.id }).then(function () { if (sx.here) location.reload(); else loadPersonDetail(u, box); loadPeople(); }); }));
+      });
+      box.appendChild(el('div', 'dim', 'Passkeys:'));
+      if (!d.passkeys.length) box.appendChild(el('div', 'dim', '— none'));
+      d.passkeys.forEach(function (p) {
+        var row = el('div', 'sub-item');
+        row.appendChild(el('span', 'grow', '🔑 ' + (p.name || 'Passkey') + ' · added ' + new Date(p.created).toLocaleDateString() + ' · last used ' + ago(p.last_used)));
+        var b = el('button', 'sm del', 'Remove'); b.addEventListener('click', function () { if (confirm('Remove passkey “' + p.name + '” of ' + u.name + '?')) api('/api/users/passkeys/remove', { id: p.id }).then(function () { loadPersonDetail(u, box); }); });
+        row.appendChild(b); box.appendChild(row);
+      });
+    }).catch(function (e) { box.innerHTML = ''; box.appendChild(el('div', 'err', e.message)); });
+  }
+  function showLink(link) { $('ivOut').hidden = false; $('ivLink').textContent = link; }
+  $('ivGo').addEventListener('click', function () {
+    $('ivErr').textContent = '';
+    busy($('ivGo'), api('/api/users/invite', { username: $('ivUser').value, name: $('ivName').value, role: ivRole.v }))
+      .then(function (r) { showLink(r.link); $('ivUser').value = ''; $('ivName').value = ''; loadPeople(); })
+      .catch(function (e) { $('ivErr').textContent = e.message; });
+  });
+  $('ivCopy').addEventListener('click', function () {
+    var t = $('ivLink').textContent;
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { $('ivCopy').textContent = 'Copied ✓'; setTimeout(function () { $('ivCopy').textContent = 'Copy link'; }, 2000); })
+      .catch(function () { var r = document.createRange(); r.selectNodeContents($('ivLink')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); });
+  });
+
+  function loadMySessions() {
+    return api('/api/account/sessions').then(function (d) {
+      var box = $('mySess'); box.innerHTML = '';
+      d.sessions.forEach(function (sx) {
+        box.appendChild(sessLine(sx, function () { api('/api/account/sessions/remove', { id: sx.id }).then(function () { if (sx.here) location.reload(); else loadMySessions(); }).catch(function (e) { $('mySessErr').textContent = e.message; }); }));
+      });
+    }).catch(function () {});
+  }
+  function loadAccount() {
+    loadMySessions();
+    return api('/api/account/me').then(function (m) {
+      $('pkWhy').textContent = m.passkeysHere && pkReady() ? 'Sign in with Face ID, Touch ID, your fingerprint or Windows Hello. Add one on each phone, tablet or computer you use.'
+        : who.publicUrl ? 'Passkeys work when you open the board at ' + who.publicUrl + '.' : 'Passkeys need the board’s https:// address in PUBLIC_URL (see the install guide). Until then, sign in with your password and authenticator code.';
+      $('pkAdd').hidden = !(m.passkeysHere && pkReady());
+      var list = $('pkList'); list.innerHTML = '';
+      m.passkeys.forEach(function (p) {
+        var it = el('div', 'item'), line = el('div', 'line');
+        line.appendChild(el('span', null, '🔑 ' + (p.name || 'Passkey')));
+        var rm = el('button', 'sm del', 'Remove');
+        rm.addEventListener('click', function () {
+          if (!confirm('Remove this passkey?')) return;
+          api('/api/account/passkeys/remove', { id: p.id }).then(loadAccount).catch(function (e) { if (e.status === 401) showLogin('For safety, sign in again to add or remove a passkey.'); else $('pkErr').textContent = e.message; });
+        });
+        line.appendChild(rm); it.appendChild(line);
+        it.appendChild(el('div', 'meta', 'added ' + new Date(p.created).toLocaleDateString() + ' · last used ' + ago(p.last_used)));
+        list.appendChild(it);
+      });
+    }).catch(function () {});
+  }
+  $('pkAdd').addEventListener('click', function () {
+    $('pkErr').textContent = '';
+    busy($('pkAdd'), window.chalkPasskey.register()).then(loadAccount).catch(function (e) {
+      if (e.status === 401) { location.hash = 'account'; showLogin('For safety, sign in again to add or remove a passkey.'); } else $('pkErr').textContent = e.message;
+    });
+  });
+  $('cpGo').addEventListener('click', function () {
+    $('cpErr').textContent = ''; $('cpOk').textContent = '';
+    busy($('cpGo'), api('/api/account/password', { current: $('cpCur').value, next: $('cpNew').value }))
+      .then(function () { $('cpCur').value = ''; $('cpNew').value = ''; $('cpOk').textContent = 'Changed ✓'; })
+      .catch(function (e) { $('cpErr').textContent = e.message; });
+  });
+  $('taGo').addEventListener('click', function () {
+    $('taErr').textContent = '';
+    busy($('taGo'), api('/api/account/totp', { password: $('taPw').value }))
+      .then(function (r) { $('taPw').value = ''; showEnroll(r, function () { location.href = '/admin#account'; location.reload(); }); })
+      .catch(function (e) { $('taErr').textContent = e.message; });
+  });
+
+  // ---- 🛡 Security ----
+  var sec = null;
+  var EV = {
+    'signin': ['Signed in', 'good'], 'signin.failed': ['Failed sign-in', 'bad'], 'signout': ['Signed out', ''], 'session.ended': ['Sign-in ended', ''],
+    'screen.waiting': ['Screen showing a code', ''], 'screen.paired': ['Screen paired', 'good'], 'screen.changed': ['Screen changed', ''], 'screen.removed': ['Screen removed', ''], 'screen.auto_removed': ['Screen removed automatically', ''],
+    'person.created': ['Admin created', 'good'], 'person.invited': ['Invited', ''], 'person.joined': ['Joined', 'good'], 'person.role': ['Role changed', ''], 'person.signed_out': ['Signed out everywhere', ''],
+    'person.reinvited': ['Started over', ''], 'person.removed': ['Person removed', ''], 'person.auto_removed': ['Removed automatically', ''],
+    'passkey.added': ['Passkey added', 'good'], 'passkey.removed': ['Passkey removed', ''], 'password.changed': ['Password changed', ''], 'authenticator.changed': ['New authenticator', ''],
+    'setup.failed': ['Wrong setup code', 'bad'], 'security.settings': ['Security settings', ''], 'reset': ['Admin reset (server)', 'bad']
+  };
+  function doAction(a, after) {
+    if (a.confirm && !confirm(a.confirm)) return;
+    api(a.call, a.body).then(after).catch(function (e) { alert(e.message); });
+  }
+  function actionButtons(list, after) {
+    var box = el('div', 'actions');
+    (list || []).forEach(function (a) { var b = el('button', 'sm' + (/Remove|Start over/.test(a.label) ? ' del' : ''), a.label); b.addEventListener('click', function () { doAction(a, after); }); box.appendChild(b); });
+    return box;
+  }
+  function loadBadge() {
+    api('/api/security?limit=20').then(function (d) { var n = d.alerts.filter(function (a) { return a.level !== 'info'; }).length; $('secBadge').hidden = !n; $('secBadge').textContent = n; }).catch(function () {});
+  }
+  function drawLog() {
+    var f = $('logFilter').value, box = $('secLog'); box.innerHTML = '';
+    var rows = sec.log.filter(function (e) {
+      if (!f) return true;
+      if (f === 'other') return /^(security|reset|setup)/.test(e.event);
+      if (f === 'signin') return e.event === 'signin' || e.event === 'signout' || e.event === 'session.ended';
+      return e.event === f || e.event.indexOf(f + '.') === 0;
+    });
+    if (!rows.length) box.appendChild(el('p', 'dim', 'Nothing yet.'));
+    var more = rows.length - logShow;
+    rows.slice(0, logShow).forEach(function (e) {
+      var it = el('div', 'item'), ev = EV[e.event] || [e.event, ''];
+      var top = el('div'); top.appendChild(el('span', 'ev ' + ev[1], ev[0]));
+      top.appendChild(document.createTextNode((e.target || '') + (e.detail ? ' — ' + e.detail : '')));
+      it.appendChild(top);
+      it.appendChild(el('div', 'when', new Date(e.at).toLocaleString() + ' · by ' + (e.actor || 'someone not signed in') + ' · ' + (e.agent || '') + ' · ' + (e.ip || '')));
+      if (e.actions && e.actions.length) it.appendChild(actionButtons(e.actions, loadSecurity));
+      box.appendChild(it);
+    });
+    if (more > 0) { var mb = el('button', 'sm', 'Show ' + Math.min(more, 50) + ' more'); mb.addEventListener('click', function () { logShow += 50; drawLog(); }); box.appendChild(mb); }
+  }
+  var logShow = 30;
+  function loadSecurity() {
+    return api('/api/security?limit=500').then(function (d) {
+      sec = d;
+      var box = $('secAlerts'); box.innerHTML = '';
+      if (!d.alerts.length) box.appendChild(el('p', 'ok', '✓ Nothing needs a look right now.'));
+      d.alerts.forEach(function (a) {
+        var it = el('div', 'item alert alert-' + a.level);
+        it.appendChild(el('div', null, (a.level === 'alert' ? '⚠️ ' : a.level === 'warn' ? '🟡 ' : 'ℹ️ ') + a.text));
+        if (a.actions.length) it.appendChild(actionButtons(a.actions, loadSecurity));
+        box.appendChild(it);
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('.nums input'), function (i) { i.value = d.settings[i.dataset.k]; });
+      var n = d.alerts.filter(function (a) { return a.level !== 'info'; }).length; $('secBadge').hidden = !n; $('secBadge').textContent = n;
+      drawLog();
+    }).catch(function (e) { if (!(e.body && e.body.admin)) $('sfErr').textContent = e.message; });
+  }
+  $('logFilter').addEventListener('change', function () { logShow = 30; if (sec) drawLog(); });
+  $('sfSave').addEventListener('click', function () {
+    var body = {}; Array.prototype.forEach.call(document.querySelectorAll('.nums input'), function (i) { body[i.dataset.k] = +i.value; });
+    $('sfErr').textContent = ''; $('sfOk').textContent = '';
+    busy($('sfSave'), api('/api/security/settings', body)).then(function () { $('sfOk').textContent = 'Saved ✓'; loadSecurity(); }).catch(function (e) { $('sfErr').textContent = e.message; });
+  });
+
+  // ---- start ----
+  function refresh() { return api('/api/whoami').then(function (w) { who = w; return w; }); }
+  refresh().then(function (w) {
+    if (inviteCode) {
+      document.title = 'Join the board'; $('title').textContent = 'Join the board';
+      return api('/api/account/join', { invite: inviteCode, check: true }).then(function (u) {
+        $('joinTitle').textContent = 'Welcome, ' + u.name + '!';
+        $('joinText').textContent = 'Your username is ' + u.username + '. Choose a password, then add the board to an authenticator app' + (pkReady() ? ' and this device’s passkey.' : '.');
+        show('vJoin');
+      }).catch(function (e) { $('joinTitle').textContent = 'This link doesn’t work'; $('joinText').textContent = e.message; $('joGo').hidden = true; Array.prototype.forEach.call(document.querySelectorAll('#vJoin .row'), function (r) { r.hidden = true; }); show('vJoin'); });
+    }
+    if (w.setup && w.firstRun) { $('subtitle').textContent = 'First-time setup'; return show('vSetup'); }
+    if (w.setup) { $('subtitle').textContent = 'Reset: create the admin again'; return show('vSetup'); }
+    if (w.admin) return openConsole();
+    showLogin(w.user ? 'The admin console asks for a fresh sign-in.' : 'Sign in with an admin account.');
+  }).catch(function () { $('subtitle').textContent = 'Can’t reach the board server'; });
+})();
+</script>
+</body>
+</html>

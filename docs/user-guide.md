@@ -1,10 +1,10 @@
 # User guide
 
-The wall display only shows the board; everything is edited from a tablet or phone at `/edit` (PIN protected). Add `/edit` to the tablet's home screen for an app-like icon.
+The wall display only shows the board; everything is edited from a tablet or phone at `/edit`, where each person signs in (passkey, or password + authenticator code) and signs in again every 60 days. Screens are paired and people are invited from the admin console at `/admin` — see [install.md](install.md#screens-and-people). Add `/edit` to the tablet's home screen for an app-like icon.
 
 ## The tablet (editor)
 
-The bottom bar on the tablet has **⚙️ Settings**, **🎨 Board style**, **📷 Photos**, **Draw** and **+ Add event**. Zoom with **− / + / Fit** at the top right (or pinch). Everything saved on the tablet shows on the wall within a second or two.
+The bottom bar on the tablet has **👤** (your account: add a passkey on this tablet, admin console, sign out), **⚙️ Settings** (admins), **🎨 Board style**, **📷 Photos**, **Draw** and **+ Add event**. Zoom with **− / + / Fit** at the top right (or pinch). Everything saved on the tablet shows on the wall within a second or two.
 
 ### Events (your calendar)
 - **Add:** tap **+ Add event** (or tap a day, then **Add**). Pick what, day, time and length, or tick **All day** (with an optional **Through** date for multi-day events like trips).
@@ -35,6 +35,7 @@ The bottom bar on the tablet has **⚙️ Settings**, **🎨 Board style**, **�
 - Tap **Meal Plan** in Notes. Add meals (Enter adds the next line), tick ones that are done (they get crossed out), **Clear all** for a new week. A long list shrinks to fit, then ends with "+N more".
 
 ### ⚙️ Settings
+- Shown to admins signed in to the admin console (it asks again after 30 quiet minutes). **🛠 Admin console** opens `/admin` for screens and people.
 - **Calendar:** shows which calendar the board uses. With Google Calendar this is where you sign in and pick the calendar (see [google-calendar.md](google-calendar.md)).
 - **Trash & recycling:** the trash pickup day (or none), and recycling **same day as trash**, **every other week** (pick the date of the next pickup), **a different day each week**, or **don't show**. Saved as soon as you change it.
 - **Bottom of the Notes column:** what it shows normally: **🫙 Reward jars**, **☀️ Today** (everything still to come today), **📅 Up next** (the next events over two weeks, grouped by day), **📷 Photos** (a polaroid from the album that changes every 40 seconds — nice when the month title has art instead of photos), or **Nothing** (the Meal Plan gets the space).
@@ -57,6 +58,9 @@ The bottom bar on the tablet has **⚙️ Settings**, **🎨 Board style**, **�
 - **▶ Preview slideshow** plays it on the tablet (tap to close).
 - The top line shows how many photos the board has and when it last checked (or a ⚠ if something's wrong).
 
+
+## A family touch screen
+A screen paired as **✋ Family** opens straight into the editor without drawing, board style, photos or settings: tap a day to see and add events, tap an event to change it, tap the Meal Plan or a jar. Handy for a touch screen on the wall that everyone uses.
 
 ## The wall display (read-only)
 - The wall can't change anything, but it responds to taps:

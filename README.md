@@ -19,7 +19,7 @@ git clone https://github.com/joshua-d-miller/family-chalk-planner.git /opt/famil
 sudo bash /opt/family-chalk-planner/deploy/install.sh
 ```
 
-The installer adds Node.js 22 if it's missing, a locked-down service user, a systemd service that runs straight from that folder, and the optional face finder for photo framing. It also generates your editing PIN and prints the addresses to open. Then fill in your calendar and location (Google Calendar: see [docs/google-calendar.md](docs/google-calendar.md)) in `/opt/family-chalk-planner/.env` and run `systemctl restart family-chalk-planner`.
+The installer adds Node.js 22 if it's missing, a locked-down service user, a systemd service that runs straight from that folder, and the optional face finder for photo framing. It also prints a one-time setup code for creating the admin account at `/admin`, where you pair screens and invite people. Then fill in your calendar and location (Google Calendar: see [docs/google-calendar.md](docs/google-calendar.md)) in `/opt/family-chalk-planner/.env` and run `systemctl restart family-chalk-planner`.
 
 Settings (`.env`) and data (`data/`) stay in the same folder and are ignored by git, so updating is just a pull: `sudo /opt/family-chalk-planner/deploy/update.sh`. It runs `git pull`, restarts, and rolls back automatically if the new version doesn't start.
 
@@ -28,7 +28,8 @@ See **[docs/install.md](docs/install.md)** for the details: Proxmox, private rep
 ## Use
 
 - **Wall display:** open `http://<server>:3002/` in a kiosk browser (Fully Kiosk Browser on Android works well).
-- **Tablet:** open `http://<server>:3002/edit`, enter the PIN, and add it to the home screen.
+- **Admin console:** `http://<server>:3002/admin` — create the admin with the setup code, pair screens (view only or family), invite people (editor or admin).
+- **Tablet:** open `http://<server>:3002/edit`, sign in (passkey, or password + authenticator code), and add it to the home screen.
 - **[User guide](docs/user-guide.md):** what every button does.
 
 ## Development
@@ -38,7 +39,7 @@ npm ci
 npm test                                   # starts the server against a fake calendar and photo album
 node test/mock-caldav.js 5232 &            # fake calendar for local work
 CALDAV_URL=http://127.0.0.1:5232/ CALDAV_USER=x CALDAV_PASSWORD=x CALDAV_CALENDAR=Family \
-  CHALK_PIN=2468 TIMEZONE=America/New_York DATA_DIR=./data npm start
+  TIMEZONE=America/New_York DATA_DIR=./data npm start   # setup code: see the log or data/setup-code.txt
 ```
 
 ## License

@@ -34,10 +34,6 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 const ICLOUD_USER = ENV.CALDAV_USER || ENV.ICLOUD_USER;            // ICLOUD_* names still work
 const ICLOUD_PASS = ENV.CALDAV_PASSWORD || ENV.ICLOUD_APP_PASSWORD;
 const CAL_NAME = ENV.CALDAV_CALENDAR || ENV.ICLOUD_CALENDAR;
-const CHALK_PIN = (ENV.CHALK_PIN || '').trim();
-if (!/^\d{4,8}$/.test(CHALK_PIN)) {
-  console.error('Chalk Planner: CHALK_PIN (4-8 digits) is not set - editing is OPEN to the whole network');
-}
 // Calendar provider: any CalDAV server (iCloud, Nextcloud, Fastmail...) with a password,
 // or Google Calendar (Google's CalDAV with a Google sign-in instead of a password).
 const PROVIDER = (ENV.CALENDAR_PROVIDER || (ENV.GOOGLE_CLIENT_ID ? 'google' : 'caldav')).toLowerCase() === 'google' ? 'google' : 'caldav';
@@ -60,8 +56,14 @@ const AUTH = 'Basic ' + Buffer.from(`${ICLOUD_USER}:${ICLOUD_PASS}`).toString('b
 // Art database
 // ---------------------------------------------------------------------------
 const db = new DatabaseSync(path.join(DATA_DIR, 'chalkboard.db'));
+for (const f of ['chalkboard.db', 'chalkboard.db-wal', 'chalkboard.db-shm']) { try { fs.chmodSync(path.join(DATA_DIR, f), 0o600); } catch { /* not there yet */ } }
+try { const ck = Object.values(db.prepare('PRAGMA quick_check').get() || {})[0]; if (ck !== 'ok') console.error(`Chalk Planner: DATABASE CHECK FAILED (${ck}) - restore last night's snapshot from the backup folder`); } catch (e) { console.error('Chalk Planner: database check failed:', e.message); }
+// SQLite: one file, WAL so the wall can read while a tablet writes; wait instead of failing if busy.
+// The database holds account data too, so it's readable by the service only.
 db.exec(`
   PRAGMA journal_mode = WAL;
+  PRAGMA synchronous = NORMAL;
+  PRAGMA busy_timeout = 5000;
   CREATE TABLE IF NOT EXISTS strokes (
     id      INTEGER PRIMARY KEY AUTOINCREMENT,
     month   TEXT    NOT NULL,
@@ -82,13 +84,7 @@ const qKvGet = db.prepare('SELECT data FROM kv WHERE key = ?');
 const qKvSet = db.prepare('INSERT INTO kv (key, data) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET data = excluded.data');
 const qMetaGet = db.prepare('SELECT data FROM month_meta WHERE month = ?');
 const qMetaSet = db.prepare('INSERT INTO month_meta (month, data) VALUES (?, ?) ON CONFLICT(month) DO UPDATE SET data = excluded.data');
-db.exec(`CREATE TABLE IF NOT EXISTS sessions (
-  token_hash TEXT PRIMARY KEY, pin_fp TEXT NOT NULL, created INTEGER NOT NULL, last_used INTEGER NOT NULL, agent TEXT)`);
-const qSessGet = db.prepare('SELECT pin_fp, last_used FROM sessions WHERE token_hash = ?');
-const qSessAdd = db.prepare('INSERT INTO sessions (token_hash, pin_fp, created, last_used, agent) VALUES (?, ?, ?, ?, ?)');
-const qSessTouch = db.prepare('UPDATE sessions SET last_used = ? WHERE token_hash = ?');
-const qSessDel = db.prepare('DELETE FROM sessions WHERE token_hash = ?');
-const qSessPurge = db.prepare('DELETE FROM sessions WHERE pin_fp != ?');
+db.exec('DROP TABLE IF EXISTS sessions');   // PIN sign-ins of older versions
 const qStampList = db.prepare('SELECT id, name, data FROM stamps ORDER BY id DESC');
 const qStampAdd = db.prepare('INSERT INTO stamps (name, data, created) VALUES (?, ?, ?)');
 const qStampDel = db.prepare('DELETE FROM stamps WHERE id = ?');
@@ -645,68 +641,15 @@ app.use(express.json({ limit: '2mb' }));
 app.set('trust proxy', process.env.TRUST_PROXY || 'loopback, uniquelocal');
 
 // ---------------------------------------------------------------------------
-// PIN: reading is open (wall display), every change needs a device token
+// Who may do what: paired screens (view / family) and signed-in people (editor / admin),
+// plus the admin console. See server/access.js.
 // ---------------------------------------------------------------------------
-const sha = s => crypto.createHash('sha256').update(s).digest();
-const PIN_FP = CHALK_PIN ? sha('chalkboard-pin:' + CHALK_PIN).toString('hex').slice(0, 16) : '';
-if (PIN_FP) qSessPurge.run(PIN_FP); // a new PIN signs every device out
-
-function tokenOk(req) {
-  if (!PIN_FP) return true;
-  const tok = req.get('X-Chalk-Token');
-  if (!tok || tok.length > 200) return false;
-  const h = sha(tok).toString('hex');
-  const row = qSessGet.get(h);
-  if (!row || row.pin_fp !== PIN_FP) return false;
-  if (Date.now() - row.last_used > 3600e3) qSessTouch.run(Date.now(), h);
-  return true;
+const access = require('./access').setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast });
+if (process.argv.includes('--reset-admin')) {   // deploy/reset-admin.sh
+  console.log(`Removed every person, sign-in and paired screen. New setup code: ${access.resetAll()}`);
+  console.log('Open /admin on a tablet or computer, enter the code and create the admin again; then pair the screens.');
+  process.exit(0);
 }
-
-// Lockout: per client and overall, doubling after 5 misses
-const fails = new Map(); // key -> { n, until }
-function lockLeft(key) { const f = fails.get(key); return f && f.until > Date.now() ? Math.ceil((f.until - Date.now()) / 1000) : 0; }
-function miss(key, free, base) {
-  const f = fails.get(key) || { n: 0, until: 0 };
-  f.n++;
-  if (f.n >= free) f.until = Date.now() + Math.min(3600e3, base * 2 ** (f.n - free));
-  fails.set(key, f);
-}
-
-app.get('/api/auth', (req, res) => {
-  res.json({ required: !!PIN_FP, length: CHALK_PIN.length || 4, ok: tokenOk(req) });
-});
-
-app.post('/api/auth', (req, res) => {
-  if (!PIN_FP) return res.json({ token: 'open' });
-  const ip = req.ip || 'unknown';
-  const wait = Math.max(lockLeft(ip), lockLeft('*'));
-  if (wait) return res.status(429).json({ error: `Too many tries - wait ${wait < 90 ? wait + ' seconds' : Math.ceil(wait / 60) + ' minutes'}` });
-  const given = String((req.body || {}).pin || '');
-  const good = given.length === CHALK_PIN.length && crypto.timingSafeEqual(sha(given), sha(CHALK_PIN));
-  if (!good) {
-    miss(ip, 5, 60e3);
-    miss('*', 20, 300e3);
-    console.warn(`Chalkboard: wrong PIN from ${ip}`);
-    return res.status(401).json({ error: 'That PIN didn’t work' });
-  }
-  fails.delete(ip);
-  const token = crypto.randomBytes(32).toString('base64url');
-  qSessAdd.run(sha(token).toString('hex'), PIN_FP, Date.now(), Date.now(), String(req.get('user-agent') || '').slice(0, 200));
-  res.json({ token });
-});
-
-app.post('/api/auth/logout', (req, res) => {
-  const tok = req.get('X-Chalk-Token');
-  if (tok) qSessDel.run(sha(tok).toString('hex'));
-  res.json({ ok: true });
-});
-
-// Every other change goes through here
-app.use('/api', (req, res, next) => {
-  if (req.method === 'GET' || req.path.startsWith('/auth')) return next();
-  if (tokenOk(req)) return next();
-  res.status(401).json({ error: 'PIN required', pin: true });
-});
 
 // ---------------------------------------------------------------------------
 // Nightly snapshot of the database (consistent copy while running) for restic
@@ -719,6 +662,7 @@ function snapshotDb() {
     const file = path.join(BACKUP_DIR, `chalkboard-${nyParts(new Date()).dateStr}.db`);
     if (fs.existsSync(file)) return;
     db.exec(`VACUUM INTO '${file.replace(/'/g, "''")}'`);
+    fs.chmodSync(file, 0o600);
     const old = fs.readdirSync(BACKUP_DIR).filter(f => /^chalkboard-\d{4}-\d{2}-\d{2}\.db$/.test(f)).sort().reverse().slice(KEEP_SNAPSHOTS);
     for (const f of old) fs.unlinkSync(path.join(BACKUP_DIR, f));
     console.log(`Chalkboard: snapshot ${path.basename(file)}`);
@@ -1461,7 +1405,11 @@ app.get('/api/stream', (req, res) => {
   res.write('retry: 3000\n\n');
   res.write(`event: hello\ndata: ${JSON.stringify({ v: boardVersion() })}\n\n`);   // pages compare this with their own
   clients.add(res);
-  const ping = setInterval(() => res.write('event: ping\ndata: {}\n\n'), 25000);   // visible to pages, so they can tell they're still connected
+  const ck = req.get('cookie') || '';
+  const ping = setInterval(() => {   // visible to pages, so they can tell they're still connected
+    if (!access.stillAllowed(ck)) { clients.delete(res); res.end(); return; }   // removed screen / ended sign-in: no more updates
+    res.write('event: ping\ndata: {}\n\n');
+  }, 25000);
   req.on('close', () => { clearInterval(ping); clients.delete(res); });
 });
 
@@ -1743,6 +1691,8 @@ function sendBoard(kind) {
 }
 app.get('/', sendBoard('wall'));
 app.get('/edit', sendBoard('edit'));
+// the admin console (sign-in, screens, people, my account) and invite links
+for (const p of ['/admin', '/join']) app.get(p, (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(PUBLIC, 'admin.html')));
 app.use(express.static(PUBLIC));
 
 app.listen(PORT, BIND, () => console.log(`Family Chalk Planner on ${BIND}:${PORT} (data in ${DATA_DIR})`));

@@ -8,11 +8,40 @@ Please open a private security advisory on GitHub (Security tab -> "Report a vul
 rather than a public issue.
 
 ## How it is protected today
-- **Editing** needs the PIN. Tablets get a session token; failed PIN attempts are rate-limited
-  and lock out. Changing the PIN signs every device out.
-- **Reading** (what the wall shows) does not need a login. Anyone who can reach the board on
-  your network can see the calendar. Keep it off the internet, or put it behind a reverse
-  proxy access list (planned: wall pairing with its own device token).
+- **Screens are paired.** A new screen shows a code; an admin types it into the admin console
+  (codes expire after 15 minutes, are never listed, and hand over the key once). The screen gets a
+  random 256-bit key (HttpOnly, SameSite=Lax cookie, Secure over HTTPS; only its SHA-256 is
+  stored) with the role view or family. Removing it locks it out at once.
+- **People sign in** with a passkey (WebAuthn, user verification required, tied to `PUBLIC_URL`)
+  or with a password (scrypt, N=32768) plus a TOTP code from an authenticator app (codes can't be
+  reused; failed sign-ins are rate-limited per account and per address). Board sign-ins end after 60
+  days (adjustable); screen keys never expire (renewed while used) until an admin removes the screen; the admin console needs its own sign-in that ends after 30 idle minutes (12 h at most).
+- **Roles:** reading needs a paired screen or a signed-in person (unless `ALLOW_UNPAIRED_VIEW`);
+  family screens may change events, meals, jars and countdowns; editors everything on the board;
+  only admins (console sign-in) screens, people, calendar, Google and board settings.
+- **First admin / recovery:** a one-time setup code (server log, `data/setup-code.txt`, mode 600).
+  `deploy/reset-admin.sh` (needs root on the server) removes every account and screen and makes a
+  new code. Invite links are single-use and expire after 3 days.
+- **Visibility:** the admin console lists each person's individual sign-ins (device, address,
+  last active, expiry) and passkeys, each removable on its own; flags stale screens, passkeys and
+  accounts and repeated failed sign-ins; and keeps an activity log of every security event (who,
+  what, device, address, time; 90 days by default, survives `reset-admin.sh`). Screens unseen for
+  90 days are flagged (automatic removal optional); unfinished invites are removed automatically.
+- **Sensitive changes need a fresh sign-in:** adding or removing a passkey needs a sign-in from the
+  last 10 minutes on that device (so someone picking up a signed-in tablet can't add their own
+  passkey or remove yours); changing a password needs the current one and signs out every other
+  device; the admin console needs its own sign-in (30 idle minutes).
+- **Browser protections:** no framing (clickjacking), no MIME sniffing, no referrer, a strict
+  Content-Security-Policy on the admin console, HSTS over HTTPS, and account data is never cached.
+  Live-update streams are re-checked, so a removed screen or ended sign-in stops receiving updates.
+- **Changes** need an `X-Chalk` request header, so other websites can't post to the board
+  through your browser.
+- **Internet exposure** is not recommended. If you must, put an authenticating proxy
+  (Tailscale, Cloudflare Access, Authelia/Authentik) in front and use HTTPS.
+- **Stored data:** one SQLite file (mode 600). Passwords are scrypt hashes, screen and sign-in keys
+  SHA-256 hashes, and each authenticator secret is AES-256-GCM encrypted with a key derived from that
+  person's own password (scrypt), so the database or a backup alone can't produce codes. No key file to
+  manage. Nightly snapshots are mode 600.
 - **Secrets** live in `.env` in the install folder (root-only, mode 600, ignored by git).
 - **The service** runs as its own unprivileged user, can't modify its own code, and (where
   systemd sandboxing is available) can only write to its data folder.
@@ -24,3 +53,13 @@ rather than a public issue.
 ## Privacy note on iCloud shared albums
 Anyone with a shared album's link can see the album owner's name and email and the photos'
 saved locations. Share the link only with the board and keep the album view-only.
+
+## Secure, but easy to live with
+| Who | Day to day | Protected by |
+|---|---|---|
+| Wall / touch screen | Never signs in | Paired once by an admin who types the code shown on it; removable any time |
+| Tablet / phone | Face ID / fingerprint every 60 days | Passkey (or password + authenticator code); each sign-in visible and endable |
+| Admin console | One passkey tap after 30 quiet minutes | Fresh sign-in; only place screens, people and settings change |
+| Forgot password / lost phone | Admin sends a new invite link | Old password, authenticator and passkeys are wiped first |
+| Locked out entirely | `deploy/reset-admin.sh` on the server | Needs root on the server; logged |
+

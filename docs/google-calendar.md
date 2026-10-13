@@ -78,7 +78,7 @@ The board's settings file is called `.env` and lives in the folder the board was
    ```
 
 ## Part 5: Sign in from the tablet
-1. On the tablet, open the board's edit page (`/edit`), enter the PIN, and tap **⚙️** in the bottom bar.
+1. On the tablet, sign in to the admin console (`/admin`), tap **⚙️ Board settings** in the bottom bar.
 2. Tap **Sign in with Google**. A new tab opens on Google's sign-in page.
 3. Choose the Google account with the family calendar.
 4. Google warns **"Google hasn't verified this app"**. That's expected: the app is the one you registered yourself in part 3. Tap **Advanced**, then **Go to Family Chalk Planner (unsafe)**.

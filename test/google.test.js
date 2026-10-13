@@ -9,9 +9,9 @@ const path = require('node:path');
 
 const PORT = 3995, GPORT = 5995, PIN = '1357';
 const base = `http://127.0.0.1:${PORT}`;
-let server, google, data, token;
-const api = p => fetch(base + p);
-const post = (p, body) => fetch(base + p, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Chalk-Token': token || '' }, body: JSON.stringify(body) });
+let server, google, data, cookie = '';
+const { pairAdmin, client } = require('./helpers');
+const { api, post } = client(base, () => cookie);
 const month = async () => (await (await api('/api/month?ym=2026-10')).json());
 
 test.before(async () => {
@@ -24,8 +24,8 @@ test.before(async () => {
       GOOGLE_AUTH_URL: `${g}/auth`, GOOGLE_TOKEN_URL: `${g}/token`, GOOGLE_API_BASE: g, GOOGLE_CALDAV_BASE: g },
     stdio: ['ignore', 'pipe', 'pipe']
   });
-  for (let i = 0; i < 50; i++) { try { if ((await api('/api/today')).ok) break; } catch {} await new Promise(r => setTimeout(r, 200)); }
-  token = (await (await fetch(base + '/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: PIN }) })).json()).token;
+  for (let i = 0; i < 50; i++) { try { if ((await fetch(base + '/api/whoami')).ok) break; } catch {} await new Promise(r => setTimeout(r, 200)); }
+  cookie = await pairAdmin(base, data);
 });
 test.after(() => { server && server.kill(); google && google.close(); fs.rmSync(data, { recursive: true, force: true }); });
 
@@ -35,8 +35,8 @@ test('before connecting, the board says how to connect', async () => {
   assert.match((await month()).error, /connect it in ⚙ Settings/);
 });
 
-test('sign-in needs the PIN', async () => {
-  const r = await fetch(base + '/api/google/start', { method: 'POST' });
+test('sign-in needs an admin device', async () => {
+  const r = await fetch(base + '/api/google/start', { method: 'POST', headers: { 'X-Chalk': '1' } });
   assert.equal(r.status, 401);
 });
 

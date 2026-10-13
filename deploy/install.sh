@@ -96,7 +96,6 @@ if [ "${SKIP_USER:-}" != 1 ] && ! id "$SVC_USER" >/dev/null 2>&1; then
 fi
 
 # ---- settings (root-only) ----
-NEW_PIN=""
 set_env() {   # set_env KEY VALUE - replace the line if present, otherwise append
   local k="$1" v="$2" tmp
   if grep -qE "^#?${k}=" "$ENV_FILE"; then
@@ -108,8 +107,6 @@ set_env() {   # set_env KEY VALUE - replace the line if present, otherwise appen
 if [ ! -f "$ENV_FILE" ]; then
   say "Creating settings file $ENV_FILE"
   cp "$APP_DIR/.env.example" "$ENV_FILE"
-  NEW_PIN="$(printf '%06d' $(( $(od -An -N4 -tu4 /dev/urandom | tr -d ' ') % 1000000 )))"
-  set_env CHALK_PIN "$NEW_PIN"
   tz="$(timedatectl show -p Timezone --value 2>/dev/null || cat /etc/timezone 2>/dev/null || true)"
   [ -n "$tz" ] && set_env TIMEZONE "$tz"
 fi
@@ -146,7 +143,10 @@ echo
 say "Family Chalk Planner is installed (running from $APP_DIR)."
 echo "    Wall display:  http://${ip:-<this-machine>}:${port:-3002}/"
 echo "    Tablet editor: http://${ip:-<this-machine>}:${port:-3002}/edit"
-[ -n "$NEW_PIN" ] && echo "    Editing PIN:   $NEW_PIN   (write it down; change it in $ENV_FILE)"
+if [ -f "$DATA_DIR/setup-code.txt" ]; then
+  echo "    Setup code:    $(cat "$DATA_DIR/setup-code.txt")   (open http://${ip:-<this-machine>}:${port:-3002}/admin and create the admin account)"
+fi
+echo "    Admin console: http://${ip:-<this-machine>}:${port:-3002}/admin  (pair screens, invite people)"
 echo "    Settings:      $ENV_FILE  (calendar, timezone, weather, trash day, photos)"
 echo "                   then: systemctl restart $SERVICE"
 echo "    Updates:       $APP_DIR/deploy/update.sh"

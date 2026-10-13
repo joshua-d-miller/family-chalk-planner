@@ -8,9 +8,9 @@ const path = require('node:path');
 
 const PORT = 3994, DAV = 5995, GP = 5996, PIN = '2468';
 const base = `http://127.0.0.1:${PORT}`;
-let server, dav, gp, data, token;
-const api = (p, opts = {}) => fetch(base + p, opts);
-const post = (p, body) => api(p, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Chalk-Token': token }, body: JSON.stringify(body) });
+let server, dav, gp, data, cookie = '';
+const { pairAdmin, client } = require('./helpers');
+const { api, post } = client(base, () => cookie);
 
 test.before(async () => {
   dav = await require('./mock-caldav').start(DAV);
@@ -22,8 +22,8 @@ test.before(async () => {
       PHOTO_ALBUM_URL: `http://127.0.0.1:${GP}/s/short`, PHOTO_GOOGLE_HOST: `http://127.0.0.1:${GP}` },
     stdio: ['ignore', 'pipe', 'pipe']
   });
-  for (let i = 0; i < 50; i++) { try { if ((await api('/api/today')).ok) break; } catch {} await new Promise(r => setTimeout(r, 200)); }
-  token = (await (await api('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: PIN }) })).json()).token;
+  for (let i = 0; i < 50; i++) { try { if ((await fetch(base + '/api/whoami')).ok) break; } catch {} await new Promise(r => setTimeout(r, 200)); }
+  cookie = await pairAdmin(base, data);
 });
 test.after(() => { server && server.kill(); dav && dav.close(); gp && gp.close(); fs.rmSync(data, { recursive: true, force: true }); });
 

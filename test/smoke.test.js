@@ -8,9 +8,9 @@ const path = require('node:path');
 
 const PORT = 3992, DAV = 5992, ALBUM = 5993, PIN = '2468';
 const base = `http://127.0.0.1:${PORT}`;
-let server, dav, album, data, token;
-const api = (p, opts = {}) => fetch(base + p, opts);
-const post = (p, body, tok = token) => api(p, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(tok ? { 'X-Chalk-Token': tok } : {}) }, body: JSON.stringify(body) });
+let server, dav, album, data, cookie = '';
+const { pairAdmin, client } = require('./helpers');
+const { api, post } = client(base, () => cookie);
 
 test.before(async () => {
   dav = await require('./mock-caldav').start(DAV);
@@ -22,7 +22,7 @@ test.before(async () => {
       PHOTO_ALBUM_URL: 'https://photos.icloud.com/shared/album/0d3TESTALBUMxyz', PHOTO_CK_HOST: `http://127.0.0.1:${ALBUM}`, BOARD_TITLE: 'Test <Family>' },
     stdio: ['ignore', 'pipe', 'pipe']
   });
-  for (let i = 0; i < 50; i++) { try { if ((await api('/api/today')).ok) break; } catch {} await new Promise(r => setTimeout(r, 200)); }
+  for (let i = 0; i < 50; i++) { try { if ((await fetch(base + '/api/whoami')).ok) break; } catch {} await new Promise(r => setTimeout(r, 200)); }
 });
 test.after(() => { server && server.kill(); dav && dav.close(); album && album.close(); fs.rmSync(data, { recursive: true, force: true }); });
 
@@ -32,16 +32,10 @@ test('page is served with the configured title (escaped)', async () => {
   assert.match(html, /board-version/);
 });
 
-test('wrong PIN is refused, right PIN gives a token', async () => {
-  assert.equal((await post('/api/auth', { pin: '0000' }, null)).status, 401);
-  const r = await post('/api/auth', { pin: PIN }, null);
-  assert.equal(r.status, 200);
-  token = (await r.json()).token;
-  assert.ok(token);
-});
-
-test('changes need the PIN token', async () => {
-  assert.equal((await post('/api/meals', { items: [{ t: 'Tacos' }] }, null)).status, 401);
+test('an unpaired device can neither read nor change; the setup code makes the first admin', async () => {
+  assert.equal((await api('/api/month?ym=2026-10')).status, 401);
+  assert.equal((await post('/api/meals', { items: [{ t: 'Tacos' }] })).status, 401);
+  cookie = await pairAdmin(base, data);
   assert.equal((await post('/api/meals', { items: [{ t: 'Tacos' }] })).status, 200);
 });
 
@@ -99,6 +93,6 @@ test('no path traversal through file routes', async () => {
 });
 
 test('uploads must really be images', async () => {
-  const r = await api('/api/media', { method: 'POST', headers: { 'X-Chalk-Token': token, 'Content-Type': 'application/octet-stream' }, body: Buffer.from('not an image at all, just text') });
+  const r = await api('/api/media', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: Buffer.from('not an image at all, just text') });
   assert.equal(r.status, 400);
 });
