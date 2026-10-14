@@ -28,7 +28,8 @@ read once, on a fresh data folder's first start — handy for tests and scripts.
 2. CI must pass: `npm ci`, `node --check server/chalkboard.js`, `npm test`,
    `npm audit --omit=dev --audit-level=high`, ShellCheck on `deploy/*.sh`.
 3. Open a pull request with what changed and how you tested it (screenshots for anything visible).
-   Someone else reviews and merges; nobody pushes straight to `main`.
+   `main` only accepts pull requests that pass CI and are approved by the maintainer
+   (see `.github/CODEOWNERS`); the maintainer merges.
 4. Add a line to the top section of `CHANGELOG.md` in plain words a family member would understand.
 
 ## How the code is laid out

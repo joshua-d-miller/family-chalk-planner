@@ -4,6 +4,11 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.8.2 — popups fit every screen
+- Popups (events, Board style, photos, month title…) are never taller than the screen: they scroll inside
+  instead, the Save / Cancel row always stays in view, and on smaller screens everything is a bit more
+  compact. Before, on a short touch screen the event popup's title and Save button were off the screen.
+
 ## 0.8.1 — safer updates
 - `deploy/update.sh` puts the previous version back if a step fails before the restart (for example
   installing packages), instead of leaving new files next to the old running board.
