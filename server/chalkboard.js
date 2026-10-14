@@ -1308,6 +1308,107 @@ app.post('/api/media', express.raw({ type: () => true, limit: '10mb' }), (req, r
   res.json({ src: `/api/media/${file}` });
 });
 
+// "Add from link": paste a link to a GIF (or a GIPHY / Tenor / KLIPY page) and the board downloads it once
+// and keeps it with your uploads, so it works offline and never depends on that site later.
+// The board only fetches public internet addresses: never anything on your own network (no SSRF).
+const dnsMod = require('node:dns'), netMod = require('node:net'), httpMod = require('node:http'), httpsMod = require('node:https');
+const LINK_MAX = 10 * 1024 * 1024;
+const ALLOW_PRIVATE_LINKS = ENV.ALLOW_PRIVATE_LINKS === '1';   // tests only (the mock sites run on 127.0.0.1)
+function privateIp(ip) {
+  if (netMod.isIPv4(ip)) {
+    const [a, b] = ip.split('.').map(Number);
+    return a === 0 || a === 10 || a === 127 || a >= 224 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || (a === 198 && (b === 18 || b === 19));
+  }
+  const v = ip.toLowerCase();
+  if (v.startsWith('::ffff:')) return privateIp(v.slice(7));
+  return v === '::' || v === '::1' || /^(fc|fd|fe[89ab]|ff)/.test(v);
+}
+function safeLookup(host, opts, cb) {
+  dnsMod.lookup(host, { ...opts, all: true }, (err, addrs) => {
+    if (err) return cb(err);
+    if (!addrs.length || (!ALLOW_PRIVATE_LINKS && addrs.some(a => privateIp(a.address)))) return cb(new Error('That link points at a private network address'));
+    if (opts.all) cb(null, addrs); else cb(null, addrs[0].address, addrs[0].family);
+  });
+}
+function linkGet(url, hops = 0) {
+  return new Promise((resolve, reject) => {
+    let u; try { u = new URL(url); } catch { return reject(new Error('That isn’t a link')); }
+    if (!/^https?:$/.test(u.protocol) || u.username || u.password) return reject(new Error('Only http(s) links work'));
+    if (u.port && !['80', '443'].includes(u.port) && !ALLOW_PRIVATE_LINKS) return reject(new Error('Only normal web links work'));
+    const host = u.hostname.replace(/^\[|\]$/g, '');
+    if (netMod.isIP(host) && privateIp(host) && !ALLOW_PRIVATE_LINKS) return reject(new Error('That link points at a private network address'));
+    const req = (u.protocol === 'https:' ? httpsMod : httpMod).get(u, {
+      lookup: safeLookup, timeout: 15000,
+      headers: { 'User-Agent': 'FamilyChalkPlanner/1 (+link import)', Accept: 'image/gif,image/webp,image/*;q=0.9,text/html;q=0.8' }
+    }, r => {
+      if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
+        r.resume();
+        if (hops >= 4) return reject(new Error('Too many redirects'));
+        return resolve(linkGet(new URL(r.headers.location, u).href, hops + 1));
+      }
+      if (r.statusCode !== 200) { r.resume(); return reject(new Error(`The site answered ${r.statusCode}`)); }
+      if (+r.headers['content-length'] > LINK_MAX) { r.destroy(); return reject(Object.assign(new Error('That GIF is over 10 MB'), { big: true })); }
+      const parts = []; let n = 0;
+      r.on('data', c => { n += c.length; if (n > LINK_MAX) { r.destroy(); reject(Object.assign(new Error('That GIF is over 10 MB'), { big: true })); } else parts.push(c); });
+      r.on('end', () => resolve({ buf: Buffer.concat(parts), type: String(r.headers['content-type'] || ''), url: u.href }));
+      r.on('error', reject);
+    });
+    req.on('timeout', () => req.destroy(new Error('The site took too long')));
+    req.on('error', reject);
+  });
+}
+// a GIPHY page or media link -> its id (GIPHY pages are built by script, so read the id from the link)
+function giphyId(u) {
+  const m = /giphy\.com\/(?:gifs|stickers|clips|embed)\/(?:[\w-]*-)?([A-Za-z0-9]{8,40})(?:[/?#]|$)/.exec(u) || /giphy\.com\/media\/(?:v1\.[^/]+\/)?([A-Za-z0-9]{8,40})\//.exec(u) || /i\.giphy\.com\/(?:media\/)?([A-Za-z0-9]{8,40})/.exec(u);
+  return m && m[1];
+}
+function pageImage(html, base) {
+  const metas = [...html.matchAll(/<meta\b[^>]*>/gi)].map(t => t[0]);
+  const val = (want) => {
+    for (const t of metas) {
+      const key = /(?:property|name)\s*=\s*["']([^"']+)["']/i.exec(t), c = /content\s*=\s*["']([^"']+)["']/i.exec(t);
+      if (key && c && want.includes(key[1].toLowerCase())) { try { return new URL(c[1].replace(/&amp;/g, '&'), base).href; } catch {} }
+    }
+    return null;
+  };
+  const all = metas.map(t => /content\s*=\s*["']([^"']+\.(?:gif|webp)(?:\?[^"']*)?)["']/i.exec(t)).filter(Boolean).map(m => m[1].replace(/&amp;/g, '&'));
+  return all.find(x => /\.gif/i.test(x)) || val(['og:image', 'twitter:image', 'og:image:url']) || all[0] || null;
+}
+async function imageFromLink(link) {
+  const gid = giphyId(link);
+  // GIPHY: the 200-pixel copy is plenty for the board and far lighter for the wall (originals can be 7 MB+)
+  const tries = gid ? [`https://media.giphy.com/media/${gid}/200.gif`, `https://media.giphy.com/media/${gid}/giphy.gif`] : [link];
+  let got, lastErr;
+  for (const t of tries) { try { got = await linkGet(t); break; } catch (e) { lastErr = e; } }
+  if (!got) throw lastErr;
+  let kind = (MAGIC.find(([, test]) => got.buf.length > 16 && test(got.buf)) || [])[0];
+  if (!kind && /html/i.test(got.type)) {   // a web page: take the picture it shares
+    const img = pageImage(got.buf.toString('utf8', 0, 2e6), got.url);
+    if (!img) throw new Error('No GIF found on that page — try “Copy image address” / “Copy GIF link”');
+    if (giphyId(img)) return imageFromLink(img);
+    got = await linkGet(img);
+    kind = (MAGIC.find(([, test]) => got.buf.length > 16 && test(got.buf)) || [])[0];
+  }
+  if (!kind) throw new Error('That link isn’t a GIF, PNG, JPEG or WebP');
+  return { buf: got.buf, kind };
+}
+const linkTries = new Map();
+app.post('/api/media/fromlink', async (req, res) => {
+  const link = String((req.body || {}).url || '').trim().slice(0, 2000);
+  const now = Date.now(), t = (linkTries.get(req.ip) || []).filter(x => now - x < 60e3); t.push(now); linkTries.set(req.ip, t);
+  if (t.length > 20) return res.status(429).json({ error: 'Too many links at once — wait a minute' });
+  try {
+    const { buf, kind } = await imageFromLink(link);
+    fs.mkdirSync(MEDIA_DIR, { recursive: true });
+    const file = `${crypto.randomBytes(8).toString('hex')}.${kind}`;
+    fs.writeFileSync(path.join(MEDIA_DIR, file), buf);
+    res.json({ src: `/api/media/${file}` });
+  } catch (e) {
+    res.status(400).json({ error: e.message || 'That link didn’t work' });
+  }
+});
+
 app.get('/api/media/:file', (req, res) => {
   const m = /^([a-z0-9]{16})\.(gif|webp|png|jpg)$/.exec(req.params.file);
   if (!m) return res.sendStatus(404);

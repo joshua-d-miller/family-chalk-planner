@@ -50,6 +50,10 @@ rather than a public issue.
 - **Outbound requests** go only to the configured CalDAV server, Open-Meteo, Apple's photo
   hosts, and the icon/emoji CDNs.
 
+## Links the board downloads
+
+"Add from link" (GIFs) is the only time the board fetches a web address someone typed. Only editors can use it; it follows at most 4 redirects, stops at 10 MB and 15 seconds, keeps only real GIF/PNG/JPEG/WebP files, and refuses any address on a private network (your LAN, the server itself, cloud metadata addresses), checked again for every redirect and every DNS answer.
+
 ## Privacy note on iCloud shared albums
 Anyone with a shared album's link can see the album owner's name and email and the photos'
 saved locations. Share the link only with the board and keep the album view-only.

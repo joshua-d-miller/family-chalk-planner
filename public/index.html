@@ -379,7 +379,7 @@ body.edit #zoom{display:flex}
 /* family touch screen: events, meals, jars, and decorating (stamps, clipart, emoji, GIFs, words: move/resize/erase)
    but no freehand chalk/Posca, no wiping the month, no changing the libraries; no board style, photos or settings */
 body.family #chalkBtn,body.family #poscaBtn,body.family #sizeBtn,body.family #swatches,body.family #clearBtn,body.family #selSave,
-body.family .stamp .x,body.family .gtile .x,body.family .gtile.up{display:none!important}
+body.family .stamp .x,body.family .gtile .x,body.family .gtile.up,body.family #gLinkRow,body.family #gLinkNote{display:none!important}
 body.family #zoom,body.family #styleBtn,body.family #settingsBtn,body.family #photosBtn,body.family #titleBtn,body.family #acctBtn{display:none!important}
 body:not(.isadmin) #settingsBtn{display:none!important}   /* calendar and board settings: admins (signed in to the console) */
 #pinErr{color:#F7A1A1;min-height:22px;margin-top:8px;font-size:16px}
@@ -853,6 +853,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
           <span style="font-size:13px;color:rgba(237,234,224,.6);margin-left:6px" id="gModeNote">Still most of the time, plays for a few seconds every few minutes</span>
         </div>
         <div class="lsec">Your GIFs</div>
+        <div class="opts" id="gLinkRow"><input type="url" id="gLink" placeholder="Paste a GIF link (GIPHY, Tenor, KLIPY, any .gif)…" autocomplete="off" style="flex:1;min-width:200px;height:42px;background:transparent;border:none;border-bottom:2px dashed rgba(var(--ink),.6);color:var(--chalk);font-family:'Kalam',cursive;font-size:18px;outline:none"><button type="button" class="seg" id="gLinkGo">Add</button></div>
+        <div style="font-size:13px;color:rgba(var(--ink),.55);margin:2px 0 6px" id="gLinkNote">On a GIF site: Share → Copy link (or press and hold the GIF → Copy). The board keeps its own copy.</div>
         <div class="gifgrid" id="gMine"></div>
         <div class="lsec">Animated emoji</div>
         <div class="opts"><input type="search" id="gQuery" placeholder="Search: party, heart, pumpkin, cat…" autocomplete="off" style="flex:1;height:42px;background:transparent;border:none;border-bottom:2px dashed rgba(237,234,224,.6);color:var(--chalk);font-family:'Kalam',cursive;font-size:19px;outline:none"></div>
@@ -3355,6 +3357,19 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     });
     if (!list.length) grid.appendChild(el('div', 'empty', 'Nothing found - try another word'));
   }
+  function addGifLink() {
+    var v = $('gLink').value.trim(); if (!v) return;
+    $('gLinkGo').disabled = true; $('gLinkNote').textContent = 'Getting it…';
+    post('/api/media/fromlink', { url: v }).then(function (r) {
+      $('gLink').value = ''; $('gLinkNote').textContent = 'Added ✓ — tap the board where it should go';
+      uploadGif(null, r.src);
+    }).catch(function (e) { $('gLinkNote').textContent = '⚠ ' + e.message; })
+      .then(function () { $('gLinkGo').disabled = false; });
+  }
+  if (EDIT) {
+    $('gLinkGo').addEventListener('click', addGifLink);
+    $('gLink').addEventListener('keydown', function (e) { if (e.key === 'Enter') addGifLink(); });
+  }
   function renderGifLib() {
     var mine = $('gMine'); mine.innerHTML = '';
     var up = el('label', 'gtile up'); up.appendChild(document.createTextNode('+ Upload'));
@@ -3382,19 +3397,20 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j.src; });
     });
   }
-  function uploadGif(file) {
-    status('Uploading GIF…');
-    var url = URL.createObjectURL(file), im = new Image();
+  // file = a picked file; or (null, src) = a picture the board already saved (from a link)
+  function uploadGif(file, haveSrc) {
+    status(haveSrc ? 'Adding GIF…' : 'Uploading GIF…');
+    var url = haveSrc || URL.createObjectURL(file), im = new Image();
     im.onload = function () {
       var w = im.naturalWidth || 100, h = im.naturalHeight || 100;
       // still frame for "gentle" and "still": the first frame, drawn once
       var c = document.createElement('canvas'), k = Math.min(1, 400 / Math.max(w, h));
       c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
       c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(url);
-      var animated = /gif|webp/.test(file.type);
+      if (!haveSrc) URL.revokeObjectURL(url);
+      var animated = haveSrc ? /\.(gif|webp)$/.test(haveSrc) : /gif|webp/.test(file.type);
       c.toBlob(function (stillBlob) {
-        Promise.all([rawUpload(file), animated ? rawUpload(stillBlob) : null]).then(function (r) {
+        Promise.all([haveSrc || rawUpload(file), animated ? rawUpload(stillBlob) : null]).then(function (r) {
           return post('/api/gifs/add', { src: r[0], still: r[1] || r[0], w: w, h: h });
         }).then(function (g) {
           status(''); renderGifLib();
