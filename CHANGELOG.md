@@ -4,6 +4,15 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.8.1 — safer updates
+- `deploy/update.sh` puts the previous version back if a step fails before the restart (for example
+  installing packages), instead of leaving new files next to the old running board.
+- **The board's fonts (and its other packages) are always installed:** `deploy/update.sh` checks that
+  every package is present at the right version and installs any that are missing, even when the board
+  is already up to date, so running it again repairs an earlier update that stopped partway.
+- If the fonts are still missing, the log and ⚙️ Board say so and how to fix it, and browsers aren't told
+  to keep the incomplete font list (it showed as Comic Sans-style fallback fonts).
+
 ## 0.8.0 — more backgrounds, a calmer console
 - New backgrounds: **dark wood**, **black glass**, **linen paper** and **pegboard** (Board style).
 - **Change with the season** (optional, off by default): a faint pattern for the month shown — snowflakes,

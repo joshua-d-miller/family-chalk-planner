@@ -1988,7 +1988,7 @@ function restartSoon(why) {
   setTimeout(() => { console.log(`Chalk Planner: restarting to apply ${why}`); process.exit(3); }, 400);   // the service manager starts it again
 }
 app.get('/api/board-settings', (req, res) => {
-  res.set('Cache-Control', 'no-store').json({ ...boardSettings.view(), version: APP_VERSION, problems: Object.fromEntries(calProblems), proxySeen: access.proxySeen(), key: keyInfo(), here: `${req.protocol}://${req.get('host')}`, timezones: typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [] });
+  res.set('Cache-Control', 'no-store').json({ ...boardSettings.view(), version: APP_VERSION, problems: { ...Object.fromEntries(calProblems), ...(FONTS_GONE.length ? { Fonts: `not installed (${FONTS_GONE.join(', ')}) - screens use plain fonts. On the server run: sudo bash deploy/update.sh` } : {}) }, proxySeen: access.proxySeen(), key: keyInfo(), here: `${req.protocol}://${req.get('host')}`, timezones: typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [] });
 });
 app.post('/api/board-settings', (req, res) => {
   const r = boardSettings.save((req.body || {}).values);
@@ -2024,13 +2024,20 @@ app.get('/api/board-settings/geocode', async (req, res) => {
 // screen ever calls Google and the board looks right with the internet down.
 const FONTS = [['kalam', [400, 700]], ['dancing-script', [700]], ['cormorant-garamond', [600]], ['caveat', [600]], ['permanent-marker', [400]],
   ['pacifico', [400]], ['fredericka-the-great', [400]], ['amatic-sc', [700]], ['rock-salt', [400]]];
+// The board's fonts are installed with its packages (npm ci). If they're missing, say so at start-up and in
+// the console (⚙️ Board), and never let browsers keep an incomplete list. deploy/update.sh installs them.
+const fontsMissing = () => FONTS.filter(([pkg, ws]) => ws.some(w => { try { require.resolve(`@fontsource/${pkg}/${w}.css`); return false; } catch { return true; } })).map(([pkg]) => pkg);
+const FONTS_GONE = fontsMissing();
+if (FONTS_GONE.length) console.error(`Chalk Planner: the board's fonts aren't installed (${FONTS_GONE.join(', ')}) - screens fall back to plain fonts. Fix: sudo bash ${APP_DIR}/deploy/update.sh`);
 let fontsCss = null;
 app.get('/fonts.css', (req, res) => {
   if (fontsCss === null) {
-    fontsCss = FONTS.map(([pkg, ws]) => ws.map(w => {
+    const css = FONTS.map(([pkg, ws]) => ws.map(w => {
       try { return fs.readFileSync(require.resolve(`@fontsource/${pkg}/${w}.css`), 'utf8').replace(/url\(\.\/files\//g, `url(/fonts/${pkg}/files/`); }
       catch { return ''; }
     }).join('\n')).join('\n');
+    if (fontsMissing().length) return res.set('Cache-Control', 'no-store').type('text/css').send(css);   // incomplete: never cached
+    fontsCss = css;
   }
   res.set('Cache-Control', 'public, max-age=86400').type('text/css').send(fontsCss);
 });

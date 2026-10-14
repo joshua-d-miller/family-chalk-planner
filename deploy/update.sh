@@ -30,6 +30,16 @@ setting() {   # read one plain board setting straight from the database (read-on
     const r = d.prepare("SELECT data FROM kv WHERE key = ?").get("settings"); const v = r ? JSON.parse(r.data)[process.argv[2]] : "";
     process.stdout.write(typeof v === "string" && !v.startsWith("k1:") ? v : "")' "$data_dir" "$1" 2>/dev/null
 }
+# every package the board needs (its fonts, sign-in, clipart…) present at the version package-lock.json asks for?
+deps_ok() {
+  as_owner node -e 'const lock = (require("./package-lock.json").packages) || {};
+    for (const d of Object.keys(require("./package.json").dependencies || {})) {
+      const want = (lock["node_modules/" + d] || {}).version; let have;
+      try { have = require("./node_modules/" + d + "/package.json").version; } catch { process.exit(1); }
+      if (want && have !== want) process.exit(1);
+    }' 2>/dev/null
+}
+install_deps() { as_owner npm ci --omit=dev --no-audit --no-fund --loglevel=error; }
 channel="$(setting UPDATE_CHANNEL || true)"; channel="${channel:-$(envval UPDATE_CHANNEL)}"; channel="${channel:-release}"
 target="origin/$branch"
 if [ "$channel" = release ]; then
@@ -37,19 +47,38 @@ if [ "$channel" = release ]; then
   if [ -n "$tag" ]; then target="$tag"; else say "No releases tagged yet - following $branch"; fi
 fi
 new="$(as_owner git rev-parse "$target^{commit}")"
-if [ "$old" = "$new" ] || as_owner git merge-base --is-ancestor "$new" "$old"; then say "Already up to date ($(as_owner git log -1 --format='%h %s'))"; exit 0; fi
+if [ "$old" = "$new" ] || as_owner git merge-base --is-ancestor "$new" "$old"; then
+  say "Already up to date ($(as_owner git log -1 --format='%h %s'))"
+  if ! deps_ok; then   # e.g. an earlier update stopped before installing them: the board would fall back to plain fonts
+    [ "$CHECK" = yes ] && { say "Some of the board's packages (fonts and others) are missing - run without --check to install them"; exit 0; }
+    say "Some of the board's packages (fonts and others) are missing - installing them"
+    install_deps; deps_ok || die "packages still incomplete after npm ci - see the messages above"
+    systemctl restart "$SERVICE"; say "Installed and restarted."
+  fi
+  exit 0
+fi
 say "Changes:"; as_owner git log --oneline "$old..$new" | sed 's/^/    /'
 [ "$CHECK" = yes ] && exit 0
 
 changed="$(as_owner git diff --name-only "$old" "$new")"
 as_owner git merge --quiet --ff-only "$new"
-if grep -qx 'package-lock.json' <<<"$changed"; then say "Updating dependencies"; as_owner npm ci --omit=dev --no-audit --no-fund --loglevel=error; fi
+# if anything below fails before the restart, put the old code (and its packages) back rather than
+# leaving new files next to an old running board
+undo() {
+  say "Update didn't finish - going back to ${old:0:7}"
+  as_owner git reset --quiet --hard "$old"
+  if grep -qx 'package-lock.json' <<<"$changed"; then as_owner npm ci --omit=dev --no-audit --no-fund --loglevel=error || true; fi
+}
+trap 'undo' ERR
+if grep -qx 'package-lock.json' <<<"$changed" || ! deps_ok; then say "Installing packages (fonts and others)"; install_deps; fi
+deps_ok || { say "Packages still incomplete after npm ci"; false; }   # (goes back to the previous version)
 if grep -qx 'face/requirements.txt' <<<"$changed" && [ -x face/venv/bin/python ]; then bash deploy/setup-face.sh "$APP_DIR"; fi
 if grep -qE '^deploy/(family-chalk-planner\.service|hardening\.conf)$' <<<"$changed"; then bash deploy/install.sh --unit-only; fi
 chmod -R o-w "$APP_DIR"
 
 port="$(confval PORT)"; port="${port:-$(envval PORT)}"; port="${port:-3002}"
 healthy() { for _ in $(seq 1 30); do curl -fsS "http://127.0.0.1:$port/api/today" >/dev/null 2>&1 && return 0; sleep 1; done; return 1; }
+trap - ERR
 systemctl restart "$SERVICE"
 if healthy; then
   say "Updated to ${tag:-$(as_owner git log -1 --format='%h %s')}. The wall reloads itself in a few seconds."
