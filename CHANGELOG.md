@@ -4,6 +4,11 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.8.4 — update fix
+- `deploy/update.sh` stopped without a message once the old `.env` had been moved aside (and the update
+  channel wasn't set in the console). Fixed, and the script now always says where it stopped if
+  anything goes wrong. Same fix for `install.sh`, `reset-admin.sh` and `setting.sh`.
+
 ## 0.8.3 — family screens can restyle
 - Family screens can now change the board style (background, look, seasonal pattern), the month title
   and the photos, like the tablet. Still tablet-only: freehand drawing, deleting saved stamps and GIFs,

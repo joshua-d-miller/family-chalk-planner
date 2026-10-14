@@ -17,7 +17,7 @@ NODE="$(command -v node)"
 run() { if [ -n "$UNIT_USER" ] && [ "$(id -u)" = 0 ]; then runuser -u "$UNIT_USER" -- "$@"; else "$@"; fi; }
 # where the data is: the service definition (install.sh), or an old .env
 CONF=/etc/systemd/system/family-chalk-planner.service.d/server.conf
-DATA_DIR="$(sed -n 's/.*[" ]DATA_DIR=\([^" ]*\).*/\1/p' "$CONF" 2>/dev/null | tail -1)"
+DATA_DIR="$(sed -n 's/.*[" ]DATA_DIR=\([^" ]*\).*/\1/p' "$CONF" 2>/dev/null | tail -1 || true)"
 [ -z "$DATA_DIR" ] && [ -f "$ENV_FILE" ] && DATA_DIR="$(sed -n 's/^DATA_DIR=//p' "$ENV_FILE" | tr -d '"' | tail -1)"
 DATA_DIR="${DATA_DIR:-$APP_DIR/data}"
 cd "$APP_DIR"

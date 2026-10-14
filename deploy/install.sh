@@ -46,9 +46,9 @@ say() { printf '\033[1;33m==>\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31mError:\033[0m %s\n' "$*" >&2; exit 1; }
 [ "$(id -u)" = 0 ] || die "run as root (sudo bash deploy/install.sh)"
 [ -f "$APP_DIR/server/chalkboard.js" ] || die "run this from inside the family-chalk-planner folder"
-envval() { sed -n "s/^$1=//p" "$ENV_FILE" 2>/dev/null | tr -d '"' | tail -1; }   # an old .env (before 0.7)
+envval() { [ -f "$ENV_FILE" ] || return 0; sed -n "s/^$1=//p" "$ENV_FILE" 2>/dev/null | tr -d '"' | tail -1; }   # an old .env (before 0.7)
 CONF="/etc/systemd/system/$SERVICE.service.d/server.conf"
-confval() { sed -n "s/.*[\" ]$1=\([^\" ]*\).*/\1/p" "$CONF" 2>/dev/null | tail -1; }
+confval() { [ -f "$CONF" ] || return 0; sed -n "s/.*[\" ]$1=\([^\" ]*\).*/\1/p" "$CONF" 2>/dev/null | tail -1; }
 # server-level settings: option > what's installed now > an old .env > default
 DATA_DIR="${DATA_DIR:-$(confval DATA_DIR)}"; DATA_DIR="${DATA_DIR:-$(envval DATA_DIR)}"; DATA_DIR="${DATA_DIR:-$APP_DIR/data}"
 BACKUP_DIR="${BACKUP_DIR:-$(confval BACKUP_DIR)}"; BACKUP_DIR="${BACKUP_DIR:-$(envval BACKUP_DIR)}"

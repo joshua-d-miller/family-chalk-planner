@@ -12,6 +12,7 @@ CHECK=no; [ "${1:-}" = "--check" ] && CHECK=yes
 
 say() { printf '\033[1;33m==>\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31mError:\033[0m %s\n' "$*" >&2; exit 1; }
+trap 'printf "\033[1;31mError:\033[0m the update stopped unexpectedly (deploy/update.sh line %s) - nothing was changed\n" "$LINENO" >&2' ERR
 [ "$(id -u)" = 0 ] || die "run as root"
 cd "$APP_DIR"
 [ -d .git ] || die "$APP_DIR isn't a git checkout"
@@ -22,8 +23,8 @@ branch="$(as_owner git rev-parse --abbrev-ref HEAD)"
 old="$(as_owner git rev-parse HEAD)"
 as_owner git fetch --quiet --tags origin
 CONF="/etc/systemd/system/$SERVICE.service.d/server.conf"
-confval() { sed -n "s/.*[\" ]$1=\([^\" ]*\).*/\1/p" "$CONF" 2>/dev/null | tail -1; }
-envval() { sed -n "s/^$1=//p" "$ENV_FILE" 2>/dev/null | tr -d '"'"'"' ' | tail -1; }   # an old .env (before 0.7)
+confval() { [ -f "$CONF" ] || return 0; sed -n "s/.*[\" ]$1=\([^\" ]*\).*/\1/p" "$CONF" 2>/dev/null | tail -1; }
+envval() { [ -f "$ENV_FILE" ] || return 0; sed -n "s/^$1=//p" "$ENV_FILE" 2>/dev/null | tr -d '"'"'"' ' | tail -1; }   # an old .env (before 0.7)
 data_dir="$(confval DATA_DIR)"; data_dir="${data_dir:-$(envval DATA_DIR)}"; data_dir="${data_dir:-$APP_DIR/data}"
 setting() {   # read one plain board setting straight from the database (read-only; never runs the board's code)
   node -e 'const { DatabaseSync } = require("node:sqlite"); const d = new DatabaseSync(process.argv[1] + "/chalkboard.db", { readOnly: true });
@@ -65,11 +66,12 @@ as_owner git merge --quiet --ff-only "$new"
 # if anything below fails before the restart, put the old code (and its packages) back rather than
 # leaving new files next to an old running board
 undo() {
-  say "Update didn't finish - going back to ${old:0:7}"
+  printf '\033[1;31mError:\033[0m the update stopped at deploy/update.sh line %s\n' "${1:-?}" >&2
+  say "Going back to ${old:0:7}"
   as_owner git reset --quiet --hard "$old"
   if grep -qx 'package-lock.json' <<<"$changed"; then as_owner npm ci --omit=dev --no-audit --no-fund --loglevel=error || true; fi
 }
-trap 'undo' ERR
+trap 'undo $LINENO' ERR
 if grep -qx 'package-lock.json' <<<"$changed" || ! deps_ok; then say "Installing packages (fonts and others)"; install_deps; fi
 deps_ok || { say "Packages still incomplete after npm ci"; false; }   # (goes back to the previous version)
 if grep -qx 'face/requirements.txt' <<<"$changed" && [ -x face/venv/bin/python ]; then bash deploy/setup-face.sh "$APP_DIR"; fi

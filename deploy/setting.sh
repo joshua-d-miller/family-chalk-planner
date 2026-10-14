@@ -9,7 +9,7 @@ set -euo pipefail
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 CONF=/etc/systemd/system/family-chalk-planner.service.d/server.conf
 [ $# -ge 2 ] || { sed -n '2,7p' "$0"; exit 2; }
-DATA_DIR="$(sed -n 's/.*[" ]DATA_DIR=\([^" ]*\).*/\1/p' "$CONF" 2>/dev/null | tail -1)"; DATA_DIR="${DATA_DIR:-$APP_DIR/data}"
+DATA_DIR="$(sed -n 's/.*[" ]DATA_DIR=\([^" ]*\).*/\1/p' "$CONF" 2>/dev/null | tail -1 || true)"; DATA_DIR="${DATA_DIR:-$APP_DIR/data}"
 UNIT_USER="$(systemctl show -p User --value family-chalk-planner 2>/dev/null || true)"
 cd "$APP_DIR"
 if [ -n "$UNIT_USER" ] && [ "$UNIT_USER" != root ] && [ "$(id -u)" = 0 ]; then
