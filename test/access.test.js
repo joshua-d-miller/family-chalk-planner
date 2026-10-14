@@ -339,6 +339,17 @@ test('security: alerts say what, who, where - and offer the fix', async () => {
   assert.equal((await client(base, pick(adm.cookie, 'fcp_user')).api('/api/security')).status, 401, 'console sign-in needed');
 });
 
+test('a passkey the device refused is logged in Activity (rate limited)', async () => {
+  const anon = client(base);
+  const r = await anon.post('/api/passkey/client-error', { stage: 'get', name: 'NotAllowedError', message: 'The operation either timed out or was not allowed.\n', app: true });
+  assert.equal(r.status, 200);
+  const log = (await (await admin.api('/api/security')).json()).log;
+  const e = log.find(x => x.event === 'signin.failed' && /on the device/.test(x.target || ''));
+  assert.ok(e && /NotAllowedError: The operation/.test(e.detail) && /home-screen app/.test(e.detail), 'logged with the reason');
+  for (let i = 0; i < 10; i++) await anon.post('/api/passkey/client-error', { stage: 'create', name: 'X' });
+  assert.equal((await anon.post('/api/passkey/client-error', {})).status, 429);
+});
+
 test('deploy/reset-admin.sh: everyone and every screen is removed, a new setup code works', async () => {
   const wall = await screen('view', 'Wall 2');
   const out = execFileSync(process.execPath, [SERVER, '--reset-admin'], { env: { ...process.env, DATA_DIR: data, PORT: '0', TIMEZONE: 'UTC' } }).toString();

@@ -27,8 +27,15 @@
     var app = window.matchMedia && matchMedia('(display-mode: standalone)').matches ? 'home-screen app' : /CriOS|Chrome\//.test(ua) && !/Edg/.test(ua) ? 'Chrome' : /FxiOS|Firefox\//.test(ua) ? 'Firefox' : /Edg/.test(ua) ? 'Edge' : 'Safari';
     return app + ' on ' + os;
   }
+  var standalone = function () { return !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; };
+  // the browser refused before anything reached the board: tell the board why (shows in 🛡 Activity)
+  function report(stage, e) {
+    if (!e || e.status || !e.name) return;
+    try { fetch('/api/passkey/client-error', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+      body: JSON.stringify({ stage: stage, name: e.name, message: e.message, app: standalone() }) }).catch(function () {}); } catch (x) {}
+  }
   function friendly(e) {
-    if (e && e.name === 'NotAllowedError') return new Error('Cancelled (or this device has no passkey for the board yet)');
+    if (e && e.name === 'NotAllowedError') return new Error('The passkey wasn’t used (cancelled, or the password manager couldn’t use it). It’s been noted in the admin console’s Activity. Password + code still works.');
     if (e && e.name === 'InvalidStateError') return new Error('This device already has a passkey for you');
     return e;
   }
@@ -45,7 +52,7 @@
           authenticatorAttachment: cred.authenticatorAttachment || undefined,
           response: { clientDataJSON: b64u.from(r.clientDataJSON), authenticatorData: b64u.from(r.authenticatorData), signature: b64u.from(r.signature), userHandle: r.userHandle ? b64u.from(r.userHandle) : undefined }
         } });
-      });
+      }, function (e) { report('get', e); throw e; });
     }).catch(function (e) { throw friendly(e); });
   }
   function register(name) {
@@ -62,7 +69,7 @@
           authenticatorAttachment: cred.authenticatorAttachment || undefined,
           response: { clientDataJSON: b64u.from(r.clientDataJSON), attestationObject: b64u.from(r.attestationObject), transports: r.getTransports ? r.getTransports() : [] }
         } });
-      });
+      }, function (e) { report('create', e); throw e; });
     }).catch(function (e) { throw friendly(e); });
   }
   window.chalkPasskey = { supported: supported, signIn: signIn, register: register };

@@ -753,6 +753,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 <div id="acctmodal" role="dialog" aria-modal="true" aria-labelledby="acctTitle">
   <div class="card">
     <h3 id="acctTitle">👤 <span id="acctName"></span></h3>
+    <p class="ptext dim" id="acctPkList"></p>
     <div class="acctbtns">
       <button type="button" class="seg" id="acctPk">🔑 Add a passkey on this device</button>
       <a href="/admin" id="acctAdmin" class="seg">🛠 Admin console</a>
@@ -3979,6 +3980,13 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     $('acctPk').hidden = !(w.passkeys && window.chalkPasskey && window.chalkPasskey.supported);
     $('acctAdmin').hidden = !(w.user && w.user.role === 'admin');
     $('acctErr').textContent = '';
+    $('acctPkList').textContent = '';
+    if (w.user) api('/api/account/me').then(function (m) {
+      var k = m.passkeys || [];
+      $('acctPkList').textContent = !k.length ? 'No passkeys yet.' : 'Your passkeys: ' + k.map(function (p) {
+        return '“' + p.name + '” (' + (p.last_used ? 'last used ' + new Date(p.last_used).toLocaleDateString() : 'never used') + ')';
+      }).join(', ') + '. Remove old ones in the admin console.';
+    }).catch(function () {});
     $('acctmodal').classList.add('open');
   });
   $('acctClose').addEventListener('click', function () { $('acctmodal').classList.remove('open'); });

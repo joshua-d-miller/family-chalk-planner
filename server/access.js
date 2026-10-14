@@ -631,6 +631,17 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
     res.json({ ok: true, role: u.role, name: u.name });
   });
 
+  // The phone/tablet couldn't produce a passkey at all (the board never saw one): log what the browser said,
+  // so "it just says it can't be used" shows up in Activity with the real reason.
+  app.post('/api/passkey/client-error', (req, res) => {
+    if (tooMany('pkerr:' + req.ip, 10, 15 * 60e3)) return res.status(429).json({ error: 'Too many reports' });
+    const b = req.body || {}, clip = (v, n) => String(v || '').replace(/[\u0000-\u001f]/g, ' ').slice(0, n);
+    const stage = b.stage === 'create' ? 'adding a passkey' : 'passkey sign-in';
+    audit(req, b.stage === 'create' ? 'passkey.add_failed' : 'signin.failed', { target: stage + ' (on the device)',
+      detail: `${clip(b.name, 40) || 'Error'}: ${clip(b.message, 200) || 'no details'}${b.app ? ' · home-screen app' : ''} · board never received a passkey` });
+    res.json({ ok: true });
+  });
+
   // ---- people (admin console) ----
   const publicOrigin = req => (RP ? RP.origin : `${req.protocol}://${req.get('host')}`);
   async function invite(req, u) {
