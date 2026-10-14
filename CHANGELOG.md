@@ -4,6 +4,20 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.5.0 — Docker and settings in the admin console
+- **Docker:** `compose.yaml` + image for amd64 and arm64 (published to GitHub Container Registry with
+  each release). Runs as an unprivileged user, keeps everything in `./data`, prints the setup code in
+  the log. Optional face finder build. Guide: docs/docker.md.
+- **⚙️ Board in the admin console:** board name, time zone, holidays, weather town (search by name),
+  temperature unit, calendar (iCloud/CalDAV with **Find my calendars**, or Google client ID/secret)
+  and the photo album link — no more editing files on the server. Saving restarts the board in a few
+  seconds. Console values win over `.env`; empty fields fall back to `.env`.
+- Passwords saved in the console are encrypted with a key kept outside the database
+  (`data/secret.key` or `SECRET_KEY`), copied into the nightly backup; never shown again, and
+  changes are logged in 🛡 Activity by name only. Losing the key only means entering them again.
+- `TZ` works as the time zone too (the usual container variable). The service restarts 2 seconds
+  after stopping instead of 5.
+
 ## 0.4.4 — security and release housekeeping
 - Fonts are bundled with the board (SIL Open Font License, via npm `@fontsource/*`): screens no longer
   contact Google Fonts, and the board looks right without internet.

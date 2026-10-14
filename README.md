@@ -12,18 +12,29 @@ A chalkboard-style family wall calendar for a wall-mounted screen, edited from a
 
 ## Install
 
-On a Debian/Ubuntu LXC, VM, Raspberry Pi (64-bit OS) or other small Linux box, the git checkout *is* the install:
+**With Docker** (any machine with Docker: a NAS, a Pi, a server):
+
+```bash
+mkdir family-chalk-planner && cd family-chalk-planner
+curl -fsSLO https://raw.githubusercontent.com/joshua-d-miller/family-chalk-planner/main/compose.yaml
+docker compose up -d
+docker compose logs board      # shows the one-time setup code
+```
+
+**Or directly on Debian/Ubuntu** (LXC, VM, Raspberry Pi 64-bit), where the git checkout *is* the install:
 
 ```bash
 git clone https://github.com/joshua-d-miller/family-chalk-planner.git /opt/family-chalk-planner
 sudo bash /opt/family-chalk-planner/deploy/install.sh
 ```
 
-The installer adds Node.js 22 if it's missing, a locked-down service user, a systemd service that runs straight from that folder, and the optional face finder for photo framing. It also prints a one-time setup code for creating the admin account at `/admin`, where you pair screens and invite people. Then fill in your calendar and location (Google Calendar: see [docs/google-calendar.md](docs/google-calendar.md)) in `/opt/family-chalk-planner/.env` and run `systemctl restart family-chalk-planner`.
+The installer adds Node.js 22 if it's missing, a locked-down service user, a systemd service that runs straight from that folder, and the optional face finder for photo framing.
 
-Settings (`.env`) and data (`data/`) stay in the same folder and are ignored by git, so updating is just a pull: `sudo /opt/family-chalk-planner/deploy/update.sh`. It runs `git pull`, restarts, and rolls back automatically if the new version doesn't start.
+Either way, open `http://<server>:3002/admin`, enter the setup code to create the admin account, then use **⚙️ Board** in the console for your calendar (iCloud/CalDAV with "Find my calendars", or [Google](docs/google-calendar.md)), weather town and photo album. No files to edit. Pair the wall display and invite people from the same console.
 
-See **[docs/install.md](docs/install.md)** for the details: Proxmox, private repos, HTTPS, the wall display, backups, and moving an older setup over.
+Updating: `docker compose pull && docker compose up -d`, or `sudo /opt/family-chalk-planner/deploy/update.sh` (installs the newest release and rolls back automatically if it doesn't start).
+
+Details: **[docs/docker.md](docs/docker.md)** and **[docs/install.md](docs/install.md)** (Proxmox, HTTPS, the wall display, backups).
 
 ## Use
 

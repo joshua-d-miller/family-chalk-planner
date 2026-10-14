@@ -358,7 +358,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
   // Not: wiping a month, changing the stamp/GIF libraries, uploads, style, photos, settings.
   const FAMILY_POSTS = new Set(['/events', '/events/update', '/events/delete', '/meals', '/jars', '/countdowns', '/evcolor',
     '/art', '/art/update', '/art/bulk', '/art/restore', '/art/delete', '/art/undo']);
-  const ADMIN = [/^\/devices/, /^\/users/, /^\/security/, /^\/google\//, /^\/calendar\/status$/, /^\/trash$/, /^\/notes$/];
+  const ADMIN = [/^\/board-settings/, /^\/devices/, /^\/users/, /^\/security/, /^\/google\//, /^\/calendar\/status$/, /^\/trash$/, /^\/notes$/];
   app.use('/api', (req, res, next) => {
     const write = !(req.method === 'GET' || req.method === 'HEAD');
     if (write && req.get('X-Chalk') !== '1') return res.status(403).json({ error: 'Missing request header' });   // no cross-site form posts
@@ -807,7 +807,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
     const fake = { _dev: undefined, get: h => (String(h).toLowerCase() === 'cookie' ? cookieHeader : ''), ip: '' };
     return rankOf(fake) > 0;
   }
-  return { deviceOf, userOf, rankOf, resetAll, newSetupCode, describe, totpAt, cleanup, stillAllowed };
+  return { deviceOf, userOf, rankOf, resetAll, newSetupCode, describe, totpAt, cleanup, stillAllowed, audit };
 }
 
 module.exports = { setup, describe, totpAt, b32dec };

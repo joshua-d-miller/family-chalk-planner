@@ -1,0 +1,22 @@
+# Family Chalk Planner with Docker Compose — step by step in docs/docker.md
+#   docker compose up -d
+#   docker compose logs board      (the one-time setup code for /admin is printed here)
+services:
+  board:
+    image: ghcr.io/joshua-d-miller/family-chalk-planner:latest
+    # build: .                     # building from a copy of the code instead? uncomment, then: docker compose up -d --build
+    container_name: family-chalk-planner
+    restart: unless-stopped        # also how saved settings take effect (the board restarts itself)
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./data:/data               # database, uploads, nightly backups: back this folder up
+    environment:
+      TZ: America/New_York         # your time zone (also settable in the admin console)
+      # PUBLIC_URL: https://board.example.com    # your https address through a reverse proxy
+      # TRUST_PROXY: 172.18.0.1                  # your reverse proxy's address (shown in 🛡 Security)
+      # PUID: 1000                               # user/group that owns ./data
+      # PGID: 1000
+    # Everything else (calendar, weather, photos) is set in the admin console → ⚙️ Board.
+    # Prefer a file? Copy .env.example to .env and uncomment:
+    # env_file: .env

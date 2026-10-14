@@ -14,12 +14,17 @@ const crypto = require('crypto');
 const { DatabaseSync } = require('node:sqlite');
 const ICAL = require('ical.js');
 
-// ---- Settings (environment; see .env.example) ----
+// ---- Settings: the environment (.env), overridden by what the admin console saved (server/settings.js) ----
 const ENV = process.env;
 const num = (v, d) => (v === undefined || v === '' || !Number.isFinite(+v) ? d : +v);
+const APP_DIR = path.join(__dirname, '..');
+const DATA_DIR = ENV.DATA_DIR || path.join(APP_DIR, 'data');
+fs.mkdirSync(DATA_DIR, { recursive: true });
+const db = new DatabaseSync(path.join(DATA_DIR, 'chalkboard.db'));
+const boardSettings = require('./settings').setup({ db, DATA_DIR });   // puts the console's values into ENV
 const PORT = num(ENV.PORT, 3002);
 const BIND = ENV.BIND || '0.0.0.0';
-const TZ = ENV.TIMEZONE || 'UTC';
+const TZ = ENV.TIMEZONE || ENV.TZ || 'UTC';   // TZ: the usual container variable
 const LAT = num(ENV.LATITUDE, null), LON = num(ENV.LONGITUDE, null);   // weather is off until both are set
 const TEMP_UNIT = ENV.TEMP_UNIT === 'celsius' ? 'celsius' : 'fahrenheit';
 const TRASH_DAY = /^[0-6]$/.test(ENV.TRASH_DAY || '') ? +ENV.TRASH_DAY : null;   // 0 = Sunday ... 6 = Saturday; empty = off
@@ -27,10 +32,6 @@ const HOLIDAYS = (ENV.HOLIDAYS || 'us').toLowerCase();   // 'us' or 'none'
 const BOARD_TITLE = String(ENV.BOARD_TITLE || 'Family Chalk Planner').slice(0, 60);
 // AGPL: people using the board can get its source. Point this at your fork if you change the code.
 const SOURCE_URL = /^https?:\/\/[^\s"<>]+$/.test(ENV.SOURCE_URL || '') ? ENV.SOURCE_URL : 'https://github.com/joshua-d-miller/family-chalk-planner';
-const APP_DIR = path.join(__dirname, '..');
-const DATA_DIR = ENV.DATA_DIR || path.join(APP_DIR, 'data');
-fs.mkdirSync(DATA_DIR, { recursive: true });
-
 const ICLOUD_USER = ENV.CALDAV_USER || ENV.ICLOUD_USER;            // ICLOUD_* names still work
 const ICLOUD_PASS = ENV.CALDAV_PASSWORD || ENV.ICLOUD_APP_PASSWORD;
 const CAL_NAME = ENV.CALDAV_CALENDAR || ENV.ICLOUD_CALENDAR;
@@ -55,7 +56,6 @@ const AUTH = 'Basic ' + Buffer.from(`${ICLOUD_USER}:${ICLOUD_PASS}`).toString('b
 // ---------------------------------------------------------------------------
 // Art database
 // ---------------------------------------------------------------------------
-const db = new DatabaseSync(path.join(DATA_DIR, 'chalkboard.db'));
 for (const f of ['chalkboard.db', 'chalkboard.db-wal', 'chalkboard.db-shm']) { try { fs.chmodSync(path.join(DATA_DIR, f), 0o600); } catch { /* not there yet */ } }
 try { const ck = Object.values(db.prepare('PRAGMA quick_check').get() || {})[0]; if (ck !== 'ok') console.error(`Chalk Planner: DATABASE CHECK FAILED (${ck}) - restore last night's snapshot from the backup folder`); } catch (e) { console.error('Chalk Planner: database check failed:', e.message); }
 // SQLite: one file, WAL so the wall can read while a tablet writes; wait instead of failing if busy.
@@ -216,30 +216,38 @@ async function findCalendar() {
     calUrl = `${G.dav}/caldav/v2/${encodeURIComponent(st.calendarId)}/events/`;
     return calUrl;
   }
-  const p = await dav(CALDAV_URL, 'PROPFIND',
-    '<d:propfind xmlns:d="DAV:"><d:prop><d:current-user-principal/></d:prop></d:propfind>');
+  const found = (await caldavCalendars(CALDAV_URL, AUTH)).find(c => c.name === CAL_NAME);
+  if (!found) throw new Error(`Calendar "${CAL_NAME}" not found on the server`);
+  calUrl = found.url;
+  return calUrl;
+}
+// Every calendar on a CalDAV account: [{ name, url }] (also used by the console's "Find my calendars")
+async function caldavCalendars(base, auth) {
+  const req = async (url, body, depth = '0') => {
+    const r = await fetch(url, { method: 'PROPFIND', headers: { Authorization: auth, 'Content-Type': 'application/xml; charset=utf-8', Depth: depth }, body, signal: AbortSignal.timeout(20000) });
+    if (r.status === 401 || r.status === 403) throw new Error('The calendar server didn’t accept that username and password');
+    if (!(r.ok || r.status === 207)) throw new Error(`The calendar server answered ${r.status}`);
+    return r.text();
+  };
+  const p = await req(base, '<d:propfind xmlns:d="DAV:"><d:prop><d:current-user-principal/></d:prop></d:propfind>');
   const principal = (p.match(/current-user-principal[^>]*>\s*<(?:\w+:)?href[^>]*>([^<]+)</) || p.match(/>(\/[0-9]+\/principal\/)</) || [])[1];
   if (!principal) throw new Error('Calendar login failed (no principal)');
-
-  const principalUrl = new URL(xmlUnescape(principal.trim()), CALDAV_URL).toString();
-  const h = await dav(principalUrl, 'PROPFIND',
-    '<d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop><c:calendar-home-set/></d:prop></d:propfind>');
+  const principalUrl = new URL(xmlUnescape(principal.trim()), base).toString();
+  const h = await req(principalUrl, '<d:propfind xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop><c:calendar-home-set/></d:prop></d:propfind>');
   const homeHref = (h.match(/calendar-home-set[^>]*>\s*<(?:\w+:)?href[^>]*>([^<]+)</) || [])[1];
   if (!homeHref) throw new Error('Calendar home not found');
   const home = new URL(xmlUnescape(homeHref.trim()), principalUrl).toString();
-
-  const list = await dav(home, 'PROPFIND',
-    '<d:propfind xmlns:d="DAV:"><d:prop><d:displayname/></d:prop></d:propfind>', '1');
+  const list = await req(home, '<d:propfind xmlns:d="DAV:"><d:prop><d:displayname/><d:resourcetype/></d:prop></d:propfind>', '1');
+  const out = [];
   for (const block of list.split(/<(?:\w+:)?response[\s>]/).slice(1)) {
     const href = (block.match(/<(?:\w+:)?href[^>]*>([^<]+)</) || [])[1];
     const name = (block.match(/<(?:\w+:)?displayname[^>]*>([^<]*)</) || [])[1];
-    if (href && name && xmlUnescape(name).trim() === CAL_NAME) {
-      calUrl = new URL(href, home).toString();
-      if (!calUrl.endsWith('/')) calUrl += '/';
-      return calUrl;
-    }
+    if (!href || !name || !xmlUnescape(name).trim()) continue;
+    if (/resourcetype/.test(block) && !/<(?:\w+:)?calendar[\s/>]/.test(block.split(/resourcetype/)[1] || '')) continue;   // not a calendar (inbox, outbox…)
+    let url = new URL(href, home).toString(); if (!url.endsWith('/')) url += '/';
+    out.push({ name: xmlUnescape(name).trim(), url });
   }
-  throw new Error(`Calendar "${CAL_NAME}" not found on the server`);
+  return out;
 }
 
 // Turn one occurrence into what the board needs.
@@ -663,6 +671,9 @@ function snapshotDb() {
     if (fs.existsSync(file)) return;
     db.exec(`VACUUM INTO '${file.replace(/'/g, "''")}'`);
     fs.chmodSync(file, 0o600);
+    // the key for passwords saved in the console rides along, so a restore just works
+    const keyFile = path.join(DATA_DIR, 'secret.key');
+    if (fs.existsSync(keyFile)) { fs.copyFileSync(keyFile, path.join(BACKUP_DIR, 'secret.key')); fs.chmodSync(path.join(BACKUP_DIR, 'secret.key'), 0o600); }
     const old = fs.readdirSync(BACKUP_DIR).filter(f => /^chalkboard-\d{4}-\d{2}-\d{2}\.db$/.test(f)).sort().reverse().slice(KEEP_SNAPSHOTS);
     for (const f of old) fs.unlinkSync(path.join(BACKUP_DIR, f));
     console.log(`Chalkboard: snapshot ${path.basename(file)}`);
@@ -807,7 +818,7 @@ app.get('/api/calendar/status', (req, res) => {
 });
 const gPending = new Map();   // state -> { verifier, at }
 app.post('/api/google/start', (req, res) => {
-  if (PROVIDER !== 'google' || !G.id) return res.status(400).json({ error: 'Google isn’t set up on the server yet (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env)' });
+  if (PROVIDER !== 'google' || !G.id) return res.status(400).json({ error: 'Google isn’t set up on the server yet (admin console → ⚙️ Board → Calendar: Google client ID and secret)' });
   for (const [k, v] of gPending) if (Date.now() - v.at > 15 * 60 * 1000) gPending.delete(k);
   const state = crypto.randomBytes(16).toString('hex'), verifier = crypto.randomBytes(32).toString('base64url');
   gPending.set(state, { verifier, at: Date.now() });
@@ -1844,6 +1855,44 @@ function sendBoard(kind) {
   };
 }
 const APP_VERSION = 'v' + require('../package.json').version;
+// ---- Admin console → ⚙️ Board: settings that used to need .env (server/settings.js) ----
+// Saving restarts the board (a few seconds) so everything picks the new values up; screens reconnect.
+function restartSoon(why) {
+  setTimeout(() => { console.log(`Chalk Planner: restarting to apply ${why}`); process.exit(3); }, 400);   // the service manager starts it again
+}
+app.get('/api/board-settings', (req, res) => {
+  res.set('Cache-Control', 'no-store').json({ ...boardSettings.view(), version: APP_VERSION, timezones: typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [] });
+});
+app.post('/api/board-settings', (req, res) => {
+  const r = boardSettings.save((req.body || {}).values);
+  if (r.errors) return res.status(400).json({ error: 'Some settings need fixing', errors: r.errors });
+  if (!r.changed.length) return res.json({ ok: true, restarting: false });
+  access.audit(req, 'settings.changed', { target: 'board settings', detail: r.changed.join(', ') });   // names only, never values
+  res.json({ ok: true, restarting: true, changed: r.changed });
+  restartSoon('new settings');
+});
+// "Find my calendars": try a CalDAV account and list its calendars (the password may be the saved one)
+app.post('/api/board-settings/caldav-test', async (req, res) => {
+  const b = req.body || {}, url = String(b.url || ENV.CALDAV_URL || 'https://caldav.icloud.com/').trim();
+  const user = String(b.user ?? ENV.CALDAV_USER ?? '').trim(), pass = b.password ? String(b.password) : (ENV.CALDAV_PASSWORD || ENV.ICLOUD_APP_PASSWORD || '');
+  try { const u = new URL(url); if (!/^https?:$/.test(u.protocol)) throw 0; } catch { return res.status(400).json({ error: 'The server address should start with https://' }); }
+  if (!user || !pass) return res.status(400).json({ error: 'Enter the username and password first' });
+  try {
+    const cals = await caldavCalendars(url, 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64'));
+    res.json({ calendars: cals.map(c => c.name) });
+  } catch (e) { res.status(400).json({ error: e.name === 'TimeoutError' ? 'The calendar server didn’t answer' : e.message }); }
+});
+// Weather location: search a town (Open-Meteo geocoding, no account)
+app.get('/api/board-settings/geocode', async (req, res) => {
+  const q = String(req.query.q || '').trim().slice(0, 80);
+  if (q.length < 2) return res.json({ places: [] });
+  try {
+    const r = await fetch(`${ENV.GEOCODE_URL || 'https://geocoding-api.open-meteo.com'}/v1/search?count=6&language=en&format=json&name=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(10000) });
+    const j = await r.json();
+    res.json({ places: (j.results || []).map(p => ({ name: [p.name, p.admin1, p.country].filter(Boolean).join(', '), lat: Math.round(p.latitude * 1e4) / 1e4, lon: Math.round(p.longitude * 1e4) / 1e4, timezone: p.timezone || null })) });
+  } catch { res.status(502).json({ error: 'Couldn’t search right now - you can type the latitude and longitude instead' }); }
+});
+
 // Fonts: bundled from npm (@fontsource, SIL Open Font License) and served by the board itself, so no
 // screen ever calls Google and the board looks right with the internet down.
 const FONTS = [['kalam', [400, 700]], ['dancing-script', [700]], ['cormorant-garamond', [600]], ['caveat', [600]], ['permanent-marker', [400]],

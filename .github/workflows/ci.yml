@@ -19,3 +19,14 @@ jobs:
         run: shellcheck -S warning deploy/*.sh
       - name: Python syntax
         run: python3 -m py_compile face/facefocus.py
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Container image builds and starts
+        run: |
+          docker build -t fcp:ci .
+          docker run -d --name fcp -p 3002:3002 fcp:ci
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3002/api/today && break; sleep 1; done
+          docker logs fcp 2>&1 | grep -q 'setup code' || { docker logs fcp; exit 1; }
+          [ "$(docker exec fcp stat -c %u /data/chalkboard.db)" = 1000 ]

@@ -42,9 +42,11 @@ bash /opt/family-chalk-planner/deploy/install.sh
 Download the code (GitHub → Code → Download ZIP), unzip it where it should live, and run `bash deploy/install.sh` inside it. To update, replace the code files with a newer copy (keep `.env` and `data/`) and restart the service. With git, `update.sh` does this for you.
 
 ## 3. Settings
-Edit `.env` in the install folder (root-only), then `systemctl restart family-chalk-planner`.
+Most settings are in the **admin console → ⚙️ Board** (after you create the admin account in the next section): the board's name, time zone, holidays, weather town (search by name), the calendar (iCloud/CalDAV with **Find my calendars**, or Google) and the photo album link. **Save and restart** applies them in a few seconds. Passwords and the Google client secret are stored encrypted with a key kept outside the database (`data/secret.key`, or `SECRET_KEY` in the environment), and are never shown again. If that key is lost, only those passwords need entering again.
 
-| Setting | What it does |
+Server-level settings stay in `.env` in the install folder (root-only); after editing it, `systemctl restart family-chalk-planner`. Anything set in the console wins over the same setting in `.env`; leave a console field empty to use `.env`.
+
+| Setting (`.env`, or ⚙️ Board in the console) | What it does |
 |---|---|
 | `CALDAV_URL`, `CALDAV_USER`, `CALDAV_PASSWORD`, `CALDAV_CALENDAR` | Your calendar. iCloud: `https://caldav.icloud.com/`, your Apple ID, an **app-specific password** (account.apple.com → Sign-In and Security), and the calendar's name exactly as shown. |
 | `CALENDAR_PROVIDER`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Use a **Google Calendar** instead. Setup takes ~15 minutes: see **[google-calendar.md](google-calendar.md)**. |
@@ -57,6 +59,9 @@ Edit `.env` in the install folder (root-only), then `systemctl restart family-ch
 | `PHOTO_ALBUM_URL` | The share link of an **iCloud Shared Album** (Public Website on) or a **Google Photos shared album**. See **[photos.md](photos.md)**. |
 | `BOARD_TITLE` | Name shown in the browser and on home-screen icons. |
 | `PORT`, `BIND`, `DATA_DIR`, `BACKUP_DIR`, `SOURCE_URL` | Server details; the defaults are fine. |
+| `TRUST_PROXY` | Your reverse proxy's address (the 🛡 Security tab shows it). |
+| `UPDATE_CHANNEL` | `release` (default) or `main` for `deploy/update.sh`. |
+| `SECRET_KEY` | Optional: the key that encrypts passwords saved in the console (otherwise `data/secret.key`). |
 
 ## Screens and people
 Everything works in any current browser — Safari, Chrome, Edge, Firefox, Samsung Internet, Fully Kiosk — on phones, tablets and computers. (Where the console shows a browser name, it's only there so you can tell your devices apart.)
@@ -120,7 +125,7 @@ Every night the board writes a consistent copy of its database to `BACKUP_DIR` (
 
 Everything lives in one SQLite file (`data/chalkboard.db`, readable by the service only): calendar art, settings, screens, people and the activity log. SQLite is the right fit for a household board — one small file, no database server to run, crash-safe, and checked on every start (a problem shows in `journalctl`).
 
-A backup restores everything, sign-ins included — there's no separate key file to keep. Each person's authenticator-app secret is locked with their own password, so a copied backup can't produce sign-in codes without cracking that password.
+A backup restores everything, sign-ins included. Each person's authenticator-app secret is locked with their own password, so a copied backup can't produce sign-in codes without cracking that password. The nightly backup also copies `secret.key` (the key for passwords saved in ⚙️ Board); restore it next to the database (`cp backup/secret.key data/`). Without it, the board still works and only asks for the calendar password and Google client secret again.
 
 **Restore:**
 ```bash

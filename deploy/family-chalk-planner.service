@@ -13,7 +13,7 @@ WorkingDirectory=@APP_DIR@
 EnvironmentFile=@ENV_FILE@
 ExecStart=@NODE@ @APP_DIR@/server/chalkboard.js
 Restart=on-failure
-RestartSec=5
+RestartSec=2
 # Sandboxing lives in family-chalk-planner.service.d/hardening.conf (added where supported)
 
 [Install]

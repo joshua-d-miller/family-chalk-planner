@@ -1,0 +1,15 @@
+.git
+.github
+node_modules
+data
+*.env
+.env
+face/venv
+face/yunet.onnx
+face/__pycache__
+test
+docs
+*.db
+*.db-wal
+*.db-shm
+*.patch

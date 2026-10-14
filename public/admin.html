@@ -140,10 +140,11 @@ button:disabled{opacity:.5;cursor:default}
         <button data-t="screens" class="on">📺 Screens</button>
         <button data-t="people">👪 People</button>
         <button data-t="security">🛡 Security <span id="secBadge" class="badge" hidden></span></button>
+        <button data-t="board">⚙️ Board</button>
         <button data-t="account">👤 My account</button>
       </div>
       <div class="actions" style="margin:0">
-        <a href="/edit#settings"><button class="sm">⚙️ Board settings</button></a>
+        <a href="/edit#settings"><button class="sm">🗓 Open the board</button></a>
         <button class="sm" id="logout">Sign out</button>
       </div>
     </div>
@@ -216,6 +217,57 @@ button:disabled{opacity:.5;cursor:default}
             <option value="screen">Screens</option><option value="person">People</option><option value="passkey">Passkeys</option><option value="other">Settings &amp; resets</option>
           </select></div>
         <div class="list log" id="secLog"></div>
+      </div>
+    </div>
+
+    <div id="tBoard" hidden>
+      <div class="card">
+        <h2>Board</h2>
+        <label for="bfTitle">Name of the board</label><input id="bfTitle" maxlength="60" data-k="BOARD_TITLE" placeholder="Family Chalk Planner">
+        <label for="bfTz">Time zone</label><select id="bfTz" data-k="TIMEZONE"></select>
+        <label for="bfHol">Holidays shown on the board</label>
+        <select id="bfHol" data-k="HOLIDAYS"><option value="">(default: US)</option><option value="us">US holidays</option><option value="none">None</option></select>
+      </div>
+      <div class="card">
+        <h2>Weather</h2>
+        <p class="dim">Search your town (Open-Meteo, no account needed). Leave empty to hide the weather.</p>
+        <div class="row"><div><label for="bfPlace">Town</label><input id="bfPlace" autocomplete="off" placeholder="State College"></div></div>
+        <div class="list" id="bfPlaces"></div>
+        <div class="row">
+          <div><label for="bfLat">Latitude</label><input id="bfLat" inputmode="decimal" data-k="LATITUDE"></div>
+          <div><label for="bfLon">Longitude</label><input id="bfLon" inputmode="decimal" data-k="LONGITUDE"></div>
+          <div><label for="bfUnit">Temperature</label><select id="bfUnit" data-k="TEMP_UNIT"><option value="">(default: °F)</option><option value="fahrenheit">°F</option><option value="celsius">°C</option></select></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Calendar</h2>
+        <div class="seg" id="bfProv"><button data-p="caldav">🍎 iCloud or other CalDAV</button><button data-p="google">🟦 Google Calendar</button></div>
+        <div id="bfCaldav">
+          <p class="dim">iCloud: your Apple ID email and an <b>app-specific password</b> (account.apple.com → Sign-In and Security → App-Specific Passwords). Not your Apple ID password.</p>
+          <label for="bfUrl">Server address</label><input id="bfUrl" data-k="CALDAV_URL" placeholder="https://caldav.icloud.com/">
+          <div class="row">
+            <div><label for="bfUser">Username / Apple ID</label><input id="bfUser" data-k="CALDAV_USER" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+            <div><label for="bfPass">Password</label><input id="bfPass" type="password" data-k="CALDAV_PASSWORD" autocomplete="new-password"></div>
+          </div>
+          <div class="actions"><button id="bfFind">Find my calendars</button></div>
+          <label for="bfCal">Calendar to show</label><input id="bfCal" data-k="CALDAV_CALENDAR" list="bfCals" autocomplete="off"><datalist id="bfCals"></datalist>
+          <div class="err" id="bfFindErr"></div>
+        </div>
+        <div id="bfGoogle" hidden>
+          <p class="dim">Create the Google client once (step-by-step in docs/google-calendar.md), paste it here, save, then press <b>Sign in with Google</b> in ⚙️ Settings on the board.</p>
+          <label for="bfGid">Client ID</label><input id="bfGid" data-k="GOOGLE_CLIENT_ID" autocomplete="off" spellcheck="false">
+          <label for="bfGsec">Client secret</label><input id="bfGsec" type="password" data-k="GOOGLE_CLIENT_SECRET" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="card">
+        <h2>Photos</h2>
+        <p class="dim">The share link of an iCloud Shared Album (with Public Website on) or a Google Photos shared album. Step-by-step: docs/photos.md.</p>
+        <label for="bfAlbum">Album link</label><input id="bfAlbum" data-k="PHOTO_ALBUM_URL" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="card">
+        <p class="dim">Saving restarts the board (about 10 seconds); screens reconnect by themselves. Settings saved here win over the server’s .env file; empty fields use .env or the default. Passwords are stored encrypted and never shown again.</p>
+        <div class="actions"><button class="go" id="bfSave">Save and restart</button><span class="dim" id="bfVer"></span></div>
+        <div class="err" id="bfErr"></div>
       </div>
     </div>
 
@@ -338,23 +390,112 @@ button:disabled{opacity:.5;cursor:default}
   $('liCode').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('liGo').click(); });
   $('logout').addEventListener('click', function () { api('/api/account/logout', {}).then(function () { location.href = '/admin'; }); });
 
+  // ---- ⚙️ Board: settings that used to live in the server's .env ----
+  var bf = { data: null, prov: 'caldav' };
+  function bfSetProv(p) {
+    bf.prov = p;
+    Array.prototype.forEach.call(document.querySelectorAll('#bfProv button'), function (b) { b.classList.toggle('on', b.dataset.p === p); });
+    $('bfCaldav').hidden = p !== 'caldav'; $('bfGoogle').hidden = p !== 'google';
+  }
+  function loadBoard() {
+    api('/api/board-settings').then(function (d) {
+      bf.data = d; var F = d.fields;
+      if (!$('bfTz').options.length) {
+        $('bfTz').appendChild(new Option('(default from .env / UTC)', ''));
+        d.timezones.forEach(function (z) { $('bfTz').appendChild(new Option(z.replace(/_/g, ' '), z)); });
+      }
+      Array.prototype.forEach.call(document.querySelectorAll('#tBoard [data-k]'), function (inp) {
+        var f = F[inp.dataset.k]; if (!f) return;
+        if (f.type === 'secret') {
+          inp.value = '';
+          inp.placeholder = f.set ? (f.source === 'env' ? '•••• set in .env (type to replace)' : '•••• saved (type to replace)') : (d.lost.indexOf(inp.dataset.k) >= 0 ? '⚠ enter it again' : '');
+        } else {
+          inp.value = f.value || '';
+          if (inp.tagName === 'INPUT') inp.placeholder = f.env ? 'from .env: ' + f.env : (inp.dataset.ph || inp.placeholder);
+          else if (f.env && !f.value) { var o = inp.options[0]; if (o && o.value === '') o.textContent = '(from .env: ' + f.env + ')'; }
+        }
+        inp.dataset.orig = inp.value;
+      });
+      var p = F.CALENDAR_PROVIDER.value || F.CALENDAR_PROVIDER.env || ((F.GOOGLE_CLIENT_ID.value || F.GOOGLE_CLIENT_ID.env) ? 'google' : 'caldav');
+      bfSetProv(p === 'google' ? 'google' : 'caldav');
+      $('bfVer').textContent = d.version; $('bfErr').textContent = '';
+    }).catch(function (e) { $('bfErr').textContent = e.message; });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#bfProv button'), function (b) { b.addEventListener('click', function () { bfSetProv(b.dataset.p); }); });
+  var placeTimer = null;
+  $('bfPlace').addEventListener('input', function () {
+    var q = this.value.trim(); clearTimeout(placeTimer);
+    placeTimer = setTimeout(function () {
+      if (q.length < 2) { $('bfPlaces').innerHTML = ''; return; }
+      api('/api/board-settings/geocode?q=' + encodeURIComponent(q)).then(function (r) {
+        var box = $('bfPlaces'); box.innerHTML = '';
+        r.places.forEach(function (pl) {
+          var b = el('button', 'sm', pl.name); b.type = 'button'; b.style.textAlign = 'left';
+          b.addEventListener('click', function () {
+            $('bfLat').value = pl.lat; $('bfLon').value = pl.lon; box.innerHTML = '';
+            $('bfPlace').value = pl.name;
+            if (pl.timezone && !$('bfTz').value) $('bfTz').value = pl.timezone;
+          });
+          box.appendChild(b);
+        });
+        if (!r.places.length) box.appendChild(el('div', 'dim', 'No towns found'));
+      }).catch(function (e) { $('bfPlaces').innerHTML = ''; $('bfPlaces').appendChild(el('div', 'err', e.message)); });
+    }, 350);
+  });
+  $('bfFind').addEventListener('click', function () {
+    $('bfFindErr').textContent = '';
+    busy($('bfFind'), api('/api/board-settings/caldav-test', { url: $('bfUrl').value || undefined, user: $('bfUser').value || undefined, password: $('bfPass').value || undefined }))
+      .then(function (r) {
+        var dl = $('bfCals'); dl.innerHTML = '';
+        r.calendars.forEach(function (n) { dl.appendChild(new Option(n, n)); });
+        $('bfFindErr').innerHTML = ''; $('bfFindErr').appendChild(el('span', 'ok', '✓ Signed in. Calendars: ' + (r.calendars.join(', ') || 'none found')));
+        if (r.calendars.length === 1 && !$('bfCal').value) $('bfCal').value = r.calendars[0];
+      }).catch(function (e) { $('bfFindErr').textContent = e.message; });
+  });
+  $('bfSave').addEventListener('click', function () {
+    var values = {};
+    Array.prototype.forEach.call(document.querySelectorAll('#tBoard [data-k]'), function (inp) {
+      var f = bf.data && bf.data.fields[inp.dataset.k]; if (!f) return;
+      if (f.type === 'secret') { if (inp.value) values[inp.dataset.k] = inp.value; }
+      else if (inp.value !== inp.dataset.orig) values[inp.dataset.k] = inp.value;
+    });
+    var F = bf.data.fields, curProv = F.CALENDAR_PROVIDER.value || '';
+    if (bf.prov !== (curProv || F.CALENDAR_PROVIDER.env || (F.GOOGLE_CLIENT_ID.value || F.GOOGLE_CLIENT_ID.env ? 'google' : 'caldav'))) values.CALENDAR_PROVIDER = bf.prov;
+    $('bfErr').textContent = '';
+    busy($('bfSave'), api('/api/board-settings', { values: values })).then(function (r) {
+      if (!r.restarting) { $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', 'Nothing changed.')); return; }
+      $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', 'Saved. Restarting the board…'));
+      var tries = 0, wait = function () {
+        setTimeout(function () {
+          fetch('/api/whoami').then(function (x) { if (!x.ok) throw 0; $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', '✓ Saved and running with the new settings.')); loadBoard(); })
+            .catch(function () { if (++tries < 40) wait(); else $('bfErr').textContent = 'The board hasn’t come back yet. Check the server (journalctl -u family-chalk-planner).'; });
+        }, 1500);
+      };
+      wait();
+    }).catch(function (e) {
+      var errs = e.body && e.body.errors, msg = e.message;
+      if (errs) msg += ': ' + Object.keys(errs).map(function (k) { return k + ' — ' + errs[k]; }).join('; ');
+      $('bfErr').textContent = msg;
+    });
+  });
+
   // ---- console ----
   function tab(t) {
     Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.classList.toggle('on', b.dataset.t === t); });
-    $('tScreens').hidden = t !== 'screens'; $('tPeople').hidden = t !== 'people'; $('tAccount').hidden = t !== 'account'; $('tSecurity').hidden = t !== 'security';
-    if (t === 'screens') loadScreens(); else if (t === 'people') loadPeople(); else if (t === 'security') loadSecurity(); else loadAccount();
+    $('tScreens').hidden = t !== 'screens'; $('tPeople').hidden = t !== 'people'; $('tAccount').hidden = t !== 'account'; $('tSecurity').hidden = t !== 'security'; $('tBoard').hidden = t !== 'board';
+    if (t === 'screens') loadScreens(); else if (t === 'people') loadPeople(); else if (t === 'security') loadSecurity(); else if (t === 'board') loadBoard(); else loadAccount();
     try { history.replaceState(null, '', '/admin#' + t); } catch (e) {}
   }
   Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.addEventListener('click', function () { tab(b.dataset.t); }); });
   window.addEventListener('hashchange', function () {   // links like /admin#security
     var t = location.hash.slice(1);
-    if (!$('vConsole').hidden && ['screens', 'people', 'security', 'account'].indexOf(t) >= 0) tab(t);
+    if (!$('vConsole').hidden && ['screens', 'people', 'security', 'board', 'account'].indexOf(t) >= 0) tab(t);
   });
   function openConsole() {
     $('subtitle').textContent = 'Signed in as ' + (who.user ? who.user.name + ' (' + who.user.username + ')' : '');
     show('vConsole');
     var t = location.hash.slice(1);
-    tab(['screens', 'people', 'security', 'account'].indexOf(t) >= 0 ? t : 'screens');
+    tab(['screens', 'people', 'security', 'board', 'account'].indexOf(t) >= 0 ? t : 'screens');
     loadBadge();
   }
   function segs(id, help, texts) {

@@ -50,6 +50,9 @@ rather than a public issue.
 - **Outbound requests** go only to the configured CalDAV server, Open-Meteo, Apple's photo
   hosts, and the icon/emoji CDNs.
 
+## Settings saved in the admin console
+Only admins (with a fresh console sign-in) can see or change ⚙️ Board. Passwords and the Google client secret are encrypted (AES-256-GCM) with a key that isn't in the database (`data/secret.key`, mode 600, or `SECRET_KEY`), are never sent back to the browser, and changes are logged by setting name only. Values are checked (time zones, numbers, http(s) addresses, single lines) before they're saved. "Find my calendars" may reach a CalDAV server on your own network on purpose (Nextcloud, Radicale), so it's limited to admins.
+
 ## Links the board downloads
 
 "Add from link" (GIFs) is the only time the board fetches a web address someone typed. Only editors can use it; it follows at most 4 redirects, stops at 10 MB and 15 seconds, keeps only real GIF/PNG/JPEG/WebP files, and refuses any address on a private network (your LAN, the server itself, cloud metadata addresses), checked again for every redirect and every DNS answer.
