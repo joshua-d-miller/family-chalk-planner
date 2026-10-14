@@ -29,6 +29,9 @@ body.display{cursor:none;background:#151615}
 body.display:not(.framed) #board{width:1252px;height:642px;padding:0;background:transparent}
 body.display:not(.framed) .cork{display:none}
 body.display:not(.framed) .slate{box-shadow:none}
+/* family touch screen: like the wall (no wood frame), but keeps the strip with the buttons */
+body.family #board{width:1252px;height:692px;padding:0;background:transparent!important}
+body.family .slate{box-shadow:none}
 #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
 #board{width:1280px;height:720px;flex:none;padding:14px;background:var(--wood);display:flex;flex-direction:column;transform-origin:center center}
 .slate{position:relative;width:1252px;height:642px;background:var(--slate);color:var(--chalk);box-shadow:inset 0 0 0 2px rgba(0,0,0,.5),inset 0 0 50px rgba(0,0,0,.6);
@@ -984,6 +987,11 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   var FRAMELESS = !EDIT && !Q.has('framed');   // ?framed puts the wood frame back on the wall
   if (!EDIT && Q.has('framed')) document.body.classList.add('framed');
   var BOARD_W = FRAMELESS ? 1252 : 1280, BOARD_H = FRAMELESS ? 642 : 720;
+  // A family screen (paired touch screen) edits like a tablet but behaves like the wall:
+  // no frame, photo frame on double tap, night slideshow, updates itself, back to this month when idle.
+  function isFamily() { return document.body.classList.contains('family'); }
+  function onWall() { return !EDIT || isFamily(); }
+  function framelessNow() { return FRAMELESS || isFamily(); }
   function baseScale() { return Math.min(window.innerWidth / BOARD_W, window.innerHeight / BOARD_H); }
   function clampView() {
     var s = baseScale() * view.z;
@@ -1091,7 +1099,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     if (!Q.has('plainbg')) {
       try {
         var url = texCache[sf.id] || (texCache[sf.id] = paintSurface(sf));
-        if (FRAMELESS) {
+        if (framelessNow()) {
           // wall: one continuous surface across the whole screen, so the bands above and below the board match
           document.body.style.backgroundImage = url; document.body.style.backgroundSize = 'cover'; document.body.style.backgroundPosition = 'center';
           slate.style.background = 'transparent';
@@ -1586,7 +1594,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   function hm(s) { var m = /^(\d\d):(\d\d)$/.exec(s || ''); return m ? +m[1] * 60 + +m[2] : null; }
   function nightNow() {
     if (Q.has('slides')) return true;   // ?slides to try it any time
-    if (EDIT || !ph.cfg.night || !ph.list.length) return false;
+    if (!onWall() || !ph.cfg.night || !ph.list.length) return false;
     var f = hm(ph.cfg.from), t = hm(ph.cfg.to), n = new Date(), m = n.getHours() * 60 + n.getMinutes();
     if (f === null || t === null || f === t) return false;
     return f < t ? m >= f && m < t : m >= f || m < t;
@@ -1727,11 +1735,11 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   $('slides').addEventListener('click', function () {
     if (Date.now() - (ph.resumedAt || 0) < 1500) return;   // the tail end of the double tap that just brought it back
     if (ph.preview) ph.preview = false;
-    else if (!EDIT && ph.manual) {   // leaving the photo frame turned on by double tap
+    else if (onWall() && ph.manual) {   // leaving the photo frame turned on by double tap
       ph.manual = false; ph.exitAt = Date.now();
       if (nightNow()) { ph.peekUntil = Date.now() + 5 * 60 * 1000; ph.peekAt = Date.now(); }
     }
-    else if (!EDIT) { ph.peekUntil = Date.now() + 5 * 60 * 1000; ph.peekAt = Date.now(); }   // a tap on the wall shows the calendar for 5 minutes
+    else if (onWall()) { ph.peekUntil = Date.now() + 5 * 60 * 1000; ph.peekAt = Date.now(); }   // a tap on the wall shows the calendar for 5 minutes
     checkSlides();
   });
   if (!EDIT) {
@@ -3600,7 +3608,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       seen();
       var v = JSON.parse(m.data).v;
       if (!BOARD_VERSION || v === BOARD_VERSION) return;
-      if (EDIT) $('updbar').classList.add('on');                                   // never interrupt your drawing
+      if (EDIT && !(isFamily() && !state.drawing && !document.querySelector('.open'))) $('updbar').classList.add('on');   // never interrupt your drawing
       else setTimeout(function () { location.reload(); }, 1000 + Math.random() * 3000);   // the wall just updates itself
     });
     ['stroke', 'undo', 'remove', 'restore', 'update', 'clear', 'meta', 'meals', 'calendar'].forEach(function (t) { es.addEventListener(t, seen); });
@@ -3808,15 +3816,32 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       $('drawLabel').textContent = state.drawing ? (fam ? 'Done' : 'Done drawing') : (fam ? 'Decorate' : 'Draw');
     });
     $('addBtn').addEventListener('click', function () { openModal(state.today); });
+    var famTap = { t: 0, timer: null };
     $('grid').addEventListener('click', function (e) {
       if (state.drawing) return;
+      if (isFamily()) {   // double tap = photo frame, like the wall; a single tap still edits (after a short wait)
+        var now = Date.now();
+        if (now - famTap.t < 450) {
+          clearTimeout(famTap.timer); famTap.t = 0;
+          if (ph.peekUntil > now) { ph.peekUntil = 0; ph.resumedAt = now; checkSlides(); }
+          else if (ph.list.length) { ph.manual = true; ph.resumedAt = now; checkSlides(); }
+          else status('No photos yet (📷 Photos on a signed-in tablet)');
+          return;
+        }
+        famTap.t = now; clearTimeout(famTap.timer);
+        famTap.timer = setTimeout(function () { gridTap(e); }, 460);
+        return;
+      }
+      gridTap(e);
+    });
+    function gridTap(e) {
       var evEl = e.target.closest('.ev, .bar');
       if (evEl && evEl.__ev) return openEdit(evEl.__ev);
       var moreEl = e.target.closest('.more');
       if (moreEl) return openDay(moreEl.__day);
       var cell = e.target.closest('.day');
       if (cell) openModal(cell.dataset.date);
-    });
+    }
   }
 
   // ---- Add event ------------------------------------------------------------
@@ -4036,7 +4061,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       return w;
     }
     if (w.editor) return w;   // full editor
-    if (state.role === 'family') { document.body.classList.add('family'); $('drawLabel').textContent = 'Decorate'; return w; }
+    if (state.role === 'family') {
+      document.body.classList.add('family'); $('drawLabel').textContent = 'Decorate';
+      BOARD_W = 1252; BOARD_H = 692; view.z = 1; setSurface(state.surface.id); fit(); checkSlides();
+      document.addEventListener('pointerdown', function () { state.lastTouch = Date.now(); }, true);
+      return w;
+    }
     if (w.firstRun) { location.replace('/admin'); return w; }
     showSignIn(state.role === 'view' ? 'This screen is paired to show the board only. Sign in to edit.' : '');
     return w;
@@ -4056,7 +4086,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     api('/api/today').then(function (t) {
       var dayChanged = t.today !== state.today;
       state.todayYm = t.ym;
-      if (!EDIT && state.ym !== t.ym && Date.now() - state.lastTouch > 5 * 60 * 1000) { loadMonth(t.ym); return; }
+      var idle = Date.now() - state.lastTouch > 5 * 60 * 1000;
+      if (isFamily() && idle) {   // a family screen tidies itself up: no half-finished decorating, nothing left open
+        if (state.drawing) $('drawBtn').click();
+        if ($('updbar').classList.contains('on') && !document.querySelector('.open')) { location.reload(); return; }
+      }
+      if (onWall() && state.ym !== t.ym && idle) { loadMonth(t.ym); return; }
       if (dayChanged) loadExtras();
       loadMeals();   // catches anything missed while the live connection was down
       loadJars();
