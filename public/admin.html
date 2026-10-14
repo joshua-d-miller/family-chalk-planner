@@ -458,7 +458,7 @@ button:disabled{opacity:.5;cursor:default}
       d.passkeys.forEach(function (p) {
         var row = el('div', 'sub-item');
         row.appendChild(el('span', 'grow', '🔑 ' + (p.name || 'Passkey') + ' · added ' + new Date(p.created).toLocaleDateString() + ' · last used ' + ago(p.last_used)));
-        var b = el('button', 'sm del', 'Remove'); b.addEventListener('click', function () { if (confirm('Remove passkey “' + p.name + '” of ' + u.name + '?')) api('/api/users/passkeys/remove', { id: p.id }).then(function () { loadPersonDetail(u, box); }); });
+        var b = el('button', 'sm del', 'Remove'); b.addEventListener('click', function () { if (confirm('Remove passkey “' + p.name + '” of ' + u.name + '? Ask them to delete it from their password manager or device too.')) api('/api/users/passkeys/remove', { id: p.id }).then(function () { loadPersonDetail(u, box); }); });
         row.appendChild(b); box.appendChild(row);
       });
     }).catch(function (e) { box.innerHTML = ''; box.appendChild(el('div', 'err', e.message)); });
@@ -496,7 +496,7 @@ button:disabled{opacity:.5;cursor:default}
         line.appendChild(el('span', null, '🔑 ' + (p.name || 'Passkey')));
         var rm = el('button', 'sm del', 'Remove');
         rm.addEventListener('click', function () {
-          if (!confirm('Remove this passkey?')) return;
+          if (!confirm('Remove this passkey? Also delete it from the password manager or device that holds it, so it isn’t offered any more.')) return;
           api('/api/account/passkeys/remove', { id: p.id }).then(loadAccount).catch(function (e) { if (e.status === 401) showLogin('For safety, sign in again to add or remove a passkey.'); else $('pkErr').textContent = e.message; });
         });
         line.appendChild(rm); it.appendChild(line);

@@ -605,10 +605,14 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
   app.post('/api/passkey/login/verify', async (req, res) => {
     if (noPasskeys(req, res)) return;
     const b = req.body || {}, c = takeChallenge(b.id);
-    if (!c) return res.status(400).json({ error: 'That took too long - try again' });
+    if (!c) { audit(req, 'signin.failed', { target: 'passkey', detail: 'took too long (over 5 minutes) - nothing checked' }); return res.status(400).json({ error: 'That took too long - try again' }); }
     const pk = b.response && b.response.id ? q.pkById.get(String(b.response.id)) : null;
     const u = pk ? q.uById.get(pk.user_id) : null;
-    if (!pk || !u) return res.status(401).json({ error: 'This passkey isn’t known here (it may have been removed)' });
+    if (!pk || !u) {
+      // usually a passkey that was removed from the board but is still in someone's password manager
+      audit(req, 'signin.failed', { target: 'unknown passkey', detail: 'a passkey the board doesn’t have (removed earlier, or from an unfinished setup)' });
+      return res.status(401).json({ error: 'This passkey isn’t on the board any more (it was removed). Delete the old passkey for this site in your password manager, sign in with your password and code, then add a new passkey.', unknownCredential: b.response && b.response.id ? String(b.response.id).slice(0, 400) : null, rpId: RP.id });
+    }
     try {
       const v = await webauthn.verifyAuthenticationResponse({
         response: b.response, expectedChallenge: c.challenge, expectedOrigin: RP.origin, expectedRPID: RP.id, requireUserVerification: true,

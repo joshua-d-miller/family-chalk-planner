@@ -8,7 +8,24 @@
   };
   function call(path, body) {
     return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' }, body: JSON.stringify(body || {}) })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var e = new Error(j.error || ('HTTP ' + r.status)); e.status = r.status; throw e; } return j; }); });
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) {
+          var e = new Error(j.error || ('HTTP ' + r.status)); e.status = r.status; e.body = j;
+          // tell the password manager this passkey is gone, so it stops offering it (where supported)
+          if (j.unknownCredential && window.PublicKeyCredential && PublicKeyCredential.signalUnknownCredential) {
+            try { PublicKeyCredential.signalUnknownCredential({ rpId: j.rpId, credentialId: j.unknownCredential }).catch(function () {}); } catch (x) {}
+          }
+          throw e;
+        }
+        return j;
+      }); });
+  }
+  // a name for a new passkey: iPads ask for desktop sites and look like a Mac to the server
+  function deviceName() {
+    var ua = navigator.userAgent, ipad = /iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    var os = ipad ? 'iPad' : /iPhone/.test(ua) ? 'iPhone' : /Android/.test(ua) ? 'Android' : /Macintosh/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /CrOS/.test(ua) ? 'Chromebook' : 'this device';
+    var app = window.matchMedia && matchMedia('(display-mode: standalone)').matches ? 'home-screen app' : /CriOS|Chrome\//.test(ua) && !/Edg/.test(ua) ? 'Chrome' : /FxiOS|Firefox\//.test(ua) ? 'Firefox' : /Edg/.test(ua) ? 'Edge' : 'Safari';
+    return app + ' on ' + os;
   }
   function friendly(e) {
     if (e && e.name === 'NotAllowedError') return new Error('Cancelled (or this device has no passkey for the board yet)');
@@ -40,7 +57,7 @@
         extensions: p.extensions };
       return navigator.credentials.create({ publicKey: pub }).then(function (cred) {
         var r = cred.response;
-        return call('/api/passkey/register/verify', { id: o.id, name: name, response: {
+        return call('/api/passkey/register/verify', { id: o.id, name: name || deviceName(), response: {
           id: cred.id, rawId: b64u.from(cred.rawId), type: cred.type, clientExtensionResults: cred.getClientExtensionResults ? cred.getClientExtensionResults() : {},
           authenticatorAttachment: cred.authenticatorAttachment || undefined,
           response: { clientDataJSON: b64u.from(r.clientDataJSON), attestationObject: b64u.from(r.attestationObject), transports: r.getTransports ? r.getTransports() : [] }
