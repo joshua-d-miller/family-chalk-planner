@@ -11,7 +11,7 @@ The bottom bar on the tablet has **👤** (your account: add a passkey on this t
 - **Change or delete:** tap the event on the board (or tap the day to see its full list). For repeating events, choose **Just this one** or **All of them** before saving or deleting.
 - **⭐ Count down to this:** adds the event to the countdown list in Notes.
 - Long event names wrap onto a second line when the day has room; when a day is full they shorten but keep the time.
-- **Color on the board:** pick a color for the event. Colors too dark to read on the board are lightened automatically (same hue). It's board-only (your calendar never sees it). The dashed circle means "use the board style's normal color". For repeating events it follows Just this one / All of them.
+- **Color on the board:** pick a color for the event. Colors that would be hard to read on the board's background are adjusted automatically (same hue). It's board-only (your calendar never sees it). The dashed circle means "use the board style's normal color". For repeating events it follows Just this one / All of them.
 - Adds, edits and deletes go to your real calendar (iCloud, Google, Nextcloud, …), so they show on everyone's phones too.
 
 ### Automatic on the calendar (nothing to do)
@@ -45,6 +45,7 @@ The bottom bar on the tablet has **👤** (your account: add a passkey on this t
 - Tap a jar: **+ / −** adds or removes a piece (it drops in on the wall), change the **name**, the **goal**, and **what goes in** (hearts, rainbows, stars, lightning, critters…). **🎉 Reward!** celebrates and empties it.
 
 ### 🎨 Board style
+- **Background:** black slate, green chalkboard, blue chalkboard, cork, kraft paper or whiteboard. Changing it keeps your look and colors; a color only changes where it would be hard to read on that background (lighter on dark ones, darker on light ones, same hue) — that goes for the drawings and stamps too, without changing what's saved, so switching back brings the original colors back.
 - **Presets:** Classic (the original look), Pastel, Bold, Simple, Autumn, Winter, Holiday, Scrawl.
 - **Tweaks** under the presets: font and color for day numbers, weekday names, events, headings and Notes text; all-day and holiday colors; separate colors for "Notes" and "Meal Plan"; show/hide number boxes; the **today marker** (chalk ring, circle, heart, star or filled box) and its color; **calendar lines** (color, solid/dashed/dotted, thin/normal/bold).
 - The board changes as you tap. **Save** sends it to the wall, **Cancel** puts it back, **Undo my tweaks** returns to the plain preset. Picking a different preset clears tweaks (it asks first).

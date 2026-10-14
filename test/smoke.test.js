@@ -75,6 +75,9 @@ test('jars start empty and allow up to 4', async () => {
 test('theme is validated', async () => {
   const t = await (await post('/api/theme', { p: 'x<y', o: { numC: 'red;}', lineS: 'groove', evF: 'tall', todayS: 'heart' } })).json();
   assert.deepEqual(t, { p: 'classic', o: { evF: 'tall', todayS: 'heart' } });
+  assert.deepEqual(await (await post('/api/theme', { p: 'pastel', o: {}, s: 'white' })).json(), { p: 'pastel', o: {}, s: 'white' }, 'background kept');
+  assert.deepEqual(await (await post('/api/theme', { p: 'pastel', o: {}, s: 'url(x)' })).json(), { p: 'pastel', o: {} }, 'unknown background dropped');
+  assert.deepEqual(await (await post('/api/theme', { p: 'classic', o: {}, s: 'slate' })).json(), { p: 'classic', o: {} }, 'slate is the default');
 });
 
 test('photo album sync caches photos, skips video and hidden', async () => {

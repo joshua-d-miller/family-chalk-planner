@@ -1135,8 +1135,10 @@ const THEME_KEYS = {
   headF: 'font', notesC: 'color', mealsC: 'color', textF: 'font', textC: 'color',
   lineC: 'color', lineS: ['solid', 'dashed', 'dotted'], lineW: ['thin', 'normal', 'bold']
 };
+const THEME_SURFACES = ['slate', 'green', 'blue', 'cork', 'kraft', 'white'];
 function cleanTheme(t) {
   const out = { p: typeof t?.p === 'string' && /^[a-z]{2,20}$/.test(t.p) ? t.p : 'classic', o: {} };
+  if (THEME_SURFACES.includes(t?.s) && t.s !== 'slate') out.s = t.s;   // board background
   for (const [k, v] of Object.entries((t && t.o) || {})) {
     const kind = THEME_KEYS[k];
     if (kind === 'color' ? /^#[0-9a-fA-F]{6}$/.test(v) : kind === 'font' ? THEME_FONTS.includes(v) : Array.isArray(kind) && kind.includes(v)) out.o[k] = v;
