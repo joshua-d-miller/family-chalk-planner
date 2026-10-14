@@ -62,7 +62,7 @@ Keep the secret private: don't post it, email it or paste it into a chat.
 3. Paste the **Client ID** and **Client secret** from part 3 (no spaces).
 4. Tap **Save and restart** at the bottom. The board restarts in a few seconds.
 
-The secret is stored encrypted and never shown again. (Prefer the settings file? On the server, put `CALENDAR_PROVIDER=google`, `GOOGLE_CLIENT_ID=…` and `GOOGLE_CLIENT_SECRET=…` in the board's `.env` and restart it; values saved in the console win.)
+The secret is stored encrypted and never shown again.
 
 ## Part 5: Sign in from the tablet
 1. On the tablet, open the board at `/edit` (signed in as an admin) and tap **⚙️ Settings** in the bottom bar.
@@ -100,10 +100,10 @@ Do steps 2–7 within about 10 minutes. If Connect says the sign-in has expired,
 | Anything else | On the server, run `journalctl -u family-chalk-planner -n 50` and look at the last lines. |
 
 ## Signing in without pasting (optional, for HTTPS setups)
-If the board has its own **https://** address on your network (for example `https://board.home.example` through a reverse proxy, see [install.md](install.md#5-https-and-a-nice-name-optional)), Google can send the tablet straight back to the board, so step 6–7 of part 5 aren't needed:
+If the board has its own **https://** address on your network (for example `https://board.home.example` through a reverse proxy, see [install.md](install.md#5-https-and-a-nice-name-recommended)), Google can send the tablet straight back to the board, so step 6–7 of part 5 aren't needed:
 
 1. Create the key in part 3c as **Web application** instead, and under **Authorized redirect URIs** add `https://board.home.example/oauth/google/callback` (with your address).
-2. In `.env`, also set `GOOGLE_REDIRECT_URI=https://board.home.example/oauth/google/callback`, and restart.
+2. In the admin console → ⚙️ Board → Google Calendar, fill in **Sign-in return address** with `https://board.home.example/oauth/google/callback` (your address) and **Save and restart**.
 3. ⚙️ → **Sign in with Google**. After you allow access, you land back in the board's Settings, already connected.
 
 Google only accepts `https://` addresses here, which is why pasting is the default.

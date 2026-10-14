@@ -269,6 +269,7 @@ button:disabled{opacity:.5;cursor:default}
           <p class="dim">Create the Google client once (step-by-step in docs/google-calendar.md), paste it here, save, then press <b>Sign in with Google</b> in ⚙️ Settings on the board.</p>
           <label for="bfGid">Client ID</label><input id="bfGid" data-k="GOOGLE_CLIENT_ID" autocomplete="off" spellcheck="false">
           <label for="bfGsec">Client secret</label><input id="bfGsec" type="password" data-k="GOOGLE_CLIENT_SECRET" autocomplete="new-password">
+          <label for="bfGred">Sign-in return address (optional, HTTPS setups only — see the guide)</label><input id="bfGred" data-k="GOOGLE_REDIRECT_URI" autocomplete="off" spellcheck="false" placeholder="https://board.example/oauth/google/callback">
         </div>
       </div>
       <div class="card">
@@ -290,7 +291,21 @@ button:disabled{opacity:.5;cursor:default}
         <label for="bfAlbum">Album link</label><input id="bfAlbum" data-k="PHOTO_ALBUM_URL" autocomplete="off" spellcheck="false">
       </div>
       <div class="card">
-        <p class="dim">Saving restarts the board (about 10 seconds); screens reconnect by themselves. Settings saved here win over the server’s .env file; empty fields use .env or the default. Passwords are stored encrypted and never shown again.</p>
+        <h2>On your network</h2>
+        <label for="bfPub">The board’s https:// address (through your reverse proxy)</label>
+        <input id="bfPub" data-k="PUBLIC_URL" autocomplete="off" spellcheck="false" placeholder="https://board.example.com">
+        <p class="dim" style="font-size:14px;margin:4px 0 0">Turns on passkeys (Face ID, Touch ID, fingerprint) and is used in invite links. You’re on <b id="bfHere"></b> right now. A wrong address can’t lock you out: password + code works at any address.</p>
+        <label for="bfProxy">Reverse proxy address</label>
+        <div class="row"><div><input id="bfProxy" data-k="TRUST_PROXY" autocomplete="off" spellcheck="false" placeholder="(any device on your local network)"></div><div style="flex:0 1 auto"><button id="bfProxyUse" hidden></button></div></div>
+        <div class="row">
+          <div><label for="bfOpen">Unpaired devices</label><select id="bfOpen" data-k="ALLOW_UNPAIRED_VIEW"><option value="">(default: must be paired)</option><option value="false">Must be paired</option><option value="true">May view the board (home network only!)</option></select></div>
+          <div><label for="bfUpd">Updates (deploy/update.sh)</label><select id="bfUpd" data-k="UPDATE_CHANNEL"><option value="">(default: releases)</option><option value="release">Releases only</option><option value="main">Every change on main (developers)</option></select></div>
+        </div>
+        <label for="bfSrc">Source code link shown in the app (change it if you run your own copy)</label><input id="bfSrc" data-k="SOURCE_URL" autocomplete="off" spellcheck="false" placeholder="https://github.com/joshua-d-miller/family-chalk-planner">
+      </div>
+      <div class="card">
+        <p class="dim">Saving restarts the board (a few seconds); screens reconnect by themselves. Everything here is kept in the board’s database; passwords, the calendar account, the album link and calendar links are stored encrypted. Passwords are never shown again.</p>
+        <p class="dim" id="bfImported" hidden></p>
         <div class="actions"><button class="go" id="bfSave">Save and restart</button><span class="dim" id="bfVer"></span></div>
         <div class="err" id="bfErr"></div>
       </div>
@@ -415,7 +430,7 @@ button:disabled{opacity:.5;cursor:default}
   $('liCode').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('liGo').click(); });
   $('logout').addEventListener('click', function () { api('/api/account/logout', {}).then(function () { location.href = '/admin'; }); });
 
-  // ---- ⚙️ Board: settings that used to live in the server's .env ----
+  // ---- ⚙️ Board: all of the board's settings (kept in its database) ----
   var bf = { data: null, prov: 'caldav' };
   function bfSetProv(p) {
     bf.prov = p;
@@ -471,7 +486,7 @@ button:disabled{opacity:.5;cursor:default}
   }
   $('bfMoreList').addEventListener('click', function () {
     $('bfMoreErr').textContent = '';
-    var main = ($('bfCal').value || (bf.data.fields.CALDAV_CALENDAR.env || '')).trim();
+    var main = ($('bfCal').value || '').trim();
     var p = bf.prov === 'google'
       ? api('/api/google/calendars', {}).then(function (l) { return l.map(function (c) { return { id: c.id, name: c.name }; }); })
       : api('/api/board-settings/caldav-test', { url: $('bfUrl').value || undefined, user: $('bfUser').value || undefined, password: $('bfPass').value || undefined }).then(function (r) { return r.list.map(function (c) { return { id: c.url, name: c.name }; }); });
@@ -484,26 +499,31 @@ button:disabled{opacity:.5;cursor:default}
     api('/api/board-settings').then(function (d) {
       bf.data = d; var F = d.fields;
       if (!$('bfTz').options.length) {
-        $('bfTz').appendChild(new Option('(default from .env / UTC)', ''));
+        $('bfTz').appendChild(new Option('(default: the server’s time zone)', ''));
         d.timezones.forEach(function (z) { $('bfTz').appendChild(new Option(z.replace(/_/g, ' '), z)); });
       }
       Array.prototype.forEach.call(document.querySelectorAll('#tBoard [data-k]'), function (inp) {
         var f = F[inp.dataset.k]; if (!f) return;
         if (f.type === 'secret') {
           inp.value = '';
-          inp.placeholder = f.set ? (f.source === 'env' ? '•••• set in .env (type to replace)' : '•••• saved (type to replace)') : (d.lost.indexOf(inp.dataset.k) >= 0 ? '⚠ enter it again' : '');
+          inp.placeholder = f.set ? '•••• saved (type to replace)' : (d.lost.indexOf(inp.dataset.k) >= 0 ? '⚠ enter it again' : '');
         } else if (f.type === 'json') {
-          inp.value = f.value || f.env || '';   // lists from .env show (and can be changed) here too
+          inp.value = f.value || '';
         } else {
           inp.value = f.value || '';
-          if (inp.tagName === 'INPUT') inp.placeholder = f.env ? 'from .env: ' + f.env : (inp.dataset.ph || inp.placeholder);
-          else if (f.env && !f.value) { var o = inp.options[0]; if (o && o.value === '') o.textContent = '(from .env: ' + f.env + ')'; }
+          if (f.value === '' && d.lost.indexOf(inp.dataset.k) >= 0) inp.placeholder = '⚠ enter it again';
         }
         inp.dataset.orig = inp.value;
       });
-      var p = F.CALENDAR_PROVIDER.value || F.CALENDAR_PROVIDER.env || ((F.GOOGLE_CLIENT_ID.value || F.GOOGLE_CLIENT_ID.env) ? 'google' : 'caldav');
+      var p = F.CALENDAR_PROVIDER.value || (F.GOOGLE_CLIENT_ID.value ? 'google' : 'caldav');
       bfSetProv(p === 'google' ? 'google' : 'caldav');
       $('bfVer').textContent = d.version; $('bfErr').textContent = '';
+      $('bfHere').textContent = d.here;
+      $('bfProxyUse').hidden = !d.proxySeen || F.TRUST_PROXY.value === d.proxySeen;
+      $('bfProxyUse').textContent = 'Use ' + (d.proxySeen || '');
+      $('bfProxyUse').onclick = function () { $('bfProxy').value = d.proxySeen; $('bfProxyUse').hidden = true; };
+      $('bfImported').hidden = !d.imported;
+      if (d.imported) $('bfImported').textContent = '✓ Your old .env settings were moved in here (' + d.imported.moved.length + ' settings). The .env file isn’t used any more.';
       moreAvail = null; drawMore(); drawFeeds();
     }).catch(function (e) { $('bfErr').textContent = e.message; });
   }
@@ -546,7 +566,7 @@ button:disabled{opacity:.5;cursor:default}
       else if (inp.value !== inp.dataset.orig) values[inp.dataset.k] = inp.value;
     });
     var F = bf.data.fields, curProv = F.CALENDAR_PROVIDER.value || '';
-    if (bf.prov !== (curProv || F.CALENDAR_PROVIDER.env || (F.GOOGLE_CLIENT_ID.value || F.GOOGLE_CLIENT_ID.env ? 'google' : 'caldav'))) values.CALENDAR_PROVIDER = bf.prov;
+    if (bf.prov !== (curProv || (F.GOOGLE_CLIENT_ID.value ? 'google' : 'caldav'))) values.CALENDAR_PROVIDER = bf.prov;
     $('bfErr').textContent = '';
     busy($('bfSave'), api('/api/board-settings', { values: values })).then(function (r) {
       if (!r.restarting) { $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', 'Nothing changed.')); return; }

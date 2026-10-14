@@ -42,7 +42,10 @@ rather than a public issue.
   SHA-256 hashes, and each authenticator secret is AES-256-GCM encrypted with a key derived from that
   person's own password (scrypt), so the database or a backup alone can't produce codes. No key file to
   manage. Nightly snapshots are mode 600.
-- **Secrets** live in `.env` in the install folder (root-only, mode 600, ignored by git).
+- **Settings** live in the database too (there's no settings file). Passwords, the Google client secret,
+  the calendar account name, the photo album link and calendar links are AES-256-GCM encrypted with a key
+  kept outside the database (`data/secret.key`, mode 600, or `SECRET_KEY`); passwords are never sent back
+  to the browser.
 - **The service** runs as its own unprivileged user, can't modify its own code, and (where
   systemd sandboxing is available) can only write to its data folder.
 - **Uploads** are size-limited and checked to really be images; file routes only accept

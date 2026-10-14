@@ -4,6 +4,23 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.7.0 — no more settings file
+- **Every setting lives in the admin console (⚙️ Board) and the database.** New **On your network**
+  section: the board's https address, the reverse proxy's address (with a one-click button using the
+  address the board sees), whether unpaired devices may view, release or main updates, the source link;
+  plus the Google sign-in return address.
+- **Upgrading:** the first start reads an old `.env` once and moves everything into the database;
+  `deploy/update.sh` then renames it to `.env.moved-to-admin-console`. The environment no longer decides
+  any of these settings afterwards.
+- Encrypted at rest with the key kept outside the database: passwords and the Google client secret (never
+  shown again), and now also the calendar account name, the photo album link and calendar links (shown
+  to admins).
+- Where the board listens and keeps data (`PORT`, `BIND`, `DATA_DIR`, `BACKUP_DIR`) is set by
+  `install.sh` in the service definition (`--port`, `--bind`, `--data`, `--backup-dir`).
+- `deploy/setting.sh get|set KEY [VALUE]` (Docker: `node server/chalkboard.js --setting …`) to fix a
+  setting from the server if the console can't be reached. The time zone defaults to the server's.
+- 🛡 Security: "Trust only <proxy>" button.
+
 ## 0.6.0 — more calendars, calendar links, and settings for outside the US
 - **More calendars from the same account** (iCloud/CalDAV or Google): admin console → ⚙️ Board →
   *List my calendars*, tick them and pick a color. Shown together on the board; their events can be

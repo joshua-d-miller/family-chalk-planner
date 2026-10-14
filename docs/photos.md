@@ -19,14 +19,7 @@ You only need the album's **share link**. No password or sign-in is involved.
 **Anyone who has the link can see the photos in that album**, so only put photos in it you're happy to have on the wall, and don't post the link anywhere. iCloud links also show the album owner's name.
 
 ## 2. Give the link to the board
-On the server, open the settings file:
-```bash
-nano /opt/family-chalk-planner/.env
-```
-Paste the link after `PHOTO_ALBUM_URL=` (no spaces, no quotes), save (**Ctrl+O**, **Enter**, **Ctrl+X**), and restart:
-```bash
-systemctl restart family-chalk-planner
-```
+Open the admin console (`/admin`) → **⚙️ Board** → **Photos**, paste the link into **Album link**, and tap **Save and restart**. (The link is stored encrypted, since anyone with it can see the album.)
 Within a minute, 📷 on the tablet shows how many photos it found.
 
 ## Good to know

@@ -106,7 +106,8 @@ test('stored safely: authenticator secrets locked with the person’s own passwo
   assert.ok(!u.totp_secret.includes(adm.secret));
   assert.equal(unlock(adm.password, u.totp_secret), adm.secret);
   assert.throws(() => unlock('not the password', u.totp_secret));
-  assert.ok(!fs.existsSync(path.join(data, 'secret.key')), 'nothing extra to keep');
+  // (data/secret.key only protects calendar passwords saved in ⚙️ Board; sign-in never depends on it)
+  if (fs.existsSync(path.join(data, 'secret.key'))) { fs.renameSync(path.join(data, 'secret.key'), path.join(data, 'secret.key.x')); assert.equal(unlock(adm.password, u.totp_secret), adm.secret); fs.renameSync(path.join(data, 'secret.key.x'), path.join(data, 'secret.key')); }
   assert.equal(fs.statSync(path.join(data, 'chalkboard.db')).mode & 0o777, 0o600);
 });
 

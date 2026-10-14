@@ -34,10 +34,15 @@ test.before(async () => {
 });
 test.after(() => { server && server.kill(); dav && dav.close(); geo && geo.close(); fs.rmSync(data, { recursive: true, force: true }); });
 
-test('settings show where each value comes from; secrets are never sent', async () => {
+test('an old .env is moved into the database on the first start; secrets are never sent', async () => {
   const d = await (await admin.api('/api/board-settings')).json();
-  assert.equal(d.fields.BOARD_TITLE.source, 'env'); assert.equal(d.fields.BOARD_TITLE.env, 'From env');
-  assert.equal(d.fields.CALDAV_PASSWORD.set, true); assert.equal(d.fields.CALDAV_PASSWORD.value, undefined); assert.equal(d.fields.CALDAV_PASSWORD.env, undefined);
+  assert.equal(d.fields.BOARD_TITLE.source, 'console'); assert.equal(d.fields.BOARD_TITLE.value, 'From env');
+  assert.ok(['BOARD_TITLE', 'CALDAV_PASSWORD', 'CALDAV_USER', 'CALDAV_URL', 'TIMEZONE'].every(k => d.imported.moved.includes(k)));
+  assert.equal(d.fields.CALDAV_PASSWORD.set, true); assert.equal(d.fields.CALDAV_PASSWORD.value, undefined);
+  assert.equal(d.fields.CALDAV_USER.value, 'u', 'private values are shown to the admin');
+  const db = new DatabaseSync(path.join(data, 'chalkboard.db'), { readOnly: true });
+  const raw = JSON.parse(db.prepare("SELECT data FROM kv WHERE key = 'settings'").get().data); db.close();
+  assert.match(raw.CALDAV_USER, /^k1:/, 'the account name is encrypted at rest'); assert.match(raw.CALDAV_PASSWORD, /^k1:/);
   assert.ok(d.timezones.includes('America/New_York'));
   assert.doesNotMatch(JSON.stringify(d), /"p"/);
 });
@@ -82,8 +87,15 @@ test('a lost key only means entering the password again', async () => {
   fs.writeFileSync(path.join(data, 'secret.key'), 'a-different-key\n');
   start(); await ready();
   const d = await (await admin.api('/api/board-settings')).json();
-  assert.deepEqual(d.lost, ['CALDAV_PASSWORD']);
+  assert.deepEqual(d.lost.sort(), ['CALDAV_PASSWORD', 'CALDAV_USER']);
   assert.match(await (await admin.api('/edit')).text(), /<title>Millers<\/title>/, 'everything else still applies');
+  // the .env (still in this server's environment) doesn't come back: the database decides
+  assert.equal(d.fields.CALDAV_USER.value, ''); assert.equal(d.fields.CALDAV_PASSWORD.set, false);
+  // entering them again
+  assert.equal((await (await admin.post('/api/board-settings', { values: { CALDAV_USER: 'u', CALDAV_PASSWORD: 'p' } })).json()).restarting, true);
+  for (let i = 0; i < 30 && exitCode === null; i++) await new Promise(res => setTimeout(res, 100));
+  start(); await ready();
+  assert.deepEqual((await (await admin.api('/api/board-settings')).json()).lost, []);
 });
 
 test('more calendars, calendar links, Monday weeks, 24-hour time, other holidays', async () => {
@@ -114,6 +126,16 @@ test('more calendars, calendar links, Monday weeks, 24-hour time, other holidays
   assert.equal(up.status, 200, await up.clone().text());
   const m2 = await (await admin.api('/api/month?ym=2026-10')).json();
   assert.ok(m2.events.some(e => e.title === 'Swim lessons (pool B)' && e.cal === 'Kids'));
+});
+
+test('the server owner can read and change a setting from the command line', async () => {
+  const run = (...a) => require('node:child_process').execFileSync(process.execPath, [path.join(__dirname, '..', 'server', 'chalkboard.js'), '--setting', ...a], { env: { ...process.env, DATA_DIR: data }, encoding: 'utf8' }).trim();
+  assert.equal(run('get', 'BOARD_TITLE'), 'Millers');
+  assert.equal(run('get', 'CALDAV_USER'), 'u', 'private values decrypt');
+  assert.match(run('set', 'PUBLIC_URL', 'https://board.example.com'), /saved/);
+  assert.equal(run('get', 'PUBLIC_URL'), 'https://board.example.com');
+  assert.match(run('set', 'PUBLIC_URL'), /cleared/);
+  assert.throws(() => run('set', 'TRUST_PROXY', 'not an ip'));
 });
 
 test('only admins see or change settings', async () => {

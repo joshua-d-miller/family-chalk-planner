@@ -10,7 +10,10 @@ Type=simple
 User=@USER@
 Group=@USER@
 WorkingDirectory=@APP_DIR@
-EnvironmentFile=@ENV_FILE@
+# Where it listens and keeps its data: family-chalk-planner.service.d/server.conf (written by install.sh).
+# Every other setting lives in the board's database (admin console → ⚙️ Board). An old .env is read
+# once on the first start of 0.7+ and moved into the database; the leading - means it's optional.
+EnvironmentFile=-@ENV_FILE@
 ExecStart=@NODE@ @APP_DIR@/server/chalkboard.js
 Restart=on-failure
 RestartSec=2

@@ -756,8 +756,8 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
   const A = (label, call, body, confirm) => ({ label, call, body, confirm });
   function alerts() {
     const now = Date.now(), cfg = secCfg(), out = [];
-    if (!RP || !RP.origin.startsWith('https:')) out.push({ level: 'warn', kind: 'setup', text: 'The board isn’t set up for HTTPS (PUBLIC_URL isn’t an https:// address). Passwords and codes travel unencrypted on your network, and passkeys are off. Put the board behind a reverse proxy with HTTPS and set PUBLIC_URL — see docs/install.md.', actions: [] });
-    if (!process.env.TRUST_PROXY && proxySeen) out.push({ level: 'info', kind: 'setup', text: `Requests reach the board through a proxy at ${proxySeen}. For tighter security, tell the board to trust only that address: add TRUST_PROXY=${proxySeen} to the board’s .env and restart. (Right now it trusts forwarding information from any device on your local network.)`, actions: [] });
+    if (!RP || !RP.origin.startsWith('https:')) out.push({ level: 'warn', kind: 'setup', text: 'The board isn’t set up for HTTPS: no https:// public address in ⚙️ Board → On your network. Passwords and codes travel unencrypted on your network, and passkeys are off. Put the board behind a reverse proxy with HTTPS and enter its address there — see docs/install.md.', actions: [] });
+    if (!process.env.TRUST_PROXY && proxySeen) out.push({ level: 'info', kind: 'setup', text: `Requests reach the board through a proxy at ${proxySeen}. For tighter security, trust only that address (right now the board trusts forwarding information from any device on your local network). The board restarts for a few seconds.`, actions: [A(`Trust only ${proxySeen}`, '/api/board-settings', { values: { TRUST_PROXY: proxySeen } }, `Trust only ${proxySeen} as the reverse proxy? The board restarts.`)] });
     for (const d of q.dList.all()) if (cfg.screenFlagDays > 0 && now - d.last_seen > cfg.screenFlagDays * DAY) {
       out.push({ level: 'warn', kind: 'screen', text: `Screen “${d.name}” (${d.agent}) hasn’t been seen for ${days(d.last_seen)} days.` + (cfg.screenRemoveDays > 0 ? ` It’s removed automatically after ${cfg.screenRemoveDays}.` : ''),
         actions: [A('Remove screen', '/api/devices/remove', { id: d.id }, `Remove “${d.name}”?`)] });
@@ -807,7 +807,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
     const fake = { _dev: undefined, get: h => (String(h).toLowerCase() === 'cookie' ? cookieHeader : ''), ip: '' };
     return rankOf(fake) > 0;
   }
-  return { deviceOf, userOf, rankOf, resetAll, newSetupCode, describe, totpAt, cleanup, stillAllowed, audit };
+  return { deviceOf, userOf, rankOf, resetAll, newSetupCode, describe, totpAt, cleanup, stillAllowed, audit, proxySeen: () => proxySeen };
 }
 
 module.exports = { setup, describe, totpAt, b32dec };

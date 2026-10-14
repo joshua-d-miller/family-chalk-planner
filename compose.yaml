@@ -12,11 +12,7 @@ services:
     volumes:
       - ./data:/data               # database, uploads, nightly backups: back this folder up
     environment:
-      TZ: America/New_York         # your time zone (also settable in the admin console)
-      # PUBLIC_URL: https://board.example.com    # your https address through a reverse proxy
-      # TRUST_PROXY: 172.18.0.1                  # your reverse proxy's address (shown in 🛡 Security)
-      # PUID: 1000                               # user/group that owns ./data
+      TZ: America/New_York         # the server's time zone (the board's own is set in the admin console)
+      # PUID: 1000                 # user/group that owns ./data
       # PGID: 1000
-    # Everything else (calendar, weather, photos) is set in the admin console → ⚙️ Board.
-    # Prefer a file? Copy .env.example to .env and uncomment:
-    # env_file: .env
+    # Everything else (calendar, weather, photos, https address) is set in the admin console → ⚙️ Board.

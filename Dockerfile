@@ -20,7 +20,7 @@ COPY server ./server
 COPY public ./public
 COPY face ./face
 COPY deploy/setup-face.sh deploy/docker-entrypoint.sh ./deploy/
-COPY LICENSE NOTICE README.md CHANGELOG.md .env.example ./
+COPY LICENSE NOTICE README.md CHANGELOG.md ./
 
 RUN if [ "$WITH_FACE" = "true" ]; then \
       apt-get update && apt-get install -y --no-install-recommends python3 python3-venv curl ca-certificates && \

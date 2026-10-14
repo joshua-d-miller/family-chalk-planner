@@ -21,10 +21,22 @@ const APP_DIR = path.join(__dirname, '..');
 const DATA_DIR = ENV.DATA_DIR || path.join(APP_DIR, 'data');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const db = new DatabaseSync(path.join(DATA_DIR, 'chalkboard.db'));
-const boardSettings = require('./settings').setup({ db, DATA_DIR });   // puts the console's values into ENV
+const boardSettings = require('./settings').setup({ db, DATA_DIR, importEnv: !['--setting', '--reset-admin'].some(a => process.argv.includes(a)) });   // puts the console's values into ENV
+// Command line, for the server's owner (deploy/setting.sh):  --setting get KEY  |  --setting set KEY VALUE
+if (process.argv[2] === '--setting') {
+  const [, , , op, k, v] = process.argv;
+  if (op === 'get' && k) { console.log(boardSettings.get(k)); process.exit(0); }
+  if (op === 'set' && k) {
+    const r = boardSettings.save({ [k]: v ?? '' });
+    if (r.errors) { console.error(`${k}: ${r.errors[k]}`); process.exit(1); }
+    console.log(r.changed.length ? `${k} ${v ? 'saved' : 'cleared'} - restart the board to use it` : 'Nothing changed');
+    process.exit(0);
+  }
+  console.error('Usage: --setting get KEY | --setting set KEY [VALUE]   (no VALUE clears it)'); process.exit(2);
+}
 const PORT = num(ENV.PORT, 3002);
 const BIND = ENV.BIND || '0.0.0.0';
-const TZ = ENV.TIMEZONE || ENV.TZ || 'UTC';   // TZ: the usual container variable
+const TZ = ENV.TIMEZONE || ENV.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';   // else the server's own time zone
 const LAT = num(ENV.LATITUDE, null), LON = num(ENV.LONGITUDE, null);   // weather is off until both are set
 const TEMP_UNIT = ENV.TEMP_UNIT === 'celsius' ? 'celsius' : 'fahrenheit';
 const TRASH_DAY = /^[0-6]$/.test(ENV.TRASH_DAY || '') ? +ENV.TRASH_DAY : null;   // 0 = Sunday ... 6 = Saturday; empty = off
@@ -1955,7 +1967,7 @@ function restartSoon(why) {
   setTimeout(() => { console.log(`Chalk Planner: restarting to apply ${why}`); process.exit(3); }, 400);   // the service manager starts it again
 }
 app.get('/api/board-settings', (req, res) => {
-  res.set('Cache-Control', 'no-store').json({ ...boardSettings.view(), version: APP_VERSION, problems: Object.fromEntries(calProblems), timezones: typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [] });
+  res.set('Cache-Control', 'no-store').json({ ...boardSettings.view(), version: APP_VERSION, problems: Object.fromEntries(calProblems), proxySeen: access.proxySeen(), here: `${req.protocol}://${req.get('host')}`, timezones: typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [] });
 });
 app.post('/api/board-settings', (req, res) => {
   const r = boardSettings.save((req.body || {}).values);

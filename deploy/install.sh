@@ -6,20 +6,24 @@
 #   git clone https://github.com/joshua-d-miller/family-chalk-planner.git /opt/family-chalk-planner
 #   sudo bash /opt/family-chalk-planner/deploy/install.sh
 #
-# Settings live in <repo>/.env (root-only) and data in <repo>/data; both are git-ignored, so
-# `git pull` never touches them. (Don't run `git clean -x` here: it would delete them.)
+# Data lives in <repo>/data (git-ignored, so `git pull` never touches it; don't run `git clean -x`
+# here). Every setting is made in the admin console (/admin → ⚙️ Board) and kept in the database:
+# there's no settings file. Only where the board listens and keeps data are set here, in the service
+# definition (/etc/systemd/system/family-chalk-planner.service.d/server.conf).
 #
 # Options:
-#   --no-face      skip the optional face finder for photo framing (saves ~220 MB)
-#   --no-start     set everything up but don't start the service (used when migrating)
-#   --unit-only    just (re)write the systemd service, e.g. after moving the folder
-#   --data DIR     keep data somewhere else (default <repo>/data)
-#   --user NAME    service user (default chalkplanner)
+#   --no-face         skip the optional face finder for photo framing (saves ~220 MB)
+#   --no-start        set everything up but don't start the service (used when migrating)
+#   --unit-only       just (re)write the systemd service, e.g. after moving the folder
+#   --data DIR        keep data somewhere else (default <repo>/data)
+#   --backup-dir DIR  nightly backups somewhere else (default <data>/backup)
+#   --port N          port (default 3002)     --bind ADDR   address to listen on (default 0.0.0.0)
+#   --user NAME       service user (default chalkplanner)
 set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${ENV_FILE:-$APP_DIR/.env}"
-DATA_DIR="" SVC_USER=chalkplanner FACE=yes START=yes UNIT_ONLY=no
+DATA_DIR="" BACKUP_DIR="" PORT="" BIND="" SVC_USER=chalkplanner FACE=yes START=yes UNIT_ONLY=no
 SERVICE=family-chalk-planner
 # For testing only: SKIP_PACKAGES=1 (no apt/Node install), SKIP_SYSTEMD=1, SKIP_USER=1
 
@@ -29,8 +33,11 @@ while [ $# -gt 0 ]; do
     --no-start) START=no; shift ;;
     --unit-only) UNIT_ONLY=yes; shift ;;
     --data) DATA_DIR="$2"; shift 2 ;;
+    --backup-dir) BACKUP_DIR="$2"; shift 2 ;;
+    --port) PORT="$2"; shift 2 ;;
+    --bind) BIND="$2"; shift 2 ;;
     --user) SVC_USER="$2"; shift 2 ;;
-    -h|--help) sed -n '2,19p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -39,24 +46,40 @@ say() { printf '\033[1;33m==>\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31mError:\033[0m %s\n' "$*" >&2; exit 1; }
 [ "$(id -u)" = 0 ] || die "run as root (sudo bash deploy/install.sh)"
 [ -f "$APP_DIR/server/chalkboard.js" ] || die "run this from inside the family-chalk-planner folder"
-envval() { sed -n "s/^$1=//p" "$ENV_FILE" 2>/dev/null | tr -d '"' | tail -1; }
+envval() { sed -n "s/^$1=//p" "$ENV_FILE" 2>/dev/null | tr -d '"' | tail -1; }   # an old .env (before 0.7)
+CONF="/etc/systemd/system/$SERVICE.service.d/server.conf"
+confval() { sed -n "s/.*[\" ]$1=\([^\" ]*\).*/\1/p" "$CONF" 2>/dev/null | tail -1; }
+# server-level settings: option > what's installed now > an old .env > default
+DATA_DIR="${DATA_DIR:-$(confval DATA_DIR)}"; DATA_DIR="${DATA_DIR:-$(envval DATA_DIR)}"; DATA_DIR="${DATA_DIR:-$APP_DIR/data}"
+BACKUP_DIR="${BACKUP_DIR:-$(confval BACKUP_DIR)}"; BACKUP_DIR="${BACKUP_DIR:-$(envval BACKUP_DIR)}"
+PORT="${PORT:-$(confval PORT)}"; PORT="${PORT:-$(envval PORT)}"; PORT="${PORT:-3002}"
+BIND="${BIND:-$(confval BIND)}"; BIND="${BIND:-$(envval BIND)}"; BIND="${BIND:-0.0.0.0}"
+case "$PORT" in ''|*[!0-9]*) die "--port needs a number" ;; esac
+for v in "$DATA_DIR" "$BACKUP_DIR" "$BIND"; do case "$v" in *[\ \"]*) die "paths and addresses can't contain spaces or quotes: $v" ;; esac; done
 
 # ---- systemd service (pointing at this folder) ----
 write_unit() {
   [ "${SKIP_SYSTEMD:-}" = 1 ] && return 0
-  local node data bd unit="/etc/systemd/system/$SERVICE.service" drop="/etc/systemd/system/$SERVICE.service.d"
+  local node unit="/etc/systemd/system/$SERVICE.service" drop="/etc/systemd/system/$SERVICE.service.d"
   node="$(command -v node)"
-  data="$(envval DATA_DIR)"; data="${data:-$APP_DIR/data}"
   sed -e "s#@APP_DIR@#$APP_DIR#g" -e "s#@ENV_FILE@#$ENV_FILE#g" -e "s#@NODE@#$node#g" -e "s#@USER@#$SVC_USER#g" \
     "$APP_DIR/deploy/$SERVICE.service" > "$unit"
   chmod 644 "$unit"
   mkdir -p "$drop"
+  {
+    echo "# Written by deploy/install.sh. Change with: install.sh --unit-only --port N --data DIR --backup-dir DIR"
+    echo "[Service]"
+    printf 'Environment="PORT=%s" "BIND=%s" "DATA_DIR=%s"' "$PORT" "$BIND" "$DATA_DIR"
+    [ -n "$BACKUP_DIR" ] && printf ' "BACKUP_DIR=%s"' "$BACKUP_DIR"
+    echo
+  } > "$CONF"
+  chmod 644 "$CONF"
   # sandboxing only where it works (some LXC containers can't create the namespaces it needs)
   if systemd-run --quiet --wait --collect -p ProtectSystem=strict -p PrivateTmp=yes -p ProtectHome=read-only -p RestrictNamespaces=yes -p NoNewPrivileges=yes /bin/true 2>/dev/null; then
     {
       cat "$APP_DIR/deploy/hardening.conf"
-      echo "ReadWritePaths=$data"
-      bd="$(envval BACKUP_DIR)"; [ -n "$bd" ] && echo "ReadWritePaths=$bd"
+      echo "ReadWritePaths=$DATA_DIR"
+      [ -n "$BACKUP_DIR" ] && echo "ReadWritePaths=$BACKUP_DIR"
     } > "$drop/hardening.conf"
   else
     say "This system can't sandbox services (common in LXC without nesting) - running without it"
@@ -95,26 +118,7 @@ if [ "${SKIP_USER:-}" != 1 ] && ! id "$SVC_USER" >/dev/null 2>&1; then
   useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin "$SVC_USER"
 fi
 
-# ---- settings (root-only) ----
-set_env() {   # set_env KEY VALUE - replace the line if present, otherwise append
-  local k="$1" v="$2" tmp
-  if grep -qE "^#?${k}=" "$ENV_FILE"; then
-    tmp="$(mktemp)"
-    K="$k" V="$v" awk 'BEGIN{k=ENVIRON["K"]; v=ENVIRON["V"]; d=0} { if (!d && ($0 ~ "^"k"=" || $0 ~ "^#"k"=")) { print k"="v; d=1 } else print }' "$ENV_FILE" > "$tmp"
-    cat "$tmp" > "$ENV_FILE"; rm -f "$tmp"
-  else printf '%s=%s\n' "$k" "$v" >> "$ENV_FILE"; fi
-}
-if [ ! -f "$ENV_FILE" ]; then
-  say "Creating settings file $ENV_FILE"
-  cp "$APP_DIR/.env.example" "$ENV_FILE"
-  tz="$(timedatectl show -p Timezone --value 2>/dev/null || cat /etc/timezone 2>/dev/null || true)"
-  [ -n "$tz" ] && set_env TIMEZONE "$tz"
-fi
-[ -n "$DATA_DIR" ] && set_env DATA_DIR "$DATA_DIR"
-chmod 600 "$ENV_FILE"; chown root:root "$ENV_FILE"
-
 # ---- data folder (the only place the service can write) ----
-DATA_DIR="$(envval DATA_DIR)"; DATA_DIR="${DATA_DIR:-$APP_DIR/data}"
 mkdir -p "$DATA_DIR"
 [ "${SKIP_USER:-}" = 1 ] || chown -R "$SVC_USER:$SVC_USER" "$DATA_DIR"
 chmod 750 "$DATA_DIR"
@@ -132,13 +136,13 @@ if [ "${SKIP_SYSTEMD:-}" != 1 ]; then
   systemctl enable --quiet "$SERVICE"
   if [ "$START" = yes ]; then
     systemctl restart "$SERVICE"
-    port="$(envval PORT)"; port="${port:-3002}"
+    port="$PORT"
     for _ in $(seq 1 30); do curl -fsS "http://127.0.0.1:$port/api/today" >/dev/null 2>&1 && break; sleep 1; done
     curl -fsS "http://127.0.0.1:$port/api/today" >/dev/null 2>&1 || die "the service didn't come up - see: journalctl -u $SERVICE -n 50"
   fi
 fi
 
-ip="$(hostname -I 2>/dev/null | awk '{print $1}')"; port="$(envval PORT)"
+ip="$(hostname -I 2>/dev/null | awk '{print $1}')"; port="$PORT"
 echo
 say "Family Chalk Planner is installed (running from $APP_DIR)."
 echo "    Wall display:  http://${ip:-<this-machine>}:${port:-3002}/"
@@ -146,7 +150,5 @@ echo "    Tablet editor: http://${ip:-<this-machine>}:${port:-3002}/edit"
 if [ -f "$DATA_DIR/setup-code.txt" ]; then
   echo "    Setup code:    $(cat "$DATA_DIR/setup-code.txt")   (open http://${ip:-<this-machine>}:${port:-3002}/admin and create the admin account)"
 fi
-echo "    Admin console: http://${ip:-<this-machine>}:${port:-3002}/admin  (pair screens, invite people)"
-echo "    Settings:      $ENV_FILE  (calendar, timezone, weather, trash day, photos)"
-echo "                   then: systemctl restart $SERVICE"
+echo "    Admin console: http://${ip:-<this-machine>}:${port:-3002}/admin  (⚙️ Board: calendar, weather, photos; pair screens, invite people)"
 echo "    Updates:       $APP_DIR/deploy/update.sh"

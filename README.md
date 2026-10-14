@@ -55,9 +55,9 @@ Details: **[docs/docker.md](docs/docker.md)** and **[docs/install.md](docs/insta
 npm ci
 npm test                                   # starts the server against a fake calendar and photo album
 node test/mock-caldav.js 5232 &            # fake calendar for local work
-CALDAV_URL=http://127.0.0.1:5232/ CALDAV_USER=x CALDAV_PASSWORD=x CALDAV_CALENDAR=Family \
-  TIMEZONE=America/New_York DATA_DIR=./data npm start   # setup code: see the log or data/setup-code.txt
+DATA_DIR=./data npm start                  # setup code: see the log or data/setup-code.txt
 ```
+Then open `http://localhost:3002/admin`, create the admin, and point ⚙️ Board → Calendar at `http://127.0.0.1:5232/` (any username and password).
 
 Want to help? See [CONTRIBUTING.md](CONTRIBUTING.md). What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 

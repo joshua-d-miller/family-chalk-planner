@@ -19,13 +19,7 @@ Building from the source instead (for example while the repository is private, o
 3. **📺 Screens** → open the board on the wall display, type the code it shows. **👪 People** → invite whoever edits from a tablet.
 
 ## 3. HTTPS (recommended)
-Put the board behind your reverse proxy (Nginx Proxy Manager, Caddy, Traefik) with WebSockets on and response buffering off (see [install.md](install.md#5-https-and-a-nice-name-recommended)). Then set in `compose.yaml`:
-```yaml
-    environment:
-      PUBLIC_URL: https://board.example.com
-      TRUST_PROXY: 172.18.0.1        # the address 🛡 Security shows for your proxy
-```
-and `docker compose up -d`. That turns on passkeys (Face ID, Touch ID, fingerprint) and makes invite links use that address.
+Put the board behind your reverse proxy (Nginx Proxy Manager, Caddy, Traefik) with WebSockets on and response buffering off (see [install.md](install.md#5-https-and-a-nice-name-recommended)). Then in the admin console → ⚙️ Board → **On your network**, enter the https address and your proxy's address (the console shows the one it sees, with a button to use it). That turns on passkeys (Face ID, Touch ID, fingerprint) and makes invite links use that address.
 
 ## Your data
 Everything the board keeps is in `./data`: the database, the key for passwords saved in the console (`secret.key`), uploaded GIFs and nightly backups (`data/backup`, 14 days). Back up that folder. The container runs as user `1000:1000`; set `PUID`/`PGID` if `./data` should belong to someone else.
@@ -38,5 +32,5 @@ To stay on one version, use a tag instead of `latest`, e.g. `ghcr.io/joshua-d-mi
 
 ## Good to know
 - The optional face finder (keeps faces in frame in photo collages) isn't in the standard image. Build with it: `docker build --build-arg WITH_FACE=true -t family-chalk-planner:face .` (adds ~220 MB).
-- Settings can also come from an `.env` file (`env_file: .env` in `compose.yaml`; see `.env.example`). Values saved in the console win.
+- All settings are in the admin console and the database (in `./data`); there's no settings file. Can't reach the console because of a wrong https address or proxy? `docker compose exec -u 1000:1000 board node server/chalkboard.js --setting set PUBLIC_URL` (no value clears it), then `docker compose restart`.
 - Locked out of every admin account: `docker compose exec -u 1000:1000 board node server/chalkboard.js --reset-admin`, then `docker compose restart`. It removes all accounts and paired screens (the calendar, art and settings stay) and prints a new setup code.

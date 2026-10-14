@@ -2271,11 +2271,11 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       var c = calSt, st = $('calStat');
       st.innerHTML = '';
       if (c.provider === 'google') {
-        if (!c.configured) st.appendChild(el('span', 'warn', 'Google Calendar isn’t set up on the server yet (GOOGLE_CLIENT_ID in .env).'));
+        if (!c.configured) st.appendChild(el('span', 'warn', 'Google Calendar isn’t set up yet: admin console → ⚙️ Board → Calendar → Google.'));
         else if (c.connected) { st.appendChild(el('span', 'ok', '✓ Google connected')); st.appendChild(document.createTextNode(c.calendar ? ' · showing “' + c.calendar + '”' : ' · now pick a calendar')); }
         else st.appendChild(el('span', c.problem ? 'warn' : '', c.problem || 'Google Calendar: not connected yet'));
       } else {
-        st.textContent = c.calendar ? 'Showing “' + c.calendar + '” (CalDAV, set in the server’s .env)' : 'No calendar set up (CalDAV settings in the server’s .env).';
+        st.textContent = c.calendar ? 'Showing “' + c.calendar + '” (CalDAV, set in the admin console → ⚙️ Board)' : 'No calendar set up yet: admin console → ⚙️ Board → Calendar.';
       }
       var g = c.provider === 'google' && c.configured;
       $('gConnect').hidden = !(g && !c.connected);

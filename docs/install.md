@@ -9,7 +9,7 @@
 In the Proxmox UI: **Create CT** → unprivileged, Debian 12 or 13 template, 1 core, 512 MB RAM, 4 GB disk, DHCP or a fixed IP. Under **Options → Features**, turning on **nesting** lets the installer apply systemd sandboxing; without it the service still runs, just with less isolation.
 
 ## 2. Install
-The folder you clone into *is* the install. Settings and data live inside it too (`.env` and `data/`, both ignored by git), so updates are a simple pull. Don't run `git clean -x` in it: that would delete `.env` and `data/`.
+The folder you clone into *is* the install. Data lives inside it too (`data/`, ignored by git), so updates are a simple pull. Don't run `git clean -x` in it: that would delete `data/`.
 
 As root on the machine or in the container:
 
@@ -39,31 +39,27 @@ bash /opt/family-chalk-planner/deploy/install.sh
 ```
 
 ### Without git
-Download the code (GitHub → Code → Download ZIP), unzip it where it should live, and run `bash deploy/install.sh` inside it. To update, replace the code files with a newer copy (keep `.env` and `data/`) and restart the service. With git, `update.sh` does this for you.
+Download the code (GitHub → Code → Download ZIP), unzip it where it should live, and run `bash deploy/install.sh` inside it. To update, replace the code files with a newer copy (keep `data/`) and restart the service. With git, `update.sh` does this for you.
 
 ## 3. Settings
-Most settings are in the **admin console → ⚙️ Board** (after you create the admin account in the next section): the board's name, time zone, holidays, weather town (search by name), the calendar (iCloud/CalDAV with **Find my calendars**, or Google) and the photo album link. **Save and restart** applies them in a few seconds. Passwords and the Google client secret are stored encrypted with a key kept outside the database (`data/secret.key`, or `SECRET_KEY` in the environment), and are never shown again. If that key is lost, only those passwords need entering again.
+Every setting is made in the **admin console → ⚙️ Board** (after you create the admin account in the next section) and kept in the board's database — there's no settings file to edit:
 
-Server-level settings stay in `.env` in the install folder (root-only); after editing it, `systemctl restart family-chalk-planner`. Anything set in the console wins over the same setting in `.env`; leave a console field empty to use `.env`.
-
-| Setting (`.env`, or ⚙️ Board in the console) | What it does |
+| Section | What you set |
 |---|---|
-| `CALDAV_URL`, `CALDAV_USER`, `CALDAV_PASSWORD`, `CALDAV_CALENDAR` | Your calendar. iCloud: `https://caldav.icloud.com/`, your Apple ID, an **app-specific password** (account.apple.com → Sign-In and Security), and the calendar's name exactly as shown. |
-| `CALENDAR_PROVIDER`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Use a **Google Calendar** instead. Setup takes ~15 minutes: see **[google-calendar.md](google-calendar.md)**. |
-| `ALLOW_UNPAIRED_VIEW` | `true` lets any device on your network *view* the board without pairing (changes still need a paired device). Leave it off if the board can be reached from the internet. |
-| `PUBLIC_URL` | The board's `https://` address through your reverse proxy. Turns on passkeys and makes invite links use it. |
-| `TIMEZONE` | e.g. `America/Chicago`. Decides what "today" is. |
-| `LATITUDE`, `LONGITUDE`, `TEMP_UNIT` | Weather in the Notes column (Open-Meteo, no key). Empty = no weather. |
-| `TRASH_DAY` | Starting trash day, 0 = Sunday … 6 = Saturday. Empty = hidden. After that, trash and recycling days are set on the tablet (⚙ Settings). |
-| `HOLIDAYS` | `us`, `ca` (Canada), `gb` (United Kingdom) or `none`. Holidays only show on the board; they're never added to your calendar. |
-| `WEEK_START`, `TIME_FORMAT` | `sunday`/`monday`; `12h` (4:30pm) or `24h` (16:30). |
-| `EXTRA_CALENDARS`, `ICS_FEEDS` | More calendars from the same account, and read-only calendar links (school, sports teams). Easiest in ⚙️ Board. |
-| `PHOTO_ALBUM_URL` | The share link of an **iCloud Shared Album** (Public Website on) or a **Google Photos shared album**. See **[photos.md](photos.md)**. |
-| `BOARD_TITLE` | Name shown in the browser and on home-screen icons. |
-| `PORT`, `BIND`, `DATA_DIR`, `BACKUP_DIR`, `SOURCE_URL` | Server details; the defaults are fine. |
-| `TRUST_PROXY` | Your reverse proxy's address (the 🛡 Security tab shows it). |
-| `UPDATE_CHANNEL` | `release` (default) or `main` for `deploy/update.sh`. |
-| `SECRET_KEY` | Optional: the key that encrypts passwords saved in the console (otherwise `data/secret.key`). |
+| Board | Name, time zone (defaults to the server's), holidays (US, Canada, UK or none), weeks from Sunday or Monday, 12- or 24-hour times. |
+| Weather | Search your town (Open-Meteo, no account), °F or °C. Empty = no weather. |
+| Calendar | iCloud or another CalDAV server (address, username, **app-specific password**, then **Find my calendars**), or Google ([google-calendar.md](google-calendar.md)). **More calendars** from the same account, each with its own color. |
+| Calendar links | Read-only iCal links (school, sports teams), each with its own color. |
+| Photos | The share link of an iCloud or Google Photos shared album ([photos.md](photos.md)). |
+| On your network | The board's https address (passkeys, invite links), your reverse proxy's address, whether unpaired devices may view, release or main updates, the source-code link. |
+
+**Save and restart** applies them in a few seconds. Passwords, the Google client secret, the calendar account name, the album link and calendar links are encrypted in the database with a key kept outside it (`data/secret.key`, copied into the nightly backup); passwords are never shown again. Trash and recycling days and the bottom of the Notes column are set on the tablet (⚙️ Settings).
+
+Only where the board listens and keeps its data are set by the installer (in the service definition, `/etc/systemd/system/family-chalk-planner.service.d/server.conf`): `install.sh --unit-only --port 3002 --bind 0.0.0.0 --data DIR --backup-dir DIR`.
+
+**Upgrading from a version with a `.env` file (before 0.7):** nothing to do. The first start reads it once and moves everything into the database, and `update.sh` renames it to `.env.moved-to-admin-console`. Check ⚙️ Board, then delete that file.
+
+**Can't reach the console because of a wrong setting** (for example the https address or proxy)? Password + authenticator code works at `http://<server>:3002/admin` whatever the https address says. Or change it on the server: `sudo deploy/setting.sh set PUBLIC_URL` (no value clears it; `get` shows it), then `systemctl restart family-chalk-planner`.
 
 ## Screens and people
 Everything works in any current browser — Safari, Chrome, Edge, Firefox, Samsung Internet, Fully Kiosk — on phones, tablets and computers. (Where the console shows a browser name, it's only there so you can tell your devices apart.)
@@ -87,11 +83,7 @@ Everything works in any current browser — Safari, Chrome, Edge, Firefox, Samsu
    - **Activity**: every sign-in (and failed one), pairing, invite, role change, removal, passkey, password and settings change, and server reset — with who, what, which device and address, and when. Where the thing still exists, the line has the action to undo it (end that sign-in, remove that screen or passkey).
 
 ### Passkeys (Face ID, Touch ID, fingerprint)
-Passkeys only work over **HTTPS on a name** (not an IP address), which a reverse proxy gives you. With Nginx Proxy Manager: add a proxy host (e.g. `board.example.com` → `http://<server>:3002`, with Websockets support on and a Let's Encrypt certificate), then set in `.env`:
-```bash
-PUBLIC_URL=https://board.example.com
-```
-and restart. (If the console says passkeys aren't available at that address, the board isn't seeing NPM's HTTPS: set `TRUST_PROXY=<NPM's IP>` in `.env`.) Open the board at that address on iPhone/iPad/Mac (iCloud Keychain), Android (Google Password Manager), or Windows (Windows Hello), and use **Add a passkey** (console → 👤 My account, or 👤 on the board) right after signing in — for safety, adding or removing a passkey needs a sign-in from the last 10 minutes. Password + authenticator code always works as well, including at the plain `http://` address.
+Passkeys only work over **HTTPS on a name** (not an IP address), which a reverse proxy gives you. With Nginx Proxy Manager: add a proxy host (e.g. `board.example.com` → `http://<server>:3002`, with Websockets support on and a Let's Encrypt certificate), then enter `https://board.example.com` in the admin console → ⚙️ Board → **On your network** and save. (If the console says passkeys aren't available at that address, the board isn't seeing NPM's HTTPS: enter NPM's IP as the **reverse proxy address**, or use the button in 🛡 Security.) Open the board at that address on iPhone/iPad/Mac (iCloud Keychain), Android (Google Password Manager), or Windows (Windows Hello), and use **Add a passkey** (console → 👤 My account, or 👤 on the board) right after signing in — for safety, adding or removing a passkey needs a sign-in from the last 10 minutes. Password + authenticator code always works as well, including at the plain `http://` address.
 
 ### Nobody can sign in any more
 On the server: `sudo /opt/family-chalk-planner/deploy/reset-admin.sh`. It removes **every** account, sign-in and paired screen (the calendar, drawings, meals, jars, photos and settings stay) and prints a new setup code. Create the admin again in `/admin` and re-pair the screens.
@@ -111,7 +103,7 @@ proxy_buffering off;
 proxy_read_timeout 1h;
 ```
 
-Then set `PUBLIC_URL=https://…` (the address you open) and `TRUST_PROXY=<the proxy's IP>` in `.env` and restart. Without HTTPS, passwords and codes cross your network unencrypted and passkeys can't work; the admin console warns about this. The console's 🛡 Security tab shows the proxy address it sees, so you can copy it into `TRUST_PROXY`.
+Then enter the https address you open and the proxy's IP in the admin console → ⚙️ Board → **On your network** (the console shows the proxy address it sees, with a button to use it). Without HTTPS, passwords and codes cross your network unencrypted and passkeys can't work; the admin console warns about this.
 
 Keep it on your home network. Anyone who can reach the wall address can see the calendar.
 
@@ -120,10 +112,10 @@ Keep it on your home network. Anyone who can reach the wall address can see the 
 /opt/family-chalk-planner/deploy/update.sh            # newest release + restart; rolls back if it fails
 /opt/family-chalk-planner/deploy/update.sh --check    # just show what's new
 ```
-It installs the newest **release** (a version tag like `v0.4.4`, listed on the GitHub Releases page with its notes), so work in progress on the main branch never reaches your wall. To follow every change on main instead (for people working on the board), add `UPDATE_CHANNEL=main` to `.env`. The wall and family screens reload themselves; tablets show an "update" banner.
+It installs the newest **release** (a version tag like `v0.4.4`, listed on the GitHub Releases page with its notes), so work in progress on the main branch never reaches your wall. To follow every change on main instead (for people working on the board), choose it in ⚙️ Board → On your network → Updates. The wall and family screens reload themselves; tablets show an "update" banner.
 
 ## Backups
-Every night the board writes a consistent copy of its database to `BACKUP_DIR` (default `data/backup`) and keeps 14 of them. Uploaded GIFs live in `BACKUP_DIR/media`. Back up that folder and `.env` with your usual tools. The photo cache and face finder can always be rebuilt, so they don't need backing up.
+Every night the board writes a consistent copy of its database to `BACKUP_DIR` (default `data/backup`) and keeps 14 of them. Uploaded GIFs live in `BACKUP_DIR/media`. Back up that folder with your usual tools (it has everything, settings included). The photo cache and face finder can always be rebuilt, so they don't need backing up.
 
 Everything lives in one SQLite file (`data/chalkboard.db`, readable by the service only): calendar art, settings, screens, people and the activity log. SQLite is the right fit for a household board — one small file, no database server to run, crash-safe, and checked on every start (a problem shows in `journalctl`).
 

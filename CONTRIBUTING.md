@@ -17,9 +17,10 @@ PORT=3002 DATA_DIR=./data node server/chalkboard.js
 
 Open `http://localhost:3002/admin`, create the admin with the setup code from the log
 (or `data/setup-code.txt`), then pair a browser tab as a screen or sign in at `/edit`.
-For a calendar without real accounts, use the tests' mock CalDAV server:
-`node test/mock-caldav.js 5232 &`, then start the board with `CALDAV_URL=http://127.0.0.1:5232/`,
-`CALDAV_USER=x`, `CALDAV_PASSWORD=x`, `CALDAV_CALENDAR=Family`.
+For a calendar without real accounts, use the tests' mock CalDAV server: `node test/mock-caldav.js 5232 &`,
+then in the console → ⚙️ Board → Calendar enter `http://127.0.0.1:5232/`, any username and password, and
+**Find my calendars**. (Settings live in the database; environment variables with the same names are
+read once, on a fresh data folder's first start — handy for tests and scripts.)
 
 ## Making a change
 1. Branch from `main`, keep the change focused, and add or update a test in `test/` for anything
