@@ -17,7 +17,7 @@ test.before(async () => {
   album = await require('./mock-album').start(ALBUM);
   data = fs.mkdtempSync(path.join(os.tmpdir(), 'fcp-'));
   server = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'chalkboard.js')], {
-    env: { ...process.env, PORT: String(PORT), BIND: '127.0.0.1', DATA_DIR: data, TIMEZONE: 'America/New_York', TRASH_DAY: '2',
+    env: { ...process.env, NODE_ENV: 'test', PORT: String(PORT), BIND: '127.0.0.1', DATA_DIR: data, TIMEZONE: 'America/New_York', TRASH_DAY: '2',
       CALDAV_URL: `http://127.0.0.1:${DAV}/`, CALDAV_USER: 'u', CALDAV_PASSWORD: 'p', CALDAV_CALENDAR: 'Family', CHALK_PIN: PIN,
       PHOTO_ALBUM_URL: 'https://photos.icloud.com/shared/album/0d3TESTALBUMxyz', PHOTO_CK_HOST: `http://127.0.0.1:${ALBUM}`, BOARD_TITLE: 'Test <Family>' },
     stdio: ['ignore', 'pipe', 'pipe']
@@ -82,6 +82,28 @@ test('clipart (Fluent Emoji) is served by the board and can be placed', async ()
     { k: 'g', x: 10, y: 10, w: 96, h: 96, src: '/api/clip/ghost.svg', still: '/api/clip/ghost.svg', mode: 'still' },
     { k: 'g', x: 10, y: 10, w: 96, h: 96, src: '/api/clip/../media/x.svg' }] })).json();
   assert.ok(ids[0] > 0); assert.equal(ids[1], null);
+});
+
+test('fonts come from the board itself; board pages allow nothing from elsewhere', async () => {
+  const css = await (await api('/fonts.css')).text();
+  assert.match(css, /font-family: 'Kalam'/); assert.match(css, /url\(\/fonts\/kalam\/files\/kalam-latin-700-normal\.woff2\)/);
+  assert.equal((await api('/fonts/kalam/files/kalam-latin-700-normal.woff2')).status, 200);
+  assert.equal((await api('/fonts/kalam/files/..%2F..%2Fpackage.json')).status, 404);
+  assert.equal((await api('/fonts/express/files/x.woff2')).status, 404);
+  for (const p of ['/', '/edit']) {
+    const r = await api(p), csp = r.headers.get('content-security-policy');
+    assert.match(csp, /default-src 'self'/); assert.match(csp, /object-src 'none'/); assert.doesNotMatch(csp, /googleapis|gstatic/);
+    assert.doesNotMatch(await r.text(), /fonts\.googleapis/);
+  }
+});
+
+test('unused pictures are tidied up; ones in use are kept', async () => {
+  const up = async () => (await (await api('/api/media', { method: 'POST', headers: { 'Content-Type': 'image/gif' }, body: Buffer.concat([Buffer.from('GIF89a'), Buffer.alloc(30)]) })).json()).src;
+  const kept = await up(), stamped = await up(), orphan = await up();
+  await post('/api/gifs/add', { src: kept, w: 1, h: 1 });
+  await post('/api/art/bulk', { ym: '2026-10', items: [{ k: 'g', x: 1, y: 1, w: 20, h: 20, src: stamped, still: stamped }] });
+  assert.equal((await (await post('/api/test/clean-media', { days: 0 })).json()).removed, 1);
+  assert.equal((await api(kept)).status, 200); assert.equal((await api(stamped)).status, 200); assert.equal((await api(orphan)).status, 404);
 });
 
 test('theme is validated', async () => {

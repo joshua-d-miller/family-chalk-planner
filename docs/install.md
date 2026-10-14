@@ -96,7 +96,7 @@ On the server: `sudo /opt/family-chalk-planner/deploy/reset-admin.sh`. It remove
 - **Raspberry Pi or PC:** any browser in full-screen/kiosk mode, e.g. `chromium --kiosk http://<server>:3002/` or `firefox --kiosk http://<server>:3002/`.
 - The wall is read-only. During the night slideshow, one tap shows the calendar for 5 minutes and a double tap goes back to the slideshow.
 
-## 5. HTTPS and a nice name (optional)
+## 5. HTTPS and a nice name (recommended)
 Put it behind your reverse proxy (Nginx Proxy Manager, Caddy, Traefik) with a local DNS name. It uses a live event stream, so turn on WebSocket support and turn **off** response buffering. For Nginx Proxy Manager, add under **Advanced**:
 
 ```
@@ -104,14 +104,16 @@ proxy_buffering off;
 proxy_read_timeout 1h;
 ```
 
+Then set `PUBLIC_URL=https://…` (the address you open) and `TRUST_PROXY=<the proxy's IP>` in `.env` and restart. Without HTTPS, passwords and codes cross your network unencrypted and passkeys can't work; the admin console warns about this. The console's 🛡 Security tab shows the proxy address it sees, so you can copy it into `TRUST_PROXY`.
+
 Keep it on your home network. Anyone who can reach the wall address can see the calendar.
 
 ## Updating
 ```bash
-/opt/family-chalk-planner/deploy/update.sh            # git pull + restart; rolls back if it fails
+/opt/family-chalk-planner/deploy/update.sh            # newest release + restart; rolls back if it fails
 /opt/family-chalk-planner/deploy/update.sh --check    # just show what's new
 ```
-The wall reloads itself; tablets show an "update" banner.
+It installs the newest **release** (a version tag like `v0.4.4`, listed on the GitHub Releases page with its notes), so work in progress on the main branch never reaches your wall. To follow every change on main instead (for people working on the board), add `UPDATE_CHANNEL=main` to `.env`. The wall and family screens reload themselves; tablets show an "update" banner.
 
 ## Backups
 Every night the board writes a consistent copy of its database to `BACKUP_DIR` (default `data/backup`) and keeps 14 of them. Uploaded GIFs live in `BACKUP_DIR/media`. Back up that folder and `.env` with your usual tools. The photo cache and face finder can always be rebuilt, so they don't need backing up.

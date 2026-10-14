@@ -42,6 +42,8 @@ CALDAV_URL=http://127.0.0.1:5232/ CALDAV_USER=x CALDAV_PASSWORD=x CALDAV_CALENDA
   TIMEZONE=America/New_York DATA_DIR=./data npm start   # setup code: see the log or data/setup-code.txt
 ```
 
+Want to help? See [CONTRIBUTING.md](CONTRIBUTING.md). What changed in each version: [CHANGELOG.md](CHANGELOG.md).
+
 ## License
 
 GNU Affero General Public License v3.0 or later (see [LICENSE](LICENSE)). You're free to use, change and share it. If you run a modified version for other people, you must offer them its source code; the app's "source code" link points at `SOURCE_URL`. Third-party credits are in [NOTICE](NOTICE). Security notes are in [SECURITY.md](SECURITY.md).

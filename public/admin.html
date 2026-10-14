@@ -6,8 +6,7 @@
 <meta name="referrer" content="no-referrer">
 <title>Admin console</title>
 <link rel="icon" href="/icons/icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<link href="/fonts.css" rel="stylesheet">
 <style>
 :root{--bg:#191917;--card:#22221f;--line:rgba(201,180,122,.4);--chalk:#EDEAE0;--dim:rgba(237,234,224,.62);--pink:#F6B3CB;--yellow:#F2D479;--green:#A9D8A0;--red:#F7A1A1}
 *{box-sizing:border-box}
@@ -61,6 +60,7 @@ button:disabled{opacity:.5;cursor:default}
 </head>
 <body>
 <main>
+<div id="httpWarn" class="card" hidden style="border-color:rgba(247,161,161,.6)">🔓 <b>Not a secure connection.</b> Your password and codes travel unencrypted on your network here, and passkeys can’t work. Use the board’s <b>https://</b> address (see the install guide: reverse proxy and PUBLIC_URL).</div>
   <h1 id="title">Admin console</h1>
   <p class="sub" id="subtitle"></p>
 
@@ -253,6 +253,7 @@ button:disabled{opacity:.5;cursor:default}
 </main>
 <script src="/passkey.js"></script>
 <script>
+(function () { if (location.protocol === 'http:' && !/^(localhost|127\.|\[::1\])/.test(location.hostname)) document.getElementById('httpWarn').hidden = false; })();
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };

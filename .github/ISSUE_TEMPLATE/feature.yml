@@ -1,0 +1,16 @@
+name: Idea or feature request
+description: Something that would make the board better for your family
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What would you like to do?
+      description: Describe the moment in your family's day where this would help.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How might it work?
+      description: Optional — sketches and examples from other apps are welcome.

@@ -313,14 +313,24 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
   };
   setInterval(() => { const now = Date.now(); for (const [k, t] of tries) if (!t.some(x => now - x < 3600e3)) tries.delete(k); }, 10 * 60e3).unref();
 
+  // which address forwards requests to the board (the reverse proxy), so the console can name it
+  let proxySeen = null;
+  app.use((req, res, next) => {
+    if (!process.env.TRUST_PROXY && req.get('x-forwarded-for')) proxySeen = String(req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+    next();
+  });
+
   // ---- browser protections on every response ----
   app.use((req, res, next) => {
     res.set({ 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'X-Frame-Options': 'DENY',
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()', 'Cross-Origin-Opener-Policy': 'same-origin' });
     if (req.secure) res.set('Strict-Transport-Security', 'max-age=15552000');
     if (req.path === '/admin' || req.path === '/join') res.set('Content-Security-Policy',
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'");
-    else res.set('Content-Security-Policy', "frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'");
+    // the board pages: everything comes from the board itself (fonts, pictures, live updates); nothing else may load
+    else if (req.path === '/' || req.path === '/edit') res.set('Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'");
+    else res.set('Content-Security-Policy', "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'");
     if (/^\/api\/(whoami|account|users|devices|security|pair|passkey)/.test(req.path)) res.set('Cache-Control', 'no-store');
     next();
   });
@@ -746,6 +756,8 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
   const A = (label, call, body, confirm) => ({ label, call, body, confirm });
   function alerts() {
     const now = Date.now(), cfg = secCfg(), out = [];
+    if (!RP || !RP.origin.startsWith('https:')) out.push({ level: 'warn', kind: 'setup', text: 'The board isn’t set up for HTTPS (PUBLIC_URL isn’t an https:// address). Passwords and codes travel unencrypted on your network, and passkeys are off. Put the board behind a reverse proxy with HTTPS and set PUBLIC_URL — see docs/install.md.', actions: [] });
+    if (!process.env.TRUST_PROXY && proxySeen) out.push({ level: 'info', kind: 'setup', text: `Requests reach the board through a proxy at ${proxySeen}. For tighter security, tell the board to trust only that address: add TRUST_PROXY=${proxySeen} to the board’s .env and restart. (Right now it trusts forwarding information from any device on your local network.)`, actions: [] });
     for (const d of q.dList.all()) if (cfg.screenFlagDays > 0 && now - d.last_seen > cfg.screenFlagDays * DAY) {
       out.push({ level: 'warn', kind: 'screen', text: `Screen “${d.name}” (${d.agent}) hasn’t been seen for ${days(d.last_seen)} days.` + (cfg.screenRemoveDays > 0 ? ` It’s removed automatically after ${cfg.screenRemoveDays}.` : ''),
         actions: [A('Remove screen', '/api/devices/remove', { id: d.id }, `Remove “${d.name}”?`)] });

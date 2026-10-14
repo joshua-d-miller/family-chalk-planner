@@ -1416,6 +1416,34 @@ app.get('/api/media/:file', (req, res) => {
   res.sendFile(path.join(MEDIA_DIR, req.params.file), err => { if (err && !res.headersSent) res.sendStatus(404); });
 });
 
+// Tidy-up: uploaded/linked pictures that nothing uses any more (not on any month, not in the GIF library,
+// not in a stamp) and are over 30 days old are removed once a day, so backups don't grow forever.
+function mediaInUse() {
+  const used = new Set(), grab = t => { for (const m of String(t).matchAll(/\/api\/media\/([a-z0-9]{16}\.(?:gif|webp|png|jpg))/g)) used.add(m[1]); };
+  for (const r of db.prepare("SELECT data FROM strokes WHERE data LIKE '%/api/media/%'").all()) grab(r.data);
+  for (const r of db.prepare("SELECT data FROM stamps WHERE data LIKE '%/api/media/%'").all()) grab(r.data);
+  for (const r of db.prepare("SELECT data FROM kv WHERE data LIKE '%/api/media/%'").all()) grab(r.data);
+  for (const r of db.prepare("SELECT data FROM month_meta WHERE data LIKE '%/api/media/%'").all()) grab(r.data);
+  return used;
+}
+function cleanMedia(maxAgeDays = 30) {
+  let removed = 0;
+  try {
+    if (!fs.existsSync(MEDIA_DIR)) return 0;
+    const used = mediaInUse(), cutoff = Date.now() - maxAgeDays * 86400e3;
+    for (const f of fs.readdirSync(MEDIA_DIR)) {
+      if (!/^[a-z0-9]{16}\.(gif|webp|png|jpg)$/.test(f) || used.has(f)) continue;
+      const full = path.join(MEDIA_DIR, f);
+      if (fs.statSync(full).mtimeMs < cutoff) { fs.unlinkSync(full); removed++; }
+    }
+    if (removed) console.log(`Chalkboard: removed ${removed} unused picture(s) from media`);
+  } catch (e) { console.error('Chalkboard: media tidy-up failed:', e.message); }
+  return removed;
+}
+setTimeout(cleanMedia, 60e3).unref();
+setInterval(cleanMedia, 24 * 3600e3).unref();
+if (ENV.NODE_ENV === 'test') app.post('/api/test/clean-media', (req, res) => res.json({ removed: cleanMedia(+req.body.days || 0) }));
+
 // Your GIF library (what you have uploaded)
 const gifList = () => { const r = qKvGet.get('gifs'); return r ? JSON.parse(r.data) : []; };
 app.get('/api/gifs', (req, res) => res.json(gifList()));
@@ -1811,10 +1839,33 @@ function sendBoard(kind) {
     fs.readFile(path.join(PUBLIC, 'index.html'), 'utf8', (err, html) => {
       if (err) return res.status(500).send('Board page missing');
       res.set('Cache-Control', 'no-cache').type('html')
-        .send(html.replace(/<title>[^<]*<\/title>/, `<title>${BOARD_TITLE.replace(/[<>&"]/g, '')}</title>`).replace(/__SOURCE_URL__/g, SOURCE_URL).replace('<!--MANIFEST-->', `<link rel="manifest" href="/manifest-${kind}.webmanifest">\n<meta name="board-version" content="${boardVersion()}">`));
+        .send(html.replace(/<title>[^<]*<\/title>/, `<title>${BOARD_TITLE.replace(/[<>&"]/g, '')}</title>`).replace(/__SOURCE_URL__/g, SOURCE_URL).replace(/__APP_VERSION__/g, APP_VERSION).replace('<!--MANIFEST-->', `<link rel="manifest" href="/manifest-${kind}.webmanifest">\n<meta name="board-version" content="${boardVersion()}">`));
     });
   };
 }
+const APP_VERSION = 'v' + require('../package.json').version;
+// Fonts: bundled from npm (@fontsource, SIL Open Font License) and served by the board itself, so no
+// screen ever calls Google and the board looks right with the internet down.
+const FONTS = [['kalam', [400, 700]], ['dancing-script', [700]], ['cormorant-garamond', [600]], ['caveat', [600]], ['permanent-marker', [400]],
+  ['pacifico', [400]], ['fredericka-the-great', [400]], ['amatic-sc', [700]], ['rock-salt', [400]]];
+let fontsCss = null;
+app.get('/fonts.css', (req, res) => {
+  if (fontsCss === null) {
+    fontsCss = FONTS.map(([pkg, ws]) => ws.map(w => {
+      try { return fs.readFileSync(require.resolve(`@fontsource/${pkg}/${w}.css`), 'utf8').replace(/url\(\.\/files\//g, `url(/fonts/${pkg}/files/`); }
+      catch { return ''; }
+    }).join('\n')).join('\n');
+  }
+  res.set('Cache-Control', 'public, max-age=86400').type('text/css').send(fontsCss);
+});
+app.get('/fonts/:pkg/files/:file', (req, res) => {
+  const { pkg, file } = req.params;
+  if (!FONTS.some(([p]) => p === pkg) || !/^[a-z0-9-]+\.woff2?$/.test(file)) return res.sendStatus(404);
+  let dir; try { dir = path.dirname(require.resolve(`@fontsource/${pkg}/package.json`)); } catch { return res.sendStatus(404); }
+  res.set('Cache-Control', 'public, max-age=31536000, immutable');
+  res.sendFile(path.join(dir, 'files', file), err => { if (err && !res.headersSent) res.sendStatus(404); });
+});
+
 app.get('/', sendBoard('wall'));
 app.get('/edit', sendBoard('edit'));
 // the admin console (sign-in, screens, people, my account) and invite links
