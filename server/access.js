@@ -357,7 +357,8 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
   // family screens: events, meals, jars, countdowns, event colors, and placing/moving/erasing art (stamps, clipart, words).
   // Not: wiping a month, changing the stamp/GIF libraries, uploads, style, photos, settings.
   const FAMILY_POSTS = new Set(['/events', '/events/update', '/events/delete', '/meals', '/jars', '/countdowns', '/evcolor',
-    '/art', '/art/update', '/art/bulk', '/art/restore', '/art/delete', '/art/undo']);
+    '/art', '/art/update', '/art/bulk', '/art/restore', '/art/delete', '/art/undo',
+    '/theme', '/meta', '/photos/settings', '/photos/sync']);   // board style, month title, photos (everything but drawing)
   const ADMIN = [/^\/board-settings/, /^\/devices/, /^\/users/, /^\/security/, /^\/google\//, /^\/calendar\/status$/, /^\/trash$/, /^\/notes$/];
   app.use('/api', (req, res, next) => {
     const write = !(req.method === 'GET' || req.method === 'HEAD');

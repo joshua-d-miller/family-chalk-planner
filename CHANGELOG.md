@@ -4,6 +4,11 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.8.3 — family screens can restyle
+- Family screens can now change the board style (background, look, seasonal pattern), the month title
+  and the photos, like the tablet. Still tablet-only: freehand drawing, deleting saved stamps and GIFs,
+  calendar settings. An unsaved style left open is put back after 5 quiet minutes.
+
 ## 0.8.2 — popups fit every screen
 - Popups (events, Board style, photos, month title…) are never taller than the screen: they scroll inside
   instead, the Save / Cancel row always stays in view, and on smaller screens everything is a bit more
