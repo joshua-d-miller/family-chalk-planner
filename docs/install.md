@@ -66,7 +66,7 @@ Everything works in any current browser — Safari, Chrome, Edge, Firefox, Samsu
 | Who | Role | Can |
 |---|---|---|
 | Screen | 👀 **View only** | Show the board (a wall display). |
-| Screen | ✋ **Family** | Show the board and add or change events, the meal plan, jars and countdowns. Opens a touch-friendly editor without drawing or settings — for a shared touch screen. |
+| Screen | ✋ **Family** | Show the board and add or change events, the meal plan, jars and countdowns, and decorate with stamps, clipart, emoji, GIFs and words (place, move, resize, erase). No freehand drawing, no wiping a month, no board style, photos or settings — for a shared touch screen. |
 | Person | 🎨 **Editor** | Everything on the board: events, drawing, board style, photos. Signs in again on that tablet every 60 days (one Face ID tap with a passkey; adjustable in 🛡 Security). |
 | Person | 🔑 **Admin** | Editor, plus the admin console (screens, people) and the board's ⚙️ settings (calendar, Google, trash days). The console asks for a fresh sign-in after 30 quiet minutes. |
 

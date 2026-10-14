@@ -2,7 +2,7 @@
 //
 // SCREENS are paired once and have a role (no sign-in, they just keep working):
 //   view    - shows the board (a wall display)
-//   family  - view + change events, meals, jars and countdowns (a shared touch screen)
+//   family  - view + change events, meals, jars and countdowns, and decorate with stamps / clipart / words (no freehand drawing)
 //
 // PEOPLE sign in, on a tablet or phone, with a passkey (Face ID / Touch ID / fingerprint,
 // needs HTTPS and PUBLIC_URL) or with username + password + a code from an authenticator app:
@@ -344,7 +344,10 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
   // public: pairing, sign-in/setup/join, whoami, today's date (install/update health checks)
   const PUBLIC = [/^\/pair\//, /^\/whoami$/, /^\/today$/, /^\/account\/(login|setup|join|enroll)/, /^\/passkey\/login\//];
   const SELF = [/^\/account\//, /^\/passkey\//];   // need a signed-in person; checked in the route
-  const FAMILY_POSTS = new Set(['/events', '/events/update', '/events/delete', '/meals', '/jars', '/countdowns', '/evcolor']);
+  // family screens: events, meals, jars, countdowns, event colors, and placing/moving/erasing art (stamps, clipart, words).
+  // Not: wiping a month, changing the stamp/GIF libraries, uploads, style, photos, settings.
+  const FAMILY_POSTS = new Set(['/events', '/events/update', '/events/delete', '/meals', '/jars', '/countdowns', '/evcolor',
+    '/art', '/art/update', '/art/bulk', '/art/restore', '/art/delete', '/art/undo']);
   const ADMIN = [/^\/devices/, /^\/users/, /^\/security/, /^\/google\//, /^\/calendar\/status$/, /^\/trash$/, /^\/notes$/];
   app.use('/api', (req, res, next) => {
     const write = !(req.method === 'GET' || req.method === 'HEAD');

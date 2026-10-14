@@ -60,7 +60,7 @@ The bottom bar on the tablet has **👤** (your account: add a passkey on this t
 
 
 ## A family touch screen
-A screen paired as **✋ Family** opens straight into the editor without drawing, board style, photos or settings: tap a day to see and add events, tap an event to change it, tap the Meal Plan or a jar. Handy for a touch screen on the wall that everyone uses.
+A screen paired as **✋ Family** opens straight into the editor: tap a day to see and add events, tap an event to change it, tap the Meal Plan or a jar. **Decorate** adds stamps, clipart, emoji, GIFs and words (Aa), and moves, resizes or erases them — fingers are great at that. Freehand chalk and Posca, wiping the month, changing the stamp/GIF libraries, board style, photos and settings stay on a signed-in tablet. Handy for a touch screen on the wall that everyone uses.
 
 ## The wall display (read-only)
 - The wall can't change anything, but it responds to taps:

@@ -126,7 +126,7 @@ test('screens: a code on the new screen, an admin types it, view or family only'
   assert.equal((await p.poll()).state, 'expired', 'the key is handed over only once');
 });
 
-test('what each can do: view reads, family edits events/meals/jars, editors decorate, admins configure', async () => {
+test('what each can do: view reads, family edits events/meals/jars and decorates, editors draw, admins configure', async () => {
   const view = await screen('view'), fam = await screen('family');
   const wife = await invitePerson('tarin', 'editor');
   const ed = client(base, wife.cookie);
@@ -136,7 +136,10 @@ test('what each can do: view reads, family edits events/meals/jars, editors deco
   assert.equal((await fam.post('/api/events', { title: 'Fam', date: '2026-10-22', allDay: true })).status, 200);
   assert.equal((await fam.post('/api/jars', { jars: [] })).status, 200);
   const art = { ym: '2026-10', stroke: { p: [1, 2, 3, 4] } };
-  assert.equal((await fam.post('/api/art', art)).status, 403);
+  assert.equal((await fam.post('/api/art', art)).status, 200, 'family decorates (stamps, words)');
+  assert.equal((await fam.post('/api/art/bulk', { ym: '2026-10', items: [{ k: 't', s: 'Hi', x: 10, y: 10 }] })).status, 200);
+  for (const [p, b] of [['/api/art/clear', { ym: '2026-10' }], ['/api/stamps', { name: 'x', items: [] }], ['/api/gifs/delete', { id: 1 }], ['/api/stamps/delete', { id: 1 }]])
+    assert.equal((await fam.post(p, b)).status, 403, 'family must not ' + p);
   assert.equal((await fam.post('/api/theme', { p: 'classic' })).status, 403);
   assert.equal((await ed.post('/api/art', art)).status, 200);
   assert.equal((await ed.post('/api/theme', { p: 'classic' })).status, 200);

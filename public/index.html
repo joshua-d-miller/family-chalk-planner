@@ -354,8 +354,11 @@ body.edit #zoom{display:flex}
 #acctmodal.open{display:flex}
 #acctmodal .card{width:min(420px,92vw)}
 .acctbtns{display:flex;flex-direction:column;gap:8px;margin-top:8px}.acctbtns .seg{text-align:center;text-decoration:none;display:block}
-/* family touch screen: everything except drawing, board style, photos and settings */
-body.family #drawBtn,body.family #styleBtn,body.family #settingsBtn,body.family #photosBtn,body.family #titleBtn,body.family #acctBtn{display:none!important}
+/* family touch screen: events, meals, jars, and decorating (stamps, clipart, emoji, GIFs, words: move/resize/erase)
+   but no freehand chalk/Posca, no wiping the month, no changing the libraries; no board style, photos or settings */
+body.family #chalkBtn,body.family #poscaBtn,body.family #sizeBtn,body.family #swatches,body.family #clearBtn,body.family #selSave,
+body.family .stamp .x,body.family .gtile .x,body.family .gtile.up{display:none!important}
+body.family #styleBtn,body.family #settingsBtn,body.family #photosBtn,body.family #titleBtn,body.family #acctBtn{display:none!important}
 body:not(.isadmin) #settingsBtn{display:none!important}   /* calendar and board settings: admins (signed in to the console) */
 #pinErr{color:#F7A1A1;min-height:22px;margin-top:8px;font-size:16px}
 body.edit:not(.drawing) .bar{pointer-events:auto;cursor:pointer}
@@ -3332,7 +3335,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   function renderGifLib() {
     var mine = $('gMine'); mine.innerHTML = '';
-    var up = el('label', 'gtile'); up.appendChild(document.createTextNode('+ Upload'));
+    var up = el('label', 'gtile up'); up.appendChild(document.createTextNode('+ Upload'));
     var inp = el('input'); inp.type = 'file'; inp.accept = 'image/gif,image/webp,image/png,image/jpeg';
     inp.addEventListener('change', function () { if (inp.files[0]) uploadGif(inp.files[0]); inp.value = ''; });
     up.appendChild(inp); mine.appendChild(up);
@@ -3684,6 +3687,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     }
     addCustom.onChange = function () { buildSwatches(); };   // a color picked anywhere shows up in the toolbar too
     function setTool(t, medium) {
+      if (t === 'pen' && document.body.classList.contains('family')) t = 'select';   // family screens decorate, they don't draw
       state.tool = t;
       if (medium && medium !== state.medium) { state.medium = medium; buildSwatches(); }
       $('chalkBtn').classList.toggle('on', t === 'pen' && state.medium === 'chalk');
@@ -3785,7 +3789,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       state.drawing = !state.drawing;
       document.body.classList.toggle('drawing', state.drawing);
       $('drawBtn').classList.toggle('on', state.drawing);
-      $('drawLabel').textContent = state.drawing ? 'Done drawing' : 'Draw';
+      var fam = document.body.classList.contains('family');
+      if (fam && state.drawing && state.tool === 'pen') setToolExt('select');
+      $('drawLabel').textContent = state.drawing ? (fam ? 'Done' : 'Done drawing') : (fam ? 'Decorate' : 'Draw');
     });
     $('addBtn').addEventListener('click', function () { openModal(state.today); });
     $('grid').addEventListener('click', function (e) {
@@ -4013,7 +4019,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       return w;
     }
     if (w.editor) return w;   // full editor
-    if (state.role === 'family') { document.body.classList.add('family'); return w; }
+    if (state.role === 'family') { document.body.classList.add('family'); $('drawLabel').textContent = 'Decorate'; return w; }
     if (w.firstRun) { location.replace('/admin'); return w; }
     showSignIn(state.role === 'view' ? 'This screen is paired to show the board only. Sign in to edit.' : '');
     return w;

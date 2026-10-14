@@ -17,7 +17,7 @@ rather than a public issue.
   reused; failed sign-ins are rate-limited per account and per address). Board sign-ins end after 60
   days (adjustable); screen keys never expire (renewed while used) until an admin removes the screen; the admin console needs its own sign-in that ends after 30 idle minutes (12 h at most).
 - **Roles:** reading needs a paired screen or a signed-in person (unless `ALLOW_UNPAIRED_VIEW`);
-  family screens may change events, meals, jars and countdowns; editors everything on the board;
+  family screens may change events, meals, jars and countdowns and place/move/erase decorations (not freehand drawing, wiping a month or the libraries); editors everything on the board;
   only admins (console sign-in) screens, people, calendar, Google and board settings.
 - **First admin / recovery:** a one-time setup code (server log, `data/setup-code.txt`, mode 600).
   `deploy/reset-admin.sh` (needs root on the server) removes every account and screen and makes a
