@@ -15,6 +15,9 @@ fi
 UNIT_USER="$(systemctl show -p User --value family-chalk-planner 2>/dev/null || true)"
 NODE="$(command -v node)"
 run() { if [ -n "$UNIT_USER" ] && [ "$(id -u)" = 0 ]; then runuser -u "$UNIT_USER" -- "$@"; else "$@"; fi; }
-set -a; [ -f "$ENV_FILE" ] && . "$ENV_FILE"; set +a
+set -a
+# shellcheck source=/dev/null
+[ -f "$ENV_FILE" ] && . "$ENV_FILE"
+set +a
 cd "$APP_DIR"
 run env PORT=0 "$NODE" server/chalkboard.js --reset-admin

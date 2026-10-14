@@ -34,6 +34,8 @@ body.display:not(.framed) .slate{box-shadow:none}
 .slate{position:relative;width:1252px;height:642px;background:var(--slate);color:var(--chalk);box-shadow:inset 0 0 0 2px rgba(0,0,0,.5),inset 0 0 50px rgba(0,0,0,.6);
   padding:8px 14px 10px 18px;display:flex;gap:14px;overflow:hidden}
 .chalk{text-shadow:0 0 1px rgba(var(--ink),.45)}
+/* cork is busy: a soft dark shadow keeps small writing crisp on it */
+body[data-surface=cork] .slate,body[data-surface=cork] .slate .chalk{text-shadow:0 1px 2px rgba(20,10,0,.85),0 0 3px rgba(20,10,0,.6)}
 .cal{flex:1;min-width:0;display:flex;flex-direction:column}
 .titlerow{position:relative;height:70px;display:flex;align-items:center;justify-content:center;gap:22px}
 .titlerow h1{margin:0;font-family:'Dancing Script',cursive;font-weight:700;font-size:68px;line-height:1;color:var(--pink);min-width:330px;text-align:center}
@@ -986,7 +988,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     { id: 'slate', name: 'Black slate', lum: 0.0069, base: ['#1d1e1d', '#121312'], dust: '235,232,222', frame: null },
     { id: 'green', name: 'Green chalkboard', lum: 0.042, base: ['#33503f', '#22382c'], dust: '232,238,226', frame: null },
     { id: 'blue', name: 'Blue chalkboard', lum: 0.028, base: ['#2a3e55', '#1b2a3b'], dust: '230,236,242', frame: null },
-    { id: 'cork', name: 'Cork', lum: 0.11, base: ['#86603c', '#6b4a2c'], frame: null },
+    { id: 'cork', name: 'Cork', lum: 0.11, base: ['#8a6038', '#704b29'], frame: null },
     { id: 'kraft', name: 'Kraft paper', lum: 0.36, base: ['#c9a87c', '#b69266'], frame: null },
     { id: 'white', name: 'Whiteboard', lum: 0.86, base: ['#f7f8f6', '#e6e9e6'], frame: 'linear-gradient(180deg,#d9dde1,#a9afb6 50%,#c9ced3)' }
   ];
@@ -1028,14 +1030,21 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       g.putImageData(img, 0, 0);
       for (i = 0; i < 260; i++) { g.fillStyle = 'rgba(' + sf.dust + ',' + (0.05 + rnd() * 0.12) + ')'; g.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 1.5, 1 + rnd() * 1.5); }
     } else if (sf.id === 'cork') {
-      // cork: thousands of little granules, light and dark
-      for (i = 0; i < 26000; i++) {
-        x = rnd() * W; y = rnd() * H; r = 0.6 + rnd() * 2.2;
-        var lt = rnd() < 0.55;
-        g.fillStyle = lt ? 'rgba(214,170,112,' + (0.10 + rnd() * 0.22) + ')' : 'rgba(52,32,16,' + (0.10 + rnd() * 0.25) + ')';
+      // cork: pressed granules of different sizes and shades, with dark pits between them
+      for (i = 0; i < 9000; i++) {   // big chunks first
+        x = rnd() * W; y = rnd() * H; r = 1.6 + rnd() * 3.4;
+        var tone = rnd(), col = tone < 0.4 ? '176,124,70' : tone < 0.75 ? '204,152,92' : '228,184,124';
+        g.fillStyle = 'rgba(' + col + ',' + (0.35 + rnd() * 0.4) + ')';
+        g.beginPath(); g.ellipse(x, y, r, r * (0.45 + rnd() * 0.55), rnd() * 3.14, 0, 6.29); g.fill();
+      }
+      for (i = 0; i < 22000; i++) {  // fine crumbs, light and dark
+        x = rnd() * W; y = rnd() * H; r = 0.5 + rnd() * 1.6;
+        g.fillStyle = rnd() < 0.5 ? 'rgba(236,196,140,' + (0.25 + rnd() * 0.35) + ')' : 'rgba(46,26,10,' + (0.3 + rnd() * 0.4) + ')';
         g.beginPath(); g.ellipse(x, y, r, r * (0.5 + rnd() * 0.6), rnd() * 3.14, 0, 6.29); g.fill();
       }
-      for (i = 0; i < 500; i++) { g.fillStyle = 'rgba(30,18,8,' + (0.2 + rnd() * 0.3) + ')'; g.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 2, 1 + rnd() * 2); }
+      for (i = 0; i < 2600; i++) { g.fillStyle = 'rgba(24,12,4,' + (0.45 + rnd() * 0.4) + ')'; g.beginPath(); g.ellipse(rnd() * W, rnd() * H, 0.8 + rnd() * 1.8, 0.6 + rnd() * 1.2, rnd() * 3.14, 0, 6.29); g.fill(); }
+      // keep it a little darker overall, so light text stays easy to read
+      g.fillStyle = 'rgba(40,24,10,.28)'; g.fillRect(0, 0, W, H);
     } else if (sf.id === 'kraft') {
       // kraft paper: long fibers and a soft mottle
       for (i = 0; i < 40; i++) {
