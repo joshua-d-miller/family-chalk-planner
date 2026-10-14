@@ -617,7 +617,7 @@ function weatherKind(code) {
 async function weather() {
   if (LAT === null || LON === null) return null;
   if (weatherCache && Date.now() - weatherAt < 10 * 60 * 1000) return weatherCache;   // fresh enough to catch rain starting
-  const url = 'https://api.open-meteo.com/v1/forecast'
+  const url = `${ENV.WEATHER_URL || 'https://api.open-meteo.com'}/v1/forecast`
     + `?latitude=${LAT}&longitude=${LON}`
     + '&current=temperature_2m,weather_code'
     + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'

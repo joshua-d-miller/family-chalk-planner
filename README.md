@@ -2,13 +2,19 @@
 
 A chalkboard-style family wall calendar for a wall-mounted screen, edited from a tablet.
 
+![The board on the wall: a month of events, weather, trash day, countdowns, meal plan and reward jars](docs/images/wall.jpg)
+
 - **Your real calendar.** Events come from Google Calendar or any CalDAV calendar (iCloud, Nextcloud, Fastmail, Radicale…). Add, edit and delete from the tablet, including repeating events ("just this one" or "all of them").
 - **Draw on it.** Chalk and paint-marker drawing, typed or hand-lettered month titles, stamps, 3,000+ full-color clipart pictures (Fluent Emoji, MIT), an emoji library, icon search, and GIFs (upload, or paste a link from GIPHY/Tenor/KLIPY and the board keeps its own copy). The art is saved per month.
 - **A Notes column.** Weather, trash and recycling days, countdowns to holidays, birthdays and starred events, a meal plan, and either up to four kids' reward jars or an "Up next" list of coming events.
 - **Photos.** Polaroids pinned beside the month name (random or hand-picked per month, or leave the space for art), and an overnight slideshow with collages framed on people's faces, all from an iCloud or Google Photos shared album.
+- **More than one calendar.** Show several calendars from the same account and read-only calendar links (school, sports teams), each in its own color. Weeks can start on Monday, times can be 24-hour, holidays for the US, Canada or the UK.
 - **Make it yours.** Backgrounds (black, green or blue chalkboard, cork, kraft paper, whiteboard), board styles (presets plus per-part fonts and colors), per-event colors, and a today marker that can be a chalk ring, circle, heart, star or box.
 - **Live.** Changes made on the tablet appear on the wall within a second. The wall updates itself when you install a new version.
-- **Small and private.** It runs on your own network as one Node.js service with a SQLite file. No account and no cloud service of its own.
+- **Small and private.** It runs on your own network as one Node.js service (or one Docker container) with a SQLite file. No account and no cloud service of its own; screens, fonts and pictures all come from your own server.
+- **Safe for a family.** Screens are paired with a code; people sign in with a passkey or password + authenticator app; an admin console shows every sign-in, screen and change.
+
+<p align="center"><img src="docs/images/backgrounds.jpg" alt="The same board on green chalkboard, cork, kraft paper and whiteboard backgrounds" width="49%"> <img src="docs/images/console.jpg" alt="The admin console on a phone: pairing a screen, and board settings" width="49%"></p>
 
 ## Install
 
