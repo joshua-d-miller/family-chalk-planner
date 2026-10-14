@@ -112,6 +112,8 @@ test('theme is validated', async () => {
   assert.deepEqual(await (await post('/api/theme', { p: 'pastel', o: {}, s: 'white' })).json(), { p: 'pastel', o: {}, s: 'white' }, 'background kept');
   assert.deepEqual(await (await post('/api/theme', { p: 'pastel', o: {}, s: 'url(x)' })).json(), { p: 'pastel', o: {} }, 'unknown background dropped');
   assert.deepEqual(await (await post('/api/theme', { p: 'classic', o: {}, s: 'slate' })).json(), { p: 'classic', o: {} }, 'slate is the default');
+  assert.deepEqual(await (await post('/api/theme', { p: 'classic', o: {}, s: 'wood', z: 1 })).json(), { p: 'classic', o: {}, s: 'wood', z: 1 }, 'seasonal pattern kept');
+  assert.deepEqual(await (await post('/api/theme', { p: 'classic', o: {}, z: 'yes' })).json(), { p: 'classic', o: {} }, 'seasonal is off unless turned on');
 });
 
 test('photo album sync caches photos, skips video and hidden', async () => {

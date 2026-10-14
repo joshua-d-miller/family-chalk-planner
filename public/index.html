@@ -37,7 +37,7 @@ body.family .slate{box-shadow:none}
   padding:8px 14px 10px 18px;display:flex;gap:14px;overflow:hidden}
 .chalk{text-shadow:0 0 1px rgba(var(--ink),.45)}
 /* cork is busy: a soft dark shadow keeps small writing crisp on it */
-body[data-surface=cork] .slate,body[data-surface=cork] .slate .chalk{text-shadow:0 1px 2px rgba(20,10,0,.85),0 0 3px rgba(20,10,0,.6)}
+body[data-surface=cork] .slate,body[data-surface=cork] .slate .chalk,body[data-surface=wood] .slate,body[data-surface=wood] .slate .chalk{text-shadow:0 1px 2px rgba(20,10,0,.85),0 0 3px rgba(20,10,0,.6)}
 .cal{flex:1;min-width:0;display:flex;flex-direction:column}
 .titlerow{position:relative;height:70px;display:flex;align-items:center;justify-content:center;gap:22px}
 .titlerow h1{margin:0;font-family:'Dancing Script',cursive;font-weight:700;font-size:68px;line-height:1;color:var(--pink);min-width:330px;text-align:center}
@@ -276,7 +276,8 @@ body.edit #slides .tapx{display:block}
 .ctile{aspect-ratio:1;border-radius:12px;border:2px solid rgba(var(--ink),.18);background:rgba(255,255,255,.04);padding:10px;cursor:pointer;touch-action:manipulation}
 .ctile:active{background:rgba(255,255,255,.12)}.ctile img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
 .cgrid .empty{grid-column:1/-1}
-.surfs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.surfs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:6px}@media (max-width:640px){.surfs{grid-template-columns:repeat(2,1fr)}}
+.seasonbtn{margin-top:10px;width:100%}.seasonbtn.on{border-color:var(--yellow);color:var(--yellow);background:rgba(242,212,121,.12)}
 .surfs button{min-height:64px;border-radius:10px;border:2px solid rgba(var(--ink),.25);cursor:pointer;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:'Kalam',cursive;box-shadow:inset 0 0 0 4px rgba(0,0,0,.15)}
 .surfs button.on{border-color:var(--yellow);box-shadow:0 0 0 2px var(--yellow)}
 .surfs .smp{font-size:22px;line-height:1;font-weight:700}.surfs .pn{font-size:13px;line-height:1.15;text-align:center}
@@ -630,7 +631,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   <div class="card">
     <h3 id="thTitle">Board style</h3>
     <div class="sublbl" style="margin-top:0">Pick a background and a look, then tweak any part. Colors only change on a background where they’d be hard to read. Changes show on the board as you go.</div>
-    <div class="threl"><b>Background</b><div class="surfs" id="thSurf"></div></div>
+    <div class="threl"><b>Background</b><div class="surfs" id="thSurf"></div>
+      <button type="button" class="btn seasonbtn" id="thSeason" aria-pressed="false">🍂 Change with the season</button>
+      <div class="sublbl" style="margin-top:4px">Adds a faint pattern for the month shown: snowflakes in winter, blossoms in spring, suns in summer, leaves in autumn, hearts in February and pumpkins in October. Off unless you turn it on.</div></div>
     <div class="threl"><b>Look</b></div>
     <div class="presets" id="thPresets"></div>
     <div id="thRows"></div>
@@ -1001,20 +1004,72 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     if (view.z <= 1.001) { view.z = 1; view.x = 0; view.y = 0; }
     view.x = Math.max(-mx, Math.min(mx, view.x)); view.y = Math.max(-my, Math.min(my, view.y));
   }
-  // ---- Board background ("surface"): black slate, green chalkboard, blue chalkboard, cork, kraft paper, whiteboard.
+  // ---- Board background ("surface"): chalkboards, cork, wood, glass, papers, whiteboard, pegboard.
   // Each is painted once onto a canvas. lum = how bright it is on average (for keeping text readable).
+  // Optional (Board style → "Change with the season"): a faint seasonal pattern on top, by the month shown.
   var SURFACES = [
     { id: 'slate', name: 'Black slate', lum: 0.0069, base: ['#1d1e1d', '#121312'], dust: '235,232,222', frame: null },
     { id: 'green', name: 'Green chalkboard', lum: 0.042, base: ['#33503f', '#22382c'], dust: '232,238,226', frame: null },
     { id: 'blue', name: 'Blue chalkboard', lum: 0.028, base: ['#2a3e55', '#1b2a3b'], dust: '230,236,242', frame: null },
     { id: 'cork', name: 'Cork', lum: 0.11, base: ['#8a6038', '#704b29'], frame: null },
     { id: 'kraft', name: 'Kraft paper', lum: 0.36, base: ['#c9a87c', '#b69266'], frame: null },
-    { id: 'white', name: 'Whiteboard', lum: 0.86, base: ['#f7f8f6', '#e6e9e6'], frame: 'linear-gradient(180deg,#d9dde1,#a9afb6 50%,#c9ced3)' }
+    { id: 'white', name: 'Whiteboard', lum: 0.86, base: ['#f7f8f6', '#e6e9e6'], frame: 'linear-gradient(180deg,#d9dde1,#a9afb6 50%,#c9ced3)' },
+    { id: 'wood', name: 'Dark wood', lum: 0.037, base: ['#5b3e2a', '#3c291d'], frame: null },
+    { id: 'glass', name: 'Black glass', lum: 0.009, base: ['#1c1e22', '#0c0d10'], frame: null },
+    { id: 'linen', name: 'Linen paper', lum: 0.75, base: ['#f2ecdf', '#e2d8c4'], frame: null },
+    { id: 'peg', name: 'Pegboard', lum: 0.36, base: ['#cba571', '#b58e5a'], frame: null }
   ];
+  // the seasonal pattern for a month (1-12): holidays in February and October, otherwise the season
+  // (flipped south of the equator)
+  var SEASONS = { snow: 'Snowflakes', blossom: 'Blossoms', sun: 'Suns', leaf: 'Leaves', heart: 'Hearts', pumpkin: 'Pumpkins' };
+  function seasonOf(m, south) {
+    if (m === 2) return 'heart';
+    if (m === 10) return 'pumpkin';
+    var q = ((m + (south ? 6 : 0) - 1) % 12) + 1;
+    return q === 12 || q <= 2 ? 'snow' : q <= 5 ? 'blossom' : q <= 8 ? 'sun' : 'leaf';
+  }
+  function seasonNow() {
+    if (!state.seasonOn || !state.ym) return '';
+    return seasonOf(+String(state.ym).slice(5, 7), !!(state.lastMonth && state.lastMonth.grid && state.lastMonth.grid.south));
+  }
+  function paintSeason(g, W, H, kind, light) {
+    var seed = 77 + kind.length * 131, rnd = function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    var tint = { snow: light ? '90,120,150' : '235,242,250', blossom: light ? '190,80,120' : '246,190,210', sun: light ? '200,140,20' : '246,214,120',
+      leaf: light ? '180,90,30' : '232,150,90', heart: light ? '190,40,80' : '246,150,180', pumpkin: light ? '200,100,20' : '240,150,70' }[kind];
+    var a = light ? 0.06 : 0.07, cols = 10, rows = 5, i, j, k;
+    g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+    g.fillStyle = g.strokeStyle = 'rgba(' + tint + ',' + a + ')';
+    for (j = 0; j < rows; j++) for (i = 0; i < cols; i++) {
+      var x = (i + 0.15 + rnd() * 0.7) * W / cols, y = (j + 0.15 + rnd() * 0.7) * H / rows, z = 13 + rnd() * 13;
+      g.save(); g.translate(x, y); g.rotate((rnd() - 0.5) * 1.4); g.scale(z / 20, z / 20); g.lineWidth = 2.2; g.beginPath();
+      if (kind === 'snow') {
+        for (k = 0; k < 6; k++) { g.rotate(Math.PI / 3); g.moveTo(0, 0); g.lineTo(0, -20); g.moveTo(0, -11); g.lineTo(-6, -17); g.moveTo(0, -11); g.lineTo(6, -17); }
+        g.stroke();
+      } else if (kind === 'blossom') {
+        for (k = 0; k < 5; k++) { g.rotate(Math.PI * 2 / 5); g.moveTo(0, -4); g.ellipse(0, -11, 6.5, 9, 0, Math.PI / 2, Math.PI * 2.5); }
+        g.fill(); g.beginPath(); g.arc(0, 0, 3.5, 0, 6.29); g.fill();
+      } else if (kind === 'sun') {
+        g.arc(0, 0, 8, 0, 6.29); g.fill(); g.beginPath();
+        for (k = 0; k < 8; k++) { g.rotate(Math.PI / 4); g.moveTo(0, -12); g.lineTo(0, -19); }
+        g.stroke();
+      } else if (kind === 'leaf') {
+        g.moveTo(0, -20); g.quadraticCurveTo(15, -6, 0, 14); g.quadraticCurveTo(-15, -6, 0, -20); g.fill();
+        g.beginPath(); g.moveTo(0, -16); g.lineTo(0, 20); g.lineWidth = 1.6; g.stroke();
+      } else if (kind === 'heart') {
+        g.moveTo(0, 16); g.bezierCurveTo(-24, 0, -14, -20, 0, -8); g.bezierCurveTo(14, -20, 24, 0, 0, 16); g.fill();
+      } else if (kind === 'pumpkin') {
+        g.ellipse(-7, 3, 9, 13, 0, 0, 6.29); g.ellipse(7, 3, 9, 13, 0, 0, 6.29); g.fill();
+        g.beginPath(); g.ellipse(0, 3, 9, 14, 0, 0, 6.29); g.fill();
+        g.beginPath(); g.moveTo(0, -10); g.quadraticCurveTo(1, -17, 5, -20); g.lineWidth = 3; g.stroke();
+      }
+      g.restore();
+    }
+    g.restore();
+  }
   function surfaceOf(id) { return SURFACES.filter(function (x) { return x.id === id; })[0] || SURFACES[0]; }
   state.surface = SURFACES[0];
   var texCache = {};
-  function paintSurface(sf) {
+  function paintSurface(sf, season) {
     var W = 1252, H = 642, c = document.createElement('canvas'); c.width = W; c.height = H;
     var g = c.getContext('2d'), seed = 20261009;
     function rnd() { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
@@ -1081,6 +1136,57 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       img = g.getImageData(0, 0, W, H); d = img.data;
       for (px = 0; px < d.length; px += 4) { n = (rnd() - 0.5) * 10; d[px] += n; d[px + 1] += n; d[px + 2] += n; }
       g.putImageData(img, 0, 0);
+    } else if (sf.id === 'wood') {
+      // dark wood: six planks, each its own shade, long wavy grain, a few knots, seams and joints
+      var ph = H / 6;
+      for (j = 0; j < 6; j++) {
+        var y0 = j * ph, sh0 = (rnd() - 0.5) * 0.16;
+        g.fillStyle = sh0 > 0 ? 'rgba(255,220,180,' + sh0 * 0.5 + ')' : 'rgba(0,0,0,' + (-sh0) + ')';
+        g.fillRect(0, y0, W, ph);
+        for (k = 0; k < 34; k++) {
+          var gy = y0 + rnd() * ph, amp = 1 + rnd() * 4, fq = 0.004 + rnd() * 0.01, phs = rnd() * 6.28;
+          g.strokeStyle = rnd() < 0.6 ? 'rgba(20,10,4,' + (0.12 + rnd() * 0.2) + ')' : 'rgba(170,120,80,' + (0.06 + rnd() * 0.1) + ')';
+          g.lineWidth = 0.6 + rnd() * 1.8; g.beginPath();
+          for (x = 0; x <= W; x += 12) { y = gy + Math.sin(x * fq + phs) * amp + Math.sin(x * 0.031 + phs) * 0.8; if (x) g.lineTo(x, y); else g.moveTo(x, y); }
+          g.stroke();
+        }
+        if (rnd() < 0.6) {
+          var kx = rnd() * W, ky = y0 + ph * (0.3 + rnd() * 0.4);
+          for (k = 0; k < 6; k++) { g.strokeStyle = 'rgba(20,10,4,' + (0.25 - k * 0.03) + ')'; g.lineWidth = 1.2; g.beginPath(); g.ellipse(kx, ky, 4 + k * 5, 2 + k * 2.2, 0, 0, 6.29); g.stroke(); }
+        }
+        g.fillStyle = 'rgba(10,5,2,.7)'; g.fillRect(0, Math.round(y0) - 1, W, 2);
+        g.fillStyle = 'rgba(160,110,70,.15)'; g.fillRect(0, Math.round(y0) + 1, W, 1);
+      }
+      img = g.getImageData(0, 0, W, H); d = img.data;
+      for (px = 0; px < d.length; px += 4) { n = (rnd() - 0.5) * 8; d[px] += n; d[px + 1] += n; d[px + 2] += n; }
+      g.putImageData(img, 0, 0);
+    } else if (sf.id === 'glass') {
+      // black glass: deep and smooth, with two soft reflections
+      var rf = g.createLinearGradient(0, 0, W, H * 0.9);
+      rf.addColorStop(0.18, 'rgba(255,255,255,0)'); rf.addColorStop(0.26, 'rgba(255,255,255,.045)'); rf.addColorStop(0.3, 'rgba(255,255,255,.02)');
+      rf.addColorStop(0.33, 'rgba(255,255,255,0)'); rf.addColorStop(0.62, 'rgba(255,255,255,0)'); rf.addColorStop(0.66, 'rgba(255,255,255,.03)'); rf.addColorStop(0.7, 'rgba(255,255,255,0)');
+      g.fillStyle = rf; g.fillRect(0, 0, W, H);
+      var tp = g.createLinearGradient(0, 0, 0, H * 0.12); tp.addColorStop(0, 'rgba(255,255,255,.05)'); tp.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = tp; g.fillRect(0, 0, W, H);
+    } else if (sf.id === 'linen') {
+      // linen paper: a fine woven crosshatch and a little mottle
+      for (y = 0; y < H; y += 2) { g.fillStyle = 'rgba(120,96,60,' + (0.015 + rnd() * 0.045) + ')'; g.fillRect(0, y, W, 1); }
+      for (x = 0; x < W; x += 2) { g.fillStyle = 'rgba(120,96,60,' + (0.012 + rnd() * 0.035) + ')'; g.fillRect(x, 0, 1, H); }
+      for (i = 0; i < 30; i++) {
+        x = rnd() * W; y = rnd() * H; r = 80 + rnd() * 200;
+        var lg = g.createRadialGradient(x, y, 0, x, y, r);
+        lg.addColorStop(0, rnd() < 0.5 ? 'rgba(255,255,255,.12)' : 'rgba(150,120,80,.05)'); lg.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = lg; g.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+    } else if (sf.id === 'peg') {
+      // pegboard: hardboard with a regular grid of holes
+      img = g.getImageData(0, 0, W, H); d = img.data;
+      for (px = 0; px < d.length; px += 4) { n = (rnd() - 0.5) * 12; d[px] += n; d[px + 1] += n; d[px + 2] += n; }
+      g.putImageData(img, 0, 0);
+      for (y = 20; y < H; y += 40) for (x = 20; x < W; x += 40) {   // kept soft so the holes don't fight with writing
+        g.fillStyle = 'rgba(255,236,200,.18)'; g.beginPath(); g.arc(x + 0.6, y + 0.8, 2.8, 0, 6.29); g.fill();
+        g.fillStyle = 'rgba(70,44,20,.32)'; g.beginPath(); g.arc(x, y, 2.5, 0, 6.29); g.fill();
+      }
     } else if (sf.id === 'white') {
       // whiteboard: faint ghosts of old marker and a soft sheen
       g.lineCap = 'round';
@@ -1093,14 +1199,15 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(0.35, 'rgba(255,255,255,.35)'); sh.addColorStop(0.45, 'rgba(255,255,255,0)');
       g.fillStyle = sh; g.fillRect(0, 0, W, H);
     }
+    if (season) paintSeason(g, W, H, season, sf.lum > 0.18);
     return 'url(' + c.toDataURL('image/jpeg', 0.9) + ')';
   }
   function setSurface(id) {
-    var sf = surfaceOf(id), slate = document.querySelector('.slate');
-    state.surface = sf;
+    var sf = surfaceOf(id), slate = document.querySelector('.slate'), season = seasonNow();
+    state.surface = sf; state.season = season;
     if (!Q.has('plainbg')) {
       try {
-        var url = texCache[sf.id] || (texCache[sf.id] = paintSurface(sf));
+        var tk = sf.id + '|' + season, url = texCache[tk] || (texCache[tk] = paintSurface(sf, season));
         if (framelessNow()) {
           // wall: one continuous surface across the whole screen, so the bands above and below the board match
           document.body.style.backgroundImage = url; document.body.style.backgroundSize = 'cover'; document.body.style.backgroundPosition = 'center';
@@ -1949,6 +2056,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   function renderMonth(data) {
     state.lastMonth = data;
+    if (seasonNow() !== state.season) setSurface(state.surface.id);   // "change with the season": a new month may mean a new pattern
     var g = data.grid, events = data.events;
     state.today = data.today; state.time24 = !!g.time24;
     if ((g.weekStart || 0) !== state.weekStart) {   // weeks start on Sunday or Monday (admin console → Board)
@@ -2152,7 +2260,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     return '<svg class="ring" viewBox="0 0 46 42" fill="none" stroke="' + c + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + sh + '</svg>';
   }
   function applyTheme(t) {
-    if ((t && t.s || 'slate') !== state.surface.id) { setSurface(t && t.s); if (typeof redrawArt === 'function') redrawArt(); }
+    state.seasonOn = !!(t && t.z);
+    if ((t && t.s || 'slate') !== state.surface.id || seasonNow() !== state.season) { setSurface(t && t.s); if (typeof redrawArt === 'function') redrawArt(); }
     var st = $('themeStyle');
     if (!st) { st = document.createElement('style'); st.id = 'themeStyle'; document.head.appendChild(st); }
     st.textContent = themeCss(themeVals(t));
@@ -2187,6 +2296,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   function drawThemeEditor() {
     var d = state.themeDraft, v = themeVals(d);
     var sbox = $('thSurf'); sbox.innerHTML = '';
+    $('thSeason').classList.toggle('on', !!d.z); $('thSeason').setAttribute('aria-pressed', d.z ? 'true' : 'false');
+    $('thSeason').textContent = d.z ? '🍂 Changes with the season: on' : '🍂 Change with the season';
     SURFACES.forEach(function (sf) {
       var b = el('button', (d.s || 'slate') === sf.id ? 'on' : ''); b.type = 'button';
       b.style.background = 'radial-gradient(circle at 50% 40%,' + sf.base[0] + ',' + sf.base[1] + ')';
@@ -2206,7 +2317,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       b.appendChild(smp); b.appendChild(el('span', 'pn', pr.name));
       b.addEventListener('click', function () {
         if (Object.keys(d.o || {}).length && !confirm('Switch to ' + pr.name + '? Your tweaks will be cleared.')) return;
-        state.themeDraft = { p: pr.id, o: {} }; if (d.s) state.themeDraft.s = d.s; applyTheme(state.themeDraft); drawThemeEditor();
+        state.themeDraft = { p: pr.id, o: {} }; if (d.s) state.themeDraft.s = d.s; if (d.z) state.themeDraft.z = 1; applyTheme(state.themeDraft); drawThemeEditor();
       });
       pbox.appendChild(b);
     });
@@ -2254,6 +2365,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     });
     var thClose = function () { $('thmodal').classList.remove('open'); state.themeDraft = null; applyTheme(state.theme); };
     $('thCancel').addEventListener('click', thClose);
+    $('thSeason').addEventListener('click', function () { var d = state.themeDraft; if (d.z) delete d.z; else d.z = 1; applyTheme(d); drawThemeEditor(); });
     $('thReset').addEventListener('click', function () { state.themeDraft.o = {}; applyTheme(state.themeDraft); drawThemeEditor(); });
     $('thSave').addEventListener('click', function () {
       $('thSave').disabled = true;

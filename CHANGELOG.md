@@ -4,6 +4,13 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.8.0 — more backgrounds, a calmer console
+- New backgrounds: **dark wood**, **black glass**, **linen paper** and **pegboard** (Board style).
+- **Change with the season** (optional, off by default): a faint pattern for the month shown — snowflakes,
+  blossoms, suns, leaves, hearts in February and pumpkins in October. Seasons flip south of the equator.
+- The admin console uses your device's normal font for everything but the headings, so codes, addresses
+  and dates are easier to read. Colors and layout still match the board.
+
 ## 0.7.0 — no more settings file
 - **Every setting lives in the admin console (⚙️ Board) and the database.** New **On your network**
   section: the board's https address, the reverse proxy's address (with a one-click button using the
