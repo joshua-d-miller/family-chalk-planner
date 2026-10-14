@@ -982,7 +982,7 @@ function cleanItem(it) {
   if (!it || typeof it !== 'object') return null;
   const c = HEX.test(it.c) ? it.c : '#EDEAE0';
   if (it.k === 'g') {   // GIF / animated sticker
-    const okSrc = v => typeof v === 'string' && /^\/api\/(media\/[a-z0-9]{16}\.(gif|webp|png|jpg)|anim\/[0-9a-f_]{2,48}\/(gif|svg))$/.test(v);
+    const okSrc = v => typeof v === 'string' && /^\/api\/(media\/[a-z0-9]{16}\.(gif|webp|png|jpg)|anim\/[0-9a-f_]{2,48}\/(gif|svg)|clip\/[a-z0-9-]{1,64}\.svg)$/.test(v);
     if (!okSrc(it.src)) return null;
     const x = +it.x, y = +it.y;
     if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
@@ -1332,6 +1332,29 @@ app.post('/api/gifs/delete', (req, res) => {
   const id = (req.body || {}).id;
   qKvSet.run('gifs', JSON.stringify(gifList().filter(g => g.id !== id)));
   res.json({ ok: true });   // files stay, in case a GIF on some month still uses it
+});
+
+// Clipart: Fluent Emoji (flat) by Microsoft, MIT - installed with the board (npm), so it works offline.
+// /api/clip/list = every name; /api/clip/<name>.svg = one picture.
+let fluent = null;
+function fluentSet() {
+  if (!fluent) {
+    const j = require('@iconify-json/fluent-emoji-flat/icons.json');
+    const icons = { ...j.icons };
+    for (const [a, v] of Object.entries(j.aliases || {})) if (icons[v.parent]) icons[a] = icons[v.parent];
+    fluent = { icons, w: j.width || 32, h: j.height || 32, names: Object.keys(icons).filter(n => /^[a-z0-9-]{1,64}$/.test(n)).sort() };
+  }
+  return fluent;
+}
+app.get('/api/clip/list', (req, res) => {
+  try { res.set('Cache-Control', 'public, max-age=86400').json(fluentSet().names); } catch (e) { res.status(500).json({ error: 'Clipart isn’t installed (run npm ci)' }); }
+});
+app.get('/api/clip/:name.svg', (req, res) => {
+  let f; try { f = fluentSet(); } catch (e) { return res.sendStatus(500); }
+  const i = /^[a-z0-9-]{1,64}$/.test(req.params.name) && f.icons[req.params.name];
+  if (!i) return res.sendStatus(404);
+  res.set('Cache-Control', 'public, max-age=31536000, immutable').type('image/svg+xml')
+    .send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${i.left || 0} ${i.top || 0} ${i.width || f.w} ${i.height || f.h}" width="256" height="256">${i.body}</svg>`);
 });
 
 // Animated emoji index + cached files

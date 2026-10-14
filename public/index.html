@@ -270,6 +270,10 @@ body.edit #slides .tapx{display:block}
 .gcals button{text-align:left;min-height:46px;padding:6px 14px;border-radius:12px;border:2px solid rgba(201,180,122,.45);background:transparent;color:var(--chalk);font:18px 'Kalam',cursive;cursor:pointer;display:flex;align-items:center;gap:10px}
 .gcals button.on{border-color:var(--yellow);color:var(--yellow)}
 .gcals button i{width:14px;height:14px;border-radius:50%;flex:none}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;margin-top:10px}
+.ctile{aspect-ratio:1;border-radius:12px;border:2px solid rgba(var(--ink),.18);background:rgba(255,255,255,.04);padding:10px;cursor:pointer;touch-action:manipulation}
+.ctile:active{background:rgba(255,255,255,.12)}.ctile img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+.cgrid .empty{grid-column:1/-1}
 .surfs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
 .surfs button{min-height:64px;border-radius:10px;border:2px solid rgba(var(--ink),.25);cursor:pointer;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:'Kalam',cursive;box-shadow:inset 0 0 0 4px rgba(0,0,0,.15)}
 .surfs button.on{border-color:var(--yellow);box-shadow:0 0 0 2px var(--yellow)}
@@ -373,7 +377,7 @@ body.edit #zoom{display:flex}
    but no freehand chalk/Posca, no wiping the month, no changing the libraries; no board style, photos or settings */
 body.family #chalkBtn,body.family #poscaBtn,body.family #sizeBtn,body.family #swatches,body.family #clearBtn,body.family #selSave,
 body.family .stamp .x,body.family .gtile .x,body.family .gtile.up{display:none!important}
-body.family #styleBtn,body.family #settingsBtn,body.family #photosBtn,body.family #titleBtn,body.family #acctBtn{display:none!important}
+body.family #zoom,body.family #styleBtn,body.family #settingsBtn,body.family #photosBtn,body.family #titleBtn,body.family #acctBtn{display:none!important}
 body:not(.isadmin) #settingsBtn{display:none!important}   /* calendar and board settings: admins (signed in to the console) */
 #pinErr{color:#F7A1A1;min-height:22px;margin-top:8px;font-size:16px}
 body.edit:not(.drawing) .bar{pointer-events:auto;cursor:pointer}
@@ -819,7 +823,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <span id="lSizes" style="display:flex;gap:8px"></span>
     </div>
     <div class="lscroll">
-      <div class="lpane" id="libClip"><div class="stamps clip" id="cGrid"></div></div>
+      <div class="lpane" id="libClip">
+        <div class="opts"><input type="search" id="cQuery" placeholder="Search 3,000+ pictures: pumpkin, dog, cake…" autocomplete="off" style="flex:1;height:44px;background:transparent;border:none;border-bottom:2px dashed rgba(var(--ink),.6);color:var(--chalk);font-family:'Kalam',cursive;font-size:20px;outline:none"></div>
+        <div class="opts" id="cSets"></div>
+        <div class="cgrid" id="cGrid"></div>
+        <div class="sublbl">Clipart: Fluent Emoji by Microsoft (MIT)</div>
+      </div>
       <div class="lpane" id="libEmoji" hidden>
         <div class="opts" id="eTabs"></div>
         <div class="emojis" id="eGrid"></div>
@@ -2909,7 +2918,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   if (EDIT) {
     window.addEventListener('pointerdown', function (e) {
-      if (e.pointerType !== 'touch' || document.querySelector('.open')) return;
+      if (e.pointerType !== 'touch' || document.querySelector('.open') || document.body.classList.contains('family')) return;   // a family screen stays fitted
       touches[e.pointerId] = { x: e.clientX, y: e.clientY };
       if (Object.keys(touches).length === 2) {
         cancelGesture();
@@ -3140,178 +3149,65 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     setTimeout(function () { $('sName').focus(); }, 50);
   }
   function closeSaveStamp() { $('smodal').classList.remove('open'); }
-  // ---- Clipart: original doodles, built from Posca-style lines so they behave like your own drawing ----
-  var CLIPART = null;
-  function buildClipart() {
-    var W = '#FFFFFF', Y = '#FFE500', O = '#FF8C1A', R = '#E8262B', PK = '#FF4FA3', LB = '#3EC6F2', B = '#2C64D6', G = '#1FB04C', LG = '#9BE15D', PU = '#8B4FD8';
-    var TAU = Math.PI * 2;
-    function flat(pts) { var o = []; pts.forEach(function (q) { o.push(Math.round(q[0] * 10) / 10, Math.round(q[1] * 10) / 10); }); return o; }
-    function dens(pts) {   // add points along straight runs so smoothing keeps the shape
-      var o = [pts[0]];
-      for (var i = 1; i < pts.length; i++) {
-        var a = pts[i - 1], b = pts[i], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 2.5));
-        for (var k = 1; k <= n; k++) o.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]);
-      }
-      return o;
-    }
-    function E(cx, cy, rx, ry, a0, a1, rot) {
-      a0 = a0 || 0; a1 = a1 == null ? TAU : a1; rot = rot || 0;
-      var n = Math.max(12, Math.ceil(Math.abs(a1 - a0) * Math.max(rx, ry) / 2.5)), o = [];
-      for (var i = 0; i <= n; i++) {
-        var t = a0 + (a1 - a0) * i / n, x = rx * Math.cos(t), y = ry * Math.sin(t);
-        o.push([cx + x * Math.cos(rot) - y * Math.sin(rot), cy + x * Math.sin(rot) + y * Math.cos(rot)]);
-      }
-      return o;
-    }
-    function heart(cx, cy, s, rot) {
-      rot = rot || 0; var o = [];
-      for (var i = 0; i <= 80; i++) {
-        var t = i / 80 * TAU, x = s * 16 * Math.pow(Math.sin(t), 3), y = -s * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
-        o.push([cx + x * Math.cos(rot) - y * Math.sin(rot), cy + x * Math.sin(rot) + y * Math.cos(rot)]);
-      }
-      return o;
-    }
-    function star(cx, cy, R, r) { var o = []; for (var i = 0; i <= 10; i++) { var a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r : R; o.push([cx + q * Math.cos(a), cy + q * Math.sin(a)]); } return dens(o); }
-    function blob(circles, clipY) {   // outline of overlapping circles (clouds, paws)
-      var o = [];
-      for (var i = 0; i <= 120; i++) {
-        var th = i / 120 * TAU, dx = Math.cos(th), dy = Math.sin(th), best = 0;
-        circles.forEach(function (c) {
-          var dc = dx * c[0] + dy * c[1], disc = dc * dc - (c[0] * c[0] + c[1] * c[1]) + c[2] * c[2];
-          if (disc >= 0) best = Math.max(best, dc + Math.sqrt(disc));
-        });
-        if (clipY != null && dy > 0 && best * dy > clipY) best = clipY / dy;
-        o.push([best * dx, best * dy]);
-      }
-      return o;
-    }
-    function S(c, w, pts) { return { c: c, w: w, m: true, p: flat(pts) }; }
-    var L = function (pts) { return dens(pts); };
-    var out = [];
-    function add(name, items) { out.push({ name: name, items: items }); }
-
-    add('Pumpkin', [S(O, 5, E(0, 8, 42, 31)), S(O, 4, E(0, 8, 15, 30, Math.PI / 2, Math.PI * 1.5)), S(O, 4, E(0, 8, 15, 30, -Math.PI / 2, Math.PI / 2)),
-      S(G, 6, L([[-2, -21], [-1, -33], [6, -38]])), S(LG, 4, E(12, -28, 8, 4, 0, TAU, -0.5))]);
-    var leaf = [[0, 10], [-12, 14], [-10, 4], [-30, 8], [-24, -2], [-40, -14], [-22, -16], [-26, -32], [-10, -22], [0, -44], [10, -22], [26, -32], [22, -16], [40, -14], [24, -2], [30, 8], [10, 4], [12, 14], [0, 10]];
-    add('Leaf', [S(O, 5, L(leaf)), S(R, 4, L([[0, 10], [2, 38]])), S(R, 3, L([[0, 10], [0, -34]])), S(R, 3, L([[0, 2], [-22, -12]])), S(R, 3, L([[0, 2], [22, -12]]))]);
-    var ghost = L([[-30, 40], [-30, -10]]).concat(E(0, -10, 30, 30, Math.PI, TAU));
-    ghost = ghost.concat(L([[30, -10], [30, 40]]));
-    for (var gx = 30; gx >= -30; gx -= 2) ghost.push([gx, 40 - 7 * Math.abs(Math.sin((gx + 30) / 60 * Math.PI * 3))]);
-    add('Ghost', [S(W, 5, ghost), S(W, 4, E(-10, -12, 4, 6)), S(W, 4, E(10, -12, 4, 6)), S(W, 4, E(0, 6, 5, 7))]);
-    var cc = [S(W, 5, L([[-24, 30], [0, -40], [24, 30]]).concat(E(0, 30, 24, 7, 0, Math.PI)))];
-    function band(y, c) { var hw = 24 * (y + 40) / 70 - 4; if (hw > 2) cc.push(S(c, 7, L([[-hw, y], [hw, y]]))); }
-    [24, 30, 18].forEach(function (y) { band(y, Y); }); [8, 0, -8].forEach(function (y) { band(y, O); }); [-18, -25].forEach(function (y) { band(y, W); });
-    add('Candy corn', cc);
-    var wing = [[6, -6], [20, -16], [44, -12], [40, 4], [32, 0], [26, 8], [18, 2], [8, 6]];
-    add('Bat', [S(PU, 5, L(wing)), S(PU, 5, L(wing.map(function (q) { return [-q[0], q[1]]; }))), S(PU, 5, E(0, 0, 7, 12)),
-      S(PU, 4, L([[-4, -11], [-6, -19], [-1, -12]])), S(PU, 4, L([[4, -11], [6, -19], [1, -12]]))]);
-    add('Heart', [S(PK, 6, heart(0, 0, 2.6))]);
-    add('Star', [S(Y, 6, star(0, 2, 44, 19))]);
-    var sun = [S(Y, 6, E(0, 0, 20, 20))];
-    for (var i = 0; i < 10; i++) { var a = i / 10 * TAU; sun.push(S(O, 5, L([[28 * Math.cos(a), 28 * Math.sin(a)], [42 * Math.cos(a), 42 * Math.sin(a)]]))); }
-    add('Sun', sun);
-    var flake = [];
-    for (var i = 0; i < 6; i++) {
-      var a = i / 6 * TAU - Math.PI / 2, ax = Math.cos(a), ay = Math.sin(a);
-      flake.push(S(LB, 4, L([[0, 0], [42 * ax, 42 * ay]])));
-      [24, 34].forEach(function (r) {
-        [-0.7, 0.7].forEach(function (d) { flake.push(S(W, 3, L([[r * ax, r * ay], [r * ax + 10 * Math.cos(a + d), r * ay + 10 * Math.sin(a + d)]]))); });
+  // ---- Clipart: Fluent Emoji (flat) by Microsoft (MIT), served by the board itself - works offline ----
+  var CLIP_SETS = [
+    ['⭐ Favorites', 'red-heart star glowing-star sparkles sun rainbow balloon wrapped-gift birthday-cake cupcake party-popper confetti-ball trophy crown house dog-face cat-face teddy-bear unicorn rocket'],
+    ['🍂 Fall', 'jack-o-lantern maple-leaf fallen-leaf ghost bat spider spider-web candy lollipop turkey sunflower red-apple pie mushroom chestnut'],
+    ['❄️ Winter', 'snowflake snowman christmas-tree wrapped-gift santa-claus menorah gloves scarf hot-beverage cookie candle ice-skate skier'],
+    ['🌷 Spring', 'tulip blossom cherry-blossom rabbit-face egg hatching-chick four-leaf-clover rainbow umbrella-with-rain-drops butterfly lady-beetle seedling bouquet'],
+    ['☀️ Summer', 'sun beach-with-umbrella watermelon soft-ice-cream ice-cream tropical-drink sunglasses palm-tree crab tent camping fireworks'],
+    ['🎓 School & sports', 'school graduation-cap books pencil backpack crayon artist-palette soccer-ball basketball baseball american-football volleyball tennis ballet-shoes guitar musical-notes'],
+    ['🍕 Food', 'pizza hamburger taco spaghetti hot-dog pancakes croissant cooking green-salad sushi doughnut popcorn strawberry banana grapes'],
+    ['🐶 Animals', 'dog-face cat-face rabbit-face bear panda fox monkey-face unicorn horse cow-face pig-face chicken penguin owl turtle fish dolphin sauropod t-rex'],
+    ['🚗 Going places', 'house airplane automobile bus bicycle sailboat train hospital church stadium tent world-map luggage']
+  ];
+  var clip = { names: null, set: 0, q: '' };
+  // words people search for that aren't in the picture names
+  var CLIP_SYN = { pumpkin: 'jack-o-lantern', halloween: 'jack-o-lantern ghost bat spider-web candy', christmas: 'christmas-tree santa-claus wrapped-gift snowman',
+    thanksgiving: 'turkey pie fallen-leaf', easter: 'rabbit-face egg hatching-chick tulip', birthday: 'birthday-cake cupcake balloon wrapped-gift party-popper partying-face',
+    party: 'party-popper confetti-ball balloon partying-face', car: 'automobile', bus: 'bus', football: 'american-football', bunny: 'rabbit-face',
+    puppy: 'dog-face dog', kitty: 'cat-face cat', dino: 'sauropod t-rex', dinosaur: 'sauropod t-rex', valentine: 'red-heart heart-with-ribbon love-letter', july: 'fireworks',
+    hanukkah: 'menorah', school: 'school bus books backpack pencil', vacation: 'airplane beach-with-umbrella luggage palm-tree', dentist: 'tooth', doctor: 'hospital stethoscope' };
+  function clipSrc(n) { return '/api/clip/' + n + '.svg'; }
+  function placeClip(n) {
+    var sz = Math.round(96 * STAMP_SIZES[state.stampSize].k);
+    $('lmodal').classList.remove('open');
+    if (state.tool === 'erase' || state.tool === 'text') setToolExt('select');
+    state.placing = { name: n, items: [{ k: 'g', x: 0, y: 0, w: sz, h: sz, src: clipSrc(n), still: clipSrc(n), mode: 'still' }] };
+    status('Tap the board where it should go');
+  }
+  var clipTimer = null;
+  if (EDIT) $('cQuery').addEventListener('input', function () { var v = this.value.trim(); clearTimeout(clipTimer); clipTimer = setTimeout(function () { clip.q = v; renderClip(); }, 200); });
+  function renderClip() {
+    var chips = $('cSets'), grid = $('cGrid');
+    if (!chips.children.length) CLIP_SETS.forEach(function (c, i) {
+      var b = el('button', 'seg', c[0]); b.type = 'button';
+      b.addEventListener('click', function () { clip.set = i; clip.q = ''; $('cQuery').value = ''; renderClip(); });
+      chips.appendChild(b);
+    });
+    Array.prototype.forEach.call(chips.children, function (b, i) { b.classList.toggle('on', !clip.q && i === clip.set); });
+    var go = function () {
+      var have = {}; clip.names.forEach(function (n) { have[n] = 1; });
+      var list;
+      if (clip.q) {
+        var terms = clip.q.toLowerCase().split(/\s+/).filter(Boolean);
+        var syn = [];
+        terms.forEach(function (t) { (CLIP_SYN[t] || '').split(' ').forEach(function (n) { if (n && have[n] && syn.indexOf(n) < 0) syn.push(n); }); });
+        list = syn.concat(clip.names.filter(function (n) { return syn.indexOf(n) < 0 && terms.every(function (t) { return n.indexOf(t) >= 0; }); })
+          .sort(function (a, b) { return (a.indexOf(terms[0]) === 0 ? 0 : 1) - (b.indexOf(terms[0]) === 0 ? 0 : 1) || a.length - b.length; })).slice(0, 120);
+      } else list = CLIP_SETS[clip.set][1].split(' ').filter(function (n) { return have[n]; });
+      grid.innerHTML = '';
+      if (!list.length) grid.appendChild(el('div', 'empty', clip.q ? 'Nothing for “' + clip.q + '” — try another word' : ''));
+      list.forEach(function (n) {
+        var b = el('button', 'ctile'); b.type = 'button'; b.title = n.replace(/-/g, ' '); b.setAttribute('aria-label', n.replace(/-/g, ' '));
+        var im = el('img'); im.src = clipSrc(n); im.alt = ''; im.loading = 'lazy'; b.appendChild(im);
+        b.addEventListener('click', function () { placeClip(n); });
+        grid.appendChild(b);
       });
-    }
-    add('Snowflake', flake);
-    add('Tree', [S(G, 5, L([[0, -38], [-16, -16], [-8, -16], [-26, 6], [-14, 6], [-34, 28], [34, 28], [14, 6], [26, 6], [8, -16], [16, -16], [0, -38]])),
-      S(O, 5, L([[-6, 28], [-6, 42], [6, 42], [6, 28]])), S(Y, 4, star(0, -44, 9, 4)), S(R, 5, E(-10, 0, 3, 3)), S(LB, 5, E(12, 16, 3, 3)), S(PK, 5, E(-16, 20, 3, 3)), S(Y, 5, E(6, -14, 3, 3))]);
-    add('Gift', [S(R, 5, L([[-30, -10], [30, -10], [30, 36], [-30, 36], [-30, -10]])), S(R, 5, L([[-34, -20], [34, -20], [34, -10], [-34, -10], [-34, -20]])),
-      S(Y, 6, L([[0, -20], [0, 36]])), S(Y, 5, E(-11, -28, 11, 7)), S(Y, 5, E(11, -28, 11, 7))]);
-    var cake = [S(PK, 5, L([[-34, 0], [34, 0], [34, 32], [-34, 32], [-34, 0]])), S(W, 5, L([[-24, -20], [24, -20], [24, 0], [-24, 0], [-24, -20]]))];
-    var drip = []; for (var x = -34; x <= 34; x += 2) drip.push([x, 4 + 4 * Math.abs(Math.sin(x / 7))]); cake.push(S(LB, 4, drip));
-    [[-12, LB], [0, Y], [12, LG]].forEach(function (c) { cake.push(S(c[1], 4, L([[c[0], -20], [c[0], -34]]))); cake.push(S(O, 4, E(c[0], -40, 2.5, 4.5))); });
-    add('Cake', cake);
-    var str = []; for (var y = 22; y <= 58; y += 2) str.push([4 * Math.sin((y - 22) / 6), y]);
-    add('Balloon', [S(R, 5, E(0, -12, 24, 30)), S(R, 4, L([[-4, 22], [4, 22], [0, 17], [-4, 22]])), S(W, 3, str)]);
-    var fl = [];
-    for (var i = 0; i < 6; i++) { var a = i / 6 * TAU; fl.push(S(PK, 4, E(17 * Math.cos(a), -12 + 17 * Math.sin(a), 11, 7, 0, TAU, a))); }
-    fl.push(S(Y, 6, E(0, -12, 8, 8)), S(G, 5, L([[0, 8], [0, 46]])), S(LG, 4, E(10, 32, 10, 5, 0, TAU, -0.5)));
-    add('Flower', fl);
-    var apple = [];
-    for (var i = 0; i <= 100; i++) { var t = i / 100 * TAU, x = 30 * Math.sin(t), y = 4 - 28 * Math.cos(t); if (Math.cos(t) > 0) y += 9 * Math.exp(-(x / 9) * (x / 9)); apple.push([x, y]); }
-    add('Apple', [S(R, 5, apple), S(O, 5, L([[0, -15], [3, -30]])), S(LG, 4, E(12, -27, 9, 4.5, 0, TAU, -0.4))]);
-    add('Smiley', [S(Y, 5, E(0, 0, 38, 38)), S(Y, 5, E(-13, -10, 3, 5)), S(Y, 5, E(13, -10, 3, 5)), S(Y, 5, E(0, 2, 22, 18, 0.15 * Math.PI, 0.85 * Math.PI))]);
-    add('Rainbow', [[44, R], [37, O], [30, Y], [23, G], [16, B]].map(function (r) { return S(r[1], 6, E(0, 20, r[0], r[0], Math.PI, TAU)); }));
-    add('Rain cloud', [S(W, 5, blob([[-18, 4, 14], [0, -6, 18], [18, 4, 14], [-8, 8, 12], [8, 8, 12]], 16)),
-      S(LB, 4, L([[-14, 26], [-18, 38]])), S(LB, 4, L([[0, 26], [-4, 38]])), S(LB, 4, L([[14, 26], [10, 38]]))]);
-    var sham = [];
-    [0, 2.094, -2.094].forEach(function (th) { sham.push(S(G, 5, heart(17 * Math.sin(th), -17 * Math.cos(th) - 2, 1.0, th))); });
-    var stemC = []; for (var t = 0; t <= 1; t += 0.05) stemC.push([10 * t * t, 2 + 40 * t]); sham.push(S(G, 5, stemC));
-    add('Shamrock', sham);
-    add('Paw print', [S(PK, 5, E(0, 14, 20, 16)), S(PK, 5, E(-22, -8, 7, 9, 0, TAU, -0.3)), S(PK, 5, E(-8, -22, 7, 9)), S(PK, 5, E(8, -22, 7, 9)), S(PK, 5, E(22, -8, 7, 9, 0, TAU, 0.3))]);
-    var flag = []; for (var t = 0; t <= 1; t += 0.05) flag.push([2 + 16 * t + 4 * Math.sin(t * Math.PI), -30 + 22 * t + 6 * Math.sin(t * Math.PI)]);
-    add('Music note', [S(W, 5, E(-8, 26, 10, 7, 0, TAU, -0.4)), S(W, 5, L([[2, 24], [2, -30]])), S(W, 5, flag)]);
-    // soccer ball: solid center panel, seams out to five panels cut off by the edge
-    var ball = [S(W, 5, E(0, 0, 38, 38))];
-    function pentPts(cx, cy, r, rot) { var o = []; for (var i = 0; i <= 5; i++) { var a = rot + i / 5 * TAU; o.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } return o; }
-    [11, 8, 5, 2.5].forEach(function (r) { ball.push(S(W, 4, L(pentPts(0, 0, r, -Math.PI / 2)))); });   // filled center
-    for (var i = 0; i < 5; i++) {
-      var a = -Math.PI / 2 + i / 5 * TAU, vx = 11 * Math.cos(a), vy = 11 * Math.sin(a), ex = 22 * Math.cos(a), ey = 22 * Math.sin(a);
-      ball.push(S(W, 4, L([[vx, vy], [ex, ey]])));
-      [-1, 1].forEach(function (d) { var b2 = a + d * 0.42; ball.push(S(W, 4, L([[ex, ey], [37.5 * Math.cos(b2), 37.5 * Math.sin(b2)]]))); });
-      // little dark wedges at the rim, between seams (filled look)
-      var m = a + Math.PI / 5;
-      [0, 3].forEach(function (k) { ball.push(S(W, 4, E(0, 0, 33 - k, 33 - k, m - 0.2, m + 0.2))); });
-    }
-    add('Soccer ball', ball);
-    add('House', [S(O, 5, L([[-28, -6], [-28, 36], [28, 36], [28, -6]])), S(R, 5, L([[-38, -2], [0, -36], [38, -2]])),
-      S(Y, 4, L([[-8, 36], [-8, 14], [8, 14], [8, 36]])), S(LB, 4, L([[12, -6], [22, -6], [22, 4], [12, 4], [12, -6]]))]);
-    var cone = [S(O, 5, L([[-18, 0], [0, 46], [18, 0]]))];
-    function cl(t) { return [-18 + 18 * t, 46 * t]; } function cr(t) { return [18 - 18 * t, 46 * t]; }
-    [0.08, 0.36].forEach(function (t) { cone.push(S(Y, 3, L([cl(t), cr(t + 0.32)]))); cone.push(S(Y, 3, L([cr(t), cl(t + 0.32)]))); });
-    var scoop = blob([[-12, 4, 14], [12, 4, 14], [0, -8, 16]], 10).map(function (q) { return [q[0], q[1] - 12]; });
-    add('Ice cream', cone.concat([S(PK, 5, scoop), S(R, 5, E(0, -38, 3.5, 3.5))]));
-    var zig = []; for (var x = -26; x <= 26; x += 6) zig.push([x, ((x + 26) / 6) % 2 ? -4 : 4]);
-    add('Egg', [S(LB, 5, E(0, 2, 28, 38)), S(PK, 4, zig), S(Y, 5, E(-10, 18, 3, 3)), S(Y, 5, E(8, 22, 3, 3)), S(Y, 5, E(0, -18, 3, 3))]);
-    // holidays & celebrations
-    var flagA = [S(W, 4, L([[-40, -26], [-40, 46]])), S(W, 4, L([[-40, -26], [40, -26], [40, 26], [-40, 26]]))];
-    [-17, -8].forEach(function (y) { flagA.push(S(R, 5, L([[-4, y], [38, y]]))); });
-    [3, 12, 21].forEach(function (y) { flagA.push(S(R, 5, L([[-38, y], [38, y]]))); });
-    flagA.push(S(B, 4, L([[-40, -26], [-8, -26], [-8, -2], [-40, -2], [-40, -26]])));
-    [[-32, -19], [-24, -19], [-16, -19], [-28, -11], [-20, -11], [-32, -5], [-24, -5], [-16, -5]].forEach(function (q) { flagA.push(S(W, 3, E(q[0], q[1] + 1, 1.3, 1.3))); });
-    add('US flag', flagA);
-    var fw = [];
-    function burst(cx, cy, r, n, cols) {
-      for (var i = 0; i < n; i++) { var a = i / n * TAU; fw.push(S(cols[i % cols.length], 4, L([[cx + r * 0.25 * Math.cos(a), cy + r * 0.25 * Math.sin(a)], [cx + r * Math.cos(a), cy + r * Math.sin(a)]]))); fw.push(S(cols[(i + 1) % cols.length], 4, E(cx + (r + 6) * Math.cos(a), cy + (r + 6) * Math.sin(a), 1.6, 1.6))); }
-    }
-    burst(-14, -10, 26, 12, [R, Y, W]); burst(24, 16, 16, 10, [LB, W]);
-    add('Fireworks', fw);
-    var hat = [S(PK, 5, L([[-22, 30], [0, -34], [22, 30]]).concat(E(0, 30, 22, 6, 0, Math.PI))), S(Y, 5, E(0, -38, 5, 5))];
-    [[-12, 20, 6, -4], [-4, 26, 13, 6], [-17, 8, 0, -16]].forEach(function (q) { hat.push(S(Y, 4, L([[q[0], q[1]], [q[2], q[3]]]))); });
-    [[-8, 8, LB], [8, 14, W], [0, -12, LB]].forEach(function (q) { hat.push(S(q[2], 5, E(q[0], q[1], 2, 2))); });
-    add('Party hat', hat);
-    var cup = [S(LB, 5, L([[-22, 6], [-16, 40], [16, 40], [22, 6], [-22, 6]]))];
-    [-10, 0, 10].forEach(function (x) { cup.push(S(LB, 3, L([[x * 1.25, 8], [x, 38]]))); });
-    cup.push(S(PK, 5, blob([[-14, 4, 12], [14, 4, 12], [0, -2, 16], [0, -14, 10]], 8).map(function (q) { return [q[0], q[1] - 6]; })), S(R, 5, E(2, -32, 4, 4)), S(O, 3, L([[3, -36], [8, -42]])));
-    add('Cupcake', cup);
-    var cane = [S(W, 10, L([[10, 44], [10, -14]]).concat(E(-4, -14, 14, 14, 0, -Math.PI)).concat(L([[-18, -14], [-18, -4]])))];
-    for (var y = -6; y <= 36; y += 10) cane.push(S(R, 4, L([[4, y + 4], [16, y - 3]])));
-    [[-17, -18, -11, -26], [-2, -29, 6, -26]].forEach(function (q) { cane.push(S(R, 4, L([[q[0], q[1]], [q[2], q[3]]]))); });
-    add('Candy cane', cane);
-    var orn = [S(R, 5, E(0, 10, 30, 30)), S(Y, 5, L([[-8, -27], [8, -27], [8, -19], [-8, -19], [-8, -27]])), S(W, 3, E(0, -32, 5, 5))];
-    var wv = []; for (var x = -28; x <= 28; x += 2) wv.push([x, 10 + 5 * Math.sin(x / 5)]); orn.push(S(Y, 4, wv), S(W, 4, E(-12, -4, 4, 6, 0, TAU, 0.5)));
-    add('Ornament', orn);
-    var tk = [];
-    [[-150, R], [-120, O], [-90, Y], [-60, O], [-30, R]].forEach(function (f) { var a = f[0] * Math.PI / 180; tk.push(S(f[1], 5, E(30 * Math.cos(a), 6 + 30 * Math.sin(a), 8, 16, 0, TAU, a + Math.PI / 2))); });
-    tk.push(S(O, 5, E(0, 14, 18, 16)), S(O, 5, E(0, -8, 9, 9)), S(Y, 4, L([[-3, -6], [0, -1], [3, -6]])), S(R, 4, E(4, 0, 2.5, 4)),
-      S(W, 3, E(-3, -11, 1.3, 1.3)), S(W, 3, E(3, -11, 1.3, 1.3)), S(Y, 4, L([[-6, 30], [-8, 40]])), S(Y, 4, L([[6, 30], [8, 40]])));
-    add('Turkey', tk);
-    add('Bunny', [S(W, 5, E(0, 14, 22, 20)), S(W, 5, E(-10, -24, 7, 20, 0, TAU, -0.15)), S(W, 5, E(10, -24, 7, 20, 0, TAU, 0.15)),
-      S(PK, 3, E(-10, -22, 3, 13, 0, TAU, -0.15)), S(PK, 3, E(10, -22, 3, 13, 0, TAU, 0.15)), S(W, 4, E(-8, 8, 1.8, 2.5)), S(W, 4, E(8, 8, 1.8, 2.5)),
-      S(PK, 4, L([[-3, 16], [3, 16], [0, 20], [-3, 16]])), S(W, 2, L([[4, 19], [24, 15]])), S(W, 2, L([[4, 21], [24, 23]])), S(W, 2, L([[-4, 19], [-24, 15]])), S(W, 2, L([[-4, 21], [-24, 23]]))]);
-    var men = [S(Y, 5, L([[-26, 42], [26, 42]])), S(Y, 5, L([[0, 42], [0, 4]]))];
-    [8, 16, 24, 32].forEach(function (r) { men.push(S(Y, 4, E(0, 4, r, r * 0.8, 0, Math.PI))); });
-    [-32, -24, -16, -8, 0, 8, 16, 24, 32].forEach(function (x) { var top = x === 0 ? -22 : -12, base = x === 0 ? 4 : 4; men.push(S(LB, 4, L([[x, base], [x, top]]))); men.push(S(O, 4, E(x, top - 6, 2.2, 4))); });
-    add('Menorah', men);
-    add('Grad cap', [S(W, 5, L([[-40, -14], [0, -30], [40, -14], [0, 2], [-40, -14]])), S(W, 5, L([[-22, -6], [-22, 14]]).concat(E(0, 14, 22, 7, Math.PI, 0)).concat(L([[22, 14], [22, -6]]))),
-      S(Y, 4, L([[0, -14], [30, -12], [30, 14]])), S(Y, 3, L([[27, 14], [27, 22]])), S(Y, 3, L([[30, 14], [30, 23]])), S(Y, 3, L([[33, 14], [33, 22]]))]);
-    return out;
+    };
+    if (clip.names) go();
+    else api('/api/clip/list').then(function (l) { clip.names = l; go(); })
+      .catch(function (e) { grid.innerHTML = ''; grid.appendChild(el('div', 'empty', 'Couldn’t load clipart: ' + e.message)); });
   }
   function placingTile(grid, st, deletable) {
     var tile = el('div', 'stamp'); tile.setAttribute('role', 'button'); tile.tabIndex = 0;
@@ -3381,8 +3277,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       styleIconPreviews();
     }
     if (id === 'libClip') {
-      var cg = $('cGrid');
-      if (!cg.children.length) { CLIPART = CLIPART || buildClipart(); CLIPART.forEach(function (st) { placingTile(cg, st, false); }); }
+      renderClip();
     }
   }
   // ---- GIFs: own layer of <img>; "gentle" ones rest on a still frame and play now and then ----

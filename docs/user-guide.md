@@ -23,7 +23,7 @@ The bottom bar on the tablet has **👤** (your account: add a passkey on this t
 - **Chalk** or **Posca** marker, color dots (rainbow **+** for any color; recent custom colors are remembered), and the dot button for size.
 - **Aa** writes typed text in a choice of fonts.
 - **Select** (dashed square): drag around anything to select it, then press and drag to move it. The bar that appears has **★ Save as stamp**, **🎨 Color** (line and fill), **− / +** (smaller / bigger), **Copy**, **Erase**, and **✕** to finish. Or drag the **pink dot** at the corner to resize freely (works on clipart, stamps, GIFs, text and drawings).
-- **★ Stamps / clipart:** your saved stamps, ~35 hand-drawn pieces, an emoji library, **Find more** (thousands of icons, with line and fill colors), and **GIFs** (your own uploads plus animated emoji). Each GIF can play **gently** (now and then), **always**, or stay **still**.
+- **★ Stamps / clipart:** your saved stamps, **Clipart** (3,000+ full-color pictures from Fluent Emoji by Microsoft, in groups like Fall, Winter, School & sports, plus search — they work offline), an emoji library, **Find more** (thousands of icons, with line and fill colors), and **GIFs** (your own uploads plus animated emoji). Each GIF can play **gently** (now and then), **always**, or stay **still**.
 - **Eraser**, **Undo / Redo**, and the trash can to **wipe this month's art**.
 - The drawing covers the whole board, so you can write or draw across several days ("Grandma visiting" over a week) or anywhere in the margins.
 - Art is saved per month, so each month starts fresh.
@@ -61,7 +61,7 @@ The bottom bar on the tablet has **👤** (your account: add a passkey on this t
 
 
 ## A family touch screen
-A screen paired as **✋ Family** opens straight into the editor: tap a day to see and add events, tap an event to change it, tap the Meal Plan or a jar. **Decorate** adds stamps, clipart, emoji, GIFs and words (Aa), and moves, resizes or erases them — fingers are great at that. Freehand chalk and Posca, wiping the month, changing the stamp/GIF libraries, board style, photos and settings stay on a signed-in tablet. Handy for a touch screen on the wall that everyone uses.
+A screen paired as **✋ Family** opens straight into the editor: tap a day to see and add events, tap an event to change it, tap the Meal Plan or a jar. **Decorate** adds stamps, clipart, emoji, GIFs and words (Aa), and moves, resizes or erases them — fingers are great at that. Freehand chalk and Posca, wiping the month, changing the stamp/GIF libraries, board style, photos and settings stay on a signed-in tablet. There's no zooming on a family screen; the board always fits. Handy for a touch screen on the wall that everyone uses.
 
 ## The wall display (read-only)
 - The wall can't change anything, but it responds to taps:

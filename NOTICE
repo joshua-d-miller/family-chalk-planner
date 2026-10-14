@@ -3,7 +3,9 @@ Copyright (C) 2026 Joshua Miller
 Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE).
 
 Third-party components (fetched or installed separately, not part of this repository):
-- Express (MIT) and ical.js (MPL-2.0): npm dependencies.
+- Express (MIT), ical.js (MPL-2.0), @simplewebauthn/server (MIT), qrcode (MIT): npm dependencies.
+- Fluent Emoji (MIT, Microsoft), https://github.com/microsoft/fluentui-emoji: the Clipart pictures,
+  installed with the board from npm (@iconify-json/fluent-emoji-flat).
 - Tabler Icons (MIT), https://tabler.io/icons: downloaded on first "Find more" clipart search.
 - Noto Animated Emoji (CC BY 4.0, Google), https://googlefonts.github.io/noto-emoji-animation/:
   fetched on first use and cached locally.

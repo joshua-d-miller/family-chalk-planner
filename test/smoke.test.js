@@ -72,6 +72,18 @@ test('jars start empty and allow up to 4', async () => {
   assert.equal(saved.length, 4);
 });
 
+test('clipart (Fluent Emoji) is served by the board and can be placed', async () => {
+  const names = await (await api('/api/clip/list')).json();
+  assert.ok(names.length > 3000 && names.includes('jack-o-lantern'));
+  const r = await api('/api/clip/jack-o-lantern.svg');
+  assert.equal(r.status, 200); assert.match(r.headers.get('content-type'), /svg/); assert.match(await r.text(), /^<svg /);
+  assert.equal((await api('/api/clip/not-a-picture.svg')).status, 404);
+  const { ids } = await (await post('/api/art/bulk', { ym: '2026-10', items: [
+    { k: 'g', x: 10, y: 10, w: 96, h: 96, src: '/api/clip/ghost.svg', still: '/api/clip/ghost.svg', mode: 'still' },
+    { k: 'g', x: 10, y: 10, w: 96, h: 96, src: '/api/clip/../media/x.svg' }] })).json();
+  assert.ok(ids[0] > 0); assert.equal(ids[1], null);
+});
+
 test('theme is validated', async () => {
   const t = await (await post('/api/theme', { p: 'x<y', o: { numC: 'red;}', lineS: 'groove', evF: 'tall', todayS: 'heart' } })).json();
   assert.deepEqual(t, { p: 'classic', o: { evF: 'tall', todayS: 'heart' } });
