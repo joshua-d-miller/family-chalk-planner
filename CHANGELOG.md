@@ -4,6 +4,17 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.6.0 — more calendars, calendar links, and settings for outside the US
+- **More calendars from the same account** (iCloud/CalDAV or Google): admin console → ⚙️ Board →
+  *List my calendars*, tick them and pick a color. Shown together on the board; their events can be
+  changed like the main calendar's. The account password only ever goes to that account's server.
+- **Calendar links** (iCal / .ics / webcal://): school, sports teams, published work calendars —
+  read-only, in their own color, checked every 15 minutes (the last good copy is kept if a site is
+  down). Problems show in ⚙️ Board.
+- **Weeks can start on Monday**, **24-hour times**, and holidays for **Canada** and the
+  **United Kingdom** (as well as the US, or none).
+- Google setup now pastes the codes in the console instead of editing `.env`.
+
 ## 0.5.0 — Docker and settings in the admin console
 - **Docker:** `compose.yaml` + image for amd64 and arm64 (published to GitHub Container Registry with
   each release). Runs as an unprivileged user, keeps everything in `./data`, prints the setup code in

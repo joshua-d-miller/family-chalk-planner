@@ -28,7 +28,12 @@ const TZ = ENV.TIMEZONE || ENV.TZ || 'UTC';   // TZ: the usual container variabl
 const LAT = num(ENV.LATITUDE, null), LON = num(ENV.LONGITUDE, null);   // weather is off until both are set
 const TEMP_UNIT = ENV.TEMP_UNIT === 'celsius' ? 'celsius' : 'fahrenheit';
 const TRASH_DAY = /^[0-6]$/.test(ENV.TRASH_DAY || '') ? +ENV.TRASH_DAY : null;   // 0 = Sunday ... 6 = Saturday; empty = off
-const HOLIDAYS = (ENV.HOLIDAYS || 'us').toLowerCase();   // 'us' or 'none'
+const HOLIDAYS = ['us', 'ca', 'gb', 'none'].includes((ENV.HOLIDAYS || '').toLowerCase()) ? ENV.HOLIDAYS.toLowerCase() : 'us';
+const WEEK_START = (ENV.WEEK_START || '').toLowerCase() === 'monday' ? 1 : 0;   // 0 = weeks start on Sunday
+const TIME_24 = /^24/.test(ENV.TIME_FORMAT || '');
+const jsonList = v => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a.slice(0, 8) : []; } catch { return []; } };
+const EXTRA_CALS = jsonList(ENV.EXTRA_CALENDARS);   // [{ id, name, color }] more calendars on the same account
+const ICS_FEEDS = jsonList(ENV.ICS_FEEDS).map(f => ({ ...f, url: String(f.url || '').replace(/^webcal:/i, 'https:') }));   // read-only links
 const BOARD_TITLE = String(ENV.BOARD_TITLE || 'Family Chalk Planner').slice(0, 60);
 // AGPL: people using the board can get its source. Point this at your fork if you change the code.
 const SOURCE_URL = /^https?:\/\/[^\s"<>]+$/.test(ENV.SOURCE_URL || '') ? ENV.SOURCE_URL : 'https://github.com/joshua-d-miller/family-chalk-planner';
@@ -131,6 +136,7 @@ function addDays(dateStr, n) {
 }
 
 function fmtTime(h, mi) {
+  if (TIME_24) return `${h}:${String(mi).padStart(2, '0')}`;
   const ap = h < 12 ? 'am' : 'pm';
   const hh = h % 12 === 0 ? 12 : h % 12;
   return mi ? `${hh}:${String(mi).padStart(2, '0')}${ap}` : `${hh}${ap}`;
@@ -155,11 +161,11 @@ function monthGrid(ym) {
   const [y, m] = ym.split('-').map(Number);
   const first = new Date(Date.UTC(y, m - 1, 1));
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const lead = first.getUTCDay();
+  const lead = (first.getUTCDay() - WEEK_START + 7) % 7;
   const weeks = Math.ceil((lead + daysInMonth) / 7);
   const start = addDays(`${y}-${String(m).padStart(2, '0')}-01`, -lead);
   const end = addDays(start, weeks * 7); // exclusive
-  return { y, m, weeks, start, end, daysInMonth };
+  return { y, m, weeks, start, end, daysInMonth, weekStart: WEEK_START, time24: TIME_24 };
 }
 
 // ---------------------------------------------------------------------------
@@ -277,15 +283,40 @@ function toBoardEvent(title, startTime, endTime) {
 
 const monthCache = new Map(); // ym -> { at, events }
 
-async function eventsForMonth(ym) {
-  const cached = monthCache.get(ym);
-  if (cached && Date.now() - cached.at < 60 * 1000) return cached.events;
-
-  const g = monthGrid(ym);
-  const rangeStart = nyToDate(...g.start.split('-').map(Number), 0, 0);
-  const rangeEnd = nyToDate(...g.end.split('-').map(Number), 0, 0);
-  const url = await findCalendar();
-
+// One calendar's events in a time range, from iCalendar text (shared by CalDAV and iCal links)
+function eventsFromIcs(text, ref, rangeStart, rangeEnd, out) {
+  const comp = new ICAL.Component(ICAL.parse(text));
+  registerZones(comp);
+  const vevents = comp.getAllSubcomponents('vevent');
+  const masters = vevents.filter(v => !v.hasProperty('recurrence-id')).map(v => new ICAL.Event(v));
+  const exceptions = vevents.filter(v => v.hasProperty('recurrence-id')).map(v => new ICAL.Event(v));
+  for (const ev of masters) {
+    for (const ex of exceptions) if (ex.uid === ev.uid) ev.relateException(ex);
+    const title = ev.summary || '(no title)';
+    if (ev.isRecurring()) {
+      const it = ev.iterator();
+      let next, guard = 0;
+      while ((next = it.next()) && guard++ < 2000) {
+        const det = ev.getOccurrenceDetails(next);
+        const sJs = det.startDate.toJSDate();
+        if (sJs >= rangeEnd) break;
+        if (det.endDate.toJSDate() <= rangeStart) continue;
+        const be = toBoardEvent(det.item.summary || title, det.startDate, det.endDate);
+        if (ref) be.ref = { ...ref, rid: det.recurrenceId.toICALString() };
+        be.recurring = true;
+        out.push(be);
+      }
+    } else {
+      if (ev.startDate.toJSDate() >= rangeEnd || (ev.endDate || ev.startDate).toJSDate() < rangeStart) continue;
+      const be = toBoardEvent(title, ev.startDate, ev.endDate);
+      if (ref) be.ref = { ...ref, rid: null };
+      be.recurring = false;
+      out.push(be);
+    }
+  }
+  return out;
+}
+async function caldavRange(url, rangeStart, rangeEnd) {
   const xml = await dav(url, 'REPORT', `<?xml version="1.0" encoding="utf-8"?>
 <c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">
   <d:prop><d:getetag/><c:calendar-data/></d:prop>
@@ -293,7 +324,6 @@ async function eventsForMonth(ym) {
     <c:time-range start="${icsUtc(rangeStart)}" end="${icsUtc(rangeEnd)}"/>
   </c:comp-filter></c:comp-filter></c:filter>
 </c:calendar-query>`, '1');
-
   const out = [];
   for (const block of xml.split(/<(?:\w+:)?response[\s>]/).slice(1)) {
     const href = (block.match(/<(?:\w+:)?href[^>]*>([^<]+)</) || [])[1];
@@ -301,40 +331,57 @@ async function eventsForMonth(ym) {
     const data = (block.match(/<(?:\w+:)?calendar-data[^>]*>([\s\S]*?)<\/(?:\w+:)?calendar-data>/) || [])[1];
     if (!href || !data) continue;
     const ref = { href: xmlUnescape(href.trim()), etag: etag ? xmlUnescape(etag.trim()) : null };
-    try {
-      const comp = new ICAL.Component(ICAL.parse(xmlUnescape(data)));
-      registerZones(comp);
-      const vevents = comp.getAllSubcomponents('vevent');
-      const masters = vevents.filter(v => !v.hasProperty('recurrence-id')).map(v => new ICAL.Event(v));
-      const exceptions = vevents.filter(v => v.hasProperty('recurrence-id')).map(v => new ICAL.Event(v));
-      for (const ev of masters) {
-        for (const ex of exceptions) if (ex.uid === ev.uid) ev.relateException(ex);
-        const title = ev.summary || '(no title)';
-        if (ev.isRecurring()) {
-          const it = ev.iterator();
-          let next, guard = 0;
-          while ((next = it.next()) && guard++ < 1000) {
-            const det = ev.getOccurrenceDetails(next);
-            const sJs = det.startDate.toJSDate();
-            if (sJs >= rangeEnd) break;
-            if (det.endDate.toJSDate() <= rangeStart) continue;
-            const be = toBoardEvent(det.item.summary || title, det.startDate, det.endDate);
-            be.ref = { ...ref, rid: det.recurrenceId.toICALString() };
-            be.recurring = true;
-            out.push(be);
-          }
-        } else {
-          const be = toBoardEvent(title, ev.startDate, ev.endDate);
-          be.ref = { ...ref, rid: null };
-          be.recurring = false;
-          out.push(be);
-        }
-      }
-    } catch (e) {
-      console.error('Chalkboard: skipped an unreadable event:', e.message);
-    }
+    try { eventsFromIcs(xmlUnescape(data), ref, rangeStart, rangeEnd, out); }
+    catch (e) { console.error('Chalkboard: skipped an unreadable event:', e.message); }
   }
+  return out;
+}
+// More calendars on the same account (shown with their own color, editable like the main one)
+function extraCalUrl(c) { return PROVIDER === 'google' ? `${G.dav}/caldav/v2/${encodeURIComponent(c.id)}/events/` : c.id; }
+// the account's password only ever goes to the server the main calendar lives on
+async function sameAccount(url) { const main = new URL(await findCalendar()); const u = new URL(url); if (u.origin !== main.origin) throw new Error('isn’t on the same calendar account'); return url; }
+async function editableCalendars() { return [await findCalendar(), ...EXTRA_CALS.map(extraCalUrl)]; }
+// Read-only iCal links: fetched at most every 15 minutes, last good copy kept if a fetch fails
+const feedCache = new Map();   // url -> { at, text, error }
+async function feedText(f) {
+  const c = feedCache.get(f.url);
+  if (c && Date.now() - c.at < 15 * 60e3) { if (c.text) return c.text; throw new Error(c.error); }
+  try {
+    const r = await fetch(f.url, { headers: { 'User-Agent': 'FamilyChalkPlanner/1 (+calendar link)', Accept: 'text/calendar, */*' }, signal: AbortSignal.timeout(20000) });
+    if (!r.ok) throw new Error(`answered ${r.status}`);
+    const text = await r.text();
+    if (text.length > 8e6 || !/BEGIN:VCALENDAR/.test(text)) throw new Error('isn’t a calendar (iCal) link');
+    feedCache.set(f.url, { at: Date.now(), text });
+    return text;
+  } catch (e) {
+    const msg = e.name === 'TimeoutError' ? 'didn’t answer' : e.message;
+    if (c && c.text) { feedCache.set(f.url, { ...c, at: Date.now() }); return c.text; }
+    feedCache.set(f.url, { at: Date.now(), error: msg });
+    throw new Error(msg);
+  }
+}
+const calProblems = new Map();   // calendar name -> what went wrong (shown in Settings)
 
+async function eventsForMonth(ym) {
+  const cached = monthCache.get(ym);
+  if (cached && Date.now() - cached.at < 60 * 1000) return cached.events;
+
+  const g = monthGrid(ym);
+  const rangeStart = nyToDate(...g.start.split('-').map(Number), 0, 0);
+  const rangeEnd = nyToDate(...g.end.split('-').map(Number), 0, 0);
+  const mainUrl = await findCalendar();
+  const out = await caldavRange(mainUrl, rangeStart, rangeEnd);   // the main calendar: its problems show on the board
+  const more = await Promise.all([
+    ...EXTRA_CALS.filter(c => !sameUrl(extraCalUrl(c), mainUrl)).map(async c => {
+      try { const ev = await caldavRange(await sameAccount(extraCalUrl(c)), rangeStart, rangeEnd); calProblems.delete(c.name); return ev.map(e => ({ ...e, cal: c.name, calColor: c.color })); }
+      catch (e) { calProblems.set(c.name, e.message); console.error(`Chalkboard: calendar "${c.name}": ${e.message}`); return []; }
+    }),
+    ...ICS_FEEDS.map(async f => {
+      try { const ev = eventsFromIcs(await feedText(f), null, rangeStart, rangeEnd, []); calProblems.delete(f.name); return ev.map(e => ({ ...e, cal: f.name, calColor: f.color, readOnly: true })); }
+      catch (e) { calProblems.set(f.name, e.message); console.error(`Chalkboard: calendar link "${f.name}": ${e.message}`); return []; }
+    })
+  ]);
+  for (const list of more) out.push(...list);
   out.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : a.sort - b.sort));
   monthCache.set(ym, { at: Date.now(), events: out });
   return out;
@@ -526,7 +573,7 @@ function rebuildExdates(cal, master, originalText, occ) {
 async function changeEvent(ref, scope, change) {
   const base = await findCalendar();
   const url = new URL(ref.href, base).toString();
-  if (!sameUrl(url, base)) throw new Error('That event isn’t in the family calendar');
+  if (!(await editableCalendars()).some(c => sameUrl(url, c))) throw new Error('That event isn’t in the family calendar');
   const g = await fetch(url, { headers: { Authorization: await authHeader() }, signal: AbortSignal.timeout(20000) });
   if (g.status === 404) { monthCache.clear(); throw new Error('That event was already removed'); }
   if (!g.ok) throw new Error(`Calendar returned ${g.status}`);
@@ -766,6 +813,53 @@ function easter(y) {   // anonymous Gregorian algorithm
 }
 // big: also counted down to in the Notes column
 function holidaysOfYear(y) {
+  const ea = easter(y);
+  if (HOLIDAYS === 'gb') return [
+    [ymd(y, 1, 1), '🎉', "New Year's Day", true],
+    [ymd(y, 2, 14), '❤️', "Valentine's Day", true],
+    [ymd(y, 3, 17), '☘️', "St Patrick's Day"],
+    [addDays(ea, -21), '💐', 'Mothering Sunday', true],
+    [nthDow(y, 3, 0, -1), '⏰', 'Clocks go forward'],
+    [addDays(ea, -2), '✝️', 'Good Friday'],
+    [ea, '🐣', 'Easter', true],
+    [addDays(ea, 1), '🐣', 'Easter Monday'],
+    [nthDow(y, 5, 1, 1), '🌼', 'Early May bank holiday'],
+    [nthDow(y, 5, 1, -1), '🌳', 'Spring bank holiday'],
+    [nthDow(y, 6, 0, 3), '👔', "Father's Day", true],
+    [nthDow(y, 8, 1, -1), '☀️', 'Summer bank holiday'],
+    [nthDow(y, 10, 0, -1), '⏰', 'Clocks go back'],
+    [ymd(y, 10, 31), '🎃', 'Halloween', true],
+    [ymd(y, 11, 5), '🎆', 'Bonfire Night', true],
+    [nthDow(y, 11, 0, 2), '🌺', 'Remembrance Sunday'],
+    [ymd(y, 12, 24), '🎄', 'Christmas Eve'],
+    [ymd(y, 12, 25), '🎄', 'Christmas Day', true],
+    [ymd(y, 12, 26), '🎁', 'Boxing Day'],
+    [ymd(y, 12, 31), '🥳', "New Year's Eve"]
+  ].map(([date, icon, title, big]) => ({ date, icon, title, big: !!big }));
+  if (HOLIDAYS === 'ca') return [
+    [ymd(y, 1, 1), '🎉', "New Year's Day", true],
+    [nthDow(y, 2, 1, 3), '👪', 'Family Day'],
+    [ymd(y, 2, 14), '❤️', "Valentine's Day", true],
+    [nthDow(y, 3, 0, 2), '⏰', 'Clocks spring forward'],
+    [ymd(y, 3, 17), '☘️', "St. Patrick's Day"],
+    [addDays(ea, -2), '✝️', 'Good Friday'],
+    [ea, '🐣', 'Easter', true],
+    [nthDow(y, 5, 0, 2), '💐', "Mother's Day", true],
+    [addDays(ymd(y, 5, 25), -(((new Date(Date.UTC(y, 4, 25)).getUTCDay() + 6) % 7) || 7)), '👑', 'Victoria Day'],
+    [nthDow(y, 6, 0, 3), '👔', "Father's Day", true],
+    [ymd(y, 7, 1), '🇨🇦', 'Canada Day', true],
+    [nthDow(y, 8, 1, 1), '☀️', 'Civic Holiday'],
+    [nthDow(y, 9, 1, 1), '🛠️', 'Labour Day'],
+    [ymd(y, 9, 30), '🧡', 'National Day for Truth and Reconciliation'],
+    [nthDow(y, 10, 1, 2), '🦃', 'Thanksgiving', true],
+    [ymd(y, 10, 31), '🎃', 'Halloween', true],
+    [nthDow(y, 11, 0, 1), '⏰', 'Clocks fall back'],
+    [ymd(y, 11, 11), '🌺', 'Remembrance Day'],
+    [ymd(y, 12, 24), '🎄', 'Christmas Eve'],
+    [ymd(y, 12, 25), '🎄', 'Christmas', true],
+    [ymd(y, 12, 26), '🎁', 'Boxing Day'],
+    [ymd(y, 12, 31), '🥳', "New Year's Eve"]
+  ].map(([date, icon, title, big]) => ({ date, icon, title, big: !!big }));
   return [
     [ymd(y, 1, 1), '🎉', "New Year's Day", true],
     [nthDow(y, 1, 1, 3), '🕊️', 'Martin Luther King Jr. Day'],
@@ -814,7 +908,7 @@ app.get('/api/calendar/status', (req, res) => {
     return res.json({ provider: 'google', configured: !!G.id, connected: !!st.refresh, calendar: st.calendarName || null,
       problem: st.refresh ? null : st.problem || null, paste: !/\/oauth\/google\/callback$/.test(G.redirect), redirect: G.redirect });
   }
-  res.json({ provider: 'caldav', configured: !!(ICLOUD_USER && ICLOUD_PASS && CAL_NAME), calendar: CAL_NAME || null });
+  res.json({ provider: 'caldav', configured: !!(ICLOUD_USER && ICLOUD_PASS && CAL_NAME), calendar: CAL_NAME || null, problems: Object.fromEntries(calProblems) });
 });
 const gPending = new Map();   // state -> { verifier, at }
 app.post('/api/google/start', (req, res) => {
@@ -1861,7 +1955,7 @@ function restartSoon(why) {
   setTimeout(() => { console.log(`Chalk Planner: restarting to apply ${why}`); process.exit(3); }, 400);   // the service manager starts it again
 }
 app.get('/api/board-settings', (req, res) => {
-  res.set('Cache-Control', 'no-store').json({ ...boardSettings.view(), version: APP_VERSION, timezones: typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [] });
+  res.set('Cache-Control', 'no-store').json({ ...boardSettings.view(), version: APP_VERSION, problems: Object.fromEntries(calProblems), timezones: typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [] });
 });
 app.post('/api/board-settings', (req, res) => {
   const r = boardSettings.save((req.body || {}).values);
@@ -1879,7 +1973,7 @@ app.post('/api/board-settings/caldav-test', async (req, res) => {
   if (!user || !pass) return res.status(400).json({ error: 'Enter the username and password first' });
   try {
     const cals = await caldavCalendars(url, 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64'));
-    res.json({ calendars: cals.map(c => c.name) });
+    res.json({ calendars: cals.map(c => c.name), list: cals });
   } catch (e) { res.status(400).json({ error: e.name === 'TimeoutError' ? 'The calendar server didn’t answer' : e.message }); }
 });
 // Weather location: search a town (Open-Meteo geocoding, no account)

@@ -65,7 +65,38 @@ const ms = body => `<?xml version="1.0" encoding="UTF-8"?>\n<multistatus xmlns="
 app.use((req, res, next) => { req.method === 'PROPFIND' || req.method === 'REPORT' ? res.status(207).type('xml') : 0; next(); });
 app.all('/', (req, res) => res.send(ms(`<response><href>/</href><propstat><prop><current-user-principal xmlns="DAV:"><href xmlns="DAV:">/1/principal/</href></current-user-principal></prop></propstat></response>`)));
 app.all('/1/principal/', (req, res) => res.send(ms(`<response><href>/1/principal/</href><propstat><prop><calendar-home-set xmlns="urn:ietf:params:xml:ns:caldav"><href xmlns="DAV:">/1/calendars/</href></calendar-home-set></prop></propstat></response>`)));
-app.all('/1/calendars/', (req, res) => res.send(ms(`<response><href>/1/calendars/</href><propstat><prop><displayname/></prop></propstat></response><response><href>/1/calendars/fam/</href><propstat><prop><displayname>Family</displayname></prop></propstat></response>`)));
+app.all('/1/calendars/', (req, res) => res.send(ms(`<response><href>/1/calendars/</href><propstat><prop><displayname/></prop></propstat></response><response><href>/1/calendars/fam/</href><propstat><prop><displayname>Family</displayname></prop></propstat></response><response><href>/1/calendars/kids/</href><propstat><prop><displayname>Kids</displayname></prop></propstat></response>`)));
+// a second calendar on the same account (read through REPORT like the main one)
+const kids = wrap(`BEGIN:VEVENT
+UID:swim-uid
+DTSTAMP:20260901T000000Z
+DTSTART;TZID=America/New_York:20261014T180000
+DTEND;TZID=America/New_York:20261014T190000
+SUMMARY:Swim lessons
+END:VEVENT`);
+const kidsStore = { text: kids, etag: '"k1"' };
+app.all('/1/calendars/kids/', (req, res) => res.send(ms(`<response><href>/1/calendars/kids/swim.ics</href><propstat><prop><getetag>${esc(kidsStore.etag)}</getetag><calendar-data xmlns="urn:ietf:params:xml:ns:caldav">${esc(kidsStore.text)}</calendar-data></prop><status>HTTP/1.1 200 OK</status></propstat></response>`)));
+app.all('/1/calendars/kids/swim.ics', (req, res) => {
+  if (req.method === 'GET') return res.set('ETag', kidsStore.etag).type('text/calendar').send(kidsStore.text);
+  if (req.method === 'PUT') { if (req.get('if-match') && req.get('if-match') !== kidsStore.etag) return res.sendStatus(412); kidsStore.text = req.body; kidsStore.etag = '"k' + Date.now() + '"'; return res.set('ETag', kidsStore.etag).sendStatus(204); }
+  res.sendStatus(405);
+});
+// a read-only iCal link (school calendar)
+app.get('/feeds/school.ics', (req, res) => res.type('text/calendar').send(wrap(`BEGIN:VEVENT
+UID:pd-day
+DTSTAMP:20260901T000000Z
+DTSTART;VALUE=DATE:20261023
+DTEND;VALUE=DATE:20261024
+SUMMARY:No school - teacher day
+END:VEVENT
+BEGIN:VEVENT
+UID:old
+DTSTAMP:20200901T000000Z
+DTSTART;VALUE=DATE:20200101
+DTEND;VALUE=DATE:20200102
+SUMMARY:Long ago
+END:VEVENT`)));
+app.get('/feeds/broken.ics', (req, res) => res.type('text/html').send('<html>not a calendar</html>'));
 app.all('/1/calendars/fam/', (req, res) => {
   res.send(ms([...store].map(([k, v]) => `<response><href>/1/calendars/fam/${k}</href><propstat><prop><getetag>${esc(v.etag)}</getetag><calendar-data xmlns="urn:ietf:params:xml:ns:caldav">${esc(v.text)}</calendar-data></prop><status>HTTP/1.1 200 OK</status></propstat></response>`).join('')));
 });

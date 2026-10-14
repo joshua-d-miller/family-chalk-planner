@@ -55,7 +55,9 @@ Server-level settings stay in `.env` in the install folder (root-only); after ed
 | `TIMEZONE` | e.g. `America/Chicago`. Decides what "today" is. |
 | `LATITUDE`, `LONGITUDE`, `TEMP_UNIT` | Weather in the Notes column (Open-Meteo, no key). Empty = no weather. |
 | `TRASH_DAY` | Starting trash day, 0 = Sunday … 6 = Saturday. Empty = hidden. After that, trash and recycling days are set on the tablet (⚙ Settings). |
-| `HOLIDAYS` | `us` or `none`. Holidays only show on the board; they're never added to your calendar. |
+| `HOLIDAYS` | `us`, `ca` (Canada), `gb` (United Kingdom) or `none`. Holidays only show on the board; they're never added to your calendar. |
+| `WEEK_START`, `TIME_FORMAT` | `sunday`/`monday`; `12h` (4:30pm) or `24h` (16:30). |
+| `EXTRA_CALENDARS`, `ICS_FEEDS` | More calendars from the same account, and read-only calendar links (school, sports teams). Easiest in ⚙️ Board. |
 | `PHOTO_ALBUM_URL` | The share link of an **iCloud Shared Album** (Public Website on) or a **Google Photos shared album**. See **[photos.md](photos.md)**. |
 | `BOARD_TITLE` | Name shown in the browser and on home-screen icons. |
 | `PORT`, `BIND`, `DATA_DIR`, `BACKUP_DIR`, `SOURCE_URL` | Server details; the defaults are fine. |

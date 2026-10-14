@@ -6,6 +6,9 @@ The wall display only shows the board; everything is edited from a tablet or pho
 
 The bottom bar on the tablet has **👤** (your account: add a passkey on this tablet, admin console, sign out), **⚙️ Settings** (admins), **🎨 Board style**, **📷 Photos**, **Draw** and **+ Add event**. Zoom with **− / + / Fit** at the top right (or pinch). Everything saved on the tablet shows on the wall within a second or two.
 
+### More than one calendar
+The admin can add **more calendars from the same account** (kids' activities, work) and **read-only calendar links** (school, a sports team) in the admin console → ⚙️ Board. Each shows in its own color. Events from the extra calendars can be changed like any other; new events go to the main calendar. Events from links are read-only: tapping one shows that day with the calendar's name.
+
 ### Events (your calendar)
 - **Add:** tap **+ Add event** (or tap a day, then **Add**). Pick what, day, time and length, or tick **All day** (with an optional **Through** date for multi-day events like trips).
 - **Change or delete:** tap the event on the board (or tap the day to see its full list). For repeating events, choose **Just this one** or **All of them** before saving or deleting.

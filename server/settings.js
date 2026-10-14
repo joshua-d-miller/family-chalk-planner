@@ -15,7 +15,9 @@ const FIELDS = {
   LATITUDE: { type: 'num', min: -90, max: 90 },
   LONGITUDE: { type: 'num', min: -180, max: 180 },
   TEMP_UNIT: { type: 'enum', values: ['fahrenheit', 'celsius'] },
-  HOLIDAYS: { type: 'enum', values: ['us', 'none'] },
+  HOLIDAYS: { type: 'enum', values: ['us', 'ca', 'gb', 'none'] },
+  WEEK_START: { type: 'enum', values: ['sunday', 'monday'] },
+  TIME_FORMAT: { type: 'enum', values: ['12h', '24h'] },
   PHOTO_ALBUM_URL: { type: 'url' },
   CALENDAR_PROVIDER: { type: 'enum', values: ['caldav', 'google'] },
   CALDAV_URL: { type: 'url' },
@@ -23,20 +25,34 @@ const FIELDS = {
   CALDAV_PASSWORD: { type: 'secret' },
   CALDAV_CALENDAR: { type: 'text', max: 200 },
   GOOGLE_CLIENT_ID: { type: 'text', max: 200 },
-  GOOGLE_CLIENT_SECRET: { type: 'secret' }
+  GOOGLE_CLIENT_SECRET: { type: 'secret' },
+  // more calendars on the same account, shown with their own color: [{ id, name, color }]
+  // (id = the calendar's address for CalDAV, the calendar id for Google)
+  EXTRA_CALENDARS: { type: 'json', check: v => list(v, c => typeof c.id === 'string' && c.id.length <= 400 && /^\S+$/.test(c.id) && name(c.name, 100) && hex(c.color)) },
+  // read-only calendar links (iCal / ICS: school, sports, holidays): [{ name, url, color }]
+  ICS_FEEDS: { type: 'json', check: v => list(v, c => name(c.name, 60) && hex(c.color) && /^(https?|webcal):\/\/[^\s"<>]+$/i.test(c.url || '') && c.url.length <= 1000) }
 };
+const hex = c => /^#[0-9a-fA-F]{6}$/.test(c || '');
+const name = (n, max) => typeof n === 'string' && n.trim().length > 0 && n.length <= max && !/[\r\n<>]/.test(n);
+function list(v, ok) {
+  let a; try { a = JSON.parse(v); } catch { return 'not a list'; }
+  if (!Array.isArray(a) || a.length > 8) return 'at most 8';
+  return a.every(x => x && typeof x === 'object' && ok(x)) ? null : 'each needs a name, a color and a valid address';
+}
 
 function validTz(v) { try { new Intl.DateTimeFormat('en-US', { timeZone: v }); return true; } catch { return false; } }
 function check(key, v) {
   const f = FIELDS[key]; if (!f) return 'unknown setting';
   v = String(v ?? '').trim();
   if (v === '') return null;   // empty = use .env / default
-  if (/[\r\n\0]/.test(v)) return 'one line only';
+  if (/[\r\n\0]/.test(v)) return 'one line only';   // (json lists are sent as one line too)
   if (f.type === 'text' && v.length > f.max) return `at most ${f.max} characters`;
+  if (f.type === 'json' && v.length > 20000) return 'too long';
   if (f.type === 'secret' && v.length > 500) return 'too long';
   if (f.type === 'tz' && !validTz(v)) return 'not a time zone (e.g. America/New_York)';
   if (f.type === 'num' && !(Number.isFinite(+v) && +v >= f.min && +v <= f.max)) return `a number from ${f.min} to ${f.max}`;
   if (f.type === 'enum' && !f.values.includes(v)) return `one of ${f.values.join(', ')}`;
+  if (f.type === 'json') { const e = f.check(v); if (e) return e; }
   if (f.type === 'url') { try { const u = new URL(v); if (!/^https?:$/.test(u.protocol) || u.username || u.password) throw 0; } catch { return 'an http(s) address'; } }
   return null;
 }

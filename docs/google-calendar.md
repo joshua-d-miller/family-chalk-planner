@@ -57,28 +57,15 @@ This does **not** make anything public, and Google doesn't need to review it for
 Keep the secret private: don't post it, email it or paste it into a chat.
 
 ## Part 4: Give the codes to the board
-The board's settings file is called `.env` and lives in the folder the board was installed in (normally `/opt/family-chalk-planner`).
+1. On a phone, tablet or computer, open the **admin console** (`/admin`) and sign in.
+2. Tap **⚙️ Board**. Under **Calendar**, tap **🟦 Google Calendar**.
+3. Paste the **Client ID** and **Client secret** from part 3 (no spaces).
+4. Tap **Save and restart** at the bottom. The board restarts in a few seconds.
 
-1. Open a terminal on the board's server. (On Proxmox: select the board's container → **Console**.)
-2. Open the settings file:
-   ```bash
-   nano /opt/family-chalk-planner/.env
-   ```
-3. Find the section that starts `# --- Or: Google Calendar`. Change these three lines so they no longer start with `#`, and paste your two codes after the `=` (no spaces, no quotes):
-   ```bash
-   CALENDAR_PROVIDER=google
-   GOOGLE_CLIENT_ID=1234567890-abcdefg.apps.googleusercontent.com
-   GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxx
-   ```
-   Leave the `GOOGLE_REDIRECT_URI` line with its `#`. The `CALDAV_` lines don't matter in Google mode.
-4. Save and close: press **Ctrl+O**, **Enter**, then **Ctrl+X**.
-5. Restart the board so it reads the new settings:
-   ```bash
-   systemctl restart family-chalk-planner
-   ```
+The secret is stored encrypted and never shown again. (Prefer the settings file? On the server, put `CALENDAR_PROVIDER=google`, `GOOGLE_CLIENT_ID=…` and `GOOGLE_CLIENT_SECRET=…` in the board's `.env` and restart it; values saved in the console win.)
 
 ## Part 5: Sign in from the tablet
-1. On the tablet, sign in to the admin console (`/admin`), tap **⚙️ Board settings** in the bottom bar.
+1. On the tablet, open the board at `/edit` (signed in as an admin) and tap **⚙️ Settings** in the bottom bar.
 2. Tap **Sign in with Google**. A new tab opens on Google's sign-in page.
 3. Choose the Google account with the family calendar.
 4. Google warns **"Google hasn't verified this app"**. That's expected: the app is the one you registered yourself in part 3. Tap **Advanced**, then **Go to Family Chalk Planner (unsafe)**.
@@ -94,16 +81,17 @@ Do steps 2–7 within about 10 minutes. If Connect says the sign-in has expired,
 
 ## Later
 - **Show a different calendar:** ⚙️ → tap another calendar in the list.
+- **Show more calendars at once** (kids, work…): admin console → ⚙️ Board → **More calendars from this account** → **List my calendars**, tick them and pick colors, then **Save and restart**. New events still go to the main calendar.
 - **Disconnect:** ⚙️ → **Disconnect Google**. To also remove the board's access on Google's side: [myaccount.google.com/connections](https://myaccount.google.com/connections) → Family Chalk Planner → delete.
 - **Don't delete the Google Cloud project.** The board needs it for as long as it uses your calendar. Google deletes sign-in keys that go unused for 6 months; a board that's running uses its key every hour, so that only happens if the board is off for that long.
 
 ## If something goes wrong
 | What you see | What it means / what to do |
 |---|---|
-| ⚙️ says Google "isn't set up on the server yet" | The codes aren't in `.env`, a line still starts with `#`, or the board wasn't restarted (part 4). |
-| Google: **Error 400: redirect_uri_mismatch** | The key was made as "Web application". Make a new one as **Desktop app** (part 3c) and put the new codes in `.env`. |
+| ⚙️ says Google "isn't set up on the server yet" | The codes weren't saved in ⚙️ Board (part 4), or **Google Calendar** wasn't selected there before saving. |
+| Google: **Error 400: redirect_uri_mismatch** | The key was made as "Web application". Make a new one as **Desktop app** (part 3c) and paste the new codes in ⚙️ Board. |
 | Google: **Error 403: access_denied**, or "has not completed the Google verification process" | The app is still in **Testing**. Publish it (part 3b). |
-| Google: **invalid_client** | The ID or secret in `.env` has a typo, a space, or quotes. Copy them again. Lost the secret? Make a new one (part 3c). |
+| Google: **invalid_client** | The ID or secret has a typo, a space, or quotes. Copy them again. Lost the secret? Make a new one (part 3c). |
 | Connect: "Paste the whole address" | Only part of the address was copied. Tap the address bar, **Select All**, **Copy**, and paste again. |
 | Connect: "expired or was already used" | Start again from **Sign in with Google**. |
 | The calendar list is empty | This account can only *view* those calendars. Use the account that owns the calendar, or ask the owner to share it with you using "Make changes to events". |

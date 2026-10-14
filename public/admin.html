@@ -226,7 +226,11 @@ button:disabled{opacity:.5;cursor:default}
         <label for="bfTitle">Name of the board</label><input id="bfTitle" maxlength="60" data-k="BOARD_TITLE" placeholder="Family Chalk Planner">
         <label for="bfTz">Time zone</label><select id="bfTz" data-k="TIMEZONE"></select>
         <label for="bfHol">Holidays shown on the board</label>
-        <select id="bfHol" data-k="HOLIDAYS"><option value="">(default: US)</option><option value="us">US holidays</option><option value="none">None</option></select>
+        <select id="bfHol" data-k="HOLIDAYS"><option value="">(default: US)</option><option value="us">United States</option><option value="ca">Canada</option><option value="gb">United Kingdom</option><option value="none">None</option></select>
+        <div class="row">
+          <div><label for="bfWeek">Weeks start on</label><select id="bfWeek" data-k="WEEK_START"><option value="">(default: Sunday)</option><option value="sunday">Sunday</option><option value="monday">Monday</option></select></div>
+          <div><label for="bfTime">Times</label><select id="bfTime" data-k="TIME_FORMAT"><option value="">(default: 4:30pm)</option><option value="12h">4:30pm</option><option value="24h">16:30</option></select></div>
+        </div>
       </div>
       <div class="card">
         <h2>Weather</h2>
@@ -253,11 +257,32 @@ button:disabled{opacity:.5;cursor:default}
           <label for="bfCal">Calendar to show</label><input id="bfCal" data-k="CALDAV_CALENDAR" list="bfCals" autocomplete="off"><datalist id="bfCals"></datalist>
           <div class="err" id="bfFindErr"></div>
         </div>
+        <div id="bfMoreWrap">
+          <h3 style="margin:18px 0 4px">More calendars from this account</h3>
+          <p class="dim" style="margin-top:0">Kids’ activities, work, school… shown together on the board, each in its own color. Their events can be changed from the board too; new events go to the calendar above.</p>
+          <div class="actions" style="margin-top:4px"><button id="bfMoreList">List my calendars</button></div>
+          <div class="list" id="bfMore"></div>
+          <div class="err" id="bfMoreErr"></div>
+          <input type="hidden" id="bfMoreVal" data-k="EXTRA_CALENDARS">
+        </div>
         <div id="bfGoogle" hidden>
           <p class="dim">Create the Google client once (step-by-step in docs/google-calendar.md), paste it here, save, then press <b>Sign in with Google</b> in ⚙️ Settings on the board.</p>
           <label for="bfGid">Client ID</label><input id="bfGid" data-k="GOOGLE_CLIENT_ID" autocomplete="off" spellcheck="false">
           <label for="bfGsec">Client secret</label><input id="bfGsec" type="password" data-k="GOOGLE_CLIENT_SECRET" autocomplete="new-password">
         </div>
+      </div>
+      <div class="card">
+        <h2>Calendar links</h2>
+        <p class="dim">Read-only calendars from a link (iCal, “.ics” or “webcal://”): the school calendar, a sports team, your work calendar’s “publish” link. Checked every 15 minutes.</p>
+        <div class="list" id="bfFeeds"></div>
+        <div class="row">
+          <div><label for="bfFeedName">Name</label><input id="bfFeedName" maxlength="60" placeholder="School"></div>
+          <div style="flex:3 1 260px"><label for="bfFeedUrl">Link</label><input id="bfFeedUrl" placeholder="webcal://… or https://….ics" autocomplete="off" spellcheck="false"></div>
+          <div style="flex:0 0 70px"><label for="bfFeedColor">Color</label><input id="bfFeedColor" type="color" value="#9CC9E6" style="padding:2px;height:44px"></div>
+        </div>
+        <div class="actions"><button id="bfFeedAdd">Add link</button></div>
+        <div class="err" id="bfFeedErr"></div>
+        <input type="hidden" id="bfFeedsVal" data-k="ICS_FEEDS">
       </div>
       <div class="card">
         <h2>Photos</h2>
@@ -397,6 +422,64 @@ button:disabled{opacity:.5;cursor:default}
     Array.prototype.forEach.call(document.querySelectorAll('#bfProv button'), function (b) { b.classList.toggle('on', b.dataset.p === p); });
     $('bfCaldav').hidden = p !== 'caldav'; $('bfGoogle').hidden = p !== 'google';
   }
+  // lists stored as JSON in hidden fields: more calendars (EXTRA_CALENDARS) and calendar links (ICS_FEEDS)
+  var PALETTE = ['#9CC9E6', '#A9D8A0', '#F2D479', '#E8A35C', '#B49CE0', '#F6B3CB', '#F26B6B', '#7FD1C7'];
+  function jsonVal(id) { try { var a = JSON.parse($(id).value || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function setJson(id, a) { $(id).value = a.length ? JSON.stringify(a) : ''; }
+  function colorInput(val, onChange) { var c = el('input'); c.type = 'color'; c.value = val; c.style.cssText = 'width:44px;height:36px;padding:2px;flex:0 0 44px'; c.addEventListener('input', function () { onChange(c.value.toUpperCase()); }); return c; }
+  function drawFeeds() {
+    var box = $('bfFeeds'); box.innerHTML = '';
+    jsonVal('bfFeedsVal').forEach(function (f, i) {
+      var it = el('div', 'item'), line = el('div', 'line');
+      line.appendChild(colorInput(f.color, function (c) { var a = jsonVal('bfFeedsVal'); a[i].color = c; setJson('bfFeedsVal', a); }));
+      var t = el('div'); t.style.cssText = 'flex:1 1 200px;min-width:0'; t.appendChild(el('b', null, f.name)); t.appendChild(el('div', 'dim', f.url)); t.lastChild.style.cssText = 'font-size:13px;overflow-wrap:anywhere';
+      line.appendChild(t);
+      var rm = el('button', 'sm del', 'Remove'); rm.type = 'button';
+      rm.addEventListener('click', function () { var a = jsonVal('bfFeedsVal'); a.splice(i, 1); setJson('bfFeedsVal', a); drawFeeds(); });
+      line.appendChild(rm); it.appendChild(line); box.appendChild(it);
+    });
+    if (bf.data && bf.data.problems) Object.keys(bf.data.problems).forEach(function (n) { box.appendChild(el('div', 'err', '⚠ ' + n + ': ' + bf.data.problems[n])); });
+  }
+  $('bfFeedAdd').addEventListener('click', function () {
+    var n = $('bfFeedName').value.trim(), u = $('bfFeedUrl').value.trim();
+    if (!n || !/^(https?|webcal):\/\//i.test(u)) { $('bfFeedErr').textContent = 'Give it a name and paste a link starting with webcal:// or https://'; return; }
+    var a = jsonVal('bfFeedsVal'); if (a.length >= 8) { $('bfFeedErr').textContent = 'At most 8 links'; return; }
+    a.push({ name: n, url: u, color: $('bfFeedColor').value.toUpperCase() }); setJson('bfFeedsVal', a);
+    $('bfFeedName').value = ''; $('bfFeedUrl').value = ''; $('bfFeedColor').value = PALETTE[a.length % PALETTE.length]; $('bfFeedErr').textContent = ''; drawFeeds();
+  });
+  // more calendars: a checklist of the account's calendars (except the main one)
+  var moreAvail = null;
+  function drawMore() {
+    var box = $('bfMore'); box.innerHTML = '';
+    var chosen = jsonVal('bfMoreVal'), byId = {};
+    chosen.forEach(function (c) { byId[c.id] = c; });
+    var all = (moreAvail || []).slice();
+    chosen.forEach(function (c) { if (!all.some(function (a) { return a.id === c.id; })) all.push({ id: c.id, name: c.name }); });
+    all.forEach(function (cal, i) {
+      var on = !!byId[cal.id], it = el('div', 'item'), line = el('div', 'line');
+      var cb = el('input'); cb.type = 'checkbox'; cb.checked = on; cb.style.cssText = 'width:22px;height:22px;flex:0 0 22px';
+      var nm = el('label', null, cal.name); nm.style.cssText = 'flex:1 1 160px;margin:0;font-size:17px;color:var(--chalk)';
+      var col = colorInput(on ? byId[cal.id].color : PALETTE[(i + 1) % PALETTE.length], function (c) { var a = jsonVal('bfMoreVal'); a.forEach(function (x) { if (x.id === cal.id) x.color = c; }); setJson('bfMoreVal', a); });
+      cb.addEventListener('change', function () {
+        var a = jsonVal('bfMoreVal').filter(function (x) { return x.id !== cal.id; });
+        if (cb.checked) { if (a.length >= 8) { cb.checked = false; $('bfMoreErr').textContent = 'At most 8 more calendars'; return; } a.push({ id: cal.id, name: cal.name.slice(0, 100), color: col.value.toUpperCase() }); }
+        setJson('bfMoreVal', a);
+      });
+      line.appendChild(cb); line.appendChild(nm); line.appendChild(col); it.appendChild(line); box.appendChild(it);
+    });
+    if (!all.length) box.appendChild(el('div', 'dim', 'Press “List my calendars” to choose.'));
+  }
+  $('bfMoreList').addEventListener('click', function () {
+    $('bfMoreErr').textContent = '';
+    var main = ($('bfCal').value || (bf.data.fields.CALDAV_CALENDAR.env || '')).trim();
+    var p = bf.prov === 'google'
+      ? api('/api/google/calendars', {}).then(function (l) { return l.map(function (c) { return { id: c.id, name: c.name }; }); })
+      : api('/api/board-settings/caldav-test', { url: $('bfUrl').value || undefined, user: $('bfUser').value || undefined, password: $('bfPass').value || undefined }).then(function (r) { return r.list.map(function (c) { return { id: c.url, name: c.name }; }); });
+    busy($('bfMoreList'), p).then(function (l) {
+      moreAvail = l.filter(function (c) { return bf.prov === 'google' ? true : c.name !== main; });
+      drawMore();
+    }).catch(function (e) { $('bfMoreErr').textContent = bf.prov === 'google' ? e.message + ' (connect Google in ⚙️ Settings on the board first)' : e.message; });
+  });
   function loadBoard() {
     api('/api/board-settings').then(function (d) {
       bf.data = d; var F = d.fields;
@@ -409,6 +492,8 @@ button:disabled{opacity:.5;cursor:default}
         if (f.type === 'secret') {
           inp.value = '';
           inp.placeholder = f.set ? (f.source === 'env' ? '•••• set in .env (type to replace)' : '•••• saved (type to replace)') : (d.lost.indexOf(inp.dataset.k) >= 0 ? '⚠ enter it again' : '');
+        } else if (f.type === 'json') {
+          inp.value = f.value || f.env || '';   // lists from .env show (and can be changed) here too
         } else {
           inp.value = f.value || '';
           if (inp.tagName === 'INPUT') inp.placeholder = f.env ? 'from .env: ' + f.env : (inp.dataset.ph || inp.placeholder);
@@ -419,6 +504,7 @@ button:disabled{opacity:.5;cursor:default}
       var p = F.CALENDAR_PROVIDER.value || F.CALENDAR_PROVIDER.env || ((F.GOOGLE_CLIENT_ID.value || F.GOOGLE_CLIENT_ID.env) ? 'google' : 'caldav');
       bfSetProv(p === 'google' ? 'google' : 'caldav');
       $('bfVer').textContent = d.version; $('bfErr').textContent = '';
+      moreAvail = null; drawMore(); drawFeeds();
     }).catch(function (e) { $('bfErr').textContent = e.message; });
   }
   Array.prototype.forEach.call(document.querySelectorAll('#bfProv button'), function (b) { b.addEventListener('click', function () { bfSetProv(b.dataset.p); }); });

@@ -49,7 +49,7 @@ test('bad values are refused with a reason', async () => {
 });
 
 test('find my calendars and town search', async () => {
-  assert.deepEqual((await (await admin.post('/api/board-settings/caldav-test', {})).json()).calendars, ['Family'], 'saved password');
+  assert.deepEqual((await (await admin.post('/api/board-settings/caldav-test', {})).json()).calendars, ['Family', 'Kids'], 'saved password');
   const bad = await admin.post('/api/board-settings/caldav-test', { url: `http://127.0.0.1:${DAV}/nope/`, user: 'u', password: 'x' });
   assert.equal(bad.status, 400);
   const g = await (await admin.api('/api/board-settings/geocode?q=state%20college')).json();
@@ -70,7 +70,7 @@ test('saving restarts the board; the console wins over .env; passwords are encry
   assert.doesNotMatch(raw, /super-secret-app-pw/); assert.match(raw, /"CALDAV_PASSWORD":"k1:/);
   assert.equal((fs.statSync(path.join(data, 'secret.key')).mode & 0o777).toString(8), '600');
   // the encrypted password works: the board can reach the calendar with it (the mock takes any password)
-  assert.deepEqual((await (await admin.post('/api/board-settings/caldav-test', {})).json()).calendars, ['Family']);
+  assert.deepEqual((await (await admin.post('/api/board-settings/caldav-test', {})).json()).calendars, ['Family', 'Kids']);
   // nothing changed = no restart; empty = back to .env
   assert.equal((await (await admin.post('/api/board-settings', { values: { BOARD_TITLE: 'Millers' } })).json()).restarting, false);
   const log = (await (await admin.api('/api/security')).json()).log.find(e => e.event === 'settings.changed');
@@ -84,6 +84,36 @@ test('a lost key only means entering the password again', async () => {
   const d = await (await admin.api('/api/board-settings')).json();
   assert.deepEqual(d.lost, ['CALDAV_PASSWORD']);
   assert.match(await (await admin.api('/edit')).text(), /<title>Millers<\/title>/, 'everything else still applies');
+});
+
+test('more calendars, calendar links, Monday weeks, 24-hour time, other holidays', async () => {
+  const kidsUrl = `http://127.0.0.1:${DAV}/1/calendars/kids/`;
+  const r = await (await admin.post('/api/board-settings', { values: {
+    EXTRA_CALENDARS: JSON.stringify([{ id: kidsUrl, name: 'Kids', color: '#7FD1C7' }, { id: 'https://evil.example/cal/', name: 'Elsewhere', color: '#000000' }]),
+    ICS_FEEDS: JSON.stringify([{ name: 'School', url: `http://127.0.0.1:${DAV}/feeds/school.ics`, color: '#9CC9E6' }, { name: 'Broken', url: `http://127.0.0.1:${DAV}/feeds/broken.ics`, color: '#F26B6B' }]),
+    WEEK_START: 'monday', TIME_FORMAT: '24h', HOLIDAYS: 'gb' } })).json();
+  assert.equal(r.restarting, true);
+  for (let i = 0; i < 30 && exitCode === null; i++) await new Promise(res => setTimeout(res, 100));
+  start(); await ready();
+  const m = await (await admin.api('/api/month?ym=2026-10')).json();
+  assert.equal(m.grid.weekStart, 1); assert.equal(m.grid.start, '2026-09-28', 'October 2026 starts on a Thursday: the grid starts Monday Sep 28');
+  const swim = m.events.find(e => e.title === 'Swim lessons');
+  assert.ok(swim && swim.cal === 'Kids' && swim.calColor === '#7FD1C7' && swim.ref && !swim.readOnly, 'second calendar, editable');
+  assert.equal(swim.time, '18:00');
+  const pd = m.events.find(e => e.title === 'No school - teacher day');
+  assert.ok(pd && pd.readOnly && pd.cal === 'School' && !pd.ref, 'calendar link, read-only');
+  assert.ok(!m.events.some(e => e.title === 'Long ago'));
+  assert.ok(m.events.some(e => e.holiday && e.title === 'Bonfire Night') === false, 'Bonfire Night is in November');
+  assert.ok(m.events.some(e => e.holiday && e.title === 'Halloween'));
+  assert.ok(!m.events.some(e => e.title === "Indigenous Peoples' Day"), 'no US holidays');
+  assert.ok(!m.events.some(e => e.cal === 'Elsewhere'), 'the account password never goes to another server');
+  const st = await (await admin.api('/api/board-settings')).json();
+  assert.match(st.problems.Broken, /isn’t a calendar/); assert.match(st.problems.Elsewhere, /same calendar account/);
+  // editing an event on the second calendar works; a link's events have nothing to edit
+  const up = await admin.post('/api/events/update', { ref: swim.ref, scope: 'one', title: 'Swim lessons (pool B)', date: '2026-10-14', allDay: false, time: '18:00', minutes: 60 });
+  assert.equal(up.status, 200, await up.clone().text());
+  const m2 = await (await admin.api('/api/month?ym=2026-10')).json();
+  assert.ok(m2.events.some(e => e.title === 'Swim lessons (pool B)' && e.cal === 'Kids'));
 });
 
 test('only admins see or change settings', async () => {
