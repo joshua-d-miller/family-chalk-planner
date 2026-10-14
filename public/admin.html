@@ -306,6 +306,7 @@ button:disabled{opacity:.5;cursor:default}
       <div class="card">
         <p class="dim">Saving restarts the board (a few seconds); screens reconnect by themselves. Everything here is kept in the board’s database; passwords, the calendar account, the album link and calendar links are stored encrypted. Passwords are never shown again.</p>
         <p class="dim" id="bfImported" hidden></p>
+        <div class="item" id="bfKey" style="margin-top:10px"></div>
         <div class="actions"><button class="go" id="bfSave">Save and restart</button><span class="dim" id="bfVer"></span></div>
         <div class="err" id="bfErr"></div>
       </div>
@@ -522,6 +523,16 @@ button:disabled{opacity:.5;cursor:default}
       $('bfProxyUse').hidden = !d.proxySeen || F.TRUST_PROXY.value === d.proxySeen;
       $('bfProxyUse').textContent = 'Use ' + (d.proxySeen || '');
       $('bfProxyUse').onclick = function () { $('bfProxy').value = d.proxySeen; $('bfProxyUse').hidden = true; };
+      var k = d.key || {}, kb = $('bfKey'); kb.innerHTML = '';
+      kb.appendChild(el('b', null, '🔑 Encryption key'));
+      if (k.source === 'env') kb.appendChild(el('div', 'dim', 'From ' + k.note + '.'));
+      else if (!k.exists) kb.appendChild(el('div', 'dim', 'Not needed yet: it’s created the first time you save a password or private link.'));
+      else {
+        kb.appendChild(el('div', 'dim', k.path));
+        kb.appendChild(el('div', k.backedUp ? 'ok' : 'err', k.backedUp ? '✓ Copied to the backup folder: ' + k.backup : '⚠ Not in the backup folder yet (' + k.backup + ') — it’s copied when the board starts.'));
+      }
+      kb.appendChild(el('div', 'dim', 'It only unlocks the saved passwords, Apple ID / username, album link and calendar links. Lost it? Nothing else is affected — the board asks you to type those again.'));
+      kb.lastChild.style.fontSize = '14px';
       $('bfImported').hidden = !d.imported;
       if (d.imported) $('bfImported').textContent = '✓ Your old .env settings were moved in here (' + d.imported.moved.length + ' settings). The .env file isn’t used any more.';
       moreAvail = null; drawMore(); drawFeeds();

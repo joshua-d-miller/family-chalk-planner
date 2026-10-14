@@ -82,14 +82,14 @@ function setup({ db, DATA_DIR, log = console, importEnv = true }) {
   db.exec('CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, data TEXT NOT NULL)');
 
   let keyCache = null;
-  function key() {
+  function key(create) {   // only saving makes a new key; reading never does (a missing key = values to re-enter)
     if (keyCache) return keyCache;
     if (process.env.SECRET_KEY) return (keyCache = crypto.createHash('sha256').update('fcp-settings:' + process.env.SECRET_KEY).digest());
     const f = path.join(DATA_DIR, 'secret.key');
-    if (!fs.existsSync(f)) fs.writeFileSync(f, crypto.randomBytes(32).toString('base64') + '\n', { mode: 0o600 });
+    if (!fs.existsSync(f)) { if (!create) throw new Error('no key'); fs.writeFileSync(f, crypto.randomBytes(32).toString('base64') + '\n', { mode: 0o600 }); }
     return (keyCache = crypto.createHash('sha256').update('fcp-settings:' + fs.readFileSync(f, 'utf8').trim()).digest());
   }
-  const seal = v => { const iv = crypto.randomBytes(12), c = crypto.createCipheriv('aes-256-gcm', key(), iv); const ct = Buffer.concat([c.update(v, 'utf8'), c.final()]); return 'k1:' + Buffer.concat([iv, c.getAuthTag(), ct]).toString('base64'); };
+  const seal = v => { const iv = crypto.randomBytes(12), c = crypto.createCipheriv('aes-256-gcm', key(true), iv); const ct = Buffer.concat([c.update(v, 'utf8'), c.final()]); return 'k1:' + Buffer.concat([iv, c.getAuthTag(), ct]).toString('base64'); };
   const open = s => { const b = Buffer.from(String(s).slice(3), 'base64'), d = crypto.createDecipheriv('aes-256-gcm', key(), b.subarray(0, 12)); d.setAuthTag(b.subarray(12, 28)); return Buffer.concat([d.update(b.subarray(28)), d.final()]).toString('utf8'); };
   const reveal = v => (String(v).startsWith('k1:') ? open(v) : String(v));   // values saved before they were encrypted are plain
   const kvGet = k => { const r = db.prepare('SELECT data FROM kv WHERE key = ?').get(k); try { return r ? JSON.parse(r.data) : null; } catch { return null; } };

@@ -119,15 +119,33 @@ Every night the board writes a consistent copy of its database to `BACKUP_DIR` (
 
 Everything lives in one SQLite file (`data/chalkboard.db`, readable by the service only): calendar art, settings, screens, people and the activity log. SQLite is the right fit for a household board — one small file, no database server to run, crash-safe, and checked on every start (a problem shows in `journalctl`).
 
-A backup restores everything, sign-ins included. Each person's authenticator-app secret is locked with their own password, so a copied backup can't produce sign-in codes without cracking that password. The nightly backup also copies `secret.key` (the key for passwords saved in ⚙️ Board); restore it next to the database (`cp backup/secret.key data/`). Without it, the board still works and only asks for the calendar password and Google client secret again.
+A backup restores everything, sign-ins included. Each person's authenticator-app secret is locked with their own password, so a copied backup can't produce sign-in codes without cracking that password. The backup folder also holds `secret.key`, the key for the passwords and private links saved in ⚙️ Board — see [the encryption key](#the-encryption-key-datasecretkey) below.
+
+### The encryption key (`data/secret.key`)
+**What it is:** a random key the board creates the first time you save a password or private link in ⚙️ Board. It lives next to the database (`data/secret.key`, readable by the board only) and is copied into the backup folder (`BACKUP_DIR/secret.key`) right away and every time it changes. The console's ⚙️ Board tab shows where it is and whether the backup copy is current.
+
+**What it unlocks — only these, nothing else:**
+- the calendar password (iCloud app-specific password) and the Google client secret
+- the calendar username / Apple ID
+- the photo album link
+- calendar links (iCal), which can carry private tokens
+
+**What it does *not* touch:** the calendar art, meal plan, jars, styles, every other setting, screens, people, passwords, authenticator codes and passkeys. Those never depend on it.
+
+**Why it exists:** a copy of the database on its own (a stray snapshot, a file copied off the server) doesn't reveal those passwords and links.
+
+**If it's lost or doesn't match the database:** the board starts normally and keeps working; the calendar and photos stop until you open ⚙️ Board, where the affected fields say **⚠ enter it again**. Type them in, save, and a new key is made (and backed up; an older key in the backup folder is kept as `secret.key.replaced-<date>`, never deleted). No sign-ins, screens or content are lost.
+
+**Restoring:** put back `secret.key` together with the database from the same backup folder (below). Using your own key instead (for example from a password manager): set `SECRET_KEY` in the service (`systemctl edit family-chalk-planner` → `Environment=SECRET_KEY=…`) or in Docker's `environment:`; then the file isn't used. Changing it means entering the passwords again.
 
 **Restore:**
 ```bash
 systemctl stop family-chalk-planner
 cd /opt/family-chalk-planner/data
 cp backup/chalkboard-YYYY-MM-DD.db chalkboard.db
+cp backup/secret.key secret.key
 rm -f chalkboard.db-wal chalkboard.db-shm
-chown chalkplanner: chalkboard.db && chmod 600 chalkboard.db
+chown chalkplanner: chalkboard.db secret.key && chmod 600 chalkboard.db secret.key
 systemctl start family-chalk-planner
 ```
 

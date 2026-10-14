@@ -20,6 +20,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - `deploy/setting.sh get|set KEY [VALUE]` (Docker: `node server/chalkboard.js --setting …`) to fix a
   setting from the server if the console can't be reached. The time zone defaults to the server's.
 - 🛡 Security: "Trust only <proxy>" button.
+- The encryption key (`data/secret.key`) is copied into the backup folder immediately and whenever it
+  changes, ⚙️ Board shows where it is and whether the backup copy is current, and docs/install.md
+  explains exactly what it unlocks (and that losing it only means re-entering those values).
 
 ## 0.6.0 — more calendars, calendar links, and settings for outside the US
 - **More calendars from the same account** (iCloud/CalDAV or Google): admin console → ⚙️ Board →

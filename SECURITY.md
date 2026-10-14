@@ -45,7 +45,8 @@ rather than a public issue.
 - **Settings** live in the database too (there's no settings file). Passwords, the Google client secret,
   the calendar account name, the photo album link and calendar links are AES-256-GCM encrypted with a key
   kept outside the database (`data/secret.key`, mode 600, or `SECRET_KEY`); passwords are never sent back
-  to the browser.
+  to the browser. The key only protects those values: losing it costs no sign-ins or content, only
+  re-entering them (see docs/install.md → The encryption key).
 - **The service** runs as its own unprivileged user, can't modify its own code, and (where
   systemd sandboxing is available) can only write to its data folder.
 - **Uploads** are size-limited and checked to really be images; file routes only accept

@@ -74,6 +74,9 @@ test('saving restarts the board; the console wins over .env; passwords are encry
   const raw = db.prepare("SELECT data FROM kv WHERE key = 'settings'").get().data; db.close();
   assert.doesNotMatch(raw, /super-secret-app-pw/); assert.match(raw, /"CALDAV_PASSWORD":"k1:/);
   assert.equal((fs.statSync(path.join(data, 'secret.key')).mode & 0o777).toString(8), '600');
+  assert.ok(fs.readFileSync(path.join(data, 'backup', 'secret.key')).equals(fs.readFileSync(path.join(data, 'secret.key'))), 'the key is in the backup folder');
+  assert.equal((fs.statSync(path.join(data, 'backup', 'secret.key')).mode & 0o777).toString(8), '600');
+  assert.equal(d.key.backedUp, true);
   // the encrypted password works: the board can reach the calendar with it (the mock takes any password)
   assert.deepEqual((await (await admin.post('/api/board-settings/caldav-test', {})).json()).calendars, ['Family', 'Kids']);
   // nothing changed = no restart; empty = back to .env
@@ -84,8 +87,15 @@ test('saving restarts the board; the console wins over .env; passwords are encry
 
 test('a lost key only means entering the password again', async () => {
   server.kill(); await new Promise(r => setTimeout(r, 300));
+  fs.rmSync(path.join(data, 'secret.key'));
+  start(); await ready();
+  const gone = await (await admin.api('/api/board-settings')).json();
+  assert.deepEqual(gone.lost.sort(), ['CALDAV_PASSWORD', 'CALDAV_USER'], 'a missing key: those values are marked');
+  assert.ok(!fs.existsSync(path.join(data, 'secret.key')), 'reading never makes a new key');
+  server.kill(); await new Promise(r => setTimeout(r, 300));
   fs.writeFileSync(path.join(data, 'secret.key'), 'a-different-key\n');
   start(); await ready();
+  assert.ok(fs.readdirSync(path.join(data, 'backup')).some(f => f.startsWith('secret.key.replaced-')), 'the old backup copy of the key is kept');
   const d = await (await admin.api('/api/board-settings')).json();
   assert.deepEqual(d.lost.sort(), ['CALDAV_PASSWORD', 'CALDAV_USER']);
   assert.match(await (await admin.api('/edit')).text(), /<title>Millers<\/title>/, 'everything else still applies');

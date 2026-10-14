@@ -723,6 +723,28 @@ if (process.argv.includes('--reset-admin')) {   // deploy/reset-admin.sh
 // ---------------------------------------------------------------------------
 const BACKUP_DIR = ENV.BACKUP_DIR || path.join(DATA_DIR, 'backup');
 const KEEP_SNAPSHOTS = 14;
+// The encryption key for passwords saved in the console (data/secret.key) goes into the backup folder
+// right away and whenever it changes, so a backup always has the key that matches it.
+const KEY_FILE = path.join(DATA_DIR, 'secret.key'), KEY_BACKUP = path.join(BACKUP_DIR, 'secret.key');
+function backupKey() {
+  try {
+    if (!fs.existsSync(KEY_FILE)) return;
+    const k = fs.readFileSync(KEY_FILE);
+    if (fs.existsSync(KEY_BACKUP) && fs.readFileSync(KEY_BACKUP).equals(k)) return;
+    fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    // a different key already there is never thrown away: it may be the one an older database needs
+    if (fs.existsSync(KEY_BACKUP)) fs.renameSync(KEY_BACKUP, path.join(BACKUP_DIR, `secret.key.replaced-${nyParts(new Date()).dateStr}-${Date.now() % 1e6}`));
+    fs.writeFileSync(KEY_BACKUP, k, { mode: 0o600 }); fs.chmodSync(KEY_BACKUP, 0o600);
+    console.log(`Chalkboard: encryption key copied to ${KEY_BACKUP}`);
+  } catch (e) { console.error('Chalkboard: couldn’t copy the encryption key to the backup folder:', e.message); }
+}
+function keyInfo() {
+  if (ENV.SECRET_KEY) return { source: 'env', note: 'SECRET_KEY (set outside the board) — keep it with your server notes' };
+  const has = fs.existsSync(KEY_FILE);
+  let backedUp = false; try { backedUp = has && fs.readFileSync(KEY_BACKUP).equals(fs.readFileSync(KEY_FILE)); } catch {}
+  return { source: 'file', path: KEY_FILE, exists: has, backup: KEY_BACKUP, backedUp };
+}
+backupKey();
 function snapshotDb() {
   try {
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
@@ -730,9 +752,7 @@ function snapshotDb() {
     if (fs.existsSync(file)) return;
     db.exec(`VACUUM INTO '${file.replace(/'/g, "''")}'`);
     fs.chmodSync(file, 0o600);
-    // the key for passwords saved in the console rides along, so a restore just works
-    const keyFile = path.join(DATA_DIR, 'secret.key');
-    if (fs.existsSync(keyFile)) { fs.copyFileSync(keyFile, path.join(BACKUP_DIR, 'secret.key')); fs.chmodSync(path.join(BACKUP_DIR, 'secret.key'), 0o600); }
+    backupKey();
     const old = fs.readdirSync(BACKUP_DIR).filter(f => /^chalkboard-\d{4}-\d{2}-\d{2}\.db$/.test(f)).sort().reverse().slice(KEEP_SNAPSHOTS);
     for (const f of old) fs.unlinkSync(path.join(BACKUP_DIR, f));
     console.log(`Chalkboard: snapshot ${path.basename(file)}`);
@@ -1967,7 +1987,7 @@ function restartSoon(why) {
   setTimeout(() => { console.log(`Chalk Planner: restarting to apply ${why}`); process.exit(3); }, 400);   // the service manager starts it again
 }
 app.get('/api/board-settings', (req, res) => {
-  res.set('Cache-Control', 'no-store').json({ ...boardSettings.view(), version: APP_VERSION, problems: Object.fromEntries(calProblems), proxySeen: access.proxySeen(), here: `${req.protocol}://${req.get('host')}`, timezones: typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [] });
+  res.set('Cache-Control', 'no-store').json({ ...boardSettings.view(), version: APP_VERSION, problems: Object.fromEntries(calProblems), proxySeen: access.proxySeen(), key: keyInfo(), here: `${req.protocol}://${req.get('host')}`, timezones: typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : [] });
 });
 app.post('/api/board-settings', (req, res) => {
   const r = boardSettings.save((req.body || {}).values);
