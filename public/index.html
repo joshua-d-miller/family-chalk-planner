@@ -353,7 +353,16 @@ body.edit #zoom{display:flex}
 #acctmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:21}
 #acctmodal.open{display:flex}
 #acctmodal .card{width:min(420px,92vw)}
-.acctbtns{display:flex;flex-direction:column;gap:8px;margin-top:8px}.acctbtns .seg{text-align:center;text-decoration:none;display:block}
+[hidden]{display:none!important}
+.acchead{display:flex;align-items:center;gap:14px;margin-bottom:6px}.acchead h3{margin:0;line-height:1.1;overflow-wrap:anywhere}
+.avatar{flex:0 0 54px;height:54px;border-radius:50%;background:var(--pink);color:#2a1d22;display:flex;align-items:center;justify-content:center;font:700 28px 'Kalam',cursive}
+.acctwho{color:rgba(237,234,224,.65);font-size:16px}
+.acctbtns{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.arow{display:flex;align-items:center;gap:14px;width:100%;min-height:68px;padding:10px 16px;border-radius:16px;border:2px solid rgba(237,234,224,.28);background:rgba(255,255,255,.04);color:var(--chalk);text-align:left;text-decoration:none;font-family:'Kalam',cursive;cursor:pointer;touch-action:manipulation}
+.arow:active{background:rgba(255,255,255,.1)}.arow:disabled{opacity:.6}
+.arow .ai{flex:0 0 40px;height:40px;border-radius:12px;background:rgba(242,212,121,.14);display:flex;align-items:center;justify-content:center;font-size:21px;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif}
+.arow .at{display:flex;flex-direction:column;min-width:0}.arow b{font-size:20px;line-height:1.2}.arow small{font-size:15px;line-height:1.25;color:rgba(237,234,224,.65);overflow-wrap:anywhere}
+.arow.out{border-color:rgba(247,161,161,.45)}.arow.out .ai{background:rgba(247,161,161,.14)}.arow.out b{color:#F7A1A1}
 /* family touch screen: events, meals, jars, and decorating (stamps, clipart, emoji, GIFs, words: move/resize/erase)
    but no freehand chalk/Posca, no wiping the month, no changing the libraries; no board style, photos or settings */
 body.family #chalkBtn,body.family #poscaBtn,body.family #sizeBtn,body.family #swatches,body.family #clearBtn,body.family #selSave,
@@ -386,9 +395,10 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 .card .row > *{flex:1}
 .card .check{display:flex;align-items:center;gap:10px;margin-top:16px;font-size:18px;color:var(--chalk)}
 .card .check input{width:24px;height:24px;accent-color:var(--yellow)}
-.card .actions{display:flex;justify-content:flex-end;gap:12px;margin-top:22px}
+.card .actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:12px;margin-top:22px}
+#thReset{margin-right:auto}
 .card .err{color:#F7A1A1;font-size:15px;min-height:20px;margin-top:10px}
-.btn{height:48px;padding:0 24px;border-radius:24px;border:2px solid rgba(237,234,224,.5);background:transparent;color:var(--chalk);font-family:'Kalam',cursive;font-size:19px;font-weight:700;cursor:pointer}
+.btn{min-height:48px;height:auto;line-height:1.15;white-space:normal;padding:6px 22px;border-radius:24px;border:2px solid rgba(237,234,224,.5);background:transparent;color:var(--chalk);font-family:'Kalam',cursive;font-size:19px;font-weight:700;cursor:pointer}
 .card textarea{width:100%;margin-top:4px;background:transparent;border:none;border-bottom:2px dashed rgba(237,234,224,.6);color:var(--chalk);font-family:'Kalam',cursive;font-size:22px;padding:4px 2px;resize:none;outline:none}
 .fonts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
 .fonts button{height:52px;border-radius:10px;border:2px solid rgba(237,234,224,.25);background:transparent;color:var(--chalk);font-size:22px;cursor:pointer;padding:0 4px;overflow:hidden;white-space:nowrap}
@@ -755,12 +765,14 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 
 <div id="acctmodal" role="dialog" aria-modal="true" aria-labelledby="acctTitle">
   <div class="card">
-    <h3 id="acctTitle">👤 <span id="acctName"></span></h3>
-    <p class="ptext dim" id="acctPkList"></p>
+    <div class="acchead">
+      <div class="avatar" id="acctInitial" aria-hidden="true"></div>
+      <div><h3 id="acctTitle"><span id="acctName"></span></h3><div class="acctwho" id="acctWho"></div></div>
+    </div>
     <div class="acctbtns">
-      <button type="button" class="seg" id="acctPk">🔑 Add a passkey on this device</button>
-      <a href="/admin" id="acctAdmin" class="seg">🛠 Admin console</a>
-      <button type="button" class="seg" id="acctOut">Sign out</button>
+      <button type="button" class="arow" id="acctPk"><span class="ai" aria-hidden="true">🔑</span><span class="at"><b id="acctPkT">Add a passkey on this device</b><small id="acctPkList">Sign in with Face ID, Touch ID or your password manager next time</small></span></button>
+      <a href="/admin" id="acctAdmin" class="arow"><span class="ai" aria-hidden="true">🛠</span><span class="at"><b>Admin console</b><small>Screens, people and security</small></span></a>
+      <button type="button" class="arow out" id="acctOut"><span class="ai" aria-hidden="true">↩︎</span><span class="at"><b>Sign out</b><small>On this device only</small></span></button>
     </div>
     <div class="err" id="acctErr"></div>
     <div class="actions"><button type="button" class="btn go" id="acctClose">Done</button></div>
@@ -3983,22 +3995,25 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   $('acctBtn').addEventListener('click', function () {
     var w = state.who || {};
     $('acctName').textContent = w.user ? w.user.name : '';
+    $('acctInitial').textContent = w.user ? (w.user.name || w.user.username || '?').trim().charAt(0).toUpperCase() : '';
+    $('acctWho').textContent = w.user ? '@' + w.user.username + ' · ' + ({ admin: 'Admin', editor: 'Editor' }[w.user.role] || w.user.role) : '';
+    $('acctPkT').textContent = 'Add a passkey on this device';
     $('acctPk').hidden = !(w.passkeys && window.chalkPasskey && window.chalkPasskey.supported);
     $('acctAdmin').hidden = !(w.user && w.user.role === 'admin');
     $('acctErr').textContent = '';
-    $('acctPkList').textContent = '';
+    $('acctPkList').textContent = 'Sign in with Face ID, Touch ID or your password manager next time';
     if (w.user) api('/api/account/me').then(function (m) {
       var k = m.passkeys || [];
-      $('acctPkList').textContent = !k.length ? 'No passkeys yet.' : 'Your passkeys: ' + k.map(function (p) {
-        return '“' + p.name + '” (' + (p.last_used ? 'last used ' + new Date(p.last_used).toLocaleDateString() : 'never used') + ')';
-      }).join(', ') + '. Remove old ones in the admin console.';
+      if (k.length) $('acctPkList').textContent = 'You have ' + k.map(function (p) {
+        return '“' + p.name + '” (' + (p.last_used ? 'used ' + new Date(p.last_used).toLocaleDateString() : 'never used') + ')';
+      }).join(', ');
     }).catch(function () {});
     $('acctmodal').classList.add('open');
   });
   $('acctClose').addEventListener('click', function () { $('acctmodal').classList.remove('open'); });
   $('acctPk').addEventListener('click', function () {
     $('acctPk').disabled = true;
-    window.chalkPasskey.register().then(function () { $('acctErr').textContent = ''; $('acctPk').textContent = '🔑 Passkey added ✓'; })
+    window.chalkPasskey.register().then(function () { $('acctErr').textContent = ''; $('acctPkT').textContent = 'Passkey added ✓'; $('acctPkList').textContent = 'Sign out and use “Sign in with a passkey” to try it'; })
       .catch(function (e) {
         if (e.status === 401) { $('acctmodal').classList.remove('open'); showSignIn('For safety, sign in again, then add the passkey (👤 → Add a passkey).'); }
         else $('acctErr').textContent = e.message;
