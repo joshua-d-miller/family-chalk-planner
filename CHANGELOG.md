@@ -4,14 +4,25 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.8.5 — install and update scripts are tested
+- Fixed: a fresh install with `install.sh` on 0.7.0–0.8.3 stopped silently before finishing (the same
+  missing-`server.conf` bug as below).
+- Fixed: if a step failed inside the update (for example installing packages), the previous version
+  wasn't put back as promised.
+- CI now runs the real install and update scripts (fresh install; updates with and without an old
+  `.env` / `server.conf`; already up to date; a failed update being undone) on every change.
+- docs/install.md → Troubleshooting: how to get a board stuck on 0.7.0–0.8.3 going again.
+- Family screens: no Month title button (fonts and hand-lettering are set from a tablet, since family
+  screens don't do freehand drawing), and "Art instead" beside the month name points to Decorate.
+
 ## 0.8.4 — update fix
 - `deploy/update.sh` stopped without a message once the old `.env` had been moved aside (and the update
   channel wasn't set in the console). Fixed, and the script now always says where it stopped if
   anything goes wrong. Same fix for `install.sh`, `reset-admin.sh` and `setting.sh`.
 
 ## 0.8.3 — family screens can restyle
-- Family screens can now change the board style (background, look, seasonal pattern), the month title
-  and the photos, like the tablet. Still tablet-only: freehand drawing, deleting saved stamps and GIFs,
+- Family screens can now change the board style (background, look, seasonal pattern) and the photos,
+  like the tablet. Still tablet-only: freehand drawing, deleting saved stamps and GIFs,
   calendar settings. An unsaved style left open is put back after 5 quiet minutes.
 
 ## 0.8.2 — popups fit every screen

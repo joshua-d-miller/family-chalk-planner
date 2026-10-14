@@ -142,7 +142,7 @@ test('what each can do: view reads, family edits events/meals/jars and decorates
   for (const [p, b] of [['/api/art/clear', { ym: '2026-10' }], ['/api/stamps', { name: 'x', items: [] }], ['/api/gifs/delete', { id: 1 }], ['/api/stamps/delete', { id: 1 }]])
     assert.equal((await fam.post(p, b)).status, 403, 'family must not ' + p);
   assert.equal((await fam.post('/api/theme', { p: 'classic' })).status, 200, 'family changes the board style');
-  assert.equal((await fam.post('/api/meta', { ym: '2026-10' })).status, 200, 'family sets the month title');
+  assert.equal((await fam.post('/api/meta', { ym: '2026-10', side: { mode: 'photos', pick: 'random' } })).status, 200, 'family picks the photos beside the month name');
   assert.equal((await view.post('/api/theme', { p: 'classic' })).status, 403);
   assert.equal((await ed.post('/api/art', art)).status, 200);
   assert.equal((await ed.post('/api/theme', { p: 'classic' })).status, 200);

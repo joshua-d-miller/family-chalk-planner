@@ -28,7 +28,7 @@ Everything the board keeps is in `./data`: the database, the key for passwords s
 ```bash
 docker compose pull && docker compose up -d
 ```
-To stay on one version, use a tag instead of `latest`, e.g. `ghcr.io/joshua-d-miller/family-chalk-planner:v0.5.0`. What changed is in [CHANGELOG.md](../CHANGELOG.md) and on the Releases page.
+To stay on one version, use a tag instead of `latest`, e.g. `ghcr.io/joshua-d-miller/family-chalk-planner:v0.8.5`. What changed is in [CHANGELOG.md](../CHANGELOG.md) and on the Releases page.
 
 ## Good to know
 - The optional face finder (keeps faces in frame in photo collages) isn't in the standard image. Build with it: `docker build --build-arg WITH_FACE=true -t family-chalk-planner:face .` (adds ~220 MB).

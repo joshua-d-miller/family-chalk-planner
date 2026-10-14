@@ -382,6 +382,8 @@ body.edit #zoom{display:flex}
 body.family #chalkBtn,body.family #poscaBtn,body.family #sizeBtn,body.family #swatches,body.family #clearBtn,body.family #selSave,
 body.family .stamp .x,body.family .gtile .x,body.family .gtile.up,body.family #gLinkRow,body.family #gLinkNote{display:none!important}
 body.family #zoom,body.family #settingsBtn,body.family #acctBtn{display:none!important}
+body.family #titleBtn{display:none!important}   /* the month title (typed or hand-lettered) is styled from a tablet */
+body.family .titlerow h1.hand{outline:none}
 body:not(.isadmin) #settingsBtn{display:none!important}   /* calendar and board settings: admins (signed in to the console) */
 #pinErr{color:#F7A1A1;min-height:22px;margin-top:8px;font-size:16px}
 body.edit:not(.drawing) .bar{pointer-events:auto;cursor:pointer}
@@ -1947,7 +1949,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
           grid.appendChild(b);
         });
       }
-      $('pSideHint').textContent = key === 'art' ? 'No photos this month: the space is free for clip art or drawing (tap Draw).'
+      $('pSideHint').textContent = key === 'art' ? (isFamily() ? 'No photos this month: the space is free for stamps and clipart (tap Decorate).' : 'No photos this month: the space is free for clip art or drawing (tap Draw).')
         : key === 'chosen' ? (ph.list.length ? 'Tap up to 8 photos (' + sideDraft.ids.length + ' picked). Up to 4 show at a time.' : 'No photos in the album yet.')
         : 'A random mix from the album, changing every so often.';
     };

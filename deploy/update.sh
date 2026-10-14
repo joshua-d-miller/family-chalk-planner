@@ -4,7 +4,7 @@
 #   --check   only show what would change
 # Admin console → ⚙️ Board → Updates: "Releases only" (default) = the newest tagged release (vX.Y.Z);
 # "Every change on main" = for people working on the board.
-set -euo pipefail
+set -Eeuo pipefail   # -E: the error trap below also covers failures inside functions
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${ENV_FILE:-$APP_DIR/.env}"
 SERVICE=family-chalk-planner

@@ -154,3 +154,15 @@ systemctl start family-chalk-planner
 - **"Calendar unavailable":** check the CalDAV settings (iCloud needs an app-specific password, and the calendar name must match exactly).
 - **Wall not updating live:** your proxy is buffering. See the HTTPS section above.
 - **Photos cropped in the middle:** the face finder isn't installed. Run `bash /opt/family-chalk-planner/deploy/setup-face.sh`.
+- **`update.sh` (or `install.sh`) stops with no message, exit code 2:** a bug in versions 0.7.0–0.8.3 when
+  `server.conf` was missing. Your copy of the script can't fix itself, so bring the code up to date by hand
+  once (as root, in the board's folder):
+  ```bash
+  git pull --ff-only
+  npm ci --omit=dev --no-audit --no-fund
+  bash deploy/install.sh --unit-only      # writes server.conf
+  systemctl restart family-chalk-planner
+  bash deploy/update.sh                   # should now say "Already up to date"
+  ```
+- **Handwriting looks like Comic Sans:** the board's fonts aren't installed (the log and ⚙️ Board say so).
+  Run `sudo bash deploy/update.sh`; it installs anything missing.

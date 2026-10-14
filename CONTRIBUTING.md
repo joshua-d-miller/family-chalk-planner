@@ -26,7 +26,8 @@ read once, on a fresh data folder's first start — handy for tests and scripts.
 1. Branch from `main`, keep the change focused, and add or update a test in `test/` for anything
    the server does (`node --test test/<file>.test.js` runs one file).
 2. CI must pass: `npm ci`, `node --check server/chalkboard.js`, `npm test`,
-   `npm audit --omit=dev --audit-level=high`, ShellCheck on `deploy/*.sh`.
+   `npm audit --omit=dev --audit-level=high`, ShellCheck on `deploy/*.sh`, and `test/deploy-scripts.sh`
+   (runs the real install and update scripts as root with systemd stubbed out: `sudo env "PATH=$PATH" bash test/deploy-scripts.sh`).
 3. Open a pull request with what changed and how you tested it (screenshots for anything visible).
    `main` only accepts pull requests that pass CI and are approved by the maintainer
    (see `.github/CODEOWNERS`); the maintainer merges.
