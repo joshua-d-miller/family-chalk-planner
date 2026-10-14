@@ -149,16 +149,6 @@ chown chalkplanner: chalkboard.db secret.key && chmod 600 chalkboard.db secret.k
 systemctl start family-chalk-planner
 ```
 
-## Moving an older setup over
-If the board used to run inside another Node app (the original setup, where that app's `server.js` ended with `require('./chalkboard')`), clone and install with `--no-start`, then run:
-
-```bash
-bash /opt/family-chalk-planner/deploy/migrate-from-homelab-api.sh --old /opt/homelab-api \
-  --timezone America/New_York --trash-day 2 --latitude 40.0 --longitude -77.0
-```
-
-It copies the data and settings, removes the board from the old app, starts both, and keeps the old files untouched. Undo it with `--rollback`. By default backups stay in the old `backup/` folder, so existing Syncthing or restic jobs keep working.
-
 ## Troubleshooting
 - `journalctl -u family-chalk-planner -n 50`: the service log.
 - **"Calendar unavailable":** check the CalDAV settings (iCloud needs an app-specific password, and the calendar name must match exactly).
