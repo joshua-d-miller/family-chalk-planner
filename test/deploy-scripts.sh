@@ -38,7 +38,7 @@ board() {   # a board installed from "GitHub", optionally with an old .env and/o
   if [ "$1" = conf ] || [ "$1" = both ]; then mkdir -p "$DROP"; printf '[Service]\nEnvironment="PORT=3002" "BIND=0.0.0.0" "DATA_DIR=%s/data"\n' "$W/app" > "$CONF"; fi
   return 0
 }
-head_is() { [ "$(git -C "$W/app" rev-parse HEAD)" = "$(git -C "$W/origin.git" rev-parse "${1:-main}")" ]; }
+head_is() { [ "$(git -C "$W/app" rev-parse HEAD)" = "$(git -C "$W/origin.git" rev-parse main)" ]; }
 
 echo "deploy scripts:"
 # 1. fresh install: no .env, no server.conf
