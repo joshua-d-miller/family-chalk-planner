@@ -10,6 +10,8 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   and **−** takes out the last one added.
 - Each jar remembers every piece in the order it went in. Jars from before look exactly the same, and
   a screen that hasn't reloaded yet can't scramble them.
+- Updated libraries: Express 5 (web server), SimpleWebAuthn 14 (passkeys) and ical.js 2 (calendars).
+  Nothing changes for you; passkey sign-up and sign-in were checked in a real browser.
 
 ## 0.8.5 — install and update scripts are tested
 - Fixed: a fresh install with `install.sh` on 0.7.0–0.8.3 stopped silently before finishing (the same
