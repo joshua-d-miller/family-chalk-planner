@@ -45,7 +45,7 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 
 ### Reward jars (optional, up to 4)
 - **Add a jar:** the small dashed **+** above the jars (or **+ Reward jar** when there are none). **Remove** is on each jar's card. With no jars, the jar area disappears and the Meal Plan gets the space; with 3–4 jars they shrink to fit one row.
-- Tap a jar: **+ / −** adds or removes a piece (it drops in on the wall), change the **name**, the **goal**, and **what goes in** (hearts, rainbows, stars, lightning, critters…). **🎉 Reward!** celebrates and empties it.
+- Tap a jar: **+** adds the next piece in turn (it drops in on the wall) and **−** takes out the last one added. **Add a…** has a big button for every kind of piece (star, heart, rainbow, lightning, critter), so a kid can ask for exactly the one they want ("a rainbow, please!"). The jar remembers every piece in the order it went in. Change the **name**, the **goal**, and **what + adds, in turn** (tap the icons). **🎉 Reward!** celebrates and empties it.
 
 ### 🎨 Board style
 - **Background:** black slate, green or blue chalkboard, cork, kraft paper, whiteboard, dark wood, black glass, linen paper or pegboard. Changing it keeps your look and colors; a color only changes where it would be hard to read on that background (lighter on dark ones, darker on light ones, same hue) — that goes for the drawings and stamps too, without changing what's saved, so switching back brings the original colors back.
@@ -65,7 +65,7 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 
 
 ## A family touch screen
-A screen paired as **✋ Family** opens straight into the editor: tap a day to see and add events, tap an event to change it, tap the Meal Plan or a jar. **Decorate** adds stamps, clipart, emoji, GIFs and words (Aa), and moves, resizes or erases them — fingers are great at that. It can also change the **board style** (background, look, seasonal pattern), and the **photos**. Freehand chalk and Posca, the month title (typed or hand-lettered), wiping the month, removing saved stamps/GIFs and the calendar settings stay on a signed-in tablet. It looks and behaves like the wall: no wood frame (just the strip with the buttons), no zooming, **double tap** for the photo frame, the overnight slideshow (a tap shows the calendar for 5 minutes), back to this month and out of Decorate after 5 quiet minutes, and it updates itself. Handy for a touch screen on the wall that everyone uses.
+A screen paired as **✋ Family** opens straight into the editor: tap a day to see and add events, tap an event to change it, tap the Meal Plan or a jar. **Decorate** adds stamps, clipart, emoji, GIFs and words (Aa), and moves, resizes or erases them — fingers are great at that. It can also change the **board style** (background, look, seasonal pattern) and the **photos**. Freehand chalk and Posca, the month title (typed or hand-lettered), wiping the month, removing saved stamps/GIFs and the calendar settings stay on a signed-in tablet. It looks and behaves like the wall: no wood frame (just the strip with the buttons), no zooming, **double tap** for the photo frame, the overnight slideshow (a tap shows the calendar for 5 minutes), back to this month and out of Decorate after 5 quiet minutes, and it updates itself. Handy for a touch screen on the wall that everyone uses.
 
 ## The wall display (read-only)
 - The wall can't change anything, but it responds to taps:

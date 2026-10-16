@@ -4,6 +4,13 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.9.0 — kids pick what goes in their jar
+- **Add a…** in a jar's card: a big button for every kind of piece, so a kid can ask for exactly the one
+  they want. **+** still adds the jar's usual pieces in turn (now picked with a compact row of icons),
+  and **−** takes out the last one added.
+- Each jar remembers every piece in the order it went in. Jars from before look exactly the same, and
+  a screen that hasn't reloaded yet can't scramble them.
+
 ## 0.8.5 — install and update scripts are tested
 - Fixed: a fresh install with `install.sh` on 0.7.0–0.8.3 stopped silently before finishing (the same
   missing-`server.conf` bug as below).

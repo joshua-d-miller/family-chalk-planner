@@ -1318,16 +1318,26 @@ const PIECES = ['heart', 'rainbow', 'star', 'bolt', 'critter'];
 const DEFAULT_JARS = [];   // jars are optional; add them from the tablet
 function getJars() { const r = qKvGet.get('jars'); return r ? JSON.parse(r.data) : DEFAULT_JARS; }
 app.get('/api/jars', (req, res) => res.json(getJars()));
+// items: what's actually in the jar, in the order it went in (a kid can ask for a particular piece).
+// Kept the same length as count; anything missing is filled in the usual rotation of the jar's pieces.
+function jarItems(items, count, pieces) {
+  const out = (Array.isArray(items) ? items.filter(p => PIECES.includes(p)) : []).slice(0, count);
+  while (out.length < count) out.push(pieces[out.length % pieces.length]);
+  return out;
+}
 app.post('/api/jars', (req, res) => {
   const list = (req.body || {}).jars;
   if (!Array.isArray(list)) return res.status(400).json({ error: 'bad jars' });
-  const jars = list.slice(0, 4).map((j, i) => ({
-    id: /^[a-z0-9]{1,16}$/.test(j && j.id) ? j.id : `jar${i}`,
-    name: String((j && j.name) || 'Jar').trim().slice(0, 14) || 'Jar',
-    pieces: (Array.isArray(j.pieces) ? j.pieces.filter(p => PIECES.includes(p)) : []).slice(0, 5).concat([]),
-    count: Math.min(Math.max(Math.round(+j.count) || 0, 0), 200),
-    goal: Math.min(Math.max(Math.round(+j.goal) || 20, 3), 100)
-  })).map(j => (j.pieces.length ? j : { ...j, pieces: ['star'] }));
+  const before = Object.fromEntries(getJars().map(j => [j.id, j]));
+  const jars = list.slice(0, 4).map((j, i) => {
+    const id = /^[a-z0-9]{1,16}$/.test(j && j.id) ? j.id : `jar${i}`;
+    let pieces = (Array.isArray(j.pieces) ? j.pieces.filter(p => PIECES.includes(p)) : []).slice(0, 5);
+    if (!pieces.length) pieces = ['star'];
+    const count = Math.min(Math.max(Math.round(+j.count) || 0, 0), 200);
+    // a page from before 0.9 doesn't send items: keep what was already in that jar
+    const items = jarItems(Array.isArray(j.items) ? j.items : before[id] && before[id].items, count, pieces);
+    return { id, name: String((j && j.name) || 'Jar').trim().slice(0, 14) || 'Jar', pieces, count, items, goal: Math.min(Math.max(Math.round(+j.goal) || 20, 3), 100) };
+  });
   qKvSet.run('jars', JSON.stringify(jars));
   broadcast('jars', { jars });
   res.json(jars);

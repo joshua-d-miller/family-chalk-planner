@@ -72,6 +72,19 @@ test('jars start empty and allow up to 4', async () => {
   assert.equal(saved.length, 4);
 });
 
+test('jars remember which piece went in, in order', async () => {
+  const jar = { id: 'kid', name: 'Nora', pieces: ['star', 'heart', 'rainbow'], goal: 10 };
+  let [j] = await (await post('/api/jars', { jars: [{ ...jar, count: 3, items: ['rainbow', 'rainbow', 'heart'] }] })).json();
+  assert.deepEqual(j.items, ['rainbow', 'rainbow', 'heart'], 'the pieces the kids asked for');
+  [j] = await (await post('/api/jars', { jars: [{ ...jar, count: 5 }] })).json();
+  assert.deepEqual(j.items, ['rainbow', 'rainbow', 'heart', 'star', 'heart'], 'an older page (no items) keeps them and fills in the rotation');
+  [j] = await (await post('/api/jars', { jars: [{ ...jar, count: 2, items: ['bolt', 'nope', 'critter', 'star'] }] })).json();
+  assert.deepEqual(j.items, ['bolt', 'critter'], 'only known pieces, never more than the count');
+  [j] = await (await post('/api/jars', { jars: [{ id: 'old', name: 'Theo', pieces: ['star', 'heart'], count: 3, goal: 10 }] })).json();
+  assert.deepEqual(j.items, ['star', 'heart', 'star'], 'a jar from before looks the same as it did');
+  await post('/api/jars', { jars: [] });
+});
+
 test('clipart (Fluent Emoji) is served by the board and can be placed', async () => {
   const names = await (await api('/api/clip/list')).json();
   assert.ok(names.length > 3000 && names.includes('jack-o-lantern'));

@@ -305,8 +305,13 @@ body.edit #slides .tapx{display:block}
 .jbig{width:76px;height:76px;border-radius:50%;border:2px solid rgba(var(--ink),.5);background:transparent;color:var(--chalk);font:700 40px/1 'Kalam',cursive;cursor:pointer}
 .jbig.plus{border-color:var(--yellow);color:var(--yellow)}
 .jbig:active{background:rgba(242,212,121,.15)}
-#jPieces .seg{display:flex;align-items:center;gap:6px}
-#jPieces .seg svg{width:22px;height:22px}
+#jPieces .seg{display:flex;align-items:center;justify-content:center;width:52px;height:52px;padding:0;border-radius:14px}
+#jPieces .seg svg{width:30px;height:30px}
+#jPieces .seg:not(.on){opacity:.45}
+.jpick{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:4px 0 6px}
+.jpc{width:74px;min-height:74px;border-radius:16px;border:2px solid rgba(var(--ink),.35);background:rgba(var(--ink),.04);color:var(--chalk);font:700 14px/1.1 'Kalam',cursive;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 4px}
+.jpc svg{width:38px;height:38px}
+.jpc:active{background:rgba(242,212,121,.18);border-color:var(--yellow)}
 .day .ev.holiday{color:#9CC9E6;font-style:italic}
 body.edit:not(.drawing) .day .ev.holiday{cursor:default}
 .daylist button.holiday{color:#9CC9E6;font-style:italic}
@@ -763,11 +768,13 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <div><div id="jNum">0</div><div id="jGoalTxt" class="sublbl" style="text-align:center;margin:0">of 20</div></div>
       <button type="button" class="jbig plus" id="jPlus" aria-label="Add one">+</button>
     </div>
+    <div class="sublbl" style="text-align:center">Add a…</div>
+    <div class="jpick" id="jPick"></div>
     <div class="sublbl">Name</div>
     <input type="text" id="jName" maxlength="14" autocomplete="off" style="width:100%;height:42px;background:transparent;border:none;border-bottom:2px dashed rgba(237,234,224,.6);color:var(--chalk);font-family:'Kalam',cursive;font-size:21px;outline:none">
     <div class="sublbl">Goal</div>
     <div class="opts"><button type="button" class="seg" id="jGoalDown">−</button><b id="jGoal" style="font-size:22px;min-width:40px;text-align:center">20</b><button type="button" class="seg" id="jGoalUp">+</button></div>
-    <div class="sublbl">What goes in</div>
+    <div class="sublbl">What <b>+</b> adds, in turn</div>
     <div class="opts" id="jPieces"></div>
     <div class="actions">
       <button type="button" class="btn" id="jRemove">Remove</button>
@@ -1289,6 +1296,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     rainbow: ['#E8262B']
   };
   var PIECE_NAMES = { heart: 'Hearts', rainbow: 'Rainbows', star: 'Stars', bolt: 'Lightning', critter: 'Critters' };
+  var PIECE_ONE = { heart: 'heart', rainbow: 'rainbow', star: 'star', bolt: 'lightning bolt', critter: 'critter' };
   function hash(i, k) { var x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x); }
   function pieceSvg(type, c) {
     if (type === 'heart') return '<path d="M0 6C-9-1-5-9 0-4C5-9 9-1 0 6Z" fill="' + c + '"/>';
@@ -1310,7 +1318,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       var x = -29 + s / 2 + col * s + off + (hash(i, 1) - 0.5) * s * 0.3;
       if (x > 29 - s / 2) x -= s;
       var y = -3 - s / 2 - row * rowH + (hash(i, 2) - 0.5) * s * 0.15;
-      var type = j.pieces[i % j.pieces.length], cols2 = PIECE_COLORS[type], c = cols2[Math.floor(hash(i, 3) * cols2.length)];
+      var type = (j.items && j.items[i]) || j.pieces[i % j.pieces.length], cols2 = PIECE_COLORS[type], c = cols2[Math.floor(hash(i, 3) * cols2.length)];
       var drop = dropFrom != null && i >= dropFrom ? ' drop" style="animation-delay:' + ((i - dropFrom) * 0.12).toFixed(2) + 's' : '';
       html += '<g class="pc' + drop + '"><g transform="translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') rotate(' + Math.round((hash(i, 4) - 0.5) * 40) + ') scale(' + sc.toFixed(2) + ')">' + pieceSvg(type, c) + '</g></g>';
     }
@@ -1454,7 +1462,14 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     }).catch(function () {});
   }
   setInterval(function () { if (state.notesBottom === 'upnext' || state.notesBottom === 'today') loadUpnext(); }, 5 * 60 * 1000);
-  function loadJars() { return api('/api/jars').then(function (l) { state.jars = l; renderJars(); }).catch(function () {}); }
+  // what's in each jar, in the order it went in (older data: the usual rotation of the jar's pieces)
+  function jarFix(j) {
+    var it = Array.isArray(j.items) ? j.items.slice(0, j.count) : [];
+    while (it.length < j.count) it.push(j.pieces[it.length % j.pieces.length]);
+    j.items = it; return j;
+  }
+  function setJars(l) { state.jars = (l || []).map(jarFix); renderJars(); }
+  function loadJars() { return api('/api/jars').then(setJars).catch(function () {}); }
   // iPad: tap a jar to fill it
   var jarOpen = null, jarSave = null;
   function curJar() { return (state.jars || []).find(function (j) { return j.id === jarOpen; }); }
@@ -1470,6 +1485,22 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     $('jGoal').textContent = j.goal;
     if (document.activeElement !== $('jName')) $('jName').value = j.name;
     Array.prototype.forEach.call($('jPieces').children, function (b) { b.classList.toggle('on', j.pieces.indexOf(b.dataset.p) >= 0); });
+    // a kid can ask for a particular piece: a big button for every kind
+    var pick = $('jPick'); pick.innerHTML = '';
+    Object.keys(PIECE_NAMES).forEach(function (p) {
+      var b = el('button', 'jpc'); b.type = 'button'; b.setAttribute('aria-label', 'Add a ' + PIECE_ONE[p]);
+      b.innerHTML = '<svg viewBox="-10 -10 20 20" aria-hidden="true">' + pieceSvg(p, PIECE_COLORS[p][0]) + '</svg>';
+      b.appendChild(el('span', null, p === 'bolt' ? 'lightning' : PIECE_ONE[p]));
+      b.addEventListener('click', function () { jarAdd(p); });
+      pick.appendChild(b);
+    });
+  }
+  function jarAdd(p) {
+    jarChange(function (j) {
+      if (j.count >= 200) return;
+      j.items.push(p || j.pieces[j.count % j.pieces.length]);   // + on its own: the usual rotation
+      j.count = j.items.length;
+    });
   }
   function jarChange(fn) { var j = curJar(); if (!j) return; fn(j); renderJars(); jarCard(); saveJars(); }
   if (EDIT) {
@@ -1477,7 +1508,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       if (state.drawing) return;
       if (e.target.closest('.jaradd')) {
         var id = 'j' + Math.random().toString(36).slice(2, 9);
-        state.jars = (state.jars || []).concat([{ id: id, name: 'Jar ' + ((state.jars || []).length + 1), pieces: ['star'], count: 0, goal: 20 }]);
+        state.jars = (state.jars || []).concat([{ id: id, name: 'Jar ' + ((state.jars || []).length + 1), pieces: ['star'], count: 0, items: [], goal: 20 }]);
         renderJars(); saveJars();
         jarOpen = id; jarCard(); $('jmodal').classList.add('open');
         setTimeout(function () { $('jName').select(); }, 60);
@@ -1489,7 +1520,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     Object.keys(PIECE_NAMES).forEach(function (p) {
       var b = el('button', 'seg'); b.type = 'button'; b.dataset.p = p;
       b.innerHTML = '<svg viewBox="-10 -10 20 20" aria-hidden="true">' + pieceSvg(p, PIECE_COLORS[p][0]) + '</svg>';
-      b.appendChild(document.createTextNode(PIECE_NAMES[p]));
+      b.title = PIECE_NAMES[p]; b.setAttribute('aria-label', PIECE_NAMES[p]);
       b.addEventListener('click', function () {
         jarChange(function (j) {
           var i = j.pieces.indexOf(p);
@@ -1498,14 +1529,14 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       });
       $('jPieces').appendChild(b);
     });
-    $('jPlus').addEventListener('click', function () { jarChange(function (j) { j.count = Math.min(200, j.count + 1); }); });
-    $('jMinus').addEventListener('click', function () { jarChange(function (j) { j.count = Math.max(0, j.count - 1); }); });
+    $('jPlus').addEventListener('click', function () { jarAdd(); });
+    $('jMinus').addEventListener('click', function () { jarChange(function (j) { j.items.pop(); j.count = j.items.length; }); });   // takes out the last one added
     $('jGoalUp').addEventListener('click', function () { jarChange(function (j) { j.goal = Math.min(100, j.goal + 1); }); });
     $('jGoalDown').addEventListener('click', function () { jarChange(function (j) { j.goal = Math.max(3, j.goal - 1); }); });
     $('jName').addEventListener('input', function () { var v = this.value; jarChange(function (j) { j.name = v.trim() || j.name; }); });
     $('jReward').addEventListener('click', function () {
       var j = curJar(); if (!j || !confirm('Reward time for ' + j.name + '? This celebrates and empties the jar.')) return;
-      jarChange(function (x) { x.count = 0; });
+      jarChange(function (x) { x.count = 0; x.items = []; });
     });
     $('jClose').addEventListener('click', function () { $('jmodal').classList.remove('open'); });
     $('jRemove').addEventListener('click', function () {
@@ -3810,7 +3841,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     es.addEventListener('jars', function (m) {
       var d = JSON.parse(m.data); seen();
       // the iPad already shows its own changes; just keep its copy in sync
-      state.jars = d.jars; renderJars(); if (EDIT && $('jmodal').classList.contains('open')) jarCard();
+      setJars(d.jars); if (EDIT && $('jmodal').classList.contains('open')) jarCard();
     });
     es.addEventListener('meta', function (m) {
       var d = JSON.parse(m.data);
