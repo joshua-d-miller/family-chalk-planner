@@ -3057,6 +3057,14 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   canvas.addEventListener('pointerup', endPointer);
   canvas.addEventListener('pointercancel', endPointer);
+  // Apple Pencil: claim its touches on the drawing surface so iPadOS (Scribble, edge gestures) can't take
+  // the stroke away and cancel it - fingers are left alone (they pinch, pan and scroll as before)
+  var claimPencil = function (e) {
+    var t = e.changedTouches || [];
+    for (var i = 0; i < t.length; i++) if (t[i].touchType === 'stylus') { if (e.cancelable) e.preventDefault(); return; }
+  };
+  canvas.addEventListener('touchstart', claimPencil, { passive: false });
+  canvas.addEventListener('touchmove', claimPencil, { passive: false });
 
   // ---- Zoom & pan (iPad): two-finger pinch, or the − / + / Fit buttons ----
   var pinch = null, touches = {};

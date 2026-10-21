@@ -4,6 +4,10 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.9.1 — Apple Pencil fix
+- Drawing with the Apple Pencil works with Scribble turned on: the board claims Pencil touches on the
+  drawing surface so iPadOS can't take the stroke away (fingers behave as before).
+
 ## 0.9.0 — kids pick what goes in their jar
 - **Add a…** in a jar's card: a big button for every kind of piece, so a kid can ask for exactly the one
   they want. **+** still adds the jar's usual pieces in turn (now picked with a compact row of icons),
