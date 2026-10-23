@@ -776,11 +776,12 @@ app.get('/api/month', async (req, res) => {
   if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
   try {
     const g = monthGrid(ym);
-    const marks = countdownMarks(), colors = eventColors();
+    const marks = countdownMarks(), colors = eventColors(), sizes = eventSizes();
     const events = (await eventsForMonth(ym)).map(e => {
       if (!e.ref) return e;
       const c = colors[cdKey(e.ref)] || colors[`${e.ref.href}|`];   // this occurrence, else the whole series
-      return { ...e, ...(marks[cdKey(e.ref)] ? { countdown: true } : {}), ...(c ? { color: c } : {}) };
+      const z = sizes[cdKey(e.ref)] || sizes[`${e.ref.href}|`];
+      return { ...e, ...(marks[cdKey(e.ref)] ? { countdown: true } : {}), ...(c ? { color: c } : {}), ...(z ? { size: z } : {}) };
     });
     res.json({ ym, grid: g, events: (HOLIDAYS === 'none' ? [] : holidaysBetween(g.start, addDays(g.start, g.weeks * 7 - 1))).concat(events), today: nyParts(new Date()).dateStr });
   } catch (err) {
@@ -1022,6 +1023,19 @@ app.post('/api/evcolor', (req, res) => {
   if (!ref.rid && !color) for (const k of Object.keys(all)) if (k.startsWith(`${ref.href}|`)) delete all[k];   // clearing a series clears its one-offs too
   qKvSet.run('evcolors', JSON.stringify(all));
   broadcast('calendar', { ym: 'any' });   // every open month redraws
+  res.json({ ok: true });
+});
+// Event text size on the board (Large / Extra large for birthdays and big days): board-only, keyed like colors
+const EV_SIZES = ['l', 'xl'];
+function eventSizes() { const r = qKvGet.get('evsizes'); return r ? JSON.parse(r.data) : {}; }
+app.post('/api/evsize', (req, res) => {
+  const { ref, size } = req.body || {};
+  if (!ref || typeof ref.href !== 'string' || ref.href.length > 500 || (size != null && !EV_SIZES.includes(size))) return res.status(400).json({ error: 'bad size' });
+  const all = eventSizes(), key = cdKey(ref);
+  if (size) all[key] = size; else delete all[key];
+  if (!ref.rid && !size) for (const k of Object.keys(all)) if (k.startsWith(`${ref.href}|`)) delete all[k];   // clearing a series clears its one-offs too
+  qKvSet.run('evsizes', JSON.stringify(all));
+  broadcast('calendar', { ym: 'any' });
   res.json({ ok: true });
 });
 function countdownMarks() { const r = qKvGet.get('countdowns'); return r ? JSON.parse(r.data) : {}; }
@@ -1302,7 +1316,7 @@ function cleanTitle(t) {
     f: Math.min(Math.max(Math.trunc(+t.f) || 0, 0), 7),
     c: hex(t.c) || '#F6B3CB',
     o: hex(t.o),                                   // null = no outline
-    z: [56, 68, 80].includes(+t.z) ? +t.z : 68
+    z: [56, 68, 80, 90].includes(+t.z) ? +t.z : 68   // S M L XL
   };
 }
 function metaFor(ym) {

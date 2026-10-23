@@ -53,6 +53,13 @@ test('add, color and delete an event', async () => {
   assert.equal((await post('/api/evcolor', { ref: { href: add.href }, color: '#2C64D6' })).status, 200);
   let ev = (await (await api('/api/month?ym=2026-10')).json()).events.find(e => e.title === 'Smoke test');
   assert.equal(ev.color, '#2C64D6');
+  assert.equal((await post('/api/evsize', { ref: { href: add.href }, size: 'xl' })).status, 200, 'a big day');
+  assert.equal((await post('/api/evsize', { ref: { href: add.href }, size: 'huge' })).status, 400);
+  ev = (await (await api('/api/month?ym=2026-10')).json()).events.find(e => e.title === 'Smoke test');
+  assert.equal(ev.size, 'xl');
+  assert.equal((await post('/api/evsize', { ref: { href: add.href }, size: null })).status, 200);
+  ev = (await (await api('/api/month?ym=2026-10')).json()).events.find(e => e.title === 'Smoke test');
+  assert.equal(ev.size, undefined, 'back to normal');
   assert.equal((await post('/api/events/delete', { ref: ev.ref, scope: 'all', origDate: ev.start })).status, 200);
   ev = (await (await api('/api/month?ym=2026-10')).json()).events.find(e => e.title === 'Smoke test');
   assert.equal(ev, undefined);

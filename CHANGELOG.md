@@ -4,6 +4,13 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.10.0 — big days stand out
+- **Size on the board** for an event: Normal, Large or Extra large (birthdays, big days). Board-only like
+  the color, and follows "Just this one / All of them" for repeating events.
+- Month title: new **XL** size.
+- Tapping a day with events shows them all with **Add** at the bottom; an empty day goes straight to
+  adding one (tablet and family screens). Tapping an event still opens it directly.
+
 ## 0.9.1 — Apple Pencil fix
 - Drawing with the Apple Pencil works with Scribble turned on: the board claims Pencil touches on the
   drawing surface so iPadOS can't take the stroke away (fingers behave as before).

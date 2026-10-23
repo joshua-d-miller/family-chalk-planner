@@ -87,6 +87,9 @@ body.edit .day{cursor:pointer}
 .day.oneline .ev .tt{overflow:hidden;text-overflow:ellipsis;min-width:0;white-space:nowrap}
 .day.oneline .ev .tm{flex:none}
 .day .ev.allday{color:var(--yellow)}
+.day .ev[class*="sz-"]{line-height:1.08;margin:1px 0}
+.day.oneline .ev[class*="sz-"]{display:-webkit-box;white-space:normal}   /* a big day keeps its two lines */
+.day.oneline .ev[class*="sz-"] .tt{white-space:normal;overflow:visible}
 .day .more{font-size:12px;color:rgba(var(--ink),.6)}
 .bar{position:relative;grid-row:1;align-self:start;height:21px;margin-right:7px;margin-left:7px;padding:0 10px;display:flex;align-items:center;
   border:1.5px solid var(--barline);border-radius:11px;background:rgba(167,180,140,.18);pointer-events:none;overflow:hidden;z-index:1}
@@ -693,6 +696,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <label class="check"><input type="checkbox" id="evCount"> ⭐ Count down to this</label>
     <div class="sublbl">Color on the board</div>
     <div class="opts" id="evColor"></div>
+    <div class="sublbl">Size on the board</div>
+    <div class="opts" id="evSize">
+      <button type="button" class="seg" data-size="">Normal</button>
+      <button type="button" class="seg" data-size="l" style="font-size:22px">Large</button>
+      <button type="button" class="seg" data-size="xl" style="font-size:27px">Extra large</button>
+    </div>
     <div id="scopeWrap" class="opts" role="radiogroup" aria-label="Which events">
       <button type="button" class="seg on" data-scope="one">Just this one</button>
       <button type="button" class="seg" data-scope="all">All of them</button>
@@ -2188,8 +2197,15 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         if (laneCount) { var spacer = el('div'); spacer.style.height = (laneCount * 24) + 'px'; spacer.style.flex = 'none'; cell.appendChild(spacer); }
 
         var dayEvents = single.filter(function (e) { return e.start === ds; });
-        var maxLines = Math.max(1, Math.floor((cellH - 5 - 24 - laneCount * 24 - 4) / 15));
-        var show = dayEvents.length > maxLines ? maxLines - 1 : dayEvents.length;
+        // room for events, in pixels: a normal line is 15px, Large / Extra large ones take more
+        var roomPx = cellH - 5 - 24 - laneCount * 24 - 4, needPx = function (e) { return 15 * (EV_SIZE[e.size] || 1) * (e.size && evText(e).length > 12 ? 2 : 1); };   // a long big one wraps
+        var show = 0, used = 0;
+        for (var k = 0; k < dayEvents.length; k++) {
+          var need = needPx(dayEvents[k]), restNeedsMore = k < dayEvents.length - 1;
+          if (used + need + (restNeedsMore ? 15 : 0) > roomPx && (restNeedsMore || used + need > roomPx)) break;
+          used += need; show++;
+        }
+        if (!show && dayEvents.length) show = 1;   // the first one always shows (a big day gets shrunk to fit below)
         for (var i = 0; i < show; i++) {
           var ev = dayEvents[i];
           var line = el('div', 'ev chalk' + (ev.holiday ? ' holiday' : ev.allDay ? ' allday' : ''));
@@ -2199,6 +2215,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
           line.title = full;
           if (ev.color || ev.calColor) line.style.color = readable(ev.color || ev.calColor);
           line.__ev = ev;
+          if (ev.size) line.classList.add('sz-' + ev.size);
           cell.appendChild(line);
         }
         if (dayEvents.length > show) {
@@ -2215,6 +2232,11 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   // Events may wrap onto a second line; a day that would overflow goes back to one line each
   function fitDays() {
+    Array.prototype.forEach.call(document.querySelectorAll('#grid .day .ev[class*="sz-"]'), function (l) {
+      l.style.fontSize = '';   // the board style's size, then bigger
+      var z = EV_SIZE[l.__ev && l.__ev.size] || 1, base = parseFloat(getComputedStyle(l).fontSize) || 13;
+      l.style.fontSize = Math.round(base * z * 10) / 10 + 'px';
+    });
     Array.prototype.forEach.call(document.querySelectorAll('#grid .day'), function (c) {
       c.classList.remove('oneline');
       if (c.scrollHeight > c.clientHeight + 1) c.classList.add('oneline');
@@ -3139,7 +3161,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     $('zFit').addEventListener('click', function () { view = { z: 1, x: 0, y: 0 }; fit(); });
     // Month title card: typed (font / color / outline / size) or hand-lettered
     var tt = null;
-    var TT_SIZES = [{ label: 'S', z: 56 }, { label: 'M', z: 68 }, { label: 'L', z: 80 }];
+    var TT_SIZES = [{ label: 'S', z: 56 }, { label: 'M', z: 68 }, { label: 'L', z: 80 }, { label: 'XL', z: 90 }];
     function ttRender() {
       $('ttTyped').hidden = tt.hand;
       Array.prototype.forEach.call(document.querySelectorAll('#ttMode .seg'), function (b) { b.classList.toggle('on', (b.dataset.mode === 'hand') === tt.hand); });
@@ -4035,7 +4057,10 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       var moreEl = e.target.closest('.more');
       if (moreEl) return openDay(moreEl.__day);
       var cell = e.target.closest('.day');
-      if (cell) openModal(cell.dataset.date);
+      if (!cell) return;
+      // a day with events: see them all (and add from there); an empty day: straight to Add
+      var d = cell.dataset.date, any = (state.lastMonth ? state.lastMonth.events : []).some(function (x) { return x.start <= d && x.end >= d; });
+      if (any) openDay(d); else openModal(d);
     }
   }
 
@@ -4069,7 +4094,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     $('evTitle').value = ''; $('evDate').value = date; $('evThru').value = '';
     $('evTime').value = '17:00'; ensureLen(60);
     $('evAllDay').checked = false; $('evCount').checked = false; $('evErr').textContent = ''; syncAllDay();
-    setEvColor(null);
+    setEvColor(null); setEvSize(null);
     $('modal').classList.add('open');
     setTimeout(function () { $('evTitle').focus(); }, 50);
   }
@@ -4088,10 +4113,17 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     ensureLen(ev.minutes || 60);
     $('evThru').value = ev.allDay && ev.end !== ev.start ? ev.end : '';
     $('evCount').checked = !!ev.countdown;
-    setEvColor(ev.color || null);
+    setEvColor(ev.color || null); setEvSize(ev.size || null);
     $('evErr').textContent = ''; syncAllDay();
     $('modal').classList.add('open');
   }
+  // Board-only event size: null = normal, 'l' = large, 'xl' = extra large (birthdays, big days)
+  var evSize = null, EV_SIZE = { l: 1.4, xl: 1.8 };
+  function setEvSize(z) {
+    evSize = z || null;
+    Array.prototype.forEach.call(document.querySelectorAll('#evSize .seg'), function (b) { b.classList.toggle('on', (b.dataset.size || null) === evSize); });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#evSize .seg'), function (b) { b.addEventListener('click', function () { setEvSize(b.dataset.size); }); });
   // Board-only event color: null = the board style's usual color
   var evColor = null;
   function setEvColor(c) {
@@ -4140,6 +4172,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       $('evDelete').disabled = true; $('evErr').textContent = '';
       if (ev.countdown) post('/api/countdowns', { ref: ev.ref, title: ev.title, date: ev.start, on: false }).then(loadCountdowns);
       if (ev.color && (!ev.recurring || scope === 'all')) post('/api/evcolor', { ref: { href: ev.ref.href }, color: null }).catch(function () {});
+      if (ev.size && (!ev.recurring || scope === 'all')) post('/api/evsize', { ref: { href: ev.ref.href }, size: null }).catch(function () {});
       post('/api/events/delete', { ref: ev.ref, scope: ev.recurring ? scope : 'all', origDate: ev.start })
         .then(function () { afterChange([ev.start]); })
         .catch(changeFailed)
@@ -4163,6 +4196,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       var ref = ev ? { href: ev.ref.href, rid: body.scope === 'one' ? ev.ref.rid : null } : r && r.href ? { href: r.href, rid: null } : null;
       if (ref && (wantCount || (ev && ev.countdown))) post('/api/countdowns', { ref: ref, title: body.title, date: body.date, on: wantCount }).then(loadCountdowns);
       if (ref && (evColor || (ev && ev.color)) && evColor !== ((ev && ev.color) || null)) post('/api/evcolor', { ref: ref, color: evColor }).catch(function () {});
+      if (ref && (evSize || (ev && ev.size)) && evSize !== ((ev && ev.size) || null)) post('/api/evsize', { ref: ref, size: evSize }).catch(function () {});
       afterChange([body.date, ev && ev.start]);
     })
       .catch(changeFailed)

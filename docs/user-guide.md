@@ -10,8 +10,10 @@ The bottom bar on the tablet has **👤** (your account: add a passkey on this t
 The admin can add **more calendars from the same account** (kids' activities, work) and **read-only calendar links** (school, a sports team) in the admin console → ⚙️ Board. Each shows in its own color. Events from the extra calendars can be changed like any other; new events go to the main calendar. Events from links are read-only: tapping one shows that day with the calendar's name.
 
 ### Events (your calendar)
-- **Add:** tap **+ Add event** (or tap a day, then **Add**). Pick what, day, time and length, or tick **All day** (with an optional **Through** date for multi-day events like trips).
+- **Tap a day:** if it has events, you see them all in a list with **Add** at the bottom; an empty day goes straight to adding one.
+- **Add:** tap **+ Add event** (or tap a day). Pick what, day, time and length, or tick **All day** (with an optional **Through** date for multi-day events like trips).
 - **Change or delete:** tap the event on the board (or tap the day to see its full list). For repeating events, choose **Just this one** or **All of them** before saving or deleting.
+- **Size on the board:** **Normal**, **Large** or **Extra large** — make a birthday or a big day stand out. Like the color, it's only on the board (your calendar never sees it), and for a repeating event it follows **Just this one / All of them**. Extra large wraps onto two lines; if the day has more, they're under **+N more**.
 - **⭐ Count down to this:** adds the event to the countdown list in Notes.
 - Long event names wrap onto a second line when the day has room; when a day is full they shorten but keep the time.
 - **Color on the board:** pick a color for the event. Colors that would be hard to read on the board's background are adjusted automatically (same hue). It's board-only (your calendar never sees it). The dashed circle means "use the board style's normal color". For repeating events it follows Just this one / All of them.
@@ -32,7 +34,7 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 - Art is saved per month, so each month starts fresh.
 
 ### Month title
-- Tap **Month title** (top right of the calendar). **Typed:** choose font, color, outline and size; tick **Use this style for every month** to make it the default. **I'll hand-letter it:** hides the typed title so you can draw your own.
+- Tap **Month title** (top right of the calendar). **Typed:** choose font, color, outline and size (**S, M, L** or **XL**); tick **Use this style for every month** to make it the default. **I'll hand-letter it:** hides the typed title so you can draw your own.
 
 ### Meal Plan
 - Tap **Meal Plan** in Notes. Add meals (Enter adds the next line), tick ones that are done (they get crossed out), **Clear all** for a new week. A long list shrinks to fit, then ends with "+N more".
