@@ -39,6 +39,23 @@ body.family .slate{box-shadow:none}
 /* cork is busy: a soft dark shadow keeps small writing crisp on it */
 body[data-surface=cork] .slate,body[data-surface=cork] .slate .chalk,body[data-surface=wood] .slate,body[data-surface=wood] .slate .chalk{text-shadow:0 1px 2px rgba(20,10,0,.85),0 0 3px rgba(20,10,0,.6)}
 .cal{flex:1;min-width:0;display:flex;flex-direction:column}
+.calbody{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.calbody.bordered{padding:var(--bpad,0px)}
+#borderLayer{position:absolute;inset:0;pointer-events:none;z-index:1}
+#borderLayer img{position:absolute;display:block}
+#borderBtn{position:absolute;left:4px;top:50%;transform:translateY(-50%);height:34px;padding:0 12px;border-radius:17px;border:1.5px solid rgba(var(--ink),.35);background:transparent;color:rgba(var(--ink),.8);font:700 14px 'Kalam',cursive;cursor:pointer;display:none}
+body.edit:not(.drawing) #borderBtn{display:block}
+#bmodal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:20}
+#bmodal.open{display:flex}
+#bmodal .card{width:min(640px,96vw)}
+.bpicks{min-height:58px}
+.bpicks .bpick{position:relative;width:54px;height:54px;border-radius:12px;border:2px solid rgba(var(--ink),.3);background:rgba(255,255,255,.04);padding:6px;cursor:pointer}
+.bpicks .bpick img{width:100%;height:100%;object-fit:contain}
+.bpicks .bpick::after{content:'×';position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:var(--pink);color:#141414;font:700 14px/20px system-ui,sans-serif;text-align:center}
+.seg.giseg{display:inline-flex;align-items:center;gap:6px}
+.seg.giseg img{width:22px;height:22px}
+.bgrid{max-height:200px;overflow-y:auto;touch-action:pan-y}
+.bgrid .ctile{padding:6px}
 .titlerow{position:relative;height:70px;display:flex;align-items:center;justify-content:center;gap:22px}
 .titlerow h1{margin:0;font-family:'Dancing Script',cursive;font-weight:700;font-size:68px;line-height:1;color:var(--pink);min-width:330px;text-align:center}
 /* Orange outline: a stroked copy of the word drawn behind it (stacked text-shadows glitch in some Android browsers) */
@@ -503,10 +520,14 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         <button class="nav" id="prev" aria-label="Previous month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
         <h1 id="monthName">&nbsp;</h1>
         <button type="button" id="titleBtn">✎ Hand-letter title</button>
+        <button type="button" id="borderBtn">🖼 Border</button>
         <button class="nav" id="next" aria-label="Next month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
       </div>
-      <div class="weekdays"><div>SUNDAY</div><div>MONDAY</div><div>TUESDAY</div><div>WEDNESDAY</div><div>THURSDAY</div><div>FRIDAY</div><div>SATURDAY</div></div>
-      <div id="grid"></div>
+      <div class="calbody" id="calbody">
+        <div class="weekdays"><div>SUNDAY</div><div>MONDAY</div><div>TUESDAY</div><div>WEDNESDAY</div><div>THURSDAY</div><div>FRIDAY</div><div>SATURDAY</div></div>
+        <div id="grid"></div>
+        <div id="borderLayer" aria-hidden="true"></div>
+      </div>
     </div>
     <div class="notes">
       <h2>Notes</h2>
@@ -715,6 +736,28 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   </form>
 </div>
 
+<div id="bmodal" role="dialog" aria-modal="true" aria-labelledby="bTitle">
+  <form class="card" id="bForm">
+    <h3 id="bTitle">Border</h3>
+    <div class="sublbl" style="margin-top:0">Ready-made — then add or remove pictures</div>
+    <div class="opts" id="bPresets"></div>
+    <div class="sublbl">In the border (up to 8, repeated around the calendar; tap one to take it out)</div>
+    <div class="opts bpicks" id="bPicks"></div>
+    <input type="search" id="bQuery" placeholder="Add pictures: pumpkin, mummy, corn, snowman…" autocomplete="off" style="width:100%;height:42px;margin-top:8px;background:transparent;border:none;border-bottom:2px dashed rgba(var(--ink),.6);color:var(--chalk);font-family:'Kalam',cursive;font-size:19px;outline:none">
+    <div class="cgrid bgrid" id="bGrid"></div>
+    <div class="sublbl">Color for the chalk drawings (the one-color pictures)</div>
+    <div class="opts" id="bColor"></div>
+    <div class="sublbl">Size</div>
+    <div class="opts" id="bSize"><button type="button" class="seg" data-z="s">Small</button><button type="button" class="seg" data-z="m">Medium</button><button type="button" class="seg" data-z="l">Large</button></div>
+    <label class="check"><input type="checkbox" id="bYearly"> <span id="bYearlyLbl">Every year in this month</span></label>
+    <div class="err" id="bErr"></div>
+    <div class="actions">
+      <button type="button" class="btn del" id="bNone">No border</button>
+      <button type="button" class="btn" id="bCancel">Cancel</button>
+      <button type="submit" class="btn go">Save</button>
+    </div>
+  </form>
+</div>
 <div id="mmodal" role="dialog" aria-modal="true" aria-labelledby="mmTitle">
   <form class="card" id="mForm">
     <h3 id="mmTitle">Meal Plan</h3>
@@ -869,10 +912,11 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     </div>
     <div class="lscroll">
       <div class="lpane" id="libClip">
-        <div class="opts"><input type="search" id="cQuery" placeholder="Search 3,000+ pictures: pumpkin, dog, cake…" autocomplete="off" style="flex:1;height:44px;background:transparent;border:none;border-bottom:2px dashed rgba(var(--ink),.6);color:var(--chalk);font-family:'Kalam',cursive;font-size:20px;outline:none"></div>
+        <div class="opts"><input type="search" id="cQuery" placeholder="Search pictures and chalk drawings: pumpkin, mummy, cake…" autocomplete="off" style="flex:1;height:44px;background:transparent;border:none;border-bottom:2px dashed rgba(var(--ink),.6);color:var(--chalk);font-family:'Kalam',cursive;font-size:20px;outline:none"></div>
         <div class="opts" id="cSets"></div>
+        <div id="cColorWrap" hidden><div class="sublbl">Color for the chalk drawings</div><div class="opts" id="cColor"></div></div>
         <div class="cgrid" id="cGrid"></div>
-        <div class="sublbl">Clipart: Fluent Emoji by Microsoft (MIT)</div>
+        <div class="sublbl">Clipart: Fluent Emoji by Microsoft (MIT) · Chalk drawings: game-icons.net (CC BY 3.0)</div>
       </div>
       <div class="lpane" id="libEmoji" hidden>
         <div class="opts" id="eTabs"></div>
@@ -2137,7 +2181,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     var grid = $('grid');
     grid.innerHTML = '';
     grid.style.gridTemplateRows = 'repeat(' + g.weeks + ', minmax(0, 1fr))';
-    var cellH = GRID_H / g.weeks;
+    var cellH = (GRID_H - 2 * (state.borderPad || 0)) / g.weeks;
 
     var single = events.filter(function (e) { return e.start === e.end; });
     var multi = events.filter(function (e) { return e.start !== e.end; });
@@ -2590,11 +2634,41 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     if (mn) styleTitle(mn, h1, titleStyle(), 520);
     if (EDIT) $('titleBtn').textContent = '✎ Month title';
   }
+  // ---- Holiday border: up to 8 pictures repeated around the calendar (wall, tablet and family screens) ----
+  var BORDER_SZ = { s: 20, m: 26, l: 34 };
+  function borderSrc(n, color) {
+    var c = n.indexOf('gi-') === 0 && color && color.toUpperCase() !== '#EDEAE0' ? '--' + color.slice(1).toLowerCase() : '';
+    return '/api/clip/' + n + c + '.svg';
+  }
+  function drawBorder(b) {
+    var body = $('calbody'), layer = $('borderLayer'), sz = b ? BORDER_SZ[b.size] || 26 : 0, pad = b ? sz + 6 : 0;
+    var changed = (state.borderPad || 0) !== pad;
+    state.borderPad = pad;
+    body.classList.toggle('bordered', !!b); body.style.setProperty('--bpad', pad + 'px');
+    layer.innerHTML = '';
+    if (b) {
+      var W = body.offsetWidth, H = body.offsetHeight, half = pad / 2, gap = sz * 0.45, k = 0, pts = [];
+      var side = function (x0, y0, x1, y1, skipEnd) {   // evenly spaced along one edge, corners included once
+        var len = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.round(len / (sz + gap)));
+        for (var i = 0; i < n + (skipEnd ? 0 : 1); i++) pts.push([x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n]);
+      };
+      side(half, half, W - half, half, true); side(W - half, half, W - half, H - half, true);
+      side(W - half, H - half, half, H - half, true); side(half, H - half, half, half, true);
+      pts.forEach(function (p) {
+        var n = b.items[k % b.items.length], im = el('img'); k++;
+        im.src = borderSrc(n, b.color); im.alt = '';
+        im.style.cssText = 'width:' + sz + 'px;height:' + sz + 'px;left:' + (p[0] - sz / 2).toFixed(1) + 'px;top:' + (p[1] - sz / 2).toFixed(1) + 'px;transform:rotate(' + Math.round((hash(k, 7) - 0.5) * 24) + 'deg)';
+        layer.appendChild(im);
+      });
+    }
+    if (changed && state.lastMonth) renderMonth(state.lastMonth);   // the days get a little smaller (or back)
+  }
+  function applyBorder() { drawBorder((state.borderDraft !== undefined ? state.borderDraft : state.meta && state.meta.border) || null); }
   function loadMeta(ym) {
-    return api('/api/meta?ym=' + ym).then(function (m) { if (ym === state.ym) { state.meta = m || {}; applyTitle(); layoutTitlePhotos(); } }).catch(function () {});
+    return api('/api/meta?ym=' + ym).then(function (m) { if (ym === state.ym) { state.meta = m || {}; applyTitle(); applyBorder(); layoutTitlePhotos(); } }).catch(function () {});
   }
   function loadMonth(ym) {
-    if (ym !== state.ym) { resetHistory(); state.meta = {}; applyTitle(); setTimeout(layoutTitlePhotos, 0); }
+    if (ym !== state.ym) { resetHistory(); state.meta = {}; applyTitle(); applyBorder(); setTimeout(layoutTitlePhotos, 0); }
     state.ym = ym;
     status('');
     loadMeta(ym);
@@ -3194,6 +3268,90 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       ttRender();
     });
     $('ttCancel').addEventListener('click', function () { $('ttmodal').classList.remove('open'); });
+
+    // ---- 🖼 Border: ready-made holiday sets, or any pictures she picks; previewed on the board as you go ----
+    var B_PRESETS = [
+      ['🎃 Halloween', 'jack-o-lantern gi-bat gi-mummy-head gi-vampire-dracula gi-witch-face ghost', '#F3A35E'],
+      ['🦃 Thanksgiving', 'gi-pumpkin gi-corn turkey maple-leaf gi-acorn gi-wheat', '#F2D479'],
+      ['🎄 Christmas', 'christmas-tree wrapped-gift gi-candy-canes snowman star santa-claus', '#A9D8A0'],
+      ['❄️ Winter', 'snowflake gi-snowflake-2 snowman gi-winter-hat', '#EDEAE0'],
+      ['💕 Valentine’s', 'red-heart gi-hearts pink-heart love-letter', '#F6B3CB'],
+      ['☘️ St. Patrick’s', 'shamrock four-leaf-clover rainbow gi-clover', '#A9D8A0'],
+      ['🐣 Easter', 'rabbit-face egg gi-easter-egg tulip hatching-chick', '#F6B3CB'],
+      ['🌷 Spring', 'tulip cherry-blossom butterfly gi-daisy', '#EDEAE0'],
+      ['🎆 Fireworks', 'fireworks gi-firework-rocket sparkles star', '#F2D479'],
+      ['☀️ Summer', 'sun watermelon gi-palm-tree beach-with-umbrella', '#F2D479'],
+      ['🎂 Birthday', 'birthday-cake balloon party-popper wrapped-gift', '#F6B3CB'],
+      ['🎒 Back to school', 'school-bus books pencil backpack red-apple', '#EDEAE0']
+    ];
+    var bd = null, bNames = null, bTimer = null;
+    var bHave = function (n) { return bNames && bNames.indexOf(n) >= 0; };
+    function bRender() {
+      var picks = $('bPicks'); picks.innerHTML = '';
+      if (!bd.items.length) picks.appendChild(el('div', 'sublbl', 'Nothing yet — pick a ready-made set or add pictures below'));
+      bd.items.forEach(function (n, i) {
+        var b = el('button', 'bpick'); b.type = 'button'; b.setAttribute('aria-label', 'Take out ' + n.replace(/^gi-/, '').replace(/-/g, ' '));
+        var im = el('img'); im.src = borderSrc(n, bd.color); im.alt = ''; b.appendChild(im);
+        b.addEventListener('click', function () { bd.items.splice(i, 1); bChanged(); });
+        picks.appendChild(b);
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('#bSize .seg'), function (s) { s.classList.toggle('on', s.dataset.z === bd.size); });
+      markColor($('bColor'), null, bd.color);
+      bGrid();
+    }
+    function bChanged() { state.borderDraft = bd.items.length ? JSON.parse(JSON.stringify(bd)) : null; applyBorder(); bRender(); }
+    function bGrid() {
+      var q = $('bQuery').value.trim().toLowerCase(), grid = $('bGrid'); grid.innerHTML = '';
+      if (!q || !bNames) return;
+      var terms = q.split(/\s+/), syn = [];
+      terms.forEach(function (t) { (CLIP_SYN[t] || '').split(' ').forEach(function (n) { if (n && bHave(n) && syn.indexOf(n) < 0) syn.push(n); }); });
+      var list = syn.concat(bNames.filter(function (n) { return syn.indexOf(n) < 0 && terms.every(function (t) { return n.indexOf(t) >= 0; }); })).slice(0, 60);
+      if (!list.length) grid.appendChild(el('div', 'empty', 'Nothing for “' + q + '” — try another word'));
+      list.forEach(function (n) {
+        var b = el('button', 'ctile'); b.type = 'button'; b.title = n.replace(/^gi-/, '').replace(/-/g, ' ');
+        var im = el('img'); im.src = borderSrc(n, bd.color); im.alt = ''; im.loading = 'lazy'; b.appendChild(im);
+        b.addEventListener('click', function () {
+          if (bd.items.indexOf(n) >= 0) return;
+          if (bd.items.length >= 8) { $('bErr').textContent = 'Up to 8 pictures — take one out first'; return; }
+          $('bErr').textContent = ''; bd.items.push(n); bChanged();
+        });
+        grid.appendChild(b);
+      });
+    }
+    function bClose() { $('bmodal').classList.remove('open'); state.borderDraft = undefined; applyBorder(); }
+    $('borderBtn').addEventListener('click', function () {
+      if (state.drawing) return;
+      var cur = state.meta && state.meta.border;
+      bd = cur ? { items: cur.items.slice(), color: cur.color || '#EDEAE0', size: cur.size || 'm' } : { items: [], color: '#EDEAE0', size: 'm' };
+      var mon = MONTHS[+state.ym.slice(5) - 1];
+      $('bTitle').textContent = 'Border for ' + mon;
+      $('bYearlyLbl').textContent = 'Every year in ' + mon;
+      $('bYearly').checked = cur ? !!state.meta.borderYearly : true;
+      $('bQuery').value = ''; $('bErr').textContent = '';
+      $('bmodal').classList.add('open');
+      var go = function () {
+        var box = $('bPresets'); box.innerHTML = '';
+        B_PRESETS.forEach(function (p) {
+          var items = p[1].split(' ').filter(bHave); if (!items.length) return;
+          var b = el('button', 'seg', p[0]); b.type = 'button';
+          b.addEventListener('click', function () { bd.items = items.slice(0, 8); bd.color = p[2]; bChanged(); });
+          box.appendChild(b);
+        });
+        bRender();
+      };
+      if (!$('bColor').__opts) colorRow($('bColor'), {}, function (v) { bd.color = v; bChanged(); });
+      if (bNames) go(); else api('/api/clip/list').then(function (l) { bNames = l; go(); }).catch(function (e) { $('bErr').textContent = 'Couldn’t load the pictures: ' + e.message; });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#bSize .seg'), function (s) { s.addEventListener('click', function () { bd.size = s.dataset.z; bChanged(); }); });
+    $('bQuery').addEventListener('input', function () { clearTimeout(bTimer); bTimer = setTimeout(bGrid, 200); });
+    $('bCancel').addEventListener('click', bClose);
+    $('bNone').addEventListener('click', function () { bd.items = []; bChanged(); });
+    $('bForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      post('/api/border', { ym: state.ym, border: bd.items.length ? bd : null, yearly: $('bYearly').checked })
+        .then(function (m) { state.meta = m; bClose(); })
+        .catch(function (err) { $('bErr').textContent = err.message; });
+    });
     $('ttForm').addEventListener('submit', function (e) {
       e.preventDefault();
       var body = { ym: state.ym, hideTitle: tt.hand };
@@ -3372,14 +3530,19 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     ['🐶 Animals', 'dog-face cat-face rabbit-face bear panda fox monkey-face unicorn horse cow-face pig-face chicken penguin owl turtle fish dolphin sauropod t-rex'],
     ['🚗 Going places', 'house airplane automobile bus bicycle sailboat train hospital church stadium tent world-map luggage']
   ];
-  var clip = { names: null, set: 0, q: '' };
+  var clip = { names: null, set: 0, q: '', color: '#EDEAE0', drawn: false };
   // words people search for that aren't in the picture names
-  var CLIP_SYN = { pumpkin: 'jack-o-lantern', halloween: 'jack-o-lantern ghost bat spider-web candy', christmas: 'christmas-tree santa-claus wrapped-gift snowman',
-    thanksgiving: 'turkey pie fallen-leaf', easter: 'rabbit-face egg hatching-chick tulip', birthday: 'birthday-cake cupcake balloon wrapped-gift party-popper partying-face',
+  var CLIP_SYN = { pumpkin: 'jack-o-lantern', halloween: 'jack-o-lantern ghost bat spider-web candy gi-pumpkin-lantern gi-witch-face gi-mummy-head gi-vampire-dracula gi-bat gi-cauldron', christmas: 'christmas-tree santa-claus wrapped-gift snowman',
+    thanksgiving: 'turkey gi-cornucopia gi-corn gi-pumpkin gi-pilgrim-hat gi-wheat gi-acorn pie fallen-leaf', witch: 'gi-witch-face gi-witch-flight gi-pointy-hat', mummy: 'gi-mummy-head',
+    vampire: 'gi-vampire-dracula gi-female-vampire person-vampire', frankenstein: 'gi-frankenstein-creature', harvest: 'gi-cornucopia gi-wheat gi-corn gi-scarecrow', easter: 'rabbit-face egg hatching-chick tulip', birthday: 'birthday-cake cupcake balloon wrapped-gift party-popper partying-face',
     party: 'party-popper confetti-ball balloon partying-face', car: 'automobile', bus: 'bus', football: 'american-football', bunny: 'rabbit-face',
     puppy: 'dog-face dog', kitty: 'cat-face cat', dino: 'sauropod t-rex', dinosaur: 'sauropod t-rex', valentine: 'red-heart heart-with-ribbon love-letter', july: 'fireworks',
     hanukkah: 'menorah', school: 'school bus books backpack pencil', vacation: 'airplane beach-with-umbrella luggage palm-tree', dentist: 'tooth', doctor: 'hospital stethoscope' };
-  function clipSrc(n) { return '/api/clip/' + n + '.svg'; }
+  // chalk drawings (gi-…) come in the color picked above the grid; chalk white needs no suffix
+  function clipSrc(n) {
+    var c = n.indexOf('gi-') === 0 && clip.color && clip.color.toUpperCase() !== '#EDEAE0' ? '--' + clip.color.slice(1).toLowerCase() : '';
+    return '/api/clip/' + n + c + '.svg';
+  }
   function placeClip(n) {
     var sz = Math.round(96 * STAMP_SIZES[state.stampSize].k);
     $('lmodal').classList.remove('open');
@@ -3398,6 +3561,23 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     });
     Array.prototype.forEach.call(chips.children, function (b, i) { b.classList.toggle('on', !clip.q && i === clip.set); });
     var go = function () {
+      if (!clip.drawn && clip.drawings) {   // the chalk-drawing groups become more chips, after the clipart ones
+        clip.drawn = true;
+        // each chalk-drawing group is labeled with one of its own drawings (a witch for Halloween…)
+        var GI_ICON = { 'Halloween': 'gi-witch-face', 'Fall & Thanksgiving': 'gi-cornucopia', 'Winter & Christmas': 'gi-snowman',
+          'Spring & Easter': 'gi-easter-egg', 'Summer': 'gi-sun', 'Party & love': 'gi-cupcake', 'Animals': 'gi-cat' };
+        Object.keys(clip.drawings).forEach(function (g) { CLIP_SETS.push([g, clip.drawings[g].join(' '), GI_ICON[g] || clip.drawings[g][0]]); });
+        chips.innerHTML = '';
+        CLIP_SETS.forEach(function (c, i) {
+          var b = el('button', 'seg' + (c[2] ? ' giseg' : ''), c[2] ? null : c[0]); b.type = 'button';
+          if (c[2]) { var ic = el('img'); ic.src = '/api/clip/' + c[2] + '.svg'; ic.alt = ''; b.appendChild(ic); b.appendChild(document.createTextNode(c[0])); }
+          b.addEventListener('click', function () { clip.set = i; clip.q = ''; $('cQuery').value = ''; renderClip(); });
+          chips.appendChild(b);
+        });
+        Array.prototype.forEach.call(chips.children, function (b, i) { b.classList.toggle('on', !clip.q && i === clip.set); });
+        if (!$('cColor').__opts) colorRow($('cColor'), {}, function (v) { clip.color = v; renderClip(); });
+        markColor($('cColor'), null, clip.color);
+      }
       var have = {}; clip.names.forEach(function (n) { have[n] = 1; });
       var list;
       if (clip.q) {
@@ -3408,16 +3588,18 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
           .sort(function (a, b) { return (a.indexOf(terms[0]) === 0 ? 0 : 1) - (b.indexOf(terms[0]) === 0 ? 0 : 1) || a.length - b.length; })).slice(0, 120);
       } else list = CLIP_SETS[clip.set][1].split(' ').filter(function (n) { return have[n]; });
       grid.innerHTML = '';
+      $('cColorWrap').hidden = !list.some(function (n) { return n.indexOf('gi-') === 0; });
       if (!list.length) grid.appendChild(el('div', 'empty', clip.q ? 'Nothing for “' + clip.q + '” — try another word' : ''));
       list.forEach(function (n) {
-        var b = el('button', 'ctile'); b.type = 'button'; b.title = n.replace(/-/g, ' '); b.setAttribute('aria-label', n.replace(/-/g, ' '));
+        var label = n.replace(/^gi-/, '').replace(/-/g, ' ');
+        var b = el('button', 'ctile' + (n.indexOf('gi-') === 0 ? ' drawn' : '')); b.type = 'button'; b.title = label; b.setAttribute('aria-label', label);
         var im = el('img'); im.src = clipSrc(n); im.alt = ''; im.loading = 'lazy'; b.appendChild(im);
         b.addEventListener('click', function () { placeClip(n); });
         grid.appendChild(b);
       });
     };
     if (clip.names) go();
-    else api('/api/clip/list').then(function (l) { clip.names = l; go(); })
+    else Promise.all([api('/api/clip/list'), api('/api/clip/drawings').catch(function () { return null; })]).then(function (r) { clip.names = r[0]; clip.drawings = r[1]; go(); })
       .catch(function (e) { grid.innerHTML = ''; grid.appendChild(el('div', 'empty', 'Couldn’t load clipart: ' + e.message)); });
   }
   function placingTile(grid, st, deletable) {
@@ -3876,7 +4058,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     es.addEventListener('meta', function (m) {
       var d = JSON.parse(m.data);
       if (d.ym === '*') loadMeta(state.ym);
-      else if (d.ym === state.ym) { state.meta = d.meta || {}; applyTitle(); layoutTitlePhotos(); }
+      else if (d.ym === state.ym) { state.meta = d.meta || {}; applyTitle(); applyBorder(); layoutTitlePhotos(); }
     });
     es.addEventListener('countdowns', function () { loadCountdowns(); });
     es.addEventListener('photos', function () { loadPhotos(); });

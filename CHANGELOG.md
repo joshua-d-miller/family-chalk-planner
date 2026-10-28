@@ -4,6 +4,14 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.11.0 — holiday borders and chalk drawings
+- **🖼 Border** around the calendar, per month: ready-made Halloween, Thanksgiving, Christmas and more,
+  or any pictures you pick (up to 8, repeated around the edge), in a color and size you choose. Comes
+  back every year in that month unless you untick it. Works on the wall, tablets and family screens.
+- **Chalk drawings** in Clipart (their groups are marked with one of their own drawings): about 115 hand-picked one-color drawings from game-icons.net
+  (CC BY 3.0) — witches, mummies, vampires, pumpkins, cornucopias, scarecrows, snowmen and more — in any
+  color.
+
 ## 0.10.0 — big days stand out
 - **Size on the board** for an event: Normal, Large or Extra large (birthdays, big days). Board-only like
   the color, and follows "Just this one / All of them" for repeating events.

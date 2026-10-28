@@ -79,6 +79,31 @@ test('jars start empty and allow up to 4', async () => {
   assert.equal(saved.length, 4);
 });
 
+test('chalk drawings and holiday borders', async () => {
+  const groups = await (await api('/api/clip/drawings')).json();
+  assert.ok(groups.Halloween.includes('gi-mummy-head') && groups.Halloween.includes('gi-witch-face'));
+  let r = await api('/api/clip/gi-mummy-head.svg');
+  assert.equal(r.status, 200); assert.match(await r.text(), /color="#EDEAE0"/, 'chalk white by default');
+  r = await api('/api/clip/gi-pumpkin--f2a35e.svg');
+  assert.match(await r.text(), /color="#f2a35e"/, 'any color');
+  assert.equal((await api('/api/clip/gi-guillotine.svg')).status, 404, 'only the hand-picked drawings');
+  // a border every October, a different one just for 2026-10, and none in 2027-10
+  const halloween = { items: ['jack-o-lantern', 'gi-bat', 'gi-mummy-head', 'gi-vampire-dracula', 'nope'], color: '#f2d479', size: 'l' };
+  let m = await (await post('/api/border', { ym: '2026-10', border: halloween, yearly: true })).json();
+  assert.deepEqual(m.border, { items: ['jack-o-lantern', 'gi-bat', 'gi-mummy-head', 'gi-vampire-dracula'], color: '#F2D479', size: 'l' });
+  assert.equal(m.borderYearly, true);
+  m = await (await api('/api/meta?ym=2027-10')).json();
+  assert.equal(m.border.items[0], 'jack-o-lantern', 'comes back next October');
+  m = await (await post('/api/border', { ym: '2027-10', border: null })).json();
+  assert.equal(m.border, undefined, 'none in 2027 only');
+  assert.equal((await (await api('/api/meta?ym=2028-10')).json()).border.size, 'l');
+  await post('/api/meta', { ym: '2026-10', hideTitle: false });
+  assert.ok((await (await api('/api/meta?ym=2026-10')).json()).border, 'saving the title keeps the border');
+  assert.equal((await post('/api/border', { ym: '2026-10', border: { items: ['nope'] } })).status, 400);
+  await post('/api/border', { ym: '2026-10', border: null, yearly: true });
+  assert.equal((await (await api('/api/meta?ym=2028-10')).json()).border, undefined, 'yearly border removed');
+});
+
 test('jars remember which piece went in, in order', async () => {
   const jar = { id: 'kid', name: 'Nora', pieces: ['star', 'heart', 'rainbow'], goal: 10 };
   let [j] = await (await post('/api/jars', { jars: [{ ...jar, count: 3, items: ['rainbow', 'rainbow', 'heart'] }] })).json();

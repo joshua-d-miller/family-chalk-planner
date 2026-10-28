@@ -1324,8 +1324,40 @@ function metaFor(ym) {
   const m = row ? JSON.parse(row.data) : {};
   const d = qKvGet.get('titleDefault');
   if (d) m.defaultTitle = JSON.parse(d.data);
+  // border: this month's own, else the one saved for this month every year ({ off: true } = none this year)
+  const yearly = yearlyBorders()[ym.slice(5)];
+  if (m.border && m.border.off) delete m.border;
+  else if (!m.border && yearly) { m.border = yearly; m.borderYearly = true; }
   return m;
 }
+
+// Holiday borders around the calendar: up to 8 pictures (clipart or chalk drawings) repeated around the edge
+function yearlyBorders() { const r = qKvGet.get('borders'); return r ? JSON.parse(r.data) : {}; }
+function cleanBorder(b) {
+  if (!b || typeof b !== 'object' || !Array.isArray(b.items)) return null;
+  const f = fluentSet(), g = giSet();
+  const items = [...new Set(b.items.filter(n => typeof n === 'string' && /^[a-z0-9-]{1,64}$/.test(n) && (n.startsWith('gi-') ? g.ok.has(n.slice(3)) : f.icons[n])))].slice(0, 8);
+  if (!items.length) return null;
+  return { items, color: /^#[0-9a-fA-F]{6}$/.test(b.color || '') ? b.color.toUpperCase() : CHALK, size: ['s', 'm', 'l'].includes(b.size) ? b.size : 'm' };
+}
+// { ym, border: {...} or null, yearly: true = every year in this month }
+app.post('/api/border', (req, res) => {
+  const { ym, border, yearly } = req.body || {};
+  if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
+  const b = cleanBorder(border);
+  if (border && !b) return res.status(400).json({ error: 'Pick at least one picture' });
+  const row = qMetaGet.get(ym), cur = row ? JSON.parse(row.data) : {}, all = yearlyBorders(), mm = ym.slice(5);
+  if (yearly) {
+    if (b) all[mm] = b; else delete all[mm];
+    delete cur.border;   // this month follows the yearly one
+  } else if (b) cur.border = b;
+  else cur.border = all[mm] ? { off: true } : undefined;   // none this month, even if there's a yearly one
+  if (cur.border === undefined) delete cur.border;
+  qKvSet.run('borders', JSON.stringify(all));
+  qMetaSet.run(ym, JSON.stringify(cur));
+  broadcast('meta', { ym: '*' });
+  res.json(metaFor(ym));
+});
 
 // Reward jars: one per kid, filled from the iPad (the wall is read-only)
 const PIECES = ['heart', 'rainbow', 'star', 'bolt', 'critter'];
@@ -1375,6 +1407,7 @@ app.post('/api/meta', (req, res) => {
   const row = qMetaGet.get(ym);
   const cur = row ? JSON.parse(row.data) : {};
   const meta = { hideTitle: hideTitle === undefined ? !!cur.hideTitle : !!hideTitle };
+  if (cur.border) meta.border = cur.border;   // set separately (/api/border)
   const t = title === undefined ? cur.title : cleanTitle(title);
   if (t) meta.title = t;
   const sd = side === undefined ? cur.side : side === null ? undefined : cleanSide(side);   // null = back to the usual setting
@@ -1637,10 +1670,46 @@ function fluentSet() {
   }
   return fluent;
 }
+// Chalk drawings: a hand-picked, family-friendly part of Game Icons (game-icons.net, CC BY 3.0) - one-color
+// silhouettes drawn in any color. Named "gi-<name>", and "gi-<name>--<rrggbb>" for a color (default chalk white).
+const GI_GROUPS = {
+  'Halloween': 'pumpkin pumpkin-lantern pumpkin-mask witch-face witch-flight mummy-head vampire-dracula female-vampire frankenstein-creature floating-ghost ghost bat moon-bats spider-web cobweb hanging-spider cauldron magic-broom broom tombstone candle-light candles cat owl moon skeleton wizard-face pointy-hat',
+  'Fall & Thanksgiving': 'corn cornucopia acorn wheat scarecrow pilgrim-hat pumpkin falling-leaf maple-leaf oak-leaf chestnut-leaf curled-leaf oak sunflower shiny-apple pie-slice mushroom-gills mushrooms squirrel hedgehog barn-owl',
+  'Winter & Christmas': 'snowman snowflake-1 snowflake-2 present gingerbread-man ringing-bell pine-tree candy-canes star-formation sparkles winter-hat igloo penguin polar-bear',
+  'Spring & Easter': 'easter-egg rabbit rabbit-head flower-pot daisy butterfly bee ladybug clover shamrock rainbow-star umbrella sprout seedling bird-house',
+  'Summer': 'sun sunrise beach-ball beach-bucket palm-tree watermelon ice-cream-cone ice-cream-scoop sailboat firework-rocket balloons kite crab',
+  'Party & love': 'cake-slice cupcake balloons party-popper present crown trophy-cup medal hearts heart-bottle love-letter',
+  'Animals': 'cat dog-house horse-head cow pig sheep rooster chicken duck turtle frog unicorn dinosaur-rex elephant-head lion bear-head owl'
+};
+let gi = null;
+function giSet() {
+  if (!gi) {
+    const j = require('@iconify-json/game-icons/icons.json'), groups = {}, ok = new Set();
+    for (const [g, s] of Object.entries(GI_GROUPS)) groups[g] = s.split(' ').filter(n => j.icons[n] && ok.add(n)).map(n => 'gi-' + n);
+    gi = { icons: j.icons, w: j.width || 512, h: j.height || 512, ok, groups };
+  }
+  return gi;
+}
+const CHALK = '#EDEAE0';
+function giSvg(name) {   // "gi-pumpkin" or "gi-pumpkin--f2d479"
+  const m = /^gi-([a-z0-9]+(?:-[a-z0-9]+)*?)(?:--([0-9a-f]{6}))?$/.exec(name);
+  if (!m) return null;
+  const g = giSet(); if (!g.ok.has(m[1])) return null;
+  const i = g.icons[m[1]], col = m[2] ? '#' + m[2] : CHALK;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${i.width || g.w} ${i.height || g.h}" width="256" height="256" color="${col}">${i.body.replace(/fill="#000"/g, 'fill="currentColor"').replace(/fill="#fff"/g, 'fill="none"')}</svg>`;
+}
 app.get('/api/clip/list', (req, res) => {
-  try { res.set('Cache-Control', 'public, max-age=86400').json(fluentSet().names); } catch (e) { res.status(500).json({ error: 'Clipart isn’t installed (run npm ci)' }); }
+  try { res.set('Cache-Control', 'public, max-age=86400').json(fluentSet().names.concat(...Object.values(giSet().groups))); } catch (e) { res.status(500).json({ error: 'Clipart isn’t installed (run npm ci)' }); }
+});
+app.get('/api/clip/drawings', (req, res) => {
+  try { res.set('Cache-Control', 'public, max-age=86400').json(giSet().groups); } catch (e) { res.status(500).json({ error: 'Clipart isn’t installed (run npm ci)' }); }
 });
 app.get('/api/clip/:name.svg', (req, res) => {
+  if (req.params.name.startsWith('gi-')) {
+    let svg; try { svg = /^[a-z0-9-]{1,64}$/.test(req.params.name) && giSvg(req.params.name); } catch (e) { return res.sendStatus(500); }
+    if (!svg) return res.sendStatus(404);
+    return res.set('Cache-Control', 'public, max-age=31536000, immutable').type('image/svg+xml').send(svg);
+  }
   let f; try { f = fluentSet(); } catch (e) { return res.sendStatus(500); }
   const i = /^[a-z0-9-]{1,64}$/.test(req.params.name) && f.icons[req.params.name];
   if (!i) return res.sendStatus(404);

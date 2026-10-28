@@ -28,13 +28,20 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 - **Chalk** or **Posca** marker, color dots (rainbow **+** for any color; recent custom colors are remembered), and the dot button for size.
 - **Aa** writes typed text in a choice of fonts.
 - **Select** (dashed square): drag around anything to select it, then press and drag to move it. The bar that appears has **★ Save as stamp**, **🎨 Color** (line and fill), **− / +** (smaller / bigger), **Copy**, **Erase**, and **✕** to finish. Or drag the **pink dot** at the corner to resize freely (works on clipart, stamps, GIFs, text and drawings).
-- **★ Stamps / clipart:** your saved stamps, **Clipart** (3,000+ full-color pictures from Fluent Emoji by Microsoft, in groups like Fall, Winter, School & sports, plus search — they work offline), an emoji library, **Find more** (thousands of icons, with line and fill colors), and **GIFs** (your own uploads, **GIFs from a link**, plus animated emoji). To add one from GIPHY, Tenor, KLIPY or any site: on the GIF tap Share → Copy link (or press and hold → Copy), paste it in the GIFs tab and tap **Add**. The board downloads its own copy, so it keeps working even if that site changes or goes away. Each GIF can play **gently** (now and then), **always**, or stay **still**.
+- **★ Stamps / clipart:** your saved stamps, **Clipart** (3,000+ full-color pictures from Fluent Emoji by Microsoft, in groups like Fall, Winter, School & sports, plus search — they work offline; the groups marked with a drawing (a witch for Halloween, a cornucopia for Thanksgiving…) are **chalk drawings** — witches, mummies, cornucopias, scarecrows and more — in any color you pick above the pictures), an emoji library, **Find more** (thousands of icons, with line and fill colors), and **GIFs** (your own uploads, **GIFs from a link**, plus animated emoji). To add one from GIPHY, Tenor, KLIPY or any site: on the GIF tap Share → Copy link (or press and hold → Copy), paste it in the GIFs tab and tap **Add**. The board downloads its own copy, so it keeps working even if that site changes or goes away. Each GIF can play **gently** (now and then), **always**, or stay **still**.
 - **Eraser**, **Undo / Redo**, and the trash can to **wipe this month's art**.
 - The drawing covers the whole board, so you can write or draw across several days ("Grandma visiting" over a week) or anywhere in the margins.
 - Art is saved per month, so each month starts fresh.
 
 ### Month title
 - Tap **Month title** (top right of the calendar). **Typed:** choose font, color, outline and size (**S, M, L** or **XL**); tick **Use this style for every month** to make it the default. **I'll hand-letter it:** hides the typed title so you can draw your own.
+
+### 🖼 Holiday border
+- Tap **🖼 Border** (top left of the calendar) to put a border of pictures around the calendar for the month you're looking at.
+- Start from a ready-made set (**Halloween**, **Thanksgiving**, **Christmas**, **Winter**, **Valentine's**, **St. Patrick's**, **Easter**, **Spring**, **Fireworks**, **Summer**, **Birthday**, **Back to school**), then tap a picture to take it out, or search to add your own — up to 8, repeated around the edge. Pick the color for the chalk drawings and the size (Small, Medium, Large). The board shows it as you go; **Cancel** puts it back.
+- **Every year in October** (ticked by default) brings it back each year. Untick it to make it just for this year; **No border** with it unticked turns the border off for this year only.
+- The days get a little smaller to make room, so a stamp placed right at a day's edge may sit slightly differently with the border on or off.
+- Family screens can set borders too.
 
 ### Meal Plan
 - Tap **Meal Plan** in Notes. Add meals (Enter adds the next line), tick ones that are done (they get crossed out), **Clear all** for a new week. A long list shrinks to fit, then ends with "+N more".
@@ -67,7 +74,7 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 
 
 ## A family touch screen
-A screen paired as **✋ Family** opens straight into the editor: tap a day to see and add events, tap an event to change it, tap the Meal Plan or a jar. **Decorate** adds stamps, clipart, emoji, GIFs and words (Aa), and moves, resizes or erases them — fingers are great at that. It can also change the **board style** (background, look, seasonal pattern) and the **photos**. Freehand chalk and Posca, the month title (typed or hand-lettered), wiping the month, removing saved stamps/GIFs and the calendar settings stay on a signed-in tablet. It looks and behaves like the wall: no wood frame (just the strip with the buttons), no zooming, **double tap** for the photo frame, the overnight slideshow (a tap shows the calendar for 5 minutes), back to this month and out of Decorate after 5 quiet minutes, and it updates itself. Handy for a touch screen on the wall that everyone uses.
+A screen paired as **✋ Family** opens straight into the editor: tap a day to see and add events, tap an event to change it, tap the Meal Plan or a jar. **Decorate** adds stamps, clipart, emoji, GIFs and words (Aa), and moves, resizes or erases them — fingers are great at that. It can also change the **board style** (background, look, seasonal pattern), the **🖼 holiday border** and the **photos**. Freehand chalk and Posca, the month title (typed or hand-lettered), wiping the month, removing saved stamps/GIFs and the calendar settings stay on a signed-in tablet. It looks and behaves like the wall: no wood frame (just the strip with the buttons), no zooming, **double tap** for the photo frame, the overnight slideshow (a tap shows the calendar for 5 minutes), back to this month and out of Decorate after 5 quiet minutes, and it updates itself. Handy for a touch screen on the wall that everyone uses.
 
 ## The wall display (read-only)
 - The wall can't change anything, but it responds to taps:

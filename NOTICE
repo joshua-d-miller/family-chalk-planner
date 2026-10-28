@@ -6,6 +6,8 @@ Third-party components (fetched or installed separately, not part of this reposi
 - Express (MIT), ical.js (MPL-2.0), @simplewebauthn/server (MIT), qrcode (MIT): npm dependencies.
 - Fluent Emoji (MIT, Microsoft), https://github.com/microsoft/fluentui-emoji: the Clipart pictures,
   installed with the board from npm (@iconify-json/fluent-emoji-flat).
+- Game Icons (CC BY 3.0), https://game-icons.net: the ✏️ chalk drawings (a hand-picked part of the set),
+  installed with the board from npm (@iconify-json/game-icons). By Lorc, Delapouite and contributors.
 - Tabler Icons (MIT), https://tabler.io/icons: downloaded on first "Find more" clipart search.
 - Noto Animated Emoji (CC BY 4.0, Google), https://googlefonts.github.io/noto-emoji-animation/:
   fetched on first use and cached locally.
