@@ -98,8 +98,14 @@ body.chorespage .chempty{font-size:20px}
 .calbody.bordered{padding:var(--bpad,0px)}
 #borderLayer{position:absolute;inset:0;pointer-events:none;z-index:1}
 #borderLayer img{position:absolute;display:block}
-#borderBtn{position:absolute;left:4px;top:50%;transform:translateY(-50%);height:34px;padding:0 12px;border-radius:17px;border:1.5px solid rgba(var(--ink),.35);background:transparent;color:rgba(var(--ink),.8);font:700 14px 'Kalam',cursive;cursor:pointer;display:none}
-body.edit:not(.drawing) #borderBtn{display:block}
+body.drawing #borderBtn,body.drawing #titleBtn,body.drawing #sideBtn{display:none}
+.cork .pill{white-space:nowrap;flex:none}
+/* Title photos on/off for the month on screen (off = room to draw beside the month name) */
+#sideBtn .sw{width:34px;height:20px;border-radius:10px;background:rgba(var(--ink),.25);position:relative;flex:none;transition:background .15s}
+#sideBtn .sw::after{content:'';position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--chalk);transition:transform .15s}
+#sideBtn.on .sw{background:var(--green)}
+#sideBtn.on .sw::after{transform:translateX(14px)}
+#sideBtn[hidden]{display:none}
 #bmodal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:20}
 #bmodal.open{display:flex}
 #bmodal .card{width:min(640px,96vw)}
@@ -416,9 +422,6 @@ body.display #wx .rain{width:2.2px;height:30px;background:linear-gradient(rgba(1
 .titlerow h1.hand .mn::before{color:transparent;-webkit-text-stroke-color:transparent}
 .titlerow h1.hand small{color:transparent}
 body.edit .titlerow h1.hand{outline:2px dashed rgba(246,179,203,.28);outline-offset:2px;border-radius:8px}
-#titleBtn{position:absolute;right:4px;top:50%;transform:translateY(-50%);height:34px;padding:0 12px;border-radius:17px;border:1.5px solid rgba(var(--ink),.35);
-  background:transparent;color:rgba(var(--ink),.8);font-family:'Kalam',cursive;font-size:14px;font-weight:700;cursor:pointer;display:none}
-body.edit:not(.drawing) #titleBtn{display:block}
 body.edit{touch-action:none}
 .card,.stamps,.lscroll{touch-action:pan-y}
 .cork.floating{position:fixed;left:50%;bottom:8px;width:1252px;z-index:14;border-radius:14px;transform-origin:bottom center;box-shadow:0 6px 20px rgba(0,0,0,.6)}
@@ -574,8 +577,6 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <div class="titlerow">
         <button class="nav" id="prev" aria-label="Previous month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
         <h1 id="monthName">&nbsp;</h1>
-        <button type="button" id="titleBtn">✎ Hand-letter title</button>
-        <button type="button" id="borderBtn">🖼 Border</button>
         <button class="nav" id="next" aria-label="Next month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
       </div>
       <div class="calbody" id="calbody">
@@ -647,6 +648,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <button class="tool" id="redoBtn" aria-label="Redo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
       <button class="tool" id="clearBtn" aria-label="Wipe this month's art"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
     </div>
+    <button class="pill" id="sideBtn" type="button" aria-pressed="false" hidden><span class="sw" aria-hidden="true"></span>Title photos</button>
+    <button class="pill" id="titleBtn" type="button">✎ Month title</button>
+    <button class="pill" id="borderBtn" type="button">🖼 Border</button>
     <button class="pill" id="choresBtn" aria-label="Chores">🧹 Chores</button>
     <button class="pill" id="acctBtn" aria-label="Account">👤</button>
     <button class="pill" id="settingsBtn" aria-label="Settings">⚙️</button>
@@ -2069,12 +2073,13 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   function tpSpots() {
     var row = document.querySelector('.titlerow'), prev = $('prev'), next = $('next');
     if (!row || !prev || !next) return [];
-    var wd = document.querySelector('.weekdays'), x0 = row.offsetLeft, top = 6;
-    var h = Math.min(76, (wd ? wd.offsetTop + 4 : row.offsetTop + row.offsetHeight) - top - 6), w = Math.round(h * 1.3);   // stop above the weekday names
-    var tb = $('titleBtn'), tbw = EDIT && tb && tb.offsetWidth ? tb.offsetWidth + 10 : 0;
+    var cb = $('calbody'), x0 = row.offsetLeft, top = 6;
+    // stop above the calendar (its weekday names, or a holiday border); both measured from the board, not the calendar box
+    var h = Math.min(76, (cb ? cb.offsetTop + 4 : row.offsetTop + row.offsetHeight) - top - 6), w = Math.round(h * 1.3);
+    if (h < 30) return [];
     var sides = [
       { l: x0 + 6, r: x0 + prev.offsetLeft - 14, tilt: [-5, 3] },
-      { l: x0 + next.offsetLeft + next.offsetWidth + 14, r: x0 + row.offsetWidth - 6 - tbw, tilt: [4, -3] }
+      { l: x0 + next.offsetLeft + next.offsetWidth + 14, r: x0 + row.offsetWidth - 6, tilt: [4, -3] }
     ];
     var arts = (state.strokes || []).filter(function (it) { return !it._gone && !it.e; }).map(itemBox);
     var out = [];
@@ -2088,9 +2093,25 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     });
     return out;
   }
+  function titlePhotosOn() { var sd = tpSide(); return sd ? sd.mode === 'photos' : !!ph.cfg.frame; }
+  function syncSideBtn() {
+    var b = $('sideBtn'); if (!b) return;
+    b.hidden = !EDIT || !ph.list.length;   // only with an album to show
+    b.classList.toggle('on', titlePhotosOn()); b.setAttribute('aria-pressed', String(titlePhotosOn()));
+  }
+  // The switch in the strip: photos beside this month's name, or the space left for drawing (same as 📷 → Art instead)
+  $('sideBtn').addEventListener('click', function () {
+    var sd = tpSide(), on = !titlePhotosOn();
+    var next = { mode: on ? 'photos' : 'art', pick: (sd && sd.pick) || 'random', ids: (sd && sd.ids) || [] };
+    if (next.pick === 'chosen' && !next.ids.length) next.pick = 'random';
+    state.meta = Object.assign({}, state.meta, { side: next }); applyPhotos();   // shows at once
+    post('/api/meta', { ym: state.ym, side: next }).then(function (m) { state.meta = m; applyPhotos(); })
+      .catch(function (e) { status(e.message); loadMeta(state.ym); });
+  });
   function layoutTitlePhotos() {
     var layer = $('ptitle'); if (!layer) return;
-    var sd = tpSide(), pool = tpPool(), on = sd ? sd.mode === 'photos' : !!ph.cfg.frame;   // 'art' months leave the space for drawing
+    syncSideBtn();
+    var sd = tpSide(), pool = tpPool(), on = titlePhotosOn();   // 'art' months leave the space for drawing
     var want = pool.length && on ? tpSpots() : [];
     if (want.length > pool.length) want = pool.length === 1 ? want.slice(0, 1) : [want[0], want[want.length - 1], want[1], want[2]].filter(Boolean).slice(0, pool.length);   // never more frames than photos, so none repeat
     var key = JSON.stringify(want) + '|' + pool.map(function (p) { return p.id; }).join(',');

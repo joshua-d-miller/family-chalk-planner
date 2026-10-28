@@ -34,10 +34,10 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 - Art is saved per month, so each month starts fresh.
 
 ### Month title
-- Tap **Month title** (top right of the calendar). **Typed:** choose font, color, outline and size (**S, M, L** or **XL** — in tall fonts like Pacifico, XL is made just small enough to fit above the calendar); tick **Use this style for every month** to make it the default. **I'll hand-letter it:** hides the typed title so you can draw your own.
+- Tap **✎ Month title** in the strip at the bottom. **Typed:** choose font, color, outline and size (**S, M, L** or **XL** — in tall fonts like Pacifico, XL is made just small enough to fit above the calendar); tick **Use this style for every month** to make it the default. **I'll hand-letter it:** hides the typed title so you can draw your own.
 
 ### 🖼 Holiday border
-- Tap **🖼 Border** (top left of the calendar) to put a border of pictures around the calendar for the month you're looking at.
+- Tap **🖼 Border** in the strip at the bottom to put a border of pictures around the calendar for the month you're looking at.
 - Start from a ready-made set (**Halloween**, **Thanksgiving**, **Christmas**, **Winter**, **Valentine's**, **St. Patrick's**, **Easter**, **Spring**, **Fireworks**, **Summer**, **Birthday**, **Back to school**), then tap a picture to take it out, or search to add your own — up to 8, repeated around the edge. Pick the color for the chalk drawings and the size (Small, Medium, Large). The board shows it as you go; **Cancel** puts it back.
 - **Every year in October** (ticked by default) brings it back each year. Untick it to make it just for this year; **No border** with it unticked turns the border off for this year only.
 - The days get a little smaller to make room, and everything drawn on the calendar (drawings, stamps, clipart, words) moves and shrinks with them, so it stays on the same day. Turning the border off or changing its size moves it back. Things beside the calendar (the title, the Notes column) stay where they are. A tablet or family screen does the moving the first time it shows the month.
@@ -67,6 +67,7 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 ### 📷 Photos
 - Photos come from an iCloud or Google Photos **shared album** (set `PHOTO_ALBUM_URL`, see [photos.md](photos.md)). To add or remove photos, add or remove them in that album from any phone. The board checks every 15 minutes, or tap **↻ Check album now**.
 - **Beside the month name, per month:** **Random photos**, **Photos I pick** (tap up to 8 in the grid; they show in that order), or **Art instead** (no photos, so you can draw or stamp clipart there). The choice is saved for the month you're looking at; months you haven't set use the "usually" choice.
+- **Title photos** switch in the strip at the bottom (tablet and family screens): the quick way to turn the photos beside this month's name off (room to draw there) or back on. Photos you picked are remembered for when you turn them back on.
 - **Photos there:** up to four polaroids, framed on people's faces. One changes every 40 seconds. They skip any spot that has a drawing on it, and never show the same photo twice at once.
 - **Slideshow overnight:** start and end times (default 9 PM–6 AM), **brightness** (Dim 30% / Medium 50% / Bright 70% / Full), and **new photo every** 10 s–1 min.
 - **▶ Preview slideshow** plays it on the tablet (tap to close).

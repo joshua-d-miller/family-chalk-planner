@@ -4,13 +4,17 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
-## 0.12.1 — borders keep the art on its day
+## 0.12.1 — borders keep the art on its day; title photos are back
 - Fixed: adding a holiday border to a month that already had drawings, stamps or words left them where
   they were while the days moved in, so they ended up on the wrong spot. Art on the calendar now moves
   and shrinks with the days (and back when the border comes off or changes size). The first tablet or
   family screen that shows the month saves the move for everyone.
 - Fixed: an extra-large month title in a tall font (Pacifico with an outline) was cut off at the top of
   the board. It's now shrunk just enough to fit and kept off the edge.
+- Fixed: the photos beside the month name stopped showing in 0.11.0 (on every month, border or not).
+- **✎ Month title** and **🖼 Border** moved from beside the month name to the strip at the bottom, so
+  both sides of the title are free for photos or drawing. New **Title photos** switch there turns this
+  month's photos off (room to draw) or back on; photos you picked are kept for when they come back.
 
 ## 0.12.0 — chores
 - **🧹 Chores:** a family checklist kept on the board — every day, every week, every month — that

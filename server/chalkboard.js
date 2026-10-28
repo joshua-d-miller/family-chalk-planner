@@ -1450,7 +1450,7 @@ function cleanSide(v) {
   if (!v || typeof v !== 'object') return undefined;
   const mode = v.mode === 'art' ? 'art' : 'photos';
   const ids = (Array.isArray(v.ids) ? v.ids : []).filter(id => typeof id === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(id)).slice(0, 8);
-  return mode === 'art' ? { mode } : { mode, pick: v.pick === 'chosen' && ids.length ? 'chosen' : 'random', ids };
+  return { mode, pick: v.pick === 'chosen' && ids.length ? 'chosen' : 'random', ids };   // 'art' keeps the picks for when photos come back
 }
 app.post('/api/meta', (req, res) => {
   const { ym, hideTitle, title, makeDefault, side } = req.body || {};
