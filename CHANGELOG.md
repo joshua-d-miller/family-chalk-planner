@@ -4,6 +4,17 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.12.0 — chores
+- **🧹 Chores:** a family checklist kept on the board — every day, every week, every month — that
+  resets by itself. Swipe left on the calendar to see it (or 🧹 Chores on the tablet); big and easy to read.
+- **On your phone:** open the board’s address with `/chores` at the end, sign in, and add it to the Home
+  Screen. Tick chores off and **✎ Change the list** from there or from the tablet.
+- Chores can be shared (done once, by any of them) or **each their own**, and can count more than once
+  a week (“Fold laundry, 3 times”). **Start with an example** fills in a typical family schedule.
+- **🧒 Kid’s tablet** (new kind of screen in the admin console): opens on that kid’s own chores, and they
+  can tick off only theirs. The calendar is a swipe away, view only. Family screens can tick anyone’s;
+  the wall just shows them.
+
 ## 0.11.0 — holiday borders and chalk drawings
 - **🖼 Border** around the calendar, per month: ready-made Halloween, Thanksgiving, Christmas and more,
   or any pictures you pick (up to 8, repeated around the edge), in a color and size you choose. Comes

@@ -160,7 +160,9 @@ button:disabled{opacity:.5;cursor:default}
         <div class="seg" id="dvRole">
           <button data-r="view" class="on">👀 View only</button>
           <button data-r="family">✋ Family</button>
+          <button data-r="kid">🧒 Kid’s tablet</button>
         </div>
+        <div id="dvKidWrap" hidden><label for="dvKid">Whose tablet</label><select id="dvKid"></select></div>
         <p class="dim" id="dvHelp"></p>
         <div class="actions"><button class="go" id="dvGo">Pair it</button></div>
         <div class="err" id="dvErr"></div>
@@ -623,12 +625,29 @@ button:disabled{opacity:.5;cursor:default}
     return state;
   }
   var SCREEN_ROLES = { view: '👀 View only', family: '✋ Family' };
-  var dvRole = segs('dvRole', 'dvHelp', { view: 'Shows the board. Nothing can be changed on it (a wall display).', family: 'Shows the board and can add or change events, the meal plan, reward jars and countdowns, decorate with stamps, clipart and words, and change the board style and photos. No freehand drawing, month title or calendar settings (a shared touch screen).' });
+  var dvRole = segs('dvRole', 'dvHelp', { view: 'Shows the board. Nothing can be changed on it (a wall display).', family: 'Shows the board and can add or change events, the meal plan, reward jars and countdowns, check off anyone’s chores, decorate with stamps, clipart and words, and change the board style and photos. No freehand drawing, month title or calendar settings (a shared touch screen).',
+    kid: 'A child’s own tablet: opens on their chores, and they can check off only their own. They can look at the calendar but can’t change anything else. No password needed.' });
+  // the family members from Chores (kids first): who a kid's tablet belongs to
+  var chorePeople = [];
+  function loadChorePeople() {
+    return api('/api/chores').then(function (c) {
+      chorePeople = (c.people || []).slice().sort(function (a, b) { return (b.kid ? 1 : 0) - (a.kid ? 1 : 0); });
+      var sel = $('dvKid'); sel.innerHTML = '';
+      chorePeople.forEach(function (p) { var o = el('option', null, p.name); o.value = p.id; sel.appendChild(o); });
+      if (!chorePeople.length) { var o = el('option', null, 'Add the family in Chores first'); o.value = ''; sel.appendChild(o); }
+    }).catch(function () {});
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#dvRole button'), function (b) { b.addEventListener('click', function () { $('dvKidWrap').hidden = dvRole.v !== 'kid'; }); });
+  function roleName(r) {
+    var m = /^kid:(.+)$/.exec(r || ''); if (!m) return SCREEN_ROLES[r] || r;
+    var p = chorePeople.filter(function (x) { return x.id === m[1]; })[0];
+    return '🧒 ' + (p ? p.name : m[1]) + '’s tablet';
+  }
   var PEOPLE_ROLES = { editor: '🎨 Editor', admin: '🔑 Admin' };
   var ivRole = segs('ivRole', 'ivHelp', { editor: 'Can do everything on the board: events, drawing, board style, photos.', admin: 'Editor, plus this console: screens, people, calendar and board settings.' });
 
   function loadScreens() {
-    return api('/api/devices').then(function (d) {
+    return loadChorePeople().then(function () { return api('/api/devices'); }).then(function (d) {
       var w = $('dvWaiting'); w.innerHTML = '';
       d.waiting.forEach(function (p) { w.appendChild(el('p', 'dim', '⏳ ' + p.agent + ' is showing a code (' + ago(p.created) + ') - type it above.')); });
       var list = $('dvList'); list.innerHTML = '';
@@ -638,7 +657,8 @@ button:disabled{opacity:.5;cursor:default}
         var nm = el('input'); nm.value = x.name; nm.setAttribute('aria-label', 'Screen name');
         nm.addEventListener('change', function () { api('/api/devices/update', { id: x.id, name: nm.value }).catch(function (e) { $('dvErr').textContent = e.message; }); });
         var sel = el('select'); sel.setAttribute('aria-label', 'What it may do');
-        Object.keys(SCREEN_ROLES).forEach(function (r) { var o = el('option', null, SCREEN_ROLES[r]); o.value = r; sel.appendChild(o); });
+        Object.keys(SCREEN_ROLES).concat(chorePeople.map(function (p) { return 'kid:' + p.id; })).forEach(function (r) { var o = el('option', null, roleName(r)); o.value = r; sel.appendChild(o); });
+        if (!Array.prototype.some.call(sel.options, function (o) { return o.value === x.role; })) { var o = el('option', null, roleName(x.role)); o.value = x.role; sel.appendChild(o); }
         sel.value = x.role;
         sel.addEventListener('change', function () { api('/api/devices/update', { id: x.id, role: sel.value }).catch(function (e) { $('dvErr').textContent = e.message; sel.value = x.role; }); });
         var rm = el('button', 'sm del', 'Remove');
@@ -651,7 +671,8 @@ button:disabled{opacity:.5;cursor:default}
   }
   $('dvGo').addEventListener('click', function () {
     $('dvErr').textContent = '';
-    busy($('dvGo'), api('/api/devices/approve', { code: $('dvCode').value, name: $('dvName').value, role: dvRole.v }))
+    if (dvRole.v === 'kid' && !$('dvKid').value) { $('dvErr').textContent = 'Add the family in Chores first (on the board: 🧹 Chores → Edit)'; return; }
+    busy($('dvGo'), api('/api/devices/approve', { code: $('dvCode').value, name: $('dvName').value, role: dvRole.v === 'kid' ? 'kid:' + $('dvKid').value : dvRole.v }))
       .then(function () { $('dvCode').value = ''; $('dvName').value = ''; loadScreens(); })
       .catch(function (e) { $('dvErr').textContent = e.message; });
   });

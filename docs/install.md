@@ -69,12 +69,13 @@ Everything works in any current browser — Safari, Chrome, Edge, Firefox, Samsu
 | Who | Role | Can |
 |---|---|---|
 | Screen | 👀 **View only** | Show the board (a wall display). |
+| Screen | 🧒 **Kid’s tablet** | Shows just that kid’s chores (pick which kid when pairing; add the family in Chores first) and lets them tick off their own. Swipe right for the calendar, view only. |
 | Screen | ✋ **Family** | Show the board and add or change events, the meal plan, jars and countdowns, and decorate with stamps, clipart, emoji, GIFs and words (place, move, resize, erase). No freehand drawing, no wiping a month, no board style, photos or settings — for a shared touch screen. |
 | Person | 🎨 **Editor** | Everything on the board: events, drawing, board style, photos. Signs in again on that tablet every 60 days (one Face ID tap with a passkey; adjustable in 🛡 Security). |
 | Person | 🔑 **Admin** | Editor, plus the admin console (screens, people) and the board's ⚙️ settings (calendar, Google, trash days). The console asks for a fresh sign-in after 30 quiet minutes. |
 
 1. **Create the admin:** open `/admin`, enter the **setup code** the installer printed (also in `journalctl -u family-chalk-planner` and `data/setup-code.txt`; it works once), choose a username and password, and scan the QR code with an authenticator app (Google Authenticator, Microsoft Authenticator, 1Password, Authy…). If the board has an HTTPS address (below), add a **passkey** too.
-2. **Pair each screen:** open the board on it; it shows a code like `K7QA-4MDX`. In the admin console → **📺 Screens**, type the code, name it, pick View only or Family, and tap **Pair it**.
+2. **Pair each screen:** open the board on it; it shows a code like `K7QA-4MDX`. In the admin console → **📺 Screens**, type the code, name it, pick View only, Family or Kid’s tablet, and tap **Pair it**.
 3. **Invite people:** admin console → **👪 People** → username, name, Editor or Admin → **Make invite link**. Send them the link (it works once, for 3 days). They choose a password, set up their authenticator app, and add a passkey on their tablet.
 4. **Day to day:** the console lists every screen (last seen) and person. Under a person, **Sign-ins & passkeys** shows each device they're signed in on (browser, address, when, when it ends) and each passkey, each with its own *End this sign-in* / *Remove*. *Remove* a screen and it stops at once; *Sign out everywhere* for a lost tablet; *New invite link* when someone forgot their password or lost their phone. **👤 My account** shows where *you* are signed in.
 5. **🛡 Security:**

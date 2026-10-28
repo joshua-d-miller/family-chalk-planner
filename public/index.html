@@ -39,6 +39,61 @@ body.family .slate{box-shadow:none}
 /* cork is busy: a soft dark shadow keeps small writing crisp on it */
 body[data-surface=cork] .slate,body[data-surface=cork] .slate .chalk,body[data-surface=wood] .slate,body[data-surface=wood] .slate .chalk{text-shadow:0 1px 2px rgba(20,10,0,.85),0 0 3px rgba(20,10,0,.6)}
 .cal{flex:1;min-width:0;display:flex;flex-direction:column}
+/* Chores: a page of its own over the board (swipe from the calendar), big and easy to read */
+#chores{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;padding:12px 24px 16px;--chz:24px}
+#chores[hidden]{display:none}
+body.choresOn .cal,body.choresOn .notes,body.choresOn #art,body.choresOn #artSvg,body.choresOn #gifLayer,body.choresOn #ptitle,body.choresOn #wx{visibility:hidden}
+.chhead{display:flex;align-items:center;gap:18px;height:68px;flex:none}
+.chhead h2{margin:0 8px 0 0;font-family:'Dancing Script',cursive;font-size:54px;line-height:1;color:var(--pink)}
+.chtabs{display:flex;gap:8px;flex:1}
+.chtabs button{height:46px;padding:0 18px;border-radius:23px;border:2px solid rgba(var(--ink),.3);background:transparent;color:var(--chalk);font:700 21px 'Kalam',cursive;cursor:pointer;white-space:nowrap}
+.chtabs button.on{border-color:var(--yellow);color:var(--yellow)}
+.chtabs button small{font-size:15px;opacity:.75;margin-left:6px}
+.chlink{height:42px;padding:0 16px;border-radius:21px;border:1.5px solid rgba(var(--ink),.35);background:transparent;color:rgba(var(--ink),.85);font:700 17px/40px 'Kalam',cursive;cursor:pointer;text-decoration:none;white-space:nowrap}
+.chcols{flex:1;min-height:0;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:0;margin-top:12px}
+.chcol{min-height:0;overflow:hidden;padding:0 16px;border-left:1.5px solid rgba(var(--ink),.25)}
+.chcol:first-child{border-left:none;padding-left:4px}
+.chcol h3{margin:0 0 8px;font-family:'Dancing Script',cursive;font-size:calc(var(--chz) * 1.45);line-height:1.1;color:var(--yellow);display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.chcol h3 small{font:700 calc(var(--chz) * .62) 'Kalam',cursive;color:rgba(var(--ink),.6)}
+.chitem{display:flex;align-items:flex-start;gap:12px;width:100%;padding:calc(var(--chz) * .28) 2px;border:none;background:transparent;color:var(--chalk);font:700 var(--chz)/1.18 'Kalam',cursive;text-align:left;cursor:default}
+.chitem.can{cursor:pointer}
+.chitem.can:active{background:rgba(242,212,121,.12);border-radius:8px}
+.chbox{flex:none;width:calc(var(--chz) * 1.15);height:calc(var(--chz) * 1.15);border:2.5px solid currentColor;border-radius:7px;margin-top:.05em;position:relative;opacity:.85}
+.chitem.done .chbox::after{content:'✓';position:absolute;inset:-.35em 0 0 .08em;font-size:1.35em;line-height:1;color:var(--green)}
+.chitem.done .ct{text-decoration:line-through;text-decoration-thickness:2px;opacity:.55}
+.chitem .cn{font-size:.7em;opacity:.7;margin-left:6px;white-space:nowrap}
+.chempty{font:700 22px 'Kalam',cursive;color:rgba(var(--ink),.6);padding:30px 4px}
+body.display #choresBtn,body:not(.edit) #choresBtn{display:none}
+/* /chores on a phone (or any browser): just the chores, one easy-to-read page that scrolls, on the board's surface */
+body.chorespage{cursor:auto}
+body.chorespage #stage{display:none}
+body.chorespage #chores{position:fixed;inset:0;z-index:5;display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));--chz:22px;color:var(--chalk);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+body.chorespage .chhead{height:auto;flex-wrap:wrap;gap:10px 12px;max-width:1100px;margin:0 auto}
+body.chorespage #chores .chhead h2{font-size:42px;flex:1;margin:0}
+body.chorespage .chtabs{order:3;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}
+body.chorespage .chtabs button{height:44px;padding:0 14px;font-size:18px}
+body.chorespage #chBack{display:none}
+body.chorespage .chcols{display:grid;grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:0 32px;margin:16px auto 0;max-width:1100px}
+body.chorespage .chcol,body.chorespage .chcol:first-child{overflow:visible;border-left:none;padding:0 0 14px;margin-bottom:14px;border-bottom:1.5px solid rgba(var(--ink),.25)}
+body.chorespage .chitem{padding:9px 2px;min-height:48px}
+body.chorespage .chempty{font-size:20px}
+@media (min-width:700px){ body.chorespage #chores{--chz:25px} }
+/* Change the chores */
+#chedmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:22}
+#chedmodal.open{display:flex}
+#chedmodal .card{width:min(640px,96vw);max-height:94vh;overflow-y:auto}
+.chedp,.chedc{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-bottom:1px dashed rgba(var(--ink),.2)}
+.card .chedp input[type=text],.card .chedc input[type=text]{flex:1 1 110px;min-width:0;width:auto;height:40px;margin:0;font-size:20px;color:var(--chalk)}
+.chedp .seg,.chedc .seg{height:38px;min-width:38px;padding:0 13px;border-radius:19px;border:2px solid rgba(var(--ink),.3);background:transparent;color:var(--chalk);font:700 17px 'Kalam',cursive;cursor:pointer}
+.chedp .seg.on,.chedc .seg.on{border-color:var(--yellow);color:var(--yellow);background:rgba(242,212,121,.1)}
+.card .chedc input[type=text]{flex-basis:100%}
+.chedc .chedtimes{margin-right:auto}
+.chedc .who{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 100%}
+.chedc .x,.chedp .x{border-color:transparent;opacity:.7}
+.chedtimes{display:flex;align-items:center;gap:4px;font-size:16px}
+#chedTabs{margin-top:16px}
+.chedadd{margin-top:10px}
 .calbody{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
 .calbody.bordered{padding:var(--bpad,0px)}
 #borderLayer{position:absolute;inset:0;pointer-events:none;z-index:1}
@@ -557,6 +612,15 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <div id="gifLayer" aria-hidden="true"></div>
     <div id="wx" aria-hidden="true"></div>
     <div id="status"></div>
+    <div id="chores" hidden>
+      <div class="chhead">
+        <h2>Chores</h2>
+        <div class="chtabs" id="chTabs"></div>
+        <button type="button" class="chlink" id="chEdit" hidden>✎ Change the list</button>
+        <button type="button" class="chlink" id="chBack">📅 Calendar</button>
+      </div>
+      <div class="chcols" id="chCols"></div>
+    </div>
     <div id="offline" aria-live="polite"><span></span><b id="offlineTxt">Offline</b></div>
     <div id="selGrip" aria-label="Drag to resize"></div>
     <div id="selbar">
@@ -583,6 +647,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <button class="tool" id="redoBtn" aria-label="Redo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
       <button class="tool" id="clearBtn" aria-label="Wipe this month's art"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
     </div>
+    <button class="pill" id="choresBtn" aria-label="Chores">🧹 Chores</button>
     <button class="pill" id="acctBtn" aria-label="Account">👤</button>
     <button class="pill" id="settingsBtn" aria-label="Settings">⚙️</button>
     <button class="pill" id="styleBtn" aria-label="Board style">🎨</button>
@@ -836,6 +901,24 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   </div>
 </div>
 
+<div id="chedmodal" role="dialog" aria-modal="true" aria-labelledby="chedTitle">
+  <div class="card">
+    <h3 id="chedTitle">Change the chores</h3>
+    <div class="sublbl">The family (kids can have a tablet that shows just their chores)</div>
+    <div id="chedPeople"></div>
+    <div class="opts"><button type="button" class="seg chedadd" id="chedAddP">+ Add someone</button></div>
+    <div class="opts" id="chedTabs"></div>
+    <div id="chedList"></div>
+    <div class="opts"><button type="button" class="seg chedadd" id="chedAddC">+ Add a chore</button></div>
+    <div class="err" id="chedErr"></div>
+    <div class="actions">
+      <button type="button" class="btn" id="chedExample" style="margin-right:auto">Start with an example</button>
+      <button type="button" class="btn" id="chedCancel">Cancel</button>
+      <button type="button" class="btn go" id="chedSave">Save</button>
+    </div>
+  </div>
+</div>
+
 <div id="dmodal" role="dialog" aria-modal="true" aria-labelledby="dTitle">
   <div class="card">
     <h3 id="dTitle">Day</h3>
@@ -987,10 +1070,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 (function () {
   'use strict';
   var EDIT = location.pathname.replace(/\/+$/, '') === '/edit';
+  var CHORES_PAGE = location.pathname.replace(/\/+$/, '') === '/chores';   // the chores on their own (phones)
   // Test switches for display glitches on kiosk browsers: add ?noart, ?plain and/or ?csszoom to the address
   var Q = new URLSearchParams(location.search);
   var FLAG = { noart: Q.has('noart'), plain: Q.has('plain'), csszoom: Q.has('csszoom') && !EDIT };
-  document.body.className = EDIT ? 'edit' : 'display';
+  document.body.className = EDIT ? 'edit' : CHORES_PAGE ? 'display chorespage' : 'display';
+  if (CHORES_PAGE) document.body.appendChild(document.getElementById('chores'));
 
   var CHALK = ['#EDEAE0', '#F6B3CB', '#F2D479', '#9CC9E6', '#A9D8A0', '#E8A35C', '#B49CE0'];
   // Posca paint-marker colors: bright, opaque, flat
@@ -1056,9 +1141,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       return r.json().catch(function () { return {}; }).then(function (j) {
         if (!r.ok) {
           var err = new Error(j.error || ('HTTP ' + r.status)); err.status = r.status; err.body = j;
-          if (r.status === 401 && j.pair) { if (EDIT) showSignIn(); else showPair(); }
+          if (r.status === 401 && j.pair) { if (EDIT || CHORES_PAGE) showSignIn(CHORES_PAGE ? 'Sign in to see the chores.' : ''); else showPair(); }
           else if (r.status === 401 && j.admin) status('Settings need the admin console sign-in: open /admin');
-          else if (r.status === 401 || (r.status === 403 && j.signin)) { if (EDIT) showSignIn('Your sign-in ended - sign in again'); }
+          else if (r.status === 401 || (r.status === 403 && j.signin)) { if (EDIT || CHORES_PAGE) showSignIn('Your sign-in ended - sign in again'); }
           throw err;
         }
         return j;
@@ -1599,6 +1684,230 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     });
   }
   loadJars();
+
+  // ---- Chores: a page of their own (swipe left from the calendar, or 🧹 Chores) ----
+  var ch = { data: null, tab: 'day', on: false, at: 0 };
+  var CH_TABS = [['day', 'Today'], ['week', 'This week'], ['month', 'This month']];
+  function loadChores() { return api('/api/chores').then(function (d) { ch.data = d; if (ch.on) renderChores(); }).catch(function () {}); }
+  // who may tick it here: signed-in people and family screens, anyone's; a kid's tablet, their own; the wall, none
+  function chCan(en) {
+    if (state.role === 'editor' || state.role === 'family') return true;
+    var mine = ch.data && ch.data.mine; return !!mine && en.who.indexOf(mine) >= 0;
+  }
+  // what's on the page: shared chores once, "each their own" chores once per person
+  function chEntries(d, every) {
+    var mine = d.mine, out = [];
+    d.chores.forEach(function (c) {
+      if (c.every !== every || (mine && c.who.indexOf(mine) < 0)) return;
+      if (c.each) c.who.forEach(function (id) { if (!mine || id === mine) out.push({ c: c, who: [id], person: id, done: (c.doneEach || {})[id] || 0 }); });
+      else out.push({ c: c, who: c.who, done: c.done || 0 });
+    });
+    return out;
+  }
+  function renderChores() {
+    var d = ch.data, cols = $('chCols'), tabs = $('chTabs');
+    $('chEdit').hidden = state.role !== 'editor';
+    tabs.innerHTML = ''; cols.innerHTML = '';
+    var names = {}, order = {};
+    if (d) d.people.forEach(function (p, i) { names[p.id] = p.name; order[p.id] = i; });
+    $('chores').querySelector('.chhead h2').textContent = d && d.mine && names[d.mine] ? names[d.mine] + '’s chores' : 'Chores';
+    if (!d || !d.chores.length) {
+      cols.appendChild(el('div', 'chempty', state.role === 'editor' ? 'No chores yet — tap “✎ Change the list” to add them (or start from an example).' : 'No chores yet. Add them from a phone or tablet: the board’s address followed by /chores'));
+      return;
+    }
+    var have = CH_TABS.filter(function (t) { return chEntries(d, t[0]).length; });
+    if (have.length && !have.some(function (t) { return t[0] === ch.tab; })) ch.tab = have[0][0];
+    have.forEach(function (t) {
+      var list = chEntries(d, t[0]), left = list.filter(function (en) { return en.done < en.c.times; }).length;
+      var b = el('button', ch.tab === t[0] ? 'on' : ''); b.type = 'button';
+      b.appendChild(document.createTextNode(t[1])); b.appendChild(el('small', null, left ? left + ' to do' : 'all done ✓'));
+      b.addEventListener('click', function () { ch.tab = t[0]; renderChores(); });
+      tabs.appendChild(b);
+    });
+    // a column per person, and one per group that shares a chore ("Dad & Mom")
+    var groups = {};
+    chEntries(d, ch.tab).forEach(function (en) {
+      var who = en.who.slice().sort(function (a, b) { return order[a] - order[b]; }), k = who.join(',');
+      (groups[k] = groups[k] || { who: who, list: [] }).list.push(en);
+    });
+    var gl = Object.keys(groups).map(function (k) { return groups[k]; })
+      .sort(function (a, b) { return order[a.who[0]] - order[b.who[0]] || a.who.length - b.who.length; });
+    gl.forEach(function (g) {
+      var col = el('div', 'chcol'), h = el('h3', null, d.mine && g.who.length === 1 ? (d.mine === g.who[0] ? 'Just me' : names[g.who[0]]) : g.who.map(function (id) { return names[id]; }).join(' & '));
+      if (d.mine && g.who.length > 1) h.textContent = 'With ' + g.who.filter(function (id) { return id !== d.mine; }).map(function (id) { return names[id]; }).join(' & ');
+      var done = g.list.filter(function (en) { return en.done >= en.c.times; }).length;
+      h.appendChild(el('small', null, done + ' / ' + g.list.length));
+      col.appendChild(h);
+      g.list.forEach(function (en) {
+        var c = en.c, full = en.done >= c.times, can = chCan(en);
+        var b = el('button', 'chitem' + (full ? ' done' : '') + (can ? ' can' : '')); b.type = 'button';
+        b.appendChild(el('span', 'chbox'));
+        var t = el('span', 'ct', c.title); b.appendChild(t);
+        if (c.times > 1) t.appendChild(el('span', 'cn', en.done + ' of ' + c.times));   // stays with the words
+        b.title = full && c.by ? 'Done (' + c.by + ')' : '';
+        if (can) b.addEventListener('click', function () {
+          if (en.person) { c.doneEach = c.doneEach || {}; c.doneEach[en.person] = en.done + (full ? -1 : 1); } else c.done = en.done + (full ? -1 : 1);
+          renderChores();   // shows at once; the server has the last word
+          post('/api/chores/check', { id: c.id, undo: full, person: en.person }).then(function (v) { ch.data = Object.assign(v, { mine: d.mine }); renderChores(); })
+            .catch(function (e) { status(e.message); loadChores(); });
+        });
+        col.appendChild(b);
+      });
+      cols.appendChild(col);
+    });
+    fitChores(gl.length);
+  }
+  function fitChores(n) {   // big text (bigger still with only a column or two); smaller only when a column would overflow
+    if (CHORES_PAGE) return;   // the page scrolls instead
+    var box = $('chores'), size = n <= 1 ? 40 : n === 2 ? 34 : n === 3 ? 28 : 26;
+    box.style.setProperty('--chz', size + 'px');
+    var over = function () { return Array.prototype.some.call(document.querySelectorAll('#chCols .chcol'), function (c) { return c.scrollHeight > c.clientHeight + 1; }); };
+    while (size > 14 && over()) { size -= 1; box.style.setProperty('--chz', size + 'px'); }
+  }
+  function showChores(on) {
+    ch.on = !!on; ch.at = Date.now();
+    $('chores').hidden = !on; document.body.classList.toggle('choresOn', !!on);
+    if (on) { if (ch.data) renderChores(); loadChores(); }
+  }
+  $('chBack').addEventListener('click', function () { showChores(false); });
+  if ($('choresBtn')) $('choresBtn').addEventListener('click', function () { showChores(!ch.on); });
+  // swipe left on the board for chores, right to go back (not while drawing, zoomed in, or in a popup)
+  (function () {
+    var sx = null, sy = 0;
+    document.addEventListener('pointerdown', function (e) {
+      sx = null;
+      if (CHORES_PAGE || state.drawing || (typeof view !== 'undefined' && view.z > 1.01) || document.querySelector('[role=dialog].open') || !e.isPrimary) return;
+      if (e.target.closest && e.target.closest('#bottom, .chtabs, input, textarea')) return;   // the Notes switch has its own swipe
+      sx = e.clientX; sy = e.clientY; ch.at = Date.now();
+    }, true);
+    document.addEventListener('pointerup', function (e) {
+      if (sx === null) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy; sx = null;
+      if (Math.abs(dx) < 90 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
+      if (dx < 0 && !ch.on) showChores(true); else if (dx > 0 && ch.on) showChores(false);
+    }, true);
+  })();
+  // after 3 quiet minutes: shared screens go back to the calendar, a kid's tablet back to its chores
+  setInterval(function () {
+    if (CHORES_PAGE || Date.now() - ch.at < 3 * 60e3 || state.role === 'editor') return;
+    var kid = /^kid:/.test(state.role || '');
+    if (kid && !ch.on) showChores(true); else if (!kid && ch.on) showChores(false);
+  }, 30e3);
+
+  // ---- Change the chores (signed-in people): the family, and the chores by how often ----
+  var ched = null, chedSeq = 0;
+  var CHED_TABS = [['day', 'Every day'], ['week', 'Every week'], ['month', 'Every month']];
+  function chedId(pre) { return (pre + Date.now().toString(36) + (chedSeq++).toString(36)).slice(0, 16); }
+  function chedOpen() {
+    var d = ch.data || { people: [], chores: [] };
+    ched = {
+      tab: ch.tab || 'day',
+      people: d.people.map(function (p) { return { id: p.id, name: p.name, kid: !!p.kid }; }),
+      chores: d.chores.map(function (c) { return { id: c.id, title: c.title, who: c.who.slice(), every: c.every, times: c.times || 1, each: !!c.each }; })
+    };
+    $('chedErr').textContent = '';
+    chedRender();
+    $('chedmodal').classList.add('open');
+  }
+  function seg(label, on, fn, cls) {
+    var b = el('button', 'seg' + (on ? ' on' : '') + (cls ? ' ' + cls : ''), label); b.type = 'button';
+    b.addEventListener('click', fn); return b;
+  }
+  function chedRender() {
+    var pl = $('chedPeople'); pl.innerHTML = '';
+    ched.people.forEach(function (p, i) {
+      var row = el('div', 'chedp'), name = document.createElement('input');
+      name.type = 'text'; name.maxLength = 20; name.value = p.name; name.placeholder = 'Name'; name.setAttribute('aria-label', 'Name');
+      name.addEventListener('input', function () { p.name = name.value; chedRenderList(); });
+      row.appendChild(name);
+      row.appendChild(seg('Kid', p.kid, function () { p.kid = !p.kid; chedRender(); }));
+      row.appendChild(seg('✕', false, function () {
+        var uses = ched.chores.filter(function (c) { return c.who.indexOf(p.id) >= 0; }).length;
+        if (uses && !confirm('Take ' + (p.name || 'them') + ' off the list? Chores that are only theirs go too.')) return;
+        ched.people.splice(i, 1);
+        ched.chores.forEach(function (c) { c.who = c.who.filter(function (id) { return id !== p.id; }); });
+        ched.chores = ched.chores.filter(function (c) { return c.who.length; });
+        chedRender();
+      }, 'x'));
+      pl.appendChild(row);
+    });
+    $('chedAddP').hidden = ched.people.length >= 8;
+    var tabs = $('chedTabs'); tabs.innerHTML = '';
+    CHED_TABS.forEach(function (t) {
+      var n = ched.chores.filter(function (c) { return c.every === t[0]; }).length;
+      tabs.appendChild(seg(t[1] + (n ? ' (' + n + ')' : ''), ched.tab === t[0], function () { ched.tab = t[0]; chedRender(); }));
+    });
+    chedRenderList();
+  }
+  function chedRenderList() {
+    var list = $('chedList'); list.innerHTML = '';
+    if (!ched.people.length) { list.appendChild(el('div', 'sublbl', 'Add the family first, then their chores.')); $('chedAddC').hidden = true; return; }
+    $('chedAddC').hidden = false;
+    ched.chores.forEach(function (c, i) {
+      if (c.every !== ched.tab) return;
+      var row = el('div', 'chedc'), t = document.createElement('input');
+      t.type = 'text'; t.maxLength = 60; t.value = c.title; t.placeholder = 'What needs doing'; t.setAttribute('aria-label', 'Chore');
+      t.addEventListener('input', function () { c.title = t.value; });
+      row.appendChild(t);
+      var times = el('span', 'chedtimes');
+      times.appendChild(seg('−', false, function () { c.times = Math.max(1, c.times - 1); chedRenderList(); }));
+      times.appendChild(el('span', null, c.times === 1 ? 'once' : c.times + ' times'));
+      times.appendChild(seg('+', false, function () { c.times = Math.min(7, c.times + 1); chedRenderList(); }));
+      row.appendChild(times);
+      row.appendChild(seg('✕', false, function () { ched.chores.splice(i, 1); chedRender(); }, 'x'));
+      var who = el('div', 'who');
+      ched.people.forEach(function (p) {
+        var on = c.who.indexOf(p.id) >= 0;
+        who.appendChild(seg(p.name || '?', on, function () {
+          c.who = on ? c.who.filter(function (id) { return id !== p.id; }) : c.who.concat(p.id);
+          chedRenderList();
+        }));
+      });
+      row.appendChild(who);
+      if (c.who.length > 1) {   // shared ("load the dishwasher") or everyone their own ("make your bed")
+        var how = el('div', 'who');
+        how.appendChild(seg('Done once, by any of them', !c.each, function () { c.each = false; chedRenderList(); }));
+        how.appendChild(seg('Each does their own', c.each, function () { c.each = true; chedRenderList(); }));
+        row.appendChild(how);
+      }
+      list.appendChild(row);
+    });
+    if (!ched.chores.some(function (c) { return c.every === ched.tab; })) list.appendChild(el('div', 'sublbl', 'Nothing here yet.'));
+  }
+  $('chedAddP').addEventListener('click', function () {
+    ched.people.push({ id: chedId('p'), name: '', kid: false }); chedRender();
+    var ins = $('chedPeople').querySelectorAll('input'); if (ins.length) ins[ins.length - 1].focus();
+  });
+  $('chedAddC').addEventListener('click', function () {
+    ched.chores.push({ id: chedId('c'), title: '', who: ched.people.length === 1 ? [ched.people[0].id] : [], every: ched.tab, times: 1, each: false });
+    chedRender();
+    var ins = $('chedList').querySelectorAll('input'); if (ins.length) ins[ins.length - 1].focus();
+  });
+  $('chedCancel').addEventListener('click', function () { $('chedmodal').classList.remove('open'); ched = null; });
+  function chedSaved(v) {
+    ch.data = Object.assign(v, { mine: ch.data && ch.data.mine }); renderChores();
+  }
+  $('chedSave').addEventListener('click', function () {
+    var err = '';
+    ched.people.forEach(function (p) { p.name = p.name.trim(); if (!p.name) err = err || 'Every person needs a name.'; });
+    var chores = ched.chores.filter(function (c) { c.title = c.title.trim(); return c.title || c.who.length; });   // blank new rows just go
+    chores.forEach(function (c) {
+      if (!c.title) err = err || 'A chore for ' + c.who.length + ' is missing its name.';
+      else if (!c.who.length) err = err || 'Who does “' + c.title + '”? Tap a name under it.';
+    });
+    if (err) { $('chedErr').textContent = err; return; }
+    $('chedSave').disabled = true;
+    post('/api/chores/save', { people: ched.people, chores: chores.map(function (c) { return { id: c.id, title: c.title, who: c.who, every: c.every, times: c.times, each: c.each && c.who.length > 1 }; }) })
+      .then(function (v) { chedSaved(v); $('chedmodal').classList.remove('open'); ched = null; })
+      .catch(function (e) { $('chedErr').textContent = e.message; })
+      .then(function () { $('chedSave').disabled = false; });
+  });
+  $('chedExample').addEventListener('click', function () {
+    if ((ched.people.length || ched.chores.length) && !confirm('Replace the whole list with the example? (You can rename everyone and change anything after.)')) return;
+    post('/api/chores/save', { example: true }).then(function (v) { chedSaved(v); chedOpen(); })
+      .catch(function (e) { $('chedErr').textContent = e.message; });
+  });
+  $('chEdit').addEventListener('click', chedOpen);
 
   // ---- Meal plan ----
   state.meals = { items: [] };
@@ -2365,6 +2674,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       '.day .ev.allday{color:' + v.alldayC + '}',
       '.day .ev.holiday{color:' + v.holC + '}',
       '.notes h2{' + F('headF', 40) + 'color:' + v.notesC + '}',
+      '#chores .chhead h2{' + F('headF', 54) + 'color:' + v.notesC + '}',
+      '#chores .chcol h3{' + F('headF', 0) + 'color:' + v.mealsC + '}',
+      '#chores .chitem{' + F('textF', 0, true) + 'color:' + v.textC + '}',
       '.meals .mh{' + F('headF', 32) + 'color:' + v.mealsC + '}',
       '.meals li,.cdown .cd .t{' + F('textF', 0, true) + 'color:' + v.textC + '}',
       '.info .lbl,.cdown .cd .n,.jar .jn{' + F('textF', 0, true).replace(/font-weight:\d+;/, '') + '}'
@@ -4061,6 +4373,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       else if (d.ym === state.ym) { state.meta = d.meta || {}; applyTitle(); applyBorder(); layoutTitlePhotos(); }
     });
     es.addEventListener('countdowns', function () { loadCountdowns(); });
+    es.addEventListener('chores', function () { loadChores(); });
     es.addEventListener('photos', function () { loadPhotos(); });
     es.addEventListener('theme', function (m) { state.theme = JSON.parse(m.data); if (!state.themeDraft) applyTheme(state.theme); });
     es.addEventListener('devices', function () {
@@ -4466,10 +4779,15 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     state.who = w; state.rank = w.rank;
     state.role = w.editor ? 'editor' : w.device ? w.device.role : null;
     if (w.admin) document.body.classList.add('isadmin');
+    if (CHORES_PAGE) {
+      if (!w.rank) { if (w.firstRun) location.replace('/admin'); else { $('signTitle').textContent = 'Sign in'; showSignIn('to see and check off the chores'); } return w; }
+      showChores(true); return w;
+    }
     if (!EDIT) {
       if (Q.has('pair') && !w.device) { showPair(); return w; }
       if (!w.rank) { if (w.firstRun) location.replace('/admin'); else showPair(); return w; }
       if (state.role === 'family') location.replace('/edit');   // a family screen edits right on the board
+      if (/^kid:/.test(state.role || '')) { document.body.classList.add('kid'); showChores(true); }   // a kid's tablet opens on their chores
       return w;
     }
     if (w.editor) return w;   // full editor

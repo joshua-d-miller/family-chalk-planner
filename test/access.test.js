@@ -65,7 +65,7 @@ test('a fresh board: nothing readable, pages and health check still load', async
   assert.equal((await fetch(base + '/api/stream')).status, 401);
   assert.equal((await fetch(base + '/api/photos/img/abc')).status, 401);
   assert.equal((await raw('/api/meals', { items: [] })).status, 401);
-  for (const p of ['/', '/edit', '/admin', '/join', '/api/today']) assert.equal((await fetch(base + p)).status, 200, p);
+  for (const p of ['/', '/edit', '/chores', '/admin', '/join', '/api/today']) assert.equal((await fetch(base + p)).status, 200, p);
 });
 
 test('first admin: setup code + password + authenticator code; the code works once', async () => {
@@ -153,6 +153,62 @@ test('what each can do: view reads, family edits events/meals/jars and decorates
   }
   assert.equal((await ed.api('/api/devices')).status, 403);
   assert.equal((await admin.post('/api/trash', { day: 2 })).status, 200);
+});
+
+test('chores: everyone sees them; family screens and grown-ups check any; a kid’s tablet only their own; the wall none', async () => {
+  // one screen, changed from wall → family → kid's tablet in the console (pairing new screens is rate limited)
+  const scr = await screen('view', 'Upstairs'), sid = (await (await admin.api('/api/devices')).json()).devices.find(d => d.name === 'Upstairs').id;
+  const as = async role => assert.equal((await admin.post('/api/devices/update', { id: sid, role })).status, 200);
+  const wall = scr, fam = scr, kid = scr;
+  const ed = client(base, (await invitePerson('mom', 'editor')).cookie);
+  assert.equal((await fam.post('/api/chores/save', { example: true })).status, 403, 'only signed-in people change the list');
+  const ex = await (await ed.post('/api/chores/save', { example: true })).json();
+  assert.deepEqual(ex.people.map(p => p.name), ['Dad', 'Mom', 'Kid 1', 'Kid 2']);
+  const laundry = ex.chores.find(c => c.title === 'Fold laundry'), dishes = ex.chores.find(c => c.title.startsWith('Load/unload'));
+  const kid1 = ex.chores.find(c => c.who.join() === 'kid1' && c.every === 'week'), kid2 = ex.chores.find(c => c.who.join() === 'kid2');
+  assert.equal(laundry.times, 3);
+  // the wall: sees them, can't check off
+  assert.equal((await wall.api('/api/chores')).status, 200);
+  assert.equal((await wall.post('/api/chores/check', { id: dishes.id })).status, 403, 'the wall only shows them');
+  // the family screen: anyone's
+  await as('family');
+  let v = await (await fam.post('/api/chores/check', { id: dishes.id })).json();
+  assert.equal((await fam.post('/api/chores/check', { id: ex.chores.find(c => c.each).id })).status, 400, 'an each-their-own chore needs to know whose');
+  assert.equal(v.chores.find(c => c.id === dishes.id).done, 1);
+  assert.equal(v.chores.find(c => c.id === dishes.id).by, 'Upstairs');
+  // a kid's tablet: their own only, and nothing else
+  await as('kid:kid1');
+  assert.equal((await (await kid.api('/api/chores')).json()).mine, 'kid1', 'a kid’s tablet knows whose it is');
+  assert.equal((await kid.api('/api/month?ym=2026-10')).status, 200, 'and can look at the calendar');
+  assert.equal((await kid.post('/api/chores/check', { id: kid1.id })).status, 200, 'their own');
+  assert.equal((await kid.post('/api/chores/check', { id: kid2.id })).status, 403, 'not their sister’s');
+  // "each does their own": Kid 1 ticking theirs leaves Kid 2's open
+  const hamper = ex.chores.find(c => c.title.startsWith('Put dirty clothes'));
+  assert.equal(hamper.each, true);
+  v = await (await kid.post('/api/chores/check', { id: hamper.id, person: 'kid2' })).json();
+  assert.deepEqual(v.chores.find(c => c.id === hamper.id).doneEach, { kid1: 1, kid2: 0 }, 'a kid’s tablet always ticks its own kid');
+  assert.equal((await kid.post('/api/meals', { items: [] })).status, 403, 'and nothing else');
+  for (let i = 0; i < 5; i++) v = await (await ed.post('/api/chores/check', { id: laundry.id })).json();
+  assert.equal(v.chores.find(c => c.id === laundry.id).done, 3, 'never more than its times');
+  v = await (await ed.post('/api/chores/check', { id: laundry.id, undo: true })).json();
+  assert.equal(v.chores.find(c => c.id === laundry.id).done, 2, 'a second tap takes one back');
+  // renaming people keeps the check-offs; removing a chore drops its check-off
+  const people = v.people.map(p => (p.id === 'kid1' ? { ...p, name: 'Theo' } : p));
+  v = await (await ed.post('/api/chores/save', { people, chores: v.chores.filter(c => c.id !== dishes.id) })).json();
+  assert.equal(v.people.find(p => p.id === 'kid1').name, 'Theo');
+  assert.equal(v.chores.find(c => c.id === kid1.id).done, 1);
+  assert.equal(v.chores.find(c => c.id === dishes.id), undefined);
+  assert.equal((await ed.post('/api/chores/save', { people, chores: [{ id: 'x', title: '', who: ['dad'], every: 'day' }] })).status, 400);
+  assert.equal((await admin.post('/api/devices/update', { id: sid, role: 'kid:Not OK' })).status, 400, 'kid ids are checked');
+  await as('view');
+});
+
+test('chores reset by themselves: each day, each week (from the board’s week start) and each month', () => {
+  const { periods } = require('../server/chores');
+  assert.deepEqual(periods('2026-10-28', 0), { day: '2026-10-28', week: '2026-10-25', month: '2026-10' }, 'Wednesday; weeks from Sunday');
+  assert.deepEqual(periods('2026-10-28', 1).week, '2026-10-26', 'weeks from Monday');
+  assert.equal(periods('2026-11-01', 0).week, '2026-11-01', 'a Sunday starts its own week');
+  assert.equal(periods('2026-11-01', 1).week, '2026-10-26', 'Sunday ends a Monday week');
 });
 
 test('changes need the X-Chalk header (no cross-site form posts)', async () => {

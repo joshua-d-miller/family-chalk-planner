@@ -20,7 +20,9 @@ const path = require('path');
 const QRCode = require('qrcode');
 const webauthn = require('@simplewebauthn/server');
 
-const DEVICE_ROLES = ['view', 'family'];
+const DEVICE_ROLES = ['view', 'family'];   // and 'kid:<person>': a child's own tablet (see the board, check off their own chores)
+const roleOk = r => DEVICE_ROLES.includes(r) || /^kid:[a-z0-9]{1,16}$/.test(r || '');
+const roleRank = r => (/^kid:/.test(r || '') ? 1 : 0) || { view: 1, family: 2 }[r] || 0;
 const USER_ROLES = ['editor', 'admin'];
 const RANK = { view: 1, family: 2, editor: 3, admin: 4 };
 const C = { device: 'fcp_device', pair: 'fcp_pair', user: 'fcp_user', admin: 'fcp_admin' };
@@ -287,9 +289,12 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
     return (req[k] = s ? { ...s, user: u } : null);
   }
   const userOf = req => { const s = sessionOf(req, 'admin') || sessionOf(req, 'edit'); return s ? s.user : null; };
+  // a kid's tablet (when no grown-up is signed in on it): the person id it belongs to
+  const kidOf = req => { if (userOf(req)) return null; const d = deviceOf(req), m = d && /^kid:([a-z0-9]{1,16})$/.exec(d.role); return m ? m[1] : null; };
+  const whoOf = req => { const u = userOf(req); if (u) return u.name; const d = deviceOf(req); return d ? d.name : 'someone'; };
   function rankOf(req) {
     let r = OPEN_VIEW ? 1 : 0;
-    const d = deviceOf(req); if (d) r = Math.max(r, RANK[d.role] || 0);
+    const d = deviceOf(req); if (d) r = Math.max(r, roleRank(d.role));
     if (sessionOf(req, 'edit')) r = Math.max(r, RANK.editor);
     if (sessionOf(req, 'admin')) r = RANK.admin;
     return r;
@@ -328,7 +333,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
     if (req.path === '/admin' || req.path === '/join') res.set('Content-Security-Policy',
       "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'");
     // the board pages: everything comes from the board itself (fonts, pictures, live updates); nothing else may load
-    else if (req.path === '/' || req.path === '/edit') res.set('Content-Security-Policy',
+    else if (req.path === '/' || req.path === '/edit' || req.path === '/chores') res.set('Content-Security-Policy',
       "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'");
     else res.set('Content-Security-Policy', "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'");
     if (/^\/api\/(whoami|account|users|devices|security|pair|passkey)/.test(req.path)) res.set('Cache-Control', 'no-store');
@@ -358,7 +363,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
   // Not: wiping a month, changing the stamp/GIF libraries, uploads, style, photos, settings.
   const FAMILY_POSTS = new Set(['/events', '/events/update', '/events/delete', '/meals', '/jars', '/countdowns', '/evcolor', '/evsize',
     '/art', '/art/update', '/art/bulk', '/art/restore', '/art/delete', '/art/undo',
-    '/theme', '/meta', '/photos/settings', '/photos/sync', '/border']);   // board style, month title, photos (everything but drawing)
+    '/theme', '/meta', '/photos/settings', '/photos/sync', '/border', '/chores/check']);   // board style, month title, photos (everything but drawing)
   const ADMIN = [/^\/board-settings/, /^\/devices/, /^\/users/, /^\/security/, /^\/google\//, /^\/calendar\/status$/, /^\/trash$/, /^\/notes$/];
   app.use('/api', (req, res, next) => {
     const write = !(req.method === 'GET' || req.method === 'HEAD');
@@ -367,6 +372,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
     const need = ADMIN.some(r => r.test(req.path)) ? RANK.admin : !write ? RANK.view : FAMILY_POSTS.has(req.path) ? RANK.family : RANK.editor;
     const have = rankOf(req);
     if (have >= need) return next();
+    if (write && req.path === '/chores/check' && kidOf(req)) return next();   // a kid's tablet: only their own (checked in the route)
     if (need === RANK.admin && userOf(req) && userOf(req).role === 'admin') return res.status(401).json({ error: 'Sign in to the admin console again', admin: true });
     if (!have) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
     res.status(403).json({ error: need === RANK.admin ? 'Only an admin can do that (admin console)' : need === RANK.editor ? 'Sign in to do that' : 'This screen can’t make changes', signin: need === RANK.editor });
@@ -413,7 +419,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
     res.json({ devices: q.dList.all(), waiting: q.pList.all().map(p => ({ agent: p.agent, created: p.created })) });
   });
   app.post('/api/devices/approve', (req, res) => {
-    const b = req.body || {}, role = DEVICE_ROLES.includes(b.role) ? b.role : null;
+    const b = req.body || {}, role = roleOk(b.role) ? b.role : null;
     if (!role) return res.status(400).json({ error: 'Pick what this screen may do' });
     if (tooMany('approve:' + req.ip, 20, 10 * 60e3)) return res.status(429).json({ error: 'Too many tries - wait a few minutes' });
     const p = q.pByCode.get(sha('pair:' + normCode(b.code)));
@@ -428,7 +434,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
   app.post('/api/devices/update', (req, res) => {
     const b = req.body || {}, d = q.dById.get(String(b.id || ''));
     if (!d) return res.status(404).json({ error: 'Screen not found' });
-    const role = b.role === undefined ? d.role : DEVICE_ROLES.includes(b.role) ? b.role : null;
+    const role = b.role === undefined ? d.role : roleOk(b.role) ? b.role : null;
     if (!role) return res.status(400).json({ error: 'Unknown role' });
     q.dUpd.run(b.name === undefined ? d.name : String(b.name).trim().slice(0, 60) || d.name, role, d.id);
     broadcast && broadcast('devices', {});
@@ -808,7 +814,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
     const fake = { _dev: undefined, get: h => (String(h).toLowerCase() === 'cookie' ? cookieHeader : ''), ip: '' };
     return rankOf(fake) > 0;
   }
-  return { deviceOf, userOf, rankOf, resetAll, newSetupCode, describe, totpAt, cleanup, stillAllowed, audit, proxySeen: () => proxySeen };
+  return { deviceOf, userOf, rankOf, kidOf, whoOf, resetAll, newSetupCode, describe, totpAt, cleanup, stillAllowed, audit, proxySeen: () => proxySeen };
 }
 
 module.exports = { setup, describe, totpAt, b32dec };

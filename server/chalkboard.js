@@ -1364,6 +1364,15 @@ const PIECES = ['heart', 'rainbow', 'star', 'bolt', 'critter'];
 const DEFAULT_JARS = [];   // jars are optional; add them from the tablet
 function getJars() { const r = qKvGet.get('jars'); return r ? JSON.parse(r.data) : DEFAULT_JARS; }
 app.get('/api/jars', (req, res) => res.json(getJars()));
+
+// Chores: the family's checklist (server/chores.js)
+const chores = require('./chores').setup({
+  app, broadcast, weekStart: WEEK_START,
+  kvGet: k => { const r = qKvGet.get(k); return r ? JSON.parse(r.data) : null; },
+  kvSet: (k, v) => qKvSet.run(k, JSON.stringify(v)),
+  today: () => nyParts(new Date()).dateStr,
+  kidOf: req => access.kidOf(req), who: req => access.whoOf(req)
+});
 // items: what's actually in the jar, in the order it went in (a kid can ask for a particular piece).
 // Kept the same length as count; anything missing is filled in the usual rotation of the jar's pieces.
 function jarItems(items, count, pieces) {
@@ -2037,7 +2046,8 @@ app.get('/icons/:name', (req, res) => {
 // Installable app: the wall opens full-screen at "/", the iPad opens "/edit"
 const MANIFESTS = {
   wall: { name: BOARD_TITLE, short_name: 'Chalk Planner', start_url: '/', scope: '/', display: 'fullscreen', orientation: 'landscape' },
-  edit: { name: BOARD_TITLE + ' (edit)', short_name: 'Planner edit', start_url: '/edit', scope: '/', display: 'standalone', orientation: 'any' }
+  edit: { name: BOARD_TITLE + ' (edit)', short_name: 'Planner edit', start_url: '/edit', scope: '/', display: 'standalone', orientation: 'any' },
+  chores: { name: 'Chores', short_name: 'Chores', start_url: '/chores', scope: '/', display: 'standalone', orientation: 'any' }
 };
 for (const [kind, m] of Object.entries(MANIFESTS)) {
   app.get(`/manifest-${kind}.webmanifest`, (req, res) => {
@@ -2144,6 +2154,7 @@ app.get('/fonts/:pkg/files/:file', (req, res) => {
 
 app.get('/', sendBoard('wall'));
 app.get('/edit', sendBoard('edit'));
+app.get('/chores', sendBoard('chores'));   // the chores page on a phone (same page, chores mode)
 // the admin console (sign-in, screens, people, my account) and invite links
 for (const p of ['/admin', '/join']) app.get(p, (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(PUBLIC, 'admin.html')));
 app.use(express.static(PUBLIC));

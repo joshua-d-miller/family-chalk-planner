@@ -73,6 +73,15 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 - The top line shows how many photos the board has and when it last checked (or a ⚠ if something's wrong).
 
 
+## 🧹 Chores
+A checklist for the whole family that lives on the board, so the wall, the tablets, the kids’ tablets and your phones all show the same list.
+- **Where:** **swipe left** on the calendar (wall, family screen, tablet — or 🧹 **Chores** in the tablet’s strip); swipe right or **📅 Calendar** to go back. On a **phone**, open the board’s address followed by `/chores` (for example `https://chalkboard.example.com/chores`), sign in once, and use Share → **Add to Home Screen** so it opens like an app. Shared screens go back to the calendar after 3 quiet minutes.
+- **Today / This week / This month:** daily chores start fresh every morning, weekly ones at the start of the week (the same first day as the calendar) and monthly ones on the 1st. A weekly chore can be done any day that week. The tabs show how many are left.
+- **Tick one off:** tap it. Tap again to undo. Some chores count more than once (“Fold laundry, 3 times a week”: it shows *1 of 3*).
+- **Who can tick:** signed-in people and family screens, anyone’s; a kid’s tablet, only that kid’s; the wall just shows the list.
+- **✎ Change the list** (signed-in people, on a tablet or phone): add the family (mark the kids), then chores under **Every day / Every week / Every month**: what needs doing, who (tap names), how many times, and for chores with several people either **Done once, by any of them** (“load the dishwasher”) or **Each does their own** (“put dirty clothes in the hamper”: a checkbox for each person). **Start with an example** fills in a typical family schedule to rename and change.
+- **Kids’ tablets:** pair the tablet in the admin console as **🧒 Kid’s tablet** and pick the kid. It opens on *their* chores (“Theo’s chores”, with *Just me* and *With Nora*), big and easy to tick, and comes back to them after 3 quiet minutes. Swiping right shows the calendar (view only). Chores are separate from the reward jars — add a piece to a jar yourself when you want to.
+
 ## A family touch screen
 A screen paired as **✋ Family** opens straight into the editor: tap a day to see and add events, tap an event to change it, tap the Meal Plan or a jar. **Decorate** adds stamps, clipart, emoji, GIFs and words (Aa), and moves, resizes or erases them — fingers are great at that. It can also change the **board style** (background, look, seasonal pattern), the **🖼 holiday border** and the **photos**. Freehand chalk and Posca, the month title (typed or hand-lettered), wiping the month, removing saved stamps/GIFs and the calendar settings stay on a signed-in tablet. It looks and behaves like the wall: no wood frame (just the strip with the buttons), no zooming, **double tap** for the photo frame, the overnight slideshow (a tap shows the calendar for 5 minutes), back to this month and out of Decorate after 5 quiet minutes, and it updates itself. Handy for a touch screen on the wall that everyone uses.
 
