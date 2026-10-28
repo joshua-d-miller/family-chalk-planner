@@ -104,6 +104,33 @@ test('chalk drawings and holiday borders', async () => {
   assert.equal((await (await api('/api/meta?ym=2028-10')).json()).border, undefined, 'yearly border removed');
 });
 
+test('art remembers the layout it was placed on and moves once when the border changes', async () => {
+  const ym = '2031-03';
+  const id = (await (await post('/api/art', { ym, stroke: { c: '#EDEAE0', w: 4, p: [300, 300, 320, 320] } })).json()).id;
+  let m = await (await api('/api/meta?ym=' + ym)).json();
+  assert.equal(m.artPad, 0, 'placed with no border');
+  await post('/api/border', { ym, border: { items: ['jack-o-lantern'], size: 'm' } });
+  let r = await post('/api/art/relayout', { ym, padFrom: 0, padTo: 40, items: [] });
+  assert.equal(r.status, 409, 'must match the border the month has');
+  r = await post('/api/art/relayout', { ym, padFrom: 0, padTo: 32, items: [{ id, c: '#EDEAE0', w: 4, p: [310, 310, 328, 328] }] });
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).moved, 1);
+  assert.deepEqual((await (await api('/api/art?ym=' + ym)).json())[0].p, [310, 310, 328, 328]);
+  assert.equal((await (await api('/api/meta?ym=' + ym)).json()).artPad, 32);
+  r = await post('/api/art/relayout', { ym, padFrom: 0, padTo: 32, items: [] });
+  assert.equal(r.status, 409, 'a second screen doesn\'t move it again');
+  await post('/api/meta', { ym, hideTitle: true });
+  assert.equal((await (await api('/api/meta?ym=' + ym)).json()).artPad, 32, 'saving the title keeps it');
+  // a month whose first art goes on with a border already there
+  await post('/api/border', { ym: '2031-04', border: { items: ['jack-o-lantern'], size: 's' } });
+  await post('/api/art', { ym: '2031-04', stroke: { c: '#EDEAE0', w: 4, p: [1, 1, 2, 2] } });
+  assert.equal((await (await api('/api/meta?ym=2031-04')).json()).artPad, 26);
+  await post('/api/art/clear', { ym: '2031-04' });
+  await post('/api/border', { ym: '2031-04', border: null });
+  await post('/api/art', { ym: '2031-04', stroke: { c: '#EDEAE0', w: 4, p: [1, 1, 2, 2] } });
+  assert.equal((await (await api('/api/meta?ym=2031-04')).json()).artPad, 0, 'wiping the month starts over');
+});
+
 test('jars remember which piece went in, in order', async () => {
   const jar = { id: 'kid', name: 'Nora', pieces: ['star', 'heart', 'rainbow'], goal: 10 };
   let [j] = await (await post('/api/jars', { jars: [{ ...jar, count: 3, items: ['rainbow', 'rainbow', 'heart'] }] })).json();

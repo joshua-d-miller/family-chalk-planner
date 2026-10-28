@@ -2937,8 +2937,31 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     mn.style.color = onBoard ? readable(t.c, 3) : t.c;
     wrap.classList.toggle('noout', !t.o);
     if (t.o) { wrap.style.setProperty('--tout', onBoard ? readable(t.o, 1.5) : t.o); wrap.style.setProperty('--toutw', Math.max(3, t.z / 15) + 'px'); }
-    var w = mn.offsetWidth;
-    if (maxW && w > maxW) mn.style.font = fontCss(t.f, Math.floor(t.z * maxW / w));
+    var w = mn.offsetWidth, z = t.z;
+    if (maxW && w > maxW) { z = Math.floor(t.z * maxW / w); mn.style.font = fontCss(t.f, z); }
+    if (onBoard) fitTitleHeight(mn, t, z);
+  }
+  // Big titles in tall fonts (XL Pacifico, with an outline) can be taller than the space above the calendar:
+  // measure the letters themselves, shrink just enough, and keep them off the top edge of the board.
+  var TITLE_TOP = 3, TITLE_BOTTOM = 84, measureCtx = document.createElement('canvas').getContext('2d');
+  function fitTitleHeight(mn, t, z) {
+    mn.style.top = '0';
+    var text = mn.textContent; if (!text.trim() || !mn.offsetWidth) return;
+    var ink = function (zz) {
+      measureCtx.font = fontCss(t.f, zz);
+      var m = measureCtx.measureText(text), out = (t.o ? Math.max(3, t.z / 15) / 2 : 0) + 1;
+      return { a: m.actualBoundingBoxAscent + out, d: m.actualBoundingBoxDescent + out, fa: m.fontBoundingBoxAscent, fd: m.fontBoundingBoxDescent };
+    };
+    var g = ink(z), room = TITLE_BOTTOM - TITLE_TOP;
+    if (!(g.a + g.d > 0)) return;   // a browser that can't measure letters: leave it be
+    if (g.a + g.d > room) { z = Math.floor(z * room / (g.a + g.d)); mn.style.font = fontCss(t.f, z); g = ink(z); }
+    if (!(g.fa > 0)) return;
+    var sl = $('slate').getBoundingClientRect(), r = mn.getBoundingClientRect(), k = sl.width / SLATE_W;
+    if (!k) return;
+    var base = (r.top - sl.top) / k + (r.height / k - (g.fa + g.fd)) / 2 + g.fa, top = base - g.a, bottom = base + g.d, dy = 0;
+    if (top < TITLE_TOP) dy = Math.min(TITLE_TOP - top, TITLE_BOTTOM - bottom);
+    else if (bottom > TITLE_BOTTOM) dy = Math.max(TITLE_BOTTOM - bottom, TITLE_TOP - top);
+    if (dy) mn.style.top = Math.round(dy) + 'px';
   }
   function applyTitle() {
     var hand = !!(state.meta && state.meta.hideTitle), h1 = $('monthName'), mn = h1.querySelector('.mn');
@@ -2974,17 +2997,59 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       });
     }
     if (changed && state.lastMonth) renderMonth(state.lastMonth);   // the days get a little smaller (or back)
+    fitArtToBorder();
+  }
+  // Art sits on the days, so it moves with them: with a border the calendar is a little smaller, and anything
+  // drawn on it (centered inside it) moves and shrinks the same way. state.shownPad = the layout the art on
+  // screen is placed on; the month remembers its own (meta.artPad). A tablet or family screen saves the move
+  // once, for everyone; the wall (or a border still being picked) just shows it.
+  function calRect() {
+    var b = $('calbody'), sl = $('slate'), r = b.getBoundingClientRect(), s0 = sl.getBoundingClientRect(), k = s0.width / SLATE_W || 1;
+    return { x: (r.left - s0.left) / k, y: (r.top - s0.top) / k, w: r.width / k, h: r.height / k };
+  }
+  function relayoutArt(items, p0, p1) {
+    var R = calRect(); if (!R.w || !R.h) return null;
+    var a = { x: R.x + p0, y: R.y + p0, w: R.w - 2 * p0, h: R.h - 2 * p0 }, b = { x: R.x + p1, y: R.y + p1, w: R.w - 2 * p1, h: R.h - 2 * p1 };
+    var sx = b.w / a.w, sy = b.h / a.h, k = Math.min(sx, sy);
+    return items.map(function (it) {
+      var bx = itemBox(it), cx = (bx.x1 + bx.x2) / 2, cy = (bx.y1 + bx.y2) / 2;
+      if (cx < R.x || cx > R.x + R.w || cy < R.y || cy > R.y + R.h) return it;   // beside the calendar (title, Notes): stays put
+      var o = xform(it, b.x + (cx - a.x) * sx - cx, b.y + (cy - a.y) * sy - cy, k, cx, cy);
+      if (it.id != null) o.id = it.id;
+      return o;
+    });
+  }
+  var relayoutBusy = false;
+  function fitArtToBorder() {
+    if (state.shownPad === undefined || !state.strokes) return;   // the month's art isn't here yet
+    var to = state.borderPad || 0;
+    if (state.shownPad !== to) {
+      var moved = relayoutArt(state.strokes, state.shownPad, to);
+      if (!moved) return;
+      state.strokes = moved; state.shownPad = to;
+      if (typeof resetHistory === 'function') resetHistory();   // undo would put things back on the old layout
+      redrawArt();
+    }
+    var from = (state.meta && state.meta.artPad) || 0;
+    if (!EDIT || !(state.rank >= 2) || state.borderDraft !== undefined || from === to || relayoutBusy || !state.metaYm || state.metaYm !== state.ym) return;
+    relayoutBusy = true;
+    var ym = state.ym, items = state.strokes.filter(function (x) { return x.id != null; }).map(snap);
+    post('/api/art/relayout', { ym: ym, padFrom: from, padTo: to, items: items, from: CLIENT })
+      .then(function (r) { if (ym === state.ym) state.meta.artPad = r.artPad; })
+      .catch(function (e) { if (e.status === 409 && ym === state.ym) loadMeta(ym).then(function () { return loadArt(ym); }); })
+      .then(function () { relayoutBusy = false; });
   }
   function applyBorder() { drawBorder((state.borderDraft !== undefined ? state.borderDraft : state.meta && state.meta.border) || null); }
   function loadMeta(ym) {
-    return api('/api/meta?ym=' + ym).then(function (m) { if (ym === state.ym) { state.meta = m || {}; applyTitle(); applyBorder(); layoutTitlePhotos(); } }).catch(function () {});
+    return api('/api/meta?ym=' + ym).then(function (m) { if (ym === state.ym) { state.meta = m || {}; state.metaYm = ym; applyTitle(); applyBorder(); layoutTitlePhotos(); } }).catch(function () {});
   }
   function loadMonth(ym) {
-    if (ym !== state.ym) { resetHistory(); state.meta = {}; applyTitle(); applyBorder(); setTimeout(layoutTitlePhotos, 0); }
+    if (ym !== state.ym) { state.shownPad = undefined; state.metaYm = null; resetHistory(); state.meta = {}; applyTitle(); applyBorder(); setTimeout(layoutTitlePhotos, 0); }
     state.ym = ym;
     status('');
-    loadMeta(ym);
+    var metaReady = loadMeta(ym);
     return api('/api/month?ym=' + ym).then(function (d) { health.calendar = true; renderMonth(d); }).catch(function (e) { health.calendar = false; status('Calendar unavailable: ' + e.message); })
+      .then(function () { return metaReady; })   // the art needs to know which layout it was placed on
       .then(function () { return loadArt(ym); });
   }
 
@@ -3217,14 +3282,16 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   function loadArt(ym) {
     return api('/api/art?ym=' + ym).then(function (list) {
       state.strokes = list;
+      state.shownPad = (state.metaYm === ym && state.meta.artPad) || 0;
       selection = selection.filter(function (id) { return list.some(function (x) { return x.id === id; }); });
       redrawArt();
+      fitArtToBorder();
     }).catch(function () {});
   }
   // Canvas text needs the fonts downloaded first; redraw once they arrive.
   if (document.fonts) {
     Promise.all(FONTS.map(function (f) { return document.fonts.load(fontCss(FONTS.indexOf(f), 40), 'Aa'); }))
-      .then(redrawArt, redrawArt);
+      .then(function () { redrawArt(); applyTitle(); }, redrawArt);
   }
 
   // ---- Hit testing (eraser, text) ----
@@ -4359,7 +4426,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     es.addEventListener('clear', function (m) {
       var d = JSON.parse(m.data);
       if (d.ym !== state.ym) return;
-      state.strokes = []; redrawArt();
+      state.strokes = []; state.shownPad = state.borderPad || 0; if (state.meta) state.meta.artPad = state.shownPad; redrawArt();
     });
     es.addEventListener('meals', function (m) { state.meals = JSON.parse(m.data); renderMeals(); });
     es.addEventListener('jars', function (m) {

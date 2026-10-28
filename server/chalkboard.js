@@ -113,6 +113,7 @@ const qClear = db.prepare('DELETE FROM strokes WHERE month = ?');
 const qDelOne = db.prepare('DELETE FROM strokes WHERE id = ? AND month = ?');
 const qRestore = db.prepare('INSERT OR IGNORE INTO strokes (id, month, data, created) VALUES (?, ?, ?, ?)');
 const qUpdate = db.prepare('UPDATE strokes SET data = ? WHERE id = ? AND month = ?');
+const qArtCount = db.prepare('SELECT COUNT(*) AS n FROM strokes WHERE month = ?');
 
 // ---------------------------------------------------------------------------
 // Date helpers (everything shown in TIMEZONE)
@@ -1174,10 +1175,23 @@ function cleanItem(it) {
   return st;
 }
 
+// Art is placed on the calendar as it looks at the time. A holiday border makes the days a little smaller,
+// so each month remembers which layout its art was placed on (artPad: the border's width, 0 = none); the
+// tablet moves the art onto the days when the border changes (/api/art/relayout).
+const BORDER_PAD = { s: 26, m: 32, l: 40 };   // picture size + 6 (the board's BORDER_SZ)
+const padOf = m => (m && m.border ? BORDER_PAD[m.border.size] || BORDER_PAD.m : 0);
+function storedMeta(ym) { const row = qMetaGet.get(ym); return row ? JSON.parse(row.data) : {}; }
+function noteArtLayout(ym) {   // the first art of a month is placed on the layout it has now
+  const cur = storedMeta(ym);
+  if (cur.artPad !== undefined || qArtCount.get(ym).n) return;
+  cur.artPad = padOf(metaFor(ym)); qMetaSet.run(ym, JSON.stringify(cur));
+}
+
 app.post('/api/art', (req, res) => {
   const { ym, stroke, from } = req.body || {};
   const clean = cleanItem(stroke);
   if (!isYm(ym) || !clean) return res.status(400).json({ error: 'bad stroke' });
+  noteArtLayout(ym);
   const info = qInsert.run(ym, JSON.stringify(clean), Date.now());
   const id = Number(info.lastInsertRowid);
   broadcast('stroke', { ym, from, stroke: { id, ...clean } });
@@ -1205,6 +1219,7 @@ app.post('/api/art/update', (req, res) => {
 app.post('/api/art/bulk', (req, res) => {
   const { ym, items, from } = req.body || {};
   if (!isYm(ym) || !Array.isArray(items) || items.length > 5000) return res.status(400).json({ error: 'bad items' });
+  noteArtLayout(ym);
   const ids = [], added = [];
   for (const it of items) {
     const clean = cleanItem(it);
@@ -1220,6 +1235,7 @@ app.post('/api/art/bulk', (req, res) => {
 app.post('/api/art/restore', (req, res) => {
   const { ym, items, from } = req.body || {};
   if (!isYm(ym) || !Array.isArray(items)) return res.status(400).json({ error: 'bad restore' });
+  noteArtLayout(ym);
   const back = [];
   for (const it of items.slice(0, 5000)) {
     const clean = cleanItem(it);
@@ -1256,8 +1272,33 @@ app.post('/api/art/clear', (req, res) => {
   const ym = (req.body || {}).ym;
   if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
   qClear.run(ym);
+  const cur = storedMeta(ym);
+  if (cur.artPad !== undefined) { delete cur.artPad; qMetaSet.run(ym, JSON.stringify(cur)); }
   broadcast('clear', { ym });
   res.json({ ok: true });
+});
+
+// The border changed: the tablet sends the month's art moved onto the new layout. Done once, by whichever
+// screen gets there first ({padFrom, padTo} must match what the server has; 409 = already done).
+app.post('/api/art/relayout', (req, res) => {
+  const { ym, padFrom, padTo, items, from } = req.body || {};
+  if (!isYm(ym) || !Array.isArray(items) || items.length > 5000) return res.status(400).json({ error: 'bad relayout' });
+  const cur = storedMeta(ym);
+  if ((cur.artPad || 0) !== padFrom || padOf(metaFor(ym)) !== padTo) return res.status(409).json({ error: 'The art was already moved', artPad: cur.artPad || 0 });
+  const done = [];
+  db.exec('BEGIN');
+  try {
+    for (const it of items) {
+      const clean = cleanItem(it);
+      if (!clean || !Number.isInteger(it.id)) continue;
+      if (qUpdate.run(JSON.stringify(clean), it.id, ym).changes) done.push({ id: it.id, ...clean });
+    }
+    cur.artPad = padTo; qMetaSet.run(ym, JSON.stringify(cur));
+    db.exec('COMMIT');
+  } catch (e) { db.exec('ROLLBACK'); throw e; }
+  broadcast('update', { ym, from, items: done });
+  broadcast('meta', { ym, meta: metaFor(ym) });
+  res.json({ ok: true, artPad: padTo, moved: done.length });
 });
 
 // Per-month options, e.g. {hideTitle:true} when you hand-letters the month name
@@ -1326,6 +1367,7 @@ function metaFor(ym) {
   if (d) m.defaultTitle = JSON.parse(d.data);
   // border: this month's own, else the one saved for this month every year ({ off: true } = none this year)
   const yearly = yearlyBorders()[ym.slice(5)];
+  m.artPad = m.artPad || 0;   // art from before borders: placed with no border
   if (m.border && m.border.off) delete m.border;
   else if (!m.border && yearly) { m.border = yearly; m.borderYearly = true; }
   return m;
@@ -1417,6 +1459,7 @@ app.post('/api/meta', (req, res) => {
   const cur = row ? JSON.parse(row.data) : {};
   const meta = { hideTitle: hideTitle === undefined ? !!cur.hideTitle : !!hideTitle };
   if (cur.border) meta.border = cur.border;   // set separately (/api/border)
+  if (cur.artPad !== undefined) meta.artPad = cur.artPad;   // set with the art (/api/art/relayout)
   const t = title === undefined ? cur.title : cleanTitle(title);
   if (t) meta.title = t;
   const sd = side === undefined ? cur.side : side === null ? undefined : cleanSide(side);   // null = back to the usual setting
