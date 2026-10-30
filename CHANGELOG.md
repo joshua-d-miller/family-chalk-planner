@@ -7,6 +7,7 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 ## 0.12.2 — hide holidays you don't want
 - **Holidays:** tap a holiday on the calendar (tablet or family screen) for the list of the board's
   holidays. Tap one to hide it from the calendar and the countdowns, every year; tap again to bring it back.
+  The same list is in ⚙️ Settings → Holidays (admins), for when no holiday is showing to tap.
 - Fixed: tapping an event in a day's list (tap a day → its events) did nothing on the tablet since 0.6.0;
   it opens the event again.
 

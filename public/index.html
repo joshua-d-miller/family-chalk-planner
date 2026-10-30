@@ -742,6 +742,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <div id="rDayW"><label for="rDay">Recycling day</label><select id="rDay"></select></div>
       <div id="rAnchorW"><label for="rAnchor">Next recycling pickup</label><input type="date" id="rAnchor"></div>
     </div>
+    <div class="sublbl" style="margin-top:20px">Holidays</div>
+    <div class="opts"><button type="button" class="seg" id="setHol">🎉 Show or hide holidays</button><span id="setHolN" class="sublbl" style="margin:0"></span></div>
     <div class="sublbl" style="margin-top:20px">Bottom of the Notes column (what it shows normally; tap the switch above it, or swipe, to see the others)</div>
     <div class="opts" id="nBottom">
       <button type="button" class="seg" data-b="jars">🫙 Reward jars</button>
@@ -2938,7 +2940,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       });
     });
     var openSettings = function () {
-      $('setErr').textContent = ''; $('gPaste').value = ''; loadBins();
+      $('setErr').textContent = ''; $('gPaste').value = ''; loadBins(); holCount();
       api('/api/calendar/status').then(function (c) { calSt = c; drawCal(); }).catch(function (e) { $('setErr').textContent = e.message; });
       $('setmodal').classList.add('open');
     };
@@ -4783,7 +4785,15 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       box.appendChild(b);
     });
   }
-  $('hClose').addEventListener('click', function () { $('hmodal').classList.remove('open'); });
+  $('hClose').addEventListener('click', function () { $('hmodal').classList.remove('open'); holCount(); });
+  // ⚙️ Settings → Holidays: the way back to hidden ones even when no holiday is showing on the board
+  function holCount() {
+    api('/api/holidays').then(function (d) {
+      var n = (d.holidays || []).filter(function (h) { return h.off; }).length;
+      $('setHolN').textContent = d.country === 'none' ? 'Turned off for this board' : n ? n + ' hidden' : 'All shown';
+    }).catch(function () {});
+  }
+  $('setHol').addEventListener('click', function () { openHolidays(null); });
   function afterChange(dates) {
     closeModal();
     var yms = {}; dates.forEach(function (d) { if (d) yms[d.slice(0, 7)] = 1; });

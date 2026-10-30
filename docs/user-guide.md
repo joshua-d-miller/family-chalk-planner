@@ -20,7 +20,7 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 - Adds, edits and deletes go to your real calendar (iCloud, Google, Nextcloud, …), so they show on everyone's phones too.
 
 ### Automatic on the calendar (nothing to do)
-- **US holidays** appear in light blue italics with an icon (board only, never written to your calendar). **Tap a holiday** to see the whole list and hide the ones you don't want (every year, from the calendar and the countdowns); tap a hidden one to bring it back. Family screens can do this too.
+- **US holidays** appear in light blue italics with an icon (board only, never written to your calendar). **Tap a holiday** to see the whole list and hide the ones you don't want (every year, from the calendar and the countdowns); tap a hidden one to bring it back. Family screens can do this too. When no holiday is showing to tap, an admin can open the same list from ⚙️ Settings → **Holidays**.
 - **Countdowns** in Notes: the next 3 things within 60 days — big holidays, any event with "birthday" or "bday" in the title (🎂), and anything ticked ⭐.
 - **Trash / recycling** labels on the right days (set in ⚙️ Settings), and **weather** (today / tomorrow) in Notes.
 
