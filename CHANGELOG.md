@@ -4,6 +4,12 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.12.2 — hide holidays you don't want
+- **Holidays:** tap a holiday on the calendar (tablet or family screen) for the list of the board's
+  holidays. Tap one to hide it from the calendar and the countdowns, every year; tap again to bring it back.
+- Fixed: tapping an event in a day's list (tap a day → its events) did nothing on the tablet since 0.6.0;
+  it opens the event again.
+
 ## 0.12.1 — borders keep the art on its day; title photos are back
 - Fixed: adding a holiday border to a month that already had drawings, stamps or words left them where
   they were while the days moved in, so they ended up on the wrong spot. Art on the calendar now moves

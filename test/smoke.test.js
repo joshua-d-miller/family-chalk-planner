@@ -207,3 +207,20 @@ test('uploads must really be images', async () => {
   const r = await api('/api/media', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: Buffer.from('not an image at all, just text') });
   assert.equal(r.status, 400);
 });
+
+test('holidays can be hidden (every year) and brought back', async () => {
+  let d = await (await api('/api/holidays')).json();
+  const ipd = d.holidays.find(h => h.title === "Indigenous Peoples' Day");
+  assert.ok(ipd && !ipd.off);
+  const has = async (ym, t) => (await (await api('/api/month?ym=' + ym)).json()).events.some(e => e.holiday && e.title === t);
+  assert.ok(await has('2026-10', "Indigenous Peoples' Day"));
+  let r = await post('/api/holidays', { off: ["Indigenous Peoples' Day", 'Not a holiday'] });
+  assert.deepEqual((await r.json()).off, ["Indigenous Peoples' Day"]);
+  assert.equal(await has('2026-10', "Indigenous Peoples' Day"), false);
+  assert.equal(await has('2027-10', "Indigenous Peoples' Day"), false, 'every year');
+  assert.ok(await has('2026-10', 'Halloween'), 'the others stay');
+  d = await (await api('/api/holidays')).json();
+  assert.equal(d.holidays.find(h => h.title === "Indigenous Peoples' Day").off, true);
+  await post('/api/holidays', { off: [] });
+  assert.ok(await has('2026-10', "Indigenous Peoples' Day"), 'back again');
+});

@@ -394,7 +394,6 @@ body.edit #slides .tapx{display:block}
 .jpc svg{width:38px;height:38px}
 .jpc:active{background:rgba(242,212,121,.18);border-color:var(--yellow)}
 .day .ev.holiday{color:#9CC9E6;font-style:italic}
-body.edit:not(.drawing) .day .ev.holiday{cursor:default}
 .daylist button.holiday{color:#9CC9E6;font-style:italic}
 .cdown{display:flex;flex-direction:column;gap:2px;margin-top:-4px}
 .cdown:empty{display:none}
@@ -477,9 +476,21 @@ body.edit:not(.drawing) .day .ev:active,body.edit:not(.drawing) .bar:active{back
 #dmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
 body.display #dmodal .actions{display:none}
 body.display #dmodal .daylist button.ro{cursor:default;border-style:dashed;opacity:.85}
-.daylist button{pointer-events:none;font-size:22px}
+body.display #dmodal .daylist button{pointer-events:none;font-size:22px}   /* the wall: a tap anywhere closes it */
 body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;text-align:center;margin-top:14px;font-size:15px;color:rgba(var(--ink),.55)}
 #dmodal.open{display:flex}
+#hmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:21}
+#hmodal.open{display:flex}
+#hmodal .card{width:min(560px,94vw)}
+.hlist{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-height:56vh;overflow-y:auto}
+.hrow{display:flex;align-items:center;gap:12px;min-height:46px;padding:4px 12px;border-radius:12px;border:1.5px solid rgba(var(--ink),.2);background:transparent;color:var(--chalk);font:700 19px 'Kalam',cursive;text-align:left;cursor:pointer;width:100%}
+.hrow .hn{flex:1}
+.hrow .hd{font-size:14px;opacity:.6;white-space:nowrap}
+.hrow .hs{font-size:15px;white-space:nowrap;color:var(--green)}
+.hrow.off{opacity:.55}
+.hrow.off .hn{text-decoration:line-through}
+.hrow.off .hs{color:rgba(var(--ink),.7)}
+.hrow.mark{border-color:var(--yellow)}
 .daylist{display:flex;flex-direction:column;gap:8px;margin-top:6px;max-height:50vh;overflow-y:auto}
 .daylist button{text-align:left;min-height:48px;padding:6px 14px;border-radius:12px;border:1.5px solid rgba(201,180,122,.45);background:transparent;color:var(--chalk);font-family:'Kalam',cursive;font-size:19px;cursor:pointer}
 .daylist button.allday{color:var(--yellow)}
@@ -923,6 +934,15 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   </div>
 </div>
 
+<div id="hmodal" role="dialog" aria-modal="true" aria-labelledby="hTitle">
+  <div class="card">
+    <h3 id="hTitle">Holidays</h3>
+    <div class="sublbl" style="margin-top:0">Tap one to hide it from the calendar and the countdowns, every year. Tap again to bring it back.</div>
+    <div class="hlist" id="hList"></div>
+    <div class="err" id="hErr"></div>
+    <div class="actions"><button type="button" class="btn go" id="hClose">Done</button></div>
+  </div>
+</div>
 <div id="dmodal" role="dialog" aria-modal="true" aria-labelledby="dTitle">
   <div class="card">
     <h3 id="dTitle">Day</h3>
@@ -4636,6 +4656,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     });
     function gridTap(e) {
       var evEl = e.target.closest('.ev, .bar');
+      if (evEl && evEl.__ev && evEl.__ev.holiday) return openHolidays(evEl.__ev.title);
       if (evEl && evEl.__ev) return openEdit(evEl.__ev);
       var moreEl = e.target.closest('.more');
       if (moreEl) return openDay(moreEl.__day);
@@ -4724,7 +4745,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       var b = el('button', ev.holiday ? 'holiday' : ev.allDay ? 'allday' : null, evText(ev) + (ev.cal ? ' · ' + ev.cal : ''));
       if (ev.color || ev.calColor) b.style.color = readable(ev.color || ev.calColor);
       b.type = 'button';
-      if (ev.readOnly || ev.holiday) b.classList.add('ro');
+      if (ev.holiday) b.addEventListener('click', function () { $('dmodal').classList.remove('open'); openHolidays(ev.title); });
+      else if (ev.readOnly) b.classList.add('ro');
       else b.addEventListener('click', function () { $('dmodal').classList.remove('open'); openEdit(ev); });
       list.appendChild(b);
     });
@@ -4732,6 +4754,36 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     $('dmodal').classList.add('open');
   }
   function closeModal() { $('modal').classList.remove('open'); editing = null; }
+  // ---- Holidays: hide the ones the family doesn't want on the board (every year), or bring them back ----
+  var hol = { list: [], mark: null };
+  function openHolidays(mark) {
+    hol.mark = mark || null; $('hErr').textContent = '';
+    api('/api/holidays').then(function (d) {
+      hol.list = (d.holidays || []).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+      if (!hol.list.length) { status('Holidays are turned off for this board (admin console → ⚙️ Board)'); return; }
+      drawHolidays(); $('hmodal').classList.add('open');
+      var m = $('hList').querySelector('.mark'); if (m) m.scrollIntoView({ block: 'center' });
+    }).catch(function (e) { status(e.message); });
+  }
+  function drawHolidays() {
+    var box = $('hList'); box.innerHTML = '';
+    hol.list.forEach(function (h) {
+      var b = el('button', 'hrow' + (h.off ? ' off' : '') + (h.title === hol.mark ? ' mark' : '')); b.type = 'button';
+      b.appendChild(el('span', null, h.icon)); b.appendChild(el('span', 'hn', h.title));
+      var p = h.date.split('-').map(Number);
+      b.appendChild(el('span', 'hd', new Date(p[0], p[1] - 1, p[2]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })));
+      b.appendChild(el('span', 'hs', h.off ? 'Hidden' : 'Shown'));
+      b.setAttribute('aria-pressed', String(!h.off));
+      b.addEventListener('click', function () {
+        h.off = !h.off; drawHolidays();
+        post('/api/holidays', { off: hol.list.filter(function (x) { return x.off; }).map(function (x) { return x.title; }) })
+          .then(function () { api('/api/month?ym=' + state.ym).then(renderMonth); loadCountdowns(); })
+          .catch(function (e) { h.off = !h.off; drawHolidays(); $('hErr').textContent = e.message; });
+      });
+      box.appendChild(b);
+    });
+  }
+  $('hClose').addEventListener('click', function () { $('hmodal').classList.remove('open'); });
   function afterChange(dates) {
     closeModal();
     var yms = {}; dates.forEach(function (d) { if (d) yms[d.slice(0, 7)] = 1; });

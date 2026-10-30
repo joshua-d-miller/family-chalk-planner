@@ -919,15 +919,34 @@ function holidaysOfYear(y) {
     [ymd(y, 12, 31), '🥳', "New Year's Eve"]
   ].map(([date, icon, title, big]) => ({ date, icon, title, big: !!big }));
 }
+// Holidays the family turned off (by name, every year): kv 'holidaysOff' = ["Indigenous Peoples' Day", …]
+function holidaysOff() { const r = qKvGet.get('holidaysOff'); return new Set(r ? JSON.parse(r.data) : []); }
 function holidaysBetween(from, to) {
-  const out = [];
+  const out = [], off = holidaysOff();
   for (let y = +from.slice(0, 4); y <= +to.slice(0, 4); y++) {
     for (const h of holidaysOfYear(y)) {
-      if (h.date >= from && h.date <= to) out.push({ title: h.title, icon: h.icon, holiday: true, allDay: true, start: h.date, end: h.date, time: null, sort: -1 });
+      if (h.date >= from && h.date <= to && !off.has(h.title)) out.push({ title: h.title, icon: h.icon, holiday: true, allDay: true, start: h.date, end: h.date, time: null, sort: -1 });
     }
   }
   return out;
 }
+
+// The holiday list (this year's dates) with which ones are hidden; hide or show them from the board
+app.get('/api/holidays', (req, res) => {
+  const off = holidaysOff(), y = +nyParts(new Date()).dateStr.slice(0, 4);
+  res.json({ country: HOLIDAYS, holidays: HOLIDAYS === 'none' ? [] : holidaysOfYear(y).map(h => ({ title: h.title, icon: h.icon, date: h.date, off: off.has(h.title) })) });
+});
+app.post('/api/holidays', (req, res) => {
+  const want = (req.body || {}).off;
+  if (!Array.isArray(want)) return res.status(400).json({ error: 'bad list' });
+  const known = new Set(holidaysOfYear(2026).map(h => h.title));
+  // keep names from another country's list (if the board's country changes back, they stay hidden)
+  const keep = [...holidaysOff()].filter(t => !known.has(t));
+  const off = [...new Set(want.filter(t => typeof t === 'string' && known.has(t)))].concat(keep);
+  qKvSet.run('holidaysOff', JSON.stringify(off));
+  broadcast('calendar', { ym: 'any' });
+  res.json({ ok: true, off });
+});
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------

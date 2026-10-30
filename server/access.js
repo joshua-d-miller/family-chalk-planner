@@ -361,7 +361,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
   const SELF = [/^\/account\//, /^\/passkey\//];   // need a signed-in person; checked in the route
   // family screens: events, meals, jars, countdowns, event colors, and placing/moving/erasing art (stamps, clipart, words).
   // Not: wiping a month, changing the stamp/GIF libraries, uploads, style, photos, settings.
-  const FAMILY_POSTS = new Set(['/events', '/events/update', '/events/delete', '/meals', '/jars', '/countdowns', '/evcolor', '/evsize', '/art/relayout',
+  const FAMILY_POSTS = new Set(['/events', '/events/update', '/events/delete', '/meals', '/jars', '/countdowns', '/evcolor', '/evsize', '/art/relayout', '/holidays',
     '/art', '/art/update', '/art/bulk', '/art/restore', '/art/delete', '/art/undo',
     '/theme', '/meta', '/photos/settings', '/photos/sync', '/border', '/chores/check']);   // board style, month title, photos (everything but drawing)
   const ADMIN = [/^\/board-settings/, /^\/devices/, /^\/users/, /^\/security/, /^\/google\//, /^\/calendar\/status$/, /^\/trash$/, /^\/notes$/];
