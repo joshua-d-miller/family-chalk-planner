@@ -7,11 +7,16 @@ const crypto = require('crypto');
 
 function start(port = 5994, opts = {}) {
   const expiresIn = opts.expiresIn || 3600;
-  const state = { codes: new Set(['GOOD-CODE']), refresh: new Set(), access: new Map(), calls: [], events: new Map() };
+  const state = { codes: new Set(['GOOD-CODE']), refresh: new Set(), access: new Map(), calls: [], events: new Map(), calEvents: new Map() };
   const cal = 'family@group.calendar.google.com';
+  const kidsCal = 'kids@group.calendar.google.com';
+  const roCal = 'school@group.calendar.google.com';
   const ics = (uid, summary, start, end) => `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Google Inc//Google Calendar 70.9054//EN\r\nBEGIN:VEVENT\r\nUID:${uid}\r\nDTSTAMP:20261001T000000Z\r\nDTSTART;VALUE=DATE:${start}\r\nDTEND;VALUE=DATE:${end}\r\nSUMMARY:${summary}\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n`;
   let etag = 1;
   state.events.set('picnic.ics', { text: ics('picnic-uid', 'Google picnic', '20261017', '20261018'), etag: `"g${etag++}"` });
+  state.calEvents.set(cal, state.events);
+  state.calEvents.set(kidsCal, new Map([['piano.ics', { text: ics('piano-uid', 'Piano recital', '20261019', '20261020'), etag: `"g${etag++}"` }]]));
+  state.calEvents.set(roCal, new Map([['assembly.ics', { text: ics('assembly-uid', 'School assembly', '20261020', '20261021'), etag: `"g${etag++}"` }]]));
   const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const newToken = () => { const t = crypto.randomBytes(8).toString('hex'); state.access.set(t, Date.now() + expiresIn * 1000); return t; };
   const authed = req => { const t = (req.headers.authorization || '').replace(/^Bearer /, ''); return state.access.get(t) > Date.now(); };
@@ -38,21 +43,28 @@ function start(port = 5994, opts = {}) {
       }
       if (!authed(req)) return json(401, { error: { message: 'Request had invalid authentication credentials.' } });
       if (u.pathname === '/calendar/v3/users/me/calendarList') {
-        return json(200, { items: [{ id: 'joe@example.com', summary: 'joe@example.com', primary: true }, { id: cal, summary: 'Family', backgroundColor: '#9fe1e7' }] });
+        return json(200, { items: [
+          { id: 'joe@example.com', summary: 'joe@example.com', primary: true, accessRole: 'owner' },
+          { id: cal, summary: 'Family', backgroundColor: '#9fe1e7', accessRole: 'writer' },
+          { id: kidsCal, summary: 'Kids', backgroundColor: '#a9d8a0', accessRole: 'writer' },
+          { id: roCal, summary: 'School', backgroundColor: '#f6b3cb', accessRole: 'reader' }
+        ] });
       }
       const m = /^\/caldav\/v2\/([^/]+)\/events\/([^/]*)$/.exec(u.pathname);
-      if (!m || decodeURIComponent(m[1]) !== cal) { res.statusCode = 404; return res.end(); }
+      const cid = m && decodeURIComponent(m[1]);
+      const store = cid && state.calEvents.get(cid);
+      if (!store) { res.statusCode = 404; return res.end(); }
       const file = m[2];
       if (!file && req.method === 'REPORT') {
         res.writeHead(207, { 'Content-Type': 'application/xml' });
-        return res.end(`<?xml version="1.0" encoding="UTF-8"?><D:multistatus xmlns:D="DAV:" xmlns:caldav="urn:ietf:params:xml:ns:caldav">${[...state.events].map(([k, v]) =>
-          `<D:response><D:href>/caldav/v2/${encodeURIComponent(cal)}/events/${k}</D:href><D:propstat><D:status>HTTP/1.1 200 OK</D:status><D:prop><D:getetag>${esc(v.etag)}</D:getetag><caldav:calendar-data>${esc(v.text)}</caldav:calendar-data></D:prop></D:propstat></D:response>`).join('')}</D:multistatus>`);
+        return res.end(`<?xml version="1.0" encoding="UTF-8"?><D:multistatus xmlns:D="DAV:" xmlns:caldav="urn:ietf:params:xml:ns:caldav">${[...store].map(([k, v]) =>
+          `<D:response><D:href>/caldav/v2/${encodeURIComponent(cid)}/events/${k}</D:href><D:propstat><D:status>HTTP/1.1 200 OK</D:status><D:prop><D:getetag>${esc(v.etag)}</D:getetag><caldav:calendar-data>${esc(v.text)}</caldav:calendar-data></D:prop></D:propstat></D:response>`).join('')}</D:multistatus>`);
       }
-      const cur = state.events.get(file);
+      const cur = store.get(file);
       if (req.method === 'GET') { if (!cur) { res.statusCode = 404; return res.end(); } res.writeHead(200, { ETag: cur.etag, 'Content-Type': 'text/calendar' }); return res.end(cur.text); }
       if (req.headers['if-match'] && (!cur || cur.etag !== req.headers['if-match'])) { res.statusCode = 412; return res.end(); }
-      if (req.method === 'PUT') { state.events.set(file, { text: body, etag: `"g${etag++}"` }); res.writeHead(cur ? 204 : 201, { ETag: state.events.get(file).etag }); return res.end(); }
-      if (req.method === 'DELETE') { if (!cur) { res.statusCode = 404; return res.end(); } state.events.delete(file); res.statusCode = 204; return res.end(); }
+      if (req.method === 'PUT') { store.set(file, { text: body, etag: `"g${etag++}"` }); res.writeHead(cur ? 204 : 201, { ETag: store.get(file).etag }); return res.end(); }
+      if (req.method === 'DELETE') { if (!cur) { res.statusCode = 404; return res.end(); } store.delete(file); res.statusCode = 204; return res.end(); }
       res.statusCode = 405; res.end();
     });
   });

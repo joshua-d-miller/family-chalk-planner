@@ -227,12 +227,31 @@ async function dav(url, method, body, depth = '0', extraHeaders = {}) {
   return r.text();
 }
 
+const G_PALETTE = ['#9CC9E6', '#A9D8A0', '#F2D479', '#E8A35C', '#B49CE0', '#F6B3CB', '#F26B6B', '#7FD1C7'];
+function gSelected(st = gLoad()) {
+  const raw = Array.isArray(st.calendars) && st.calendars.length
+    ? st.calendars
+    : st.calendarId ? [{ id: st.calendarId, name: st.calendarName || st.calendarId, color: null, readOnly: false }] : [];
+  const out = [], seen = new Set();
+  for (const c of [...raw, ...EXTRA_CALS]) {
+    if (!c || typeof c.id !== 'string' || !c.id || seen.has(c.id)) continue;
+    seen.add(c.id);
+    const col = /^#[0-9a-fA-F]{6}$/.test(c.color || '') ? c.color.toUpperCase() : G_PALETTE[out.length % G_PALETTE.length];
+    out.push({ id: c.id, name: String(c.name || c.id).slice(0, 100), color: col, readOnly: !!c.readOnly });
+  }
+  return out;
+}
+function gMain(st = gLoad()) {
+  const cals = gSelected(st);
+  return cals.find(c => c.id === st.calendarId && !c.readOnly) || cals.find(c => !c.readOnly) || cals.find(c => c.id === st.calendarId) || cals[0] || null;
+}
+
 async function findCalendar() {
   if (calUrl) return calUrl;
   if (PROVIDER === 'google') {
-    const st = gLoad();
-    if (!st.calendarId) throw new Error(st.refresh ? 'Pick which Google calendar to show in ⚙ Settings on the tablet' : (st.problem || 'Google isn’t connected yet - connect it in ⚙ Settings on the tablet'));
-    calUrl = `${G.dav}/caldav/v2/${encodeURIComponent(st.calendarId)}/events/`;
+    const st = gLoad(), main = gMain(st);
+    if (!main) throw new Error(st.refresh ? 'Pick which Google calendar to show in ⚙ Settings on the tablet' : (st.problem || 'Google isn’t connected yet - connect it in ⚙ Settings on the tablet'));
+    calUrl = `${G.dav}/caldav/v2/${encodeURIComponent(main.id)}/events/`;
     return calUrl;
   }
   const found = (await caldavCalendars(CALDAV_URL, AUTH)).find(c => c.name === CAL_NAME);
@@ -353,7 +372,21 @@ async function caldavRange(url, rangeStart, rangeEnd) {
 function extraCalUrl(c) { return PROVIDER === 'google' ? `${G.dav}/caldav/v2/${encodeURIComponent(c.id)}/events/` : c.id; }
 // the account's password only ever goes to the server the main calendar lives on
 async function sameAccount(url) { const main = new URL(await findCalendar()); const u = new URL(url); if (u.origin !== main.origin) throw new Error('isn’t on the same calendar account'); return url; }
-async function editableCalendars() { return [await findCalendar(), ...EXTRA_CALS.map(extraCalUrl)]; }
+async function editableCalendars() {
+  if (PROVIDER === 'google') return gSelected().filter(c => !c.readOnly).map(extraCalUrl);
+  return [await findCalendar(), ...EXTRA_CALS.map(extraCalUrl)];
+}
+function writableCalendars() {
+  if (PROVIDER === 'google') {
+    const st = gLoad(), main = gMain(st);
+    if (!st.refresh || !main) return [];
+    return gSelected(st).filter(c => !c.readOnly)
+      .map(c => ({ id: c.id, name: c.name, color: c.id === main.id ? null : c.color, main: c.id === main.id }))
+      .sort((a, b) => (b.main ? 1 : 0) - (a.main ? 1 : 0));
+  }
+  if (!ICLOUD_USER || !ICLOUD_PASS || !CAL_NAME) return [];
+  return [{ id: CAL_NAME, name: CAL_NAME, color: null, main: true }, ...EXTRA_CALS.map(c => ({ id: c.id, name: c.name, color: c.color, main: false }))];
+}
 // Read-only iCal links: fetched at most every 15 minutes, last good copy kept if a fetch fails
 const feedCache = new Map();   // url -> { at, text, error }
 async function feedText(f) {
@@ -383,10 +416,17 @@ async function eventsForMonth(ym) {
   const rangeStart = nyToDate(...g.start.split('-').map(Number), 0, 0);
   const rangeEnd = nyToDate(...g.end.split('-').map(Number), 0, 0);
   const mainUrl = await findCalendar();
-  const out = await caldavRange(mainUrl, rangeStart, rangeEnd);   // the main calendar: its problems show on the board
+  const gMainCal = PROVIDER === 'google' ? gMain() : null;
+  const mainRo = !!(gMainCal && gMainCal.readOnly);
+  const out = (await caldavRange(mainUrl, rangeStart, rangeEnd)).map(e => mainRo ? { ...e, ref: undefined, readOnly: true } : e);   // the main calendar: its problems show on the board
+  const extras = PROVIDER === 'google' ? gSelected().filter(c => !gMainCal || c.id !== gMainCal.id) : EXTRA_CALS;
   const more = await Promise.all([
-    ...EXTRA_CALS.filter(c => !sameUrl(extraCalUrl(c), mainUrl)).map(async c => {
-      try { const ev = await caldavRange(await sameAccount(extraCalUrl(c)), rangeStart, rangeEnd); calProblems.delete(c.name); return ev.map(e => ({ ...e, cal: c.name, calColor: c.color })); }
+    ...extras.filter(c => !sameUrl(extraCalUrl(c), mainUrl)).map(async c => {
+      try {
+        const ev = await caldavRange(await sameAccount(extraCalUrl(c)), rangeStart, rangeEnd);
+        calProblems.delete(c.name);
+        return ev.map(e => ({ ...e, cal: c.name, calColor: c.color, ...(c.readOnly ? { ref: undefined, readOnly: true } : {}) }));
+      }
       catch (e) { calProblems.set(c.name, e.message); console.error(`Chalkboard: calendar "${c.name}": ${e.message}`); return []; }
     }),
     ...ICS_FEEDS.map(async f => {
@@ -400,8 +440,17 @@ async function eventsForMonth(ym) {
   return out;
 }
 
-async function addEvent({ title, date, allDay, time, minutes, through }) {
-  const url = await findCalendar();
+async function addEvent({ title, date, allDay, time, minutes, through, calendarId }) {
+  let url = await findCalendar();
+  if (PROVIDER === 'google') {
+    const cals = gSelected(), main = gMain();
+    const target = (calendarId && cals.find(c => c.id === calendarId)) || main;
+    if (!target || target.readOnly) throw new Error('That calendar is read-only - pick a calendar you can edit in ⚙ Settings');
+    url = extraCalUrl(target);
+  } else if (calendarId && calendarId !== CAL_NAME) {
+    const extra = EXTRA_CALS.find(c => c.id === calendarId);
+    if (extra) url = await sameAccount(extraCalUrl(extra));
+  }
   const uid = crypto.randomUUID();
   const lines = [
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Family Chalk Planner//EN',
@@ -784,7 +833,7 @@ app.get('/api/month', async (req, res) => {
       const z = sizes[cdKey(e.ref)] || sizes[`${e.ref.href}|`];
       return { ...e, ...(marks[cdKey(e.ref)] ? { countdown: true } : {}), ...(c ? { color: c } : {}), ...(z ? { size: z } : {}) };
     });
-    res.json({ ym, grid: g, events: (HOLIDAYS === 'none' ? [] : holidaysBetween(g.start, addDays(g.start, g.weeks * 7 - 1))).concat(events), today: nyParts(new Date()).dateStr });
+    res.json({ ym, grid: g, events: (HOLIDAYS === 'none' ? [] : holidaysBetween(g.start, addDays(g.start, g.weeks * 7 - 1))).concat(events), calendars: writableCalendars(), today: nyParts(new Date()).dateStr });
   } catch (err) {
     res.status(502).json({ error: err.message });
   }
@@ -820,7 +869,7 @@ app.get('/api/upnext', async (req, res) => {
       if (e.end < today || e.start > until) continue;
       if (e.start === today && !e.allDay && e.sort + (e.minutes || 60) < nowMin) continue;   // already over
       const c = e.ref && (colors[cdKey(e.ref)] || colors[`${e.ref.href}|`]);
-      all.push({ date: e.start < today ? today : e.start, title: e.title, time: e.allDay ? null : e.time, sort: e.allDay ? -1 : e.sort, color: c || null });
+      all.push({ date: e.start < today ? today : e.start, title: e.title, time: e.allDay ? null : e.time, sort: e.allDay ? -1 : e.sort, color: c || e.calColor || null });
     }
     const seen = new Set();
     const list = all.sort((a, b) => (a.date === b.date ? a.sort - b.sort : a.date < b.date ? -1 : 1))
@@ -957,9 +1006,16 @@ app.post('/api/holidays', (req, res) => {
 // ---------------------------------------------------------------------------
 app.get('/api/calendar/status', (req, res) => {
   if (PROVIDER === 'google') {
-    const st = gLoad();
-    return res.json({ provider: 'google', configured: !!G.id, connected: !!st.refresh, calendar: st.calendarName || null,
-      problem: st.refresh ? null : st.problem || null, paste: !/\/oauth\/google\/callback$/.test(G.redirect), redirect: G.redirect });
+    const st = gLoad(), cals = gSelected(st), main = gMain(st);
+    return res.json({
+      provider: 'google', configured: !!G.id, connected: !!st.refresh,
+      calendar: main ? main.name : (st.calendarName || null),
+      calendarId: main ? main.id : (st.calendarId || null),
+      calendars: cals,
+      problems: Object.fromEntries(calProblems),
+      problem: st.refresh ? null : st.problem || null,
+      paste: !/\/oauth\/google\/callback$/.test(G.redirect), redirect: G.redirect
+    });
   }
   res.json({ provider: 'caldav', configured: !!(ICLOUD_USER && ICLOUD_PASS && CAL_NAME), calendar: CAL_NAME || null, problems: Object.fromEntries(calProblems) });
 });
@@ -985,7 +1041,7 @@ async function gFinish(code, state) {
   if (!ok) throw new Error(`Google didn’t accept the sign-in (${j.error_description || j.error || status})`);
   if (!j.refresh_token) throw new Error('Google didn’t give the board a lasting sign-in - remove the app at myaccount.google.com/connections and try again');
   const st = gLoad();
-  gSave({ refresh: j.refresh_token, calendarId: st.calendarId || null, calendarName: st.calendarName || null, at: Date.now() });
+  gSave({ refresh: j.refresh_token, calendarId: st.calendarId || null, calendarName: st.calendarName || null, ...(st.calendars ? { calendars: st.calendars } : {}), at: Date.now() });
   gAccess = { token: j.access_token, exp: Date.now() + (j.expires_in || 3600) * 1000 };
   calUrl = null; monthCache.clear();
   broadcast('calendar', { ym: 'any' });
@@ -1006,21 +1062,50 @@ app.get('/oauth/google/callback', async (req, res) => {
 });
 app.post('/api/google/calendars', async (req, res) => {
   try {
-    const r = await fetch(`${G.api}/calendar/v3/users/me/calendarList?minAccessRole=writer`, { headers: { Authorization: `Bearer ${await gToken()}` }, signal: AbortSignal.timeout(20000) });
+    const r = await fetch(`${G.api}/calendar/v3/users/me/calendarList`, { headers: { Authorization: `Bearer ${await gToken()}` }, signal: AbortSignal.timeout(20000) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error((j.error && j.error.message) || `Google returned ${r.status}`);
-    res.json((j.items || []).map(c => ({ id: c.id, name: c.summaryOverride || c.summary || c.id, primary: !!c.primary, color: c.backgroundColor || null })));
+    res.json((j.items || []).map(c => ({
+      id: c.id,
+      name: c.summaryOverride || c.summary || c.id,
+      primary: !!c.primary,
+      color: c.backgroundColor || null,
+      readOnly: c.accessRole === 'reader' || c.accessRole === 'freeBusyReader'
+    })));
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 app.post('/api/google/calendar', (req, res) => {
-  const { id, name } = req.body || {};
-  if (typeof id !== 'string' || !id || id.length > 300) return res.status(400).json({ error: 'bad calendar' });
   const st = gLoad();
   if (!st.refresh) return res.status(400).json({ error: 'Connect Google first' });
-  gSave({ ...st, calendarId: id, calendarName: String(name || id).slice(0, 100) });
-  calUrl = null; monthCache.clear();
+  const b = req.body || {};
+  let list;
+  if (Array.isArray(b.calendars)) {
+    if (b.calendars.length > 12) return res.status(400).json({ error: 'Pick at most 12 calendars' });
+    list = [];
+    for (let i = 0; i < b.calendars.length; i++) {
+      const c = b.calendars[i] || {};
+      if (typeof c.id !== 'string' || !c.id || c.id.length > 300 || /\s/.test(c.id)) return res.status(400).json({ error: 'bad calendar' });
+      if (list.some(x => x.id === c.id)) continue;
+      const col = /^#[0-9a-fA-F]{6}$/.test(c.color || '') ? c.color.toUpperCase() : G_PALETTE[list.length % G_PALETTE.length];
+      list.push({ id: c.id, name: String(c.name || c.id).slice(0, 100), color: col, readOnly: !!c.readOnly });
+    }
+  } else {
+    const { id, name, color, readOnly } = b;
+    if (typeof id !== 'string' || !id || id.length > 300) return res.status(400).json({ error: 'bad calendar' });
+    const col = /^#[0-9a-fA-F]{6}$/.test(color || '') ? color.toUpperCase() : G_PALETTE[0];
+    list = [{ id, name: String(name || id).slice(0, 100), color: col, readOnly: !!readOnly }];
+  }
+  const wantMain = typeof b.calendarId === 'string' && b.calendarId ? b.calendarId : typeof b.id === 'string' ? b.id : st.calendarId;
+  const main = list.find(c => c.id === wantMain && !c.readOnly) || list.find(c => !c.readOnly) || list.find(c => c.id === wantMain) || list[0] || null;
+  gSave({
+    ...st,
+    calendarId: main ? main.id : null,
+    calendarName: main ? main.name : null,
+    calendars: list
+  });
+  calUrl = null; monthCache.clear(); calProblems.clear();
   broadcast('calendar', { ym: 'any' });
-  res.json({ ok: true });
+  res.json({ ok: true, calendar: main ? main.name : null, calendarId: main ? main.id : null, calendars: list });
 });
 app.post('/api/google/disconnect', (req, res) => {
   fs.rmSync(G_FILE, { force: true });
@@ -1095,12 +1180,12 @@ app.get('/api/countdowns', async (req, res) => {
 });
 
 app.post('/api/events', async (req, res) => {
-  const { title, date, allDay, time, minutes, through } = req.body || {};
+  const { title, date, allDay, time, minutes, through, calendarId } = req.body || {};
   if (!title || !String(title).trim() || !isDate(date)) return res.status(400).json({ error: 'Title and date are required' });
   if (!allDay && !/^\d{2}:\d{2}$/.test(time || '')) return res.status(400).json({ error: 'Pick a time, or choose All day' });
   if (through && !isDate(through)) return res.status(400).json({ error: 'bad end date' });
   try {
-    const href = await addEvent({ title: String(title).trim().slice(0, 200), date, allDay: !!allDay, time, minutes: +minutes || 60, through });
+    const href = await addEvent({ title: String(title).trim().slice(0, 200), date, allDay: !!allDay, time, minutes: +minutes || 60, through, calendarId: typeof calendarId === 'string' ? calendarId : undefined });
     broadcast('calendar', { ym: date.slice(0, 7) });
     res.json({ ok: true, href });
   } catch (err) {

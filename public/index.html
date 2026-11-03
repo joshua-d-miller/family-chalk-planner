@@ -352,8 +352,9 @@ body.edit #slides .tapx{display:block}
 .gsteps input{width:100%;height:42px;margin:6px 0;background:transparent;border:none;border-bottom:2px dashed rgba(var(--ink),.6);color:var(--yellow);font:16px ui-monospace,Menlo,monospace;outline:none}
 .gcals{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .gcals button{text-align:left;min-height:46px;padding:6px 14px;border-radius:12px;border:2px solid rgba(201,180,122,.45);background:transparent;color:var(--chalk);font:18px 'Kalam',cursive;cursor:pointer;display:flex;align-items:center;gap:10px}
-.gcals button.on{border-color:var(--yellow);color:var(--yellow)}
+.gcals button.on{border-color:var(--yellow);color:var(--yellow);background:rgba(242,212,121,.1)}
 .gcals button i{width:14px;height:14px;border-radius:50%;flex:none}
+.gcals button .gcaltag{margin-left:auto;font-size:14px;opacity:.85;white-space:nowrap}
 .cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;margin-top:10px}
 .ctile{aspect-ratio:1;border-radius:12px;border:2px solid rgba(var(--ink),.18);background:rgba(255,255,255,.04);padding:10px;cursor:pointer;touch-action:manipulation}
 .ctile:active{background:rgba(255,255,255,.12)}.ctile img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
@@ -733,8 +734,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       </ol>
     </div>
     <div id="gPick" hidden>
-      <div class="sublbl">Which calendar should the board show?</div>
+      <div class="sublbl">Which calendars should the board show? (tap to turn on or off)</div>
       <div class="gcals" id="gCals"></div>
+      <div id="gMainWrap" hidden>
+        <div class="sublbl" style="margin-top:12px">Default calendar for new events (uses the board’s main chalk style)</div>
+        <div class="opts" id="gMain"></div>
+      </div>
     </div>
     <div class="sublbl" style="margin-top:20px">Trash &amp; recycling</div>
     <div class="row">
@@ -793,6 +798,10 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <h3 id="mTitle">Add to the calendar</h3>
     <label for="evTitle">What</label>
     <input type="text" id="evTitle" maxlength="200" autocomplete="off" required>
+    <div id="evCalWrap" style="display:none">
+      <div class="sublbl">Calendar</div>
+      <div class="opts" id="evCal"></div>
+    </div>
     <div class="row">
       <div><label for="evDate">Day</label><input type="date" id="evDate" required></div>
       <div id="timeWrap"><label for="evTime">Time</label><input type="time" id="evTime" value="17:00"></div>
@@ -2523,6 +2532,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   function renderMonth(data) {
     state.lastMonth = data;
+    if (Array.isArray(data.calendars)) state.calendars = data.calendars;
     if (seasonNow() !== state.season) setSurface(state.surface.id);   // "change with the season": a new month may mean a new pattern
     var g = data.grid, events = data.events;
     state.today = data.today; state.time24 = !!g.time24;
@@ -2861,17 +2871,31 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 
   // ---- ⚙ Settings: which calendar the board shows (Google sign-in lives here) ----
   if (EDIT) {
-    var calSt = {};
-    var drawCal = function () {
+    var calSt = {}, gList = [];
+    var selectedGoogleCals = function () {
+      var c = calSt;
+      if (Array.isArray(c.calendars) && c.calendars.length) return c.calendars.slice();
+      if (c.calendar) return [{ id: c.calendarId || c.calendar, name: c.calendar, color: null, readOnly: false }];
+      return [];
+    };
+    var updateCalStatusText = function () {
       var c = calSt, st = $('calStat');
       st.innerHTML = '';
       if (c.provider === 'google') {
         if (!c.configured) st.appendChild(el('span', 'warn', 'Google Calendar isn’t set up yet: admin console → ⚙️ Board → Calendar → Google.'));
-        else if (c.connected) { st.appendChild(el('span', 'ok', '✓ Google connected')); st.appendChild(document.createTextNode(c.calendar ? ' · showing “' + c.calendar + '”' : ' · now pick a calendar')); }
+        else if (c.connected) {
+          var sel = selectedGoogleCals();
+          st.appendChild(el('span', 'ok', '✓ Google connected'));
+          st.appendChild(document.createTextNode(sel.length ? ' · showing ' + sel.map(function (x) { return '“' + x.name + '”'; }).join(', ') : ' · now pick which calendars to show'));
+        }
         else st.appendChild(el('span', c.problem ? 'warn' : '', c.problem || 'Google Calendar: not connected yet'));
       } else {
         st.textContent = c.calendar ? 'Showing “' + c.calendar + '” (CalDAV, set in the admin console → ⚙️ Board)' : 'No calendar set up yet: admin console → ⚙️ Board → Calendar.';
       }
+    };
+    var drawCal = function () {
+      var c = calSt;
+      updateCalStatusText();
       var g = c.provider === 'google' && c.configured;
       $('gConnect').hidden = !(g && !c.connected);
       $('gPasteStep').hidden = !c.paste;
@@ -2879,21 +2903,69 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       $('gDisconnect').hidden = !(g && (c.connected || c.problem));
       if (g && c.connected) loadCals();
     };
-    var loadCals = function () {
-      var box = $('gCals'); box.textContent = 'Loading your calendars…';
-      post('/api/google/calendars', {}).then(function (list) {
-        box.innerHTML = '';
-        list.forEach(function (cal) {
-          var b = el('button', calSt.calendar === cal.name ? 'on' : ''); b.type = 'button';
-          var dot = el('i'); dot.style.background = cal.color || 'var(--chalk)'; b.appendChild(dot);
-          b.appendChild(document.createTextNode(cal.name + (cal.primary ? ' (main)' : '')));
-          b.addEventListener('click', function () {
-            post('/api/google/calendar', { id: cal.id, name: cal.name }).then(function () { calSt.calendar = cal.name; drawCal(); loadMonth(state.ym); })
-              .catch(function (e) { $('setErr').textContent = e.message; });
-          });
-          box.appendChild(b);
+    var renderCalsList = function () {
+      var box = $('gCals'); box.innerHTML = '';
+      var sel = selectedGoogleCals(), byId = {};
+      sel.forEach(function (x) { byId[x.id] = x; if (x.name && !byId['n:' + x.name]) byId['n:' + x.name] = x; });
+      var mainId = calSt.calendarId || (sel[0] && sel[0].id) || null;
+      var writableSel = sel.filter(function (x) { return !x.readOnly; });
+      gList.forEach(function (cal) {
+        var on = !!(byId[cal.id] || (!calSt.calendarId && byId['n:' + cal.name]));
+        var isMain = on && !cal.readOnly && (cal.id === mainId || (!calSt.calendarId && cal.name === calSt.calendar));
+        var b = el('button', on ? 'on' : ''); b.type = 'button';
+        b.setAttribute('aria-pressed', String(on));
+        var dot = el('i'); dot.style.background = cal.color || 'var(--chalk)'; b.appendChild(dot);
+        var label = cal.name + (cal.primary ? ' (main)' : '') + (cal.readOnly ? ' (read-only)' : '');
+        b.appendChild(document.createTextNode(label));
+        if (on) {
+          var tag = el('span', 'gcaltag', isMain && writableSel.length > 1 ? '✓ Shown · Default' : '✓ Shown');
+          b.appendChild(tag);
+        }
+        b.addEventListener('click', function () {
+          var next = sel.filter(function (x) { return x.id !== cal.id && (calSt.calendarId || x.name !== cal.name); });
+          if (on) {
+            if (!next.length) return;   // keep at least one calendar shown
+          } else {
+            next.push({ id: cal.id, name: cal.name, color: cal.color, readOnly: !!cal.readOnly });
+          }
+          var nextMain = next.some(function (x) { return x.id === mainId && !x.readOnly; }) ? mainId : ((next.find(function (x) { return !x.readOnly; }) || next[0] || {}).id || null);
+          saveGoogleCals(next, nextMain);
         });
-        if (!list.length) box.textContent = 'No calendars you can edit were found on this Google account.';
+        box.appendChild(b);
+      });
+      if (!gList.length) box.textContent = 'No calendars were found on this Google account.';
+      var mw = $('gMainWrap'), mb = $('gMain'); mb.innerHTML = '';
+      if (writableSel.length > 1) {
+        mw.hidden = false;
+        writableSel.forEach(function (cal) {
+          var sb = el('button', 'seg' + (cal.id === mainId ? ' on' : ''), cal.name); sb.type = 'button';
+          sb.addEventListener('click', function () { if (cal.id !== mainId) saveGoogleCals(sel, cal.id); });
+          mb.appendChild(sb);
+        });
+      } else {
+        mw.hidden = true;
+      }
+    };
+    var saveGoogleCals = function (cals, mainId) {
+      $('setErr').textContent = '';
+      var main = cals.find(function (x) { return x.id === mainId; }) || cals[0] || null;
+      post('/api/google/calendar', { calendars: cals, calendarId: main ? main.id : null, id: main ? main.id : undefined, name: main ? main.name : undefined })
+        .then(function (r) {
+          calSt.calendars = r.calendars || cals;
+          calSt.calendarId = r.calendarId !== undefined ? r.calendarId : (main ? main.id : null);
+          calSt.calendar = r.calendar !== undefined ? r.calendar : (main ? main.name : null);
+          updateCalStatusText();
+          renderCalsList();
+          saved('Saved ✓');
+          loadMonth(state.ym);
+        })
+        .catch(function (e) { $('setErr').textContent = e.message; });
+    };
+    var loadCals = function () {
+      var box = $('gCals'); box.textContent = 'Loading your calendars…'; $('gMainWrap').hidden = true;
+      post('/api/google/calendars', {}).then(function (list) {
+        gList = list || [];
+        renderCalsList();
       }).catch(function (e) { box.textContent = ''; $('setErr').textContent = e.message; });
     };
     // trash & recycling + bottom of Notes: saved as soon as they change
@@ -4687,10 +4759,29 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     $('lenWrap').style.display = all ? 'none' : '';
     $('thruWrap').style.display = all ? '' : 'none';
   }
-  var editing = null, scope = 'one';
+  var editing = null, scope = 'one', evCalId = null;
   function setScope(sc) {
     scope = sc;
     Array.prototype.forEach.call(document.querySelectorAll('#scopeWrap .seg'), function (b) { b.classList.toggle('on', b.dataset.scope === sc); });
+  }
+  function drawEvCals(selectedId) {
+    var cals = state.calendars || [], wrap = $('evCalWrap'), box = $('evCal');
+    box.innerHTML = '';
+    var def = cals.find(function (c) { return c.id === selectedId; }) || cals.find(function (c) { return c.main; }) || cals[0] || null;
+    evCalId = def ? def.id : null;
+    if (cals.length <= 1) { wrap.style.display = 'none'; return; }
+    wrap.style.display = '';
+    cals.forEach(function (c) {
+      var b = el('button', 'seg' + (c.id === evCalId ? ' on' : '')); b.type = 'button';
+      var dot = el('i'); dot.style.cssText = 'display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle;background:' + (c.color || 'var(--chalk)');
+      b.appendChild(dot);
+      b.appendChild(document.createTextNode(c.name));
+      b.addEventListener('click', function () {
+        evCalId = c.id;
+        Array.prototype.forEach.call(box.querySelectorAll('.seg'), function (x, idx) { x.classList.toggle('on', cals[idx] && cals[idx].id === evCalId); });
+      });
+      box.appendChild(b);
+    });
   }
   function ensureLen(min) {
     var sel = $('evLen');
@@ -4710,16 +4801,17 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     $('evTitle').value = ''; $('evDate').value = date; $('evThru').value = '';
     $('evTime').value = '17:00'; ensureLen(60);
     $('evAllDay').checked = false; $('evCount').checked = false; $('evErr').textContent = ''; syncAllDay();
-    setEvColor(null); setEvSize(null);
+    setEvColor(null); setEvSize(null); drawEvCals(null);
     $('modal').classList.add('open');
     setTimeout(function () { $('evTitle').focus(); }, 50);
   }
   function openEdit(ev) {
-    if (!ev.ref) return ev.readOnly ? openDay(ev.start) : openModal(ev.start);   // calendar links can't be changed from the board
+    if (!ev.ref || ev.readOnly) return ev.readOnly ? openDay(ev.start) : openModal(ev.start);   // calendar links & read-only calendars can't be changed from the board
     editing = ev;
     $('mTitle').textContent = 'Change this event';
     $('evSave').textContent = 'Save';
     $('evDelete').style.display = '';
+    $('evCalWrap').style.display = 'none';
     $('scopeWrap').classList.toggle('on', !!ev.recurring);
     setScope('one');
     $('evTitle').value = ev.title;
@@ -4844,6 +4936,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     };
     var ev = editing, url = '/api/events';
     if (ev) { url = '/api/events/update'; body.ref = ev.ref; body.scope = ev.recurring ? scope : 'all'; body.origDate = ev.start; }
+    else if (evCalId) { body.calendarId = evCalId; }
     $('evSave').disabled = true; $('evErr').textContent = '';
     var wantCount = $('evCount').checked;
     post(url, body).then(function (r) {

@@ -63,10 +63,47 @@ test('sign in by pasting the address back', async () => {
 
 test('pick a calendar and see its events', async () => {
   const cals = await (await post('/api/google/calendars', {})).json();
-  assert.ok(cals.find(c => c.name === 'Family'));
+  assert.ok(cals.find(c => c.name === 'Family' && !c.readOnly));
+  assert.ok(cals.find(c => c.name === 'School' && c.readOnly));
   assert.equal((await post('/api/google/calendar', { id: 'family@group.calendar.google.com', name: 'Family' })).status, 200);
   const m = await month();
   assert.ok(m.events.find(e => e.title === 'Google picnic'), JSON.stringify(m));
+});
+
+test('select multiple calendars (editable + read-only) and pick target calendar when adding events', async () => {
+  const sel = [
+    { id: 'family@group.calendar.google.com', name: 'Family', color: '#9fe1e7', readOnly: false },
+    { id: 'kids@group.calendar.google.com', name: 'Kids', color: '#a9d8a0', readOnly: false },
+    { id: 'school@group.calendar.google.com', name: 'School', color: '#f6b3cb', readOnly: true }
+  ];
+  const r = await post('/api/google/calendar', { calendars: sel, calendarId: 'family@group.calendar.google.com' });
+  assert.equal(r.status, 200);
+  const st = await (await api('/api/calendar/status')).json();
+  assert.equal(st.calendar, 'Family');
+  assert.equal(st.calendars.length, 3);
+
+  const m = await month();
+  const picnic = m.events.find(e => e.title === 'Google picnic');
+  const piano = m.events.find(e => e.title === 'Piano recital');
+  const assembly = m.events.find(e => e.title === 'School assembly');
+  assert.ok(picnic && !picnic.calColor && !picnic.readOnly, 'main calendar uses default board style');
+  assert.ok(piano && piano.cal === 'Kids' && piano.calColor === '#A9D8A0' && !piano.readOnly && piano.ref, 'second calendar uses its Google color and is editable');
+  assert.ok(assembly && assembly.cal === 'School' && assembly.calColor === '#F6B3CB' && assembly.readOnly && !assembly.ref, 'read-only calendar is shown and marked readOnly');
+  assert.deepEqual(m.calendars.map(c => ({ id: c.id, name: c.name, main: c.main })), [
+    { id: 'family@group.calendar.google.com', name: 'Family', main: true },
+    { id: 'kids@group.calendar.google.com', name: 'Kids', main: false }
+  ]);
+
+  // Add an event to the second editable calendar explicitly
+  const addKids = await (await post('/api/events', { title: 'Soccer practice', date: '2026-10-23', allDay: true, calendarId: 'kids@group.calendar.google.com' })).json();
+  assert.ok(addKids.href && addKids.href.includes(encodeURIComponent('kids@group.calendar.google.com')));
+  const mAfter = await month();
+  const soccer = mAfter.events.find(e => e.title === 'Soccer practice');
+  assert.ok(soccer && soccer.cal === 'Kids' && soccer.calColor === '#A9D8A0');
+
+  // Cannot add an event to a read-only calendar
+  const addRo = await post('/api/events', { title: 'Nope', date: '2026-10-24', allDay: true, calendarId: 'school@group.calendar.google.com' });
+  assert.equal(addRo.status, 502);
 });
 
 test('add, edit and delete go to Google with a fresh token', async () => {

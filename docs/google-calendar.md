@@ -69,19 +69,19 @@ The secret is stored encrypted and never shown again.
 2. Tap **Sign in with Google**. A new tab opens on Google's sign-in page.
 3. Choose the Google account with the family calendar.
 4. Google warns **"Google hasn't verified this app"**. That's expected: the app is the one you registered yourself in part 3. Tap **Advanced**, then **Go to Family Chalk Planner (unsafe)**.
-5. Google lists what the board may do with your calendars. Tap **Continue** (or tick the box first, if there is one). Google only offers "all your calendars" for editing access; the board only uses the one calendar you pick in step 8.
+5. Google lists what the board may do with your calendars. Tap **Continue** (or tick the box first, if there is one). Google only offers "all your calendars" for editing access; the board only uses the calendars you pick in step 8.
 6. The tab then shows an error like **"Safari can't open the page"** or **"This site can't be reached"**. **This is expected.** Everything Google needs to tell the board is in that page's address, which starts with `http://localhost/?state=`.
    - Tap the **address bar** to show the full address, then **Select All** → **Copy**.
 7. Switch back to the board's tab. Paste the address into the box and tap **Connect**.
-8. A list of your calendars appears. Tap the family calendar. The wall shows it within a few seconds.
+8. A list of your calendars appears. Tap the calendars you want on the board (you can select more than one, including read-only subscribed calendars). The wall shows them within a few seconds.
 
 Do steps 2–7 within about 10 minutes. If Connect says the sign-in has expired, tap **Sign in with Google** and go through it again.
 
 ---
 
 ## Later
-- **Show a different calendar:** ⚙️ → tap another calendar in the list.
-- **Show more calendars at once** (kids, work…): admin console → ⚙️ Board → **More calendars from this account** → **List my calendars**, tick them and pick colors, then **Save and restart**. New events still go to the main calendar.
+- **Show or hide calendars:** ⚙️ → tap any calendar in the list to turn it on or off. Additional calendars use their Google Calendar colors on the board.
+- **Default calendar for new events:** when more than one editable calendar is shown, choose the default under **Default calendar for new events** in ⚙️ (you can also pick which calendar to use each time you add an event).
 - **Disconnect:** ⚙️ → **Disconnect Google**. To also remove the board's access on Google's side: [myaccount.google.com/connections](https://myaccount.google.com/connections) → Family Chalk Planner → delete.
 - **Don't delete the Google Cloud project.** The board needs it for as long as it uses your calendar. Google deletes sign-in keys that go unused for 6 months; a board that's running uses its key every hour, so that only happens if the board is off for that long.
 
