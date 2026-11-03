@@ -98,7 +98,7 @@ body.chorespage .chempty{font-size:20px}
 .calbody.bordered{padding:var(--bpad,0px)}
 #borderLayer{position:absolute;inset:0;pointer-events:none;z-index:1}
 #borderLayer img{position:absolute;display:block}
-body.drawing #borderBtn,body.drawing #titleBtn,body.drawing #sideBtn{display:none}
+body.drawing #borderBtn,body.drawing #titleBtn,body.drawing #sideBtn,body.drawing #choresBtn,body.drawing #musicBtn{display:none}
 .cork .pill{white-space:nowrap;flex:none}
 /* Title photos on/off for the month on screen (off = room to draw beside the month name) */
 #sideBtn .sw{width:34px;height:20px;border-radius:10px;background:rgba(var(--ink),.25);position:relative;flex:none;transition:background .15s}
@@ -209,7 +209,7 @@ body.drawing #art{pointer-events:auto;touch-action:none;cursor:crosshair}
   display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:0 12px}
 body.display .cork > *{display:none}
 .pill{height:44px;padding:0 16px;border-radius:22px;border:2px solid rgba(var(--ink),.5);background:#161616;color:var(--chalk);
-  font-family:'Kalam',cursive;font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.35)}
+  font-family:'Kalam',cursive;font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.35);text-decoration:none}
 .pill.on{border-color:var(--pink)}
 .pill.add{border-color:var(--yellow);color:var(--yellow)}
 .tools{display:none;align-items:center;gap:2px;background:#161616;border-radius:24px;padding:0 6px;box-shadow:0 2px 4px rgba(0,0,0,.35)}
@@ -666,6 +666,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <button class="pill" id="titleBtn" type="button">✎ Month title</button>
     <button class="pill" id="borderBtn" type="button">🖼 Border</button>
     <button class="pill" id="choresBtn" aria-label="Chores">🧹 Chores</button>
+    <a class="pill" id="musicBtn" href="https://music.youtube.com/" aria-label="YouTube Music">🎵 Music</a>
     <button class="pill" id="acctBtn" aria-label="Account">👤</button>
     <button class="pill" id="settingsBtn" aria-label="Settings">⚙️</button>
     <button class="pill" id="styleBtn" aria-label="Board style">🎨</button>
