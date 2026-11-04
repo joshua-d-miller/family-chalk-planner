@@ -19,9 +19,10 @@
   --chalk:#EDEAE0; --pink:#F6B3CB; --yellow:#F2D479; --blue:#9CC9E6;
   --green:#A9D8A0; --orange:#E8A35C; --purple:#B49CE0; --gold:#C9B47A;
   --slate:#141414; --wood:#4A3320; --ink:237,234,224; --bartext:#C9D4B0; --barline:#A7B48C;
+  --efont:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#1c130b;overflow:hidden;font-family:'Kalam',cursive;color:var(--chalk);
+html,body{margin:0;height:100%;background:#1c130b;overflow:hidden;font-family:'Kalam',cursive,var(--efont);color:var(--chalk);
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 body.display{cursor:none;background:#151615}
 /* Wall: the Apolosign already has a physical frame, so drop the wood and the (empty) cork strip */
@@ -46,10 +47,10 @@ body.choresOn .cal,body.choresOn .notes,body.choresOn #art,body.choresOn #artSvg
 .chhead{display:flex;align-items:center;gap:18px;height:68px;flex:none}
 .chhead h2{margin:0 8px 0 0;font-family:'Dancing Script',cursive;font-size:54px;line-height:1;color:var(--pink)}
 .chtabs{display:flex;gap:8px;flex:1}
-.chtabs button{height:46px;padding:0 18px;border-radius:23px;border:2px solid rgba(var(--ink),.3);background:transparent;color:var(--chalk);font:700 21px 'Kalam',cursive;cursor:pointer;white-space:nowrap}
+.chtabs button{height:46px;padding:0 18px;border-radius:23px;border:2px solid rgba(var(--ink),.3);background:transparent;color:var(--chalk);font:700 21px 'Kalam',cursive,var(--efont);cursor:pointer;white-space:nowrap}
 .chtabs button.on{border-color:var(--yellow);color:var(--yellow)}
 .chtabs button small{font-size:15px;opacity:.75;margin-left:6px}
-.chlink{height:42px;padding:0 16px;border-radius:21px;border:1.5px solid rgba(var(--ink),.35);background:transparent;color:rgba(var(--ink),.85);font:700 17px/40px 'Kalam',cursive;cursor:pointer;text-decoration:none;white-space:nowrap}
+.chlink{height:42px;padding:0 16px;border-radius:21px;border:1.5px solid rgba(var(--ink),.35);background:transparent;color:rgba(var(--ink),.85);font:700 17px/40px 'Kalam',cursive,var(--efont);cursor:pointer;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
 .chcols{flex:1;min-height:0;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:0;margin-top:12px}
 .chcol{min-height:0;overflow:hidden;padding:0 16px;border-left:1.5px solid rgba(var(--ink),.25)}
 .chcol:first-child{border-left:none;padding-left:4px}
@@ -212,9 +213,21 @@ body.display .cork > *{display:none}
 body.edit.menudrawer #menuBtn{display:flex}
 #menuBackdrop{display:none;position:fixed;inset:0;z-index:16;background:rgba(0,0,0,.45)}
 body.edit.menudrawer.draweropen #menuBackdrop{display:block}
+body.menudrawer .slate,body.menudrawer #art,body.menudrawer #artSvg,body.menudrawer #gifLayer,body.menudrawer #wx{height:692px}
 body.menudrawer .cork{position:fixed;top:0;left:0;bottom:0;width:250px;height:auto;z-index:17;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:10px;padding:66px 14px 18px;overflow-y:auto;box-shadow:4px 0 20px rgba(0,0,0,.55);border-right:3px solid var(--wood);transform:translateX(-105%);transition:transform .24s cubic-bezier(.4,0,.2,1)}
 body.menudrawer.draweropen .cork{transform:translateX(0)}
 body.menudrawer .cork .pill{width:100%;justify-content:flex-start}
+body.menudrawer .cork #addBtn{order:1}
+body.menudrawer .cork #choresBtn{order:2}
+body.menudrawer .cork #musicBtn{order:3}
+body.menudrawer .cork #drawBtn{order:4}
+body.menudrawer .cork #tools{order:5}
+body.menudrawer .cork #photosBtn{order:6}
+body.menudrawer .cork #styleBtn{order:7}
+body.menudrawer .cork #borderBtn{order:8}
+body.menudrawer .cork #sideBtn{order:9}
+body.menudrawer .cork #acctBtn{order:10;margin-top:auto}
+body.menudrawer .cork #settingsBtn{order:11}
 body.menudrawer .cork #acctBtn::after{content:'Account'}
 body.menudrawer .cork #settingsBtn::after{content:'Settings'}
 body.menudrawer .cork #styleBtn::after{content:'Board style'}
@@ -222,7 +235,8 @@ body.menudrawer .cork #photosBtn::after{content:'Photos'}
 body.menudrawer .cork .tools{flex-wrap:wrap;border-radius:16px;padding:8px;justify-content:center;gap:4px}
 body.menudrawer .cork #swatches{flex-wrap:wrap;max-width:100%;justify-content:center}
 .pill{height:44px;padding:0 16px;border-radius:22px;border:2px solid rgba(var(--ink),.5);background:#161616;color:var(--chalk);
-  font-family:'Kalam',cursive;font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.35);text-decoration:none}
+  font-family:'Kalam',cursive,var(--efont);font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.35);text-decoration:none}
+.pill svg{flex:none}
 .pill.on{border-color:var(--pink)}
 .pill.add{border-color:var(--yellow);color:var(--yellow)}
 .tools{display:none;align-items:center;gap:2px;background:#161616;border-radius:24px;padding:0 6px;box-shadow:0 2px 4px rgba(0,0,0,.35)}
@@ -277,7 +291,8 @@ body.display .bottom{touch-action:none}   /* swipes go to the switch, not the pa
 .bottom.photomode .bhead{display:flex;justify-content:center}
 .bslide:empty{display:none}
 
-.bslide button{position:relative;border:none;background:transparent;border-radius:12px;width:24px;height:22px;padding:0;font-size:13px;line-height:22px;cursor:pointer;opacity:.55;touch-action:manipulation;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif}
+.bslide button{position:relative;border:none;background:transparent;color:var(--chalk);border-radius:12px;width:24px;height:22px;padding:0;font-size:13px;line-height:22px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;opacity:.55;touch-action:manipulation;font-family:var(--efont)}
+.bslide button svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .bslide button.on{background:rgba(201,180,122,.35);opacity:1}
 .bslide button::after{content:'';position:absolute;inset:-8px 0}   /* easier to hit */
 .upnext{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;max-height:150px;overflow:hidden}
@@ -465,7 +480,8 @@ body.edit{touch-action:none}
 .acctbtns{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 .arow{display:flex;align-items:center;gap:14px;width:100%;min-height:68px;padding:10px 16px;border-radius:16px;border:2px solid rgba(var(--ink),.28);background:rgba(255,255,255,.04);color:var(--chalk);text-align:left;text-decoration:none;font-family:'Kalam',cursive;cursor:pointer;touch-action:manipulation}
 .arow:active{background:rgba(255,255,255,.1)}.arow:disabled{opacity:.6}
-.arow .ai{flex:0 0 40px;height:40px;border-radius:12px;background:rgba(242,212,121,.14);display:flex;align-items:center;justify-content:center;font-size:21px;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif}
+.arow .ai{flex:0 0 40px;height:40px;border-radius:12px;background:rgba(242,212,121,.14);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-size:21px;font-family:var(--efont)}
+.arow.out .ai{color:#F7A1A1}
 .arow .at{display:flex;flex-direction:column;min-width:0}.arow b{font-size:20px;line-height:1.2}.arow small{font-size:15px;line-height:1.25;color:rgba(var(--ink),.65);overflow-wrap:anywhere}
 .arow.out{border-color:rgba(247,161,161,.45)}.arow.out .ai{background:rgba(247,161,161,.14)}.arow.out b{color:#F7A1A1}
 /* family touch screen: events, meals, jars, and decorating (stamps, clipart, emoji, GIFs, words: move/resize/erase)
@@ -494,7 +510,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 #hmodal.open{display:flex}
 #hmodal .card{width:min(560px,94vw)}
 .hlist{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-height:56vh;overflow-y:auto}
-.hrow{display:flex;align-items:center;gap:12px;min-height:46px;padding:4px 12px;border-radius:12px;border:1.5px solid rgba(var(--ink),.2);background:transparent;color:var(--chalk);font:700 19px 'Kalam',cursive;text-align:left;cursor:pointer;width:100%}
+.hrow{display:flex;align-items:center;gap:12px;min-height:46px;padding:4px 12px;border-radius:12px;border:1.5px solid rgba(var(--ink),.2);background:transparent;color:var(--chalk);font:700 19px 'Kalam',cursive,var(--efont);text-align:left;cursor:pointer;width:100%}
 .hrow .hn{flex:1}
 .hrow .hd{font-size:14px;opacity:.6;white-space:nowrap}
 .hrow .hs{font-size:15px;white-space:nowrap;color:var(--green)}
@@ -503,15 +519,15 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 .hrow.off .hs{color:rgba(var(--ink),.7)}
 .hrow.mark{border-color:var(--yellow)}
 .daylist{display:flex;flex-direction:column;gap:8px;margin-top:6px;max-height:50vh;overflow-y:auto}
-.daylist button{text-align:left;min-height:48px;padding:6px 14px;border-radius:12px;border:1.5px solid rgba(201,180,122,.45);background:transparent;color:var(--chalk);font-family:'Kalam',cursive;font-size:19px;cursor:pointer}
+.daylist button{text-align:left;min-height:48px;padding:6px 14px;border-radius:12px;border:1.5px solid rgba(201,180,122,.45);background:transparent;color:var(--chalk);font-family:'Kalam',cursive,var(--efont);font-size:19px;cursor:pointer}
 .daylist button.allday{color:var(--yellow)}
 #modal,#tmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
 #modal.open,#tmodal.open{display:flex}
-.card{width:min(560px,92vw);background:var(--slate);border:10px solid var(--wood);box-shadow:0 10px 30px rgba(0,0,0,.6);padding:22px 26px;color:var(--chalk);font-family:'Kalam',cursive}
-.card h3{margin:0 0 14px;font-family:'Dancing Script',cursive;font-size:38px;color:var(--pink)}
+.card{width:min(560px,92vw);background:var(--slate);border:10px solid var(--wood);box-shadow:0 10px 30px rgba(0,0,0,.6);padding:22px 26px;color:var(--chalk);font-family:'Kalam',cursive,var(--efont)}
+.card h3{margin:0 0 14px;font-family:'Dancing Script',cursive,var(--efont);font-size:38px;color:var(--pink)}
 .card label{display:block;font-size:15px;color:rgba(var(--ink),.75);margin-top:12px}
 .card input[type=text],.card input[type=date],.card input[type=time],.card select{width:100%;height:46px;margin-top:4px;background:transparent;border:none;border-bottom:2px dashed rgba(var(--ink),.6);
-  color:var(--yellow);font-family:'Kalam',cursive;font-size:22px;padding:0 2px;color-scheme:dark}
+  color:var(--yellow);font-family:'Kalam',cursive,var(--efont);font-size:22px;padding:0 2px;color-scheme:dark}
 .card input#evTitle{color:var(--chalk)}
 .card .row{display:flex;gap:18px}
 .card .row > *{flex:1}
@@ -520,13 +536,15 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 .card .actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:12px;margin-top:22px}
 #thReset{margin-right:auto}
 .card .err{color:#F7A1A1;font-size:15px;min-height:20px;margin-top:10px}
-.btn{min-height:48px;height:auto;line-height:1.15;white-space:normal;padding:6px 22px;border-radius:24px;border:2px solid rgba(var(--ink),.5);background:transparent;color:var(--chalk);font-family:'Kalam',cursive;font-size:19px;font-weight:700;cursor:pointer}
-.card textarea{width:100%;margin-top:4px;background:transparent;border:none;border-bottom:2px dashed rgba(var(--ink),.6);color:var(--chalk);font-family:'Kalam',cursive;font-size:22px;padding:4px 2px;resize:none;outline:none}
+.btn{min-height:48px;height:auto;line-height:1.15;white-space:normal;padding:6px 22px;border-radius:24px;border:2px solid rgba(var(--ink),.5);background:transparent;color:var(--chalk);font-family:'Kalam',cursive,var(--efont);font-size:19px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.btn svg{flex:none}
+.card textarea{width:100%;margin-top:4px;background:transparent;border:none;border-bottom:2px dashed rgba(var(--ink),.6);color:var(--chalk);font-family:'Kalam',cursive,var(--efont);font-size:22px;padding:4px 2px;resize:none;outline:none}
 .fonts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px}
 .fonts button{height:52px;border-radius:10px;border:2px solid rgba(var(--ink),.25);background:transparent;color:var(--chalk);font-size:22px;cursor:pointer;padding:0 4px;overflow:hidden;white-space:nowrap}
 .fonts button.on{border-color:var(--yellow)}
 .opts{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
-.opts .seg{height:44px;min-width:48px;border-radius:22px;border:2px solid rgba(var(--ink),.3);background:transparent;color:var(--chalk);font-family:'Kalam',cursive;font-size:18px;font-weight:700;cursor:pointer}
+.opts .seg{height:44px;min-width:48px;padding:0 14px;border-radius:22px;border:2px solid rgba(var(--ink),.3);background:transparent;color:var(--chalk);font-family:'Kalam',cursive,var(--efont);font-size:18px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.opts .seg svg{flex:none}
 .opts .seg.on{border-color:var(--yellow);color:var(--yellow)}
 .opts .dot{width:36px;height:36px;border-radius:50%;border:2px solid transparent;background:transparent;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .opts .dot span{width:22px;height:22px;border-radius:50%}
@@ -636,16 +654,16 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <div class="chhead">
         <h2>Chores</h2>
         <div class="chtabs" id="chTabs"></div>
-        <button type="button" class="chlink" id="chEdit" hidden>✎ Change the list</button>
-        <button type="button" class="chlink" id="chBack">📅 Calendar</button>
+        <button type="button" class="chlink" id="chEdit" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg>Change the list</button>
+        <button type="button" class="chlink" id="chBack"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Calendar</button>
       </div>
       <div class="chcols" id="chCols"></div>
     </div>
     <div id="offline" aria-live="polite"><span></span><b id="offlineTxt">Offline</b></div>
     <div id="selGrip" aria-label="Drag to resize"></div>
     <div id="selbar">
-      <button type="button" class="star" id="selSave">★ Save as stamp</button>
-      <button type="button" id="selColor">🎨 Color</button>
+      <button type="button" class="star" id="selSave"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></svg>Save as stamp</button>
+      <button type="button" id="selColor"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path d="M12 2a10 10 0 0 0 0 20 2 2 0 0 0 2-2v-.5a1.5 1.5 0 0 1 1.5-1.5H17a5 5 0 0 0 5-5c0-6.1-4.5-11-10-11z"/><circle cx="7.5" cy="10.5" r="1" fill="currentColor"/><circle cx="12" cy="7.5" r="1" fill="currentColor"/><circle cx="16.5" cy="10.5" r="1" fill="currentColor"/></svg>Color</button>
       <button type="button" id="selSmaller" aria-label="Make smaller">−</button>
       <button type="button" id="selBigger" aria-label="Make bigger">+</button>
       <button type="button" id="selCopy">Copy</button>
@@ -668,13 +686,13 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <button class="tool" id="clearBtn" aria-label="Wipe this month's art"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
     </div>
     <button class="pill" id="sideBtn" type="button" aria-pressed="false" hidden><span class="sw" aria-hidden="true"></span>Title photos</button>
-    <button class="pill" id="borderBtn" type="button">🖼 Border</button>
-    <button class="pill" id="choresBtn" aria-label="Chores">🧹 Chores</button>
-    <a class="pill" id="musicBtn" href="https://music.youtube.com/" aria-label="YouTube Music">🎵 Music</a>
-    <button class="pill" id="acctBtn" aria-label="Account">👤</button>
-    <button class="pill" id="settingsBtn" aria-label="Settings">⚙️</button>
-    <button class="pill" id="styleBtn" aria-label="Board style">🎨</button>
-    <button class="pill" id="photosBtn" aria-label="Photos">📷</button>
+    <button class="pill" id="borderBtn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>Border</button>
+    <button class="pill" id="choresBtn" aria-label="Chores"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Chores</button>
+    <a class="pill" id="musicBtn" href="https://music.youtube.com/" aria-label="YouTube Music"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Music</a>
+    <button class="pill" id="acctBtn" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
+    <button class="pill" id="settingsBtn" aria-label="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button class="pill" id="styleBtn" aria-label="Board style"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 0 0 0 20 2 2 0 0 0 2-2v-.5a1.5 1.5 0 0 1 1.5-1.5H17a5 5 0 0 0 5-5c0-6.1-4.5-11-10-11z"/><circle cx="7.5" cy="10.5" r="1" fill="currentColor"/><circle cx="12" cy="7.5" r="1" fill="currentColor"/><circle cx="16.5" cy="10.5" r="1" fill="currentColor"/></svg></button>
+    <button class="pill" id="photosBtn" aria-label="Photos"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
     <button class="pill" id="drawBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg><span id="drawLabel">Draw</span></button>
     <button class="pill add" id="addBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add event</button>
   </div>
@@ -695,9 +713,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <div class="sublbl" id="pInfo" style="margin-top:0"></div>
     <div class="sublbl" id="pMonthLbl">Beside the month name</div>
     <div class="opts" id="pSide">
-      <button type="button" class="seg" data-side="random">🎲 Random photos</button>
-      <button type="button" class="seg" data-side="chosen">✓ Photos I pick</button>
-      <button type="button" class="seg" data-side="art">✏️ Art instead</button>
+      <button type="button" class="seg" data-side="random"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/></svg>Random photos</button>
+      <button type="button" class="seg" data-side="chosen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Photos I pick</button>
+      <button type="button" class="seg" data-side="art"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg>Art instead</button>
     </div>
     <div class="pickgrid" id="pPick"></div>
     <div class="sublbl" id="pSideHint" style="margin-top:6px"></div>
@@ -712,8 +730,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <label for="pEvery">New photo every</label>
     <select id="pEvery"><option value="10">10 seconds</option><option value="20">20 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option></select>
     <div class="opts" style="margin-top:16px">
-      <button type="button" class="seg" id="pPreview">▶ Preview slideshow</button>
-      <button type="button" class="seg" id="pSync">↻ Check album now</button>
+      <button type="button" class="seg" id="pPreview"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4l15 8-15 8z"/></svg>Preview slideshow</button>
+      <button type="button" class="seg" id="pSync"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Check album now</button>
     </div>
     <div class="err" id="pErr"></div>
     <div class="actions">
@@ -727,7 +745,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   <div class="card">
     <h3 id="setTitle">Settings</h3>
     <div class="adminonly">
-    <a href="/admin" class="seg" id="devicesBtn" style="margin-bottom:10px;display:inline-block;text-decoration:none">🛠 Admin console: screens &amp; people</a>
+    <a href="/admin" class="seg" id="devicesBtn" style="margin-bottom:10px;display:inline-flex;align-items:center;gap:6px;text-decoration:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Admin console: screens &amp; people</a>
     <div class="sublbl" style="margin-top:0">Calendar</div>
     <div id="calStat" class="calstat"></div>
     <div id="gConnect" hidden>
@@ -762,33 +780,33 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <button type="button" class="seg" id="zOut" aria-label="Zoom out">−</button>
       <button type="button" class="seg" id="zIn" aria-label="Zoom in">+</button>
       <button type="button" class="seg" id="zFit" disabled>Fit</button>
-      <button type="button" class="seg" id="titleBtn">✎ Month title</button>
+      <button type="button" class="seg" id="titleBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg>Month title</button>
     </div>
     <div class="sublbl" style="margin-top:20px">Menu bar</div>
     <div class="opts" id="setMenuPos">
-      <button type="button" class="seg on" data-pos="bottom">▂ Bottom bar</button>
-      <button type="button" class="seg" data-pos="left">☰ Slide-out (left)</button>
+      <button type="button" class="seg on" data-pos="bottom"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16h18"/></svg>Bottom bar</button>
+      <button type="button" class="seg" data-pos="left"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>Slide-out (left)</button>
     </div>
     <div class="sublbl" style="margin-top:20px">Current day</div>
     <div class="opts" id="setTodayS">
-      <button type="button" class="seg" data-s="ring">◯ Chalk</button>
-      <button type="button" class="seg" data-s="circle">○ Circle</button>
-      <button type="button" class="seg" data-s="heart">♡ Heart</button>
-      <button type="button" class="seg" data-s="star">☆ Star</button>
-      <button type="button" class="seg" data-s="box">■ Box</button>
-      <button type="button" class="seg" data-s="bg">▧ Background</button>
+      <button type="button" class="seg" data-s="ring"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7C8 3 17 3 20 7s2 11-4 13S5 19 3 14 4 8 7 5"/></svg>Chalk</button>
+      <button type="button" class="seg" data-s="circle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>Circle</button>
+      <button type="button" class="seg" data-s="heart"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5C6 16 2 12.2 2 7.5a5 5 0 0 1 10-2 5 5 0 0 1 10 2c0 4.7-4 8.5-10 13z"/></svg>Heart</button>
+      <button type="button" class="seg" data-s="star"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l2.8 6 6.5.6-4.9 4.3 1.4 6.4L12 16.5 6.2 19.8l1.4-6.4-4.9-4.3 6.5-.6z"/></svg>Star</button>
+      <button type="button" class="seg" data-s="box"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>Box</button>
+      <button type="button" class="seg" data-s="bg"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M4 11l7-7M4 17l13-13M8 20l12-12M14 20l6-6"/></svg>Background</button>
     </div>
     <div class="opts" id="setTodayC"></div>
     <div class="sublbl" style="margin-top:20px">Holidays</div>
-    <div class="opts"><button type="button" class="seg" id="setHol">🎉 Show or hide holidays</button><span id="setHolN" class="sublbl" style="margin:0"></span></div>
+    <div class="opts"><button type="button" class="seg" id="setHol"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.4 5.2 5.6.8-4 4 .9 5.6L12 15l-4.9 2.6.9-5.6-4-4 5.6-.8z"/></svg>Show or hide holidays</button><span id="setHolN" class="sublbl" style="margin:0"></span></div>
     <div class="sublbl notadmin" style="margin-top:20px">The calendar, trash day and Notes settings are for admins: sign in to the admin console (/admin), then come back here.</div>
     <div class="adminonly">
     <div class="sublbl" style="margin-top:20px">Bottom of the Notes column (what it shows normally; tap the switch above it, or swipe, to see the others)</div>
     <div class="opts" id="nBottom">
-      <button type="button" class="seg" data-b="jars">🫙 Reward jars</button>
-      <button type="button" class="seg" data-b="today">☀️ Today</button>
-      <button type="button" class="seg" data-b="upnext">📅 Up next</button>
-      <button type="button" class="seg" data-b="photos">📷 Photos</button>
+      <button type="button" class="seg" data-b="jars"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="3" rx="1"/><path d="M7 5v2c-1.5 1-2 2.5-2 4.5v7.5a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-7.5c0-2-.5-3.5-2-4.5V5"/></svg>Reward jars</button>
+      <button type="button" class="seg" data-b="today"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/></svg>Today</button>
+      <button type="button" class="seg" data-b="upnext"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Up next</button>
+      <button type="button" class="seg" data-b="photos"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Photos</button>
       <button type="button" class="seg" data-b="none">Nothing</button>
     </div>
     </div>
@@ -806,7 +824,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <h3 id="thTitle">Board style</h3>
     <div class="sublbl" style="margin-top:0">Pick a background and a look, then tweak any part. Colors only change on a background where they’d be hard to read. Changes show on the board as you go.</div>
     <div class="threl"><b>Background</b><div class="surfs" id="thSurf"></div>
-      <button type="button" class="btn seasonbtn" id="thSeason" aria-pressed="false">🍂 Change with the season</button>
+      <button type="button" class="btn seasonbtn" id="thSeason" aria-pressed="false"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>Change with the season</button>
       <div class="sublbl" style="margin-top:4px">Adds a faint pattern for the month shown: snowflakes in winter, blossoms in spring, suns in summer, leaves in autumn, hearts in February and pumpkins in October. Off unless you turn it on.</div></div>
     <div class="threl"><b>Look</b></div>
     <div class="presets" id="thPresets"></div>
@@ -840,7 +858,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <div id="thruWrap" style="display:none"><label for="evThru">Through (optional)</label><input type="date" id="evThru"></div>
     </div>
     <label class="check"><input type="checkbox" id="evAllDay"> All day</label>
-    <label class="check"><input type="checkbox" id="evCount"> ⭐ Count down to this</label>
+    <label class="check"><input type="checkbox" id="evCount"> <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="color:var(--yellow);flex:none"><path d="M12 2.5l2.8 6 6.5.6-4.9 4.3 1.4 6.4L12 16.5 6.2 19.8l1.4-6.4-4.9-4.3 6.5-.6z"/></svg> Count down to this</label>
     <div class="sublbl">Color on the board</div>
     <div class="opts" id="evColor"></div>
     <div class="sublbl">Size on the board</div>
@@ -967,7 +985,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <div class="opts" id="jPieces"></div>
     <div class="actions">
       <button type="button" class="btn" id="jRemove">Remove</button>
-      <button type="button" class="btn del" id="jReward">🎉 Reward!</button>
+      <button type="button" class="btn del" id="jReward"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.4 5.2 5.6.8-4 4 .9 5.6L12 15l-4.9 2.6.9-5.6-4-4 5.6-.8z"/></svg>Reward!</button>
       <button type="button" class="btn go" id="jClose">Done</button>
     </div>
   </div>
@@ -1034,9 +1052,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <div><h3 id="acctTitle"><span id="acctName"></span></h3><div class="acctwho" id="acctWho"></div></div>
     </div>
     <div class="acctbtns">
-      <button type="button" class="arow" id="acctPk"><span class="ai" aria-hidden="true">🔑</span><span class="at"><b id="acctPkT">Add a passkey on this device</b><small id="acctPkList">Sign in with Face ID, Touch ID or your password manager next time</small></span></button>
-      <a href="/admin" id="acctAdmin" class="arow"><span class="ai" aria-hidden="true">🛠</span><span class="at"><b>Admin console</b><small>Screens, people and security</small></span></a>
-      <button type="button" class="arow out" id="acctOut"><span class="ai" aria-hidden="true">↩︎</span><span class="at"><b>Sign out</b><small>On this device only</small></span></button>
+      <button type="button" class="arow" id="acctPk"><span class="ai" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></svg></span><span class="at"><b id="acctPkT">Add a passkey on this device</b><small id="acctPkList">Sign in with Face ID, Touch ID or your password manager next time</small></span></button>
+      <a href="/admin" id="acctAdmin" class="arow"><span class="ai" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span class="at"><b>Admin console</b><small>Screens, people and security</small></span></a>
+      <button type="button" class="arow out" id="acctOut"><span class="ai" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span><span class="at"><b>Sign out</b><small>On this device only</small></span></button>
     </div>
     <div class="err" id="acctErr"></div>
     <div class="actions"><button type="button" class="btn go" id="acctClose">Done</button></div>
@@ -1188,15 +1206,16 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     return lab;
   }
   var SIZES = [3, 6, 12];
+  var EFONT = ",'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
   var FONTS = [
-    { name: 'Kalam', css: "700 {z}px 'Kalam', cursive" },
-    { name: 'Caveat', css: "600 {z}px 'Caveat', cursive" },
-    { name: 'Marker', css: "400 {z}px 'Permanent Marker', cursive" },
-    { name: 'Pacifico', css: "400 {z}px 'Pacifico', cursive" },
-    { name: 'Chalk', css: "400 {z}px 'Fredericka the Great', serif" },
-    { name: 'Tall', css: "700 {z}px 'Amatic SC', cursive" },
-    { name: 'Scratchy', css: "400 {z}px 'Rock Salt', cursive" },
-    { name: 'Script', css: "700 {z}px 'Dancing Script', cursive" }
+    { name: 'Kalam', css: "700 {z}px 'Kalam', cursive" + EFONT },
+    { name: 'Caveat', css: "600 {z}px 'Caveat', cursive" + EFONT },
+    { name: 'Marker', css: "400 {z}px 'Permanent Marker', cursive" + EFONT },
+    { name: 'Pacifico', css: "400 {z}px 'Pacifico', cursive" + EFONT },
+    { name: 'Chalk', css: "400 {z}px 'Fredericka the Great', serif" + EFONT },
+    { name: 'Tall', css: "700 {z}px 'Amatic SC', cursive" + EFONT },
+    { name: 'Scratchy', css: "400 {z}px 'Rock Salt', cursive" + EFONT },
+    { name: 'Script', css: "700 {z}px 'Dancing Script', cursive" + EFONT }
   ];
   var TEXT_SIZES = [{ label: 'S', z: 26 }, { label: 'M', z: 40 }, { label: 'L', z: 60 }, { label: 'XL', z: 88 }];
   function fontCss(f, z) { return (FONTS[f] || FONTS[0]).css.replace('{z}', z); }
@@ -1461,7 +1480,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
           // wall: one continuous surface across the whole screen, so the bands above and below the board match
           document.body.style.backgroundImage = url; document.body.style.backgroundSize = 'cover'; document.body.style.backgroundPosition = 'center';
           slate.style.background = 'transparent';
-        } else { slate.style.backgroundImage = url; slate.style.backgroundSize = '1252px 642px'; }
+        } else { slate.style.backgroundImage = url; slate.style.backgroundSize = '100% 100%'; }
       } catch (e) { slate.style.background = sf.base[1]; }
     } else slate.style.background = sf.base[1];
     $('board').style.background = sf.frame || '';
@@ -1590,6 +1609,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   // Bottom of Notes: the saved choice (⚙ Settings) is the default; the little switch above it
   // (tap, or swipe across) shows another for a while, then it goes back to the default.
   var BOTTOM_LABELS = { jars: '🫙 Jars', today: '☀️ Today', upnext: '📅 Up next', photos: '📷 Photos' };
+  var BOTTOM_ICONS = {
+    jars: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="3" rx="1"/><path d="M7 5v2c-1.5 1-2 2.5-2 4.5v7.5a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-7.5c0-2-.5-3.5-2-4.5V5"/></svg>',
+    today: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/></svg>',
+    upnext: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+    photos: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>'
+  };
   var bottomBackTimer = null;
   function bottomModes() {
     var out = [];
@@ -1616,7 +1641,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     var sw = $('bSlide'); sw.innerHTML = '';
     if (modes.length > 1) box.classList.add('hasswitch');
     if (modes.length > 1) modes.forEach(function (m) {
-      var b = el('button', m === mode ? 'on' : '', BOTTOM_LABELS[m].split(' ')[0]); b.type = 'button'; b.setAttribute('role', 'tab');
+      var b = el('button', m === mode ? 'on' : ''); b.type = 'button'; b.setAttribute('role', 'tab');
+      b.innerHTML = BOTTOM_ICONS[m] || BOTTOM_LABELS[m].split(' ')[0];
       b.title = BOTTOM_LABELS[m].replace(/^\S+ /, ''); b.setAttribute('aria-label', b.title);
       b.setAttribute('aria-selected', m === mode ? 'true' : 'false');
       b.addEventListener('click', function (e) { e.stopPropagation(); showBottom(m); });
@@ -2644,7 +2670,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         var bins = binsFor(ds);
         if (bins.length) {
           var same = state.bins && state.bins.recycle && state.bins.recycle.mode === 'same';
-          top.innerHTML = bins.indexOf('trash') >= 0 ? '<svg width="12" height="14" viewBox="0 0 40 44" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11h26M15 11V6h10v5M10 11l2 27h16l2-27"/></svg>' : '♻️';
+          top.innerHTML = bins.indexOf('trash') >= 0
+            ? '<svg width="12" height="14" viewBox="0 0 40 44" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11h26M15 11V6h10v5M10 11l2 27h16l2-27"/></svg>'
+            : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L6.5 10"/><path d="M10 4.5l2-1.8 2 1.8"/><path d="M12 2.7l3.5 6.3"/><path d="M17.5 13l3.3 3.3a1.8 1.8 0 0 1-1.3 3H14"/><path d="M16 17l-2 2.3 2 2.3"/></svg>';
           top.appendChild(document.createTextNode(bins.length === 2 && !same ? 'Trash + recycling' : bins[0] === 'trash' ? 'Trash' : 'Recycling'));
         }
         cell.appendChild(top);
@@ -2700,11 +2728,11 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 
   // ---- Board style: a preset plus your tweaks, turned into one stylesheet ----
   var TFONTS = {
-    kalam: { n: 'Kalam', ff: "'Kalam', cursive", w: 700, z: 1 }, caveat: { n: 'Caveat', ff: "'Caveat', cursive", w: 600, z: 1.15 },
-    marker: { n: 'Marker', ff: "'Permanent Marker', cursive", w: 400, z: 0.92 }, pacifico: { n: 'Pacifico', ff: "'Pacifico', cursive", w: 400, z: 0.88 },
-    chalk: { n: 'Chalk', ff: "'Fredericka the Great', serif", w: 400, z: 1 }, tall: { n: 'Tall', ff: "'Amatic SC', cursive", w: 700, z: 1.3 },
-    scratchy: { n: 'Scratchy', ff: "'Rock Salt', cursive", w: 400, z: 0.78 }, script: { n: 'Script', ff: "'Dancing Script', cursive", w: 700, z: 1.1 },
-    classic: { n: 'Classic', ff: "'Cormorant Garamond', serif", w: 600, z: 1.05 }
+    kalam: { n: 'Kalam', ff: "'Kalam', cursive" + EFONT, w: 700, z: 1 }, caveat: { n: 'Caveat', ff: "'Caveat', cursive" + EFONT, w: 600, z: 1.15 },
+    marker: { n: 'Marker', ff: "'Permanent Marker', cursive" + EFONT, w: 400, z: 0.92 }, pacifico: { n: 'Pacifico', ff: "'Pacifico', cursive" + EFONT, w: 400, z: 0.88 },
+    chalk: { n: 'Chalk', ff: "'Fredericka the Great', serif" + EFONT, w: 400, z: 1 }, tall: { n: 'Tall', ff: "'Amatic SC', cursive" + EFONT, w: 700, z: 1.3 },
+    scratchy: { n: 'Scratchy', ff: "'Rock Salt', cursive" + EFONT, w: 400, z: 0.78 }, script: { n: 'Script', ff: "'Dancing Script', cursive" + EFONT, w: 700, z: 1.1 },
+    classic: { n: 'Classic', ff: "'Cormorant Garamond', serif" + EFONT, w: 600, z: 1.05 }
   };
   var THEME_BASE = { numF: 'kalam', numC: '#F2D479', boxes: 'on', todayC: '#F6B3CB', todayS: 'ring', wkF: 'classic', wkC: '#EDE6D2',
     evF: 'kalam', evC: '#EDEAE0', alldayC: '#F2D479', holC: '#9CC9E6', headF: 'script', notesC: '#EDE6D2', mealsC: '#F6B3CB',
@@ -2809,10 +2837,18 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
 
   // Board style editor (iPad): live preview while you picks, saved for every screen on Save
+  var TODAY_S_OPTS = [
+    ['ring', '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7C8 3 17 3 20 7s2 11-4 13S5 19 3 14 4 8 7 5"/></svg>Chalk'],
+    ['circle', '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="8"/></svg>Circle'],
+    ['heart', '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5C6 16 2 12.2 2 7.5a5 5 0 0 1 10-2 5 5 0 0 1 10 2c0 4.7-4 8.5-10 13z"/></svg>Heart'],
+    ['star', '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l2.8 6 6.5.6-4.9 4.3 1.4 6.4L12 16.5 6.2 19.8l1.4-6.4-4.9-4.3 6.5-.6z"/></svg>Star'],
+    ['box', '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>Box'],
+    ['bg', '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M4 11l7-7M4 17l13-13M8 20l12-12M14 20l6-6"/></svg>Background']
+  ];
   var TROWS = [
     { label: 'Day numbers', parts: [['numF', 'font'], ['numC', 'color']] },
     { label: 'Number boxes', parts: [['boxes', [['on', 'Show'], ['off', 'Hide']]]] },
-    { label: 'Today', parts: [['todayS', [['ring', '◯ Chalk'], ['circle', '○ Circle'], ['heart', '♡ Heart'], ['star', '☆ Star'], ['box', '■ Box'], ['bg', '▧ Background']]], ['todayC', 'color']] },
+    { label: 'Today', parts: [['todayS', TODAY_S_OPTS], ['todayC', 'color']] },
     { label: 'Weekday names', parts: [['wkF', 'font'], ['wkC', 'color']] },
     { label: 'Events', parts: [['evF', 'font'], ['evC', 'color']] },
     { label: 'All-day events', parts: [['alldayC', 'color']] },
@@ -2829,11 +2865,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     if (pr[k] === val) delete d.o[k]; else d.o[k] = val;   // only real tweaks are stored
     applyTheme(d); drawThemeEditor();
   }
+  var SEASON_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>';
   function drawThemeEditor() {
     var d = state.themeDraft, v = themeVals(d);
     var sbox = $('thSurf'); sbox.innerHTML = '';
     $('thSeason').classList.toggle('on', !!d.z); $('thSeason').setAttribute('aria-pressed', d.z ? 'true' : 'false');
-    $('thSeason').textContent = d.z ? '🍂 Changes with the season: on' : '🍂 Change with the season';
+    $('thSeason').innerHTML = SEASON_ICON + (d.z ? 'Changes with the season: on' : 'Change with the season');
     SURFACES.forEach(function (sf) {
       var b = el('button', (d.s || 'slate') === sf.id ? 'on' : ''); b.type = 'button';
       b.style.background = 'radial-gradient(circle at 50% 40%,' + sf.base[0] + ',' + sf.base[1] + ')';
@@ -2881,7 +2918,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         } else {
           var sg = el('div', 'opts');
           kind.forEach(function (o) {
-            var b = el('button', 'seg' + (v[k] === o[0] ? ' on' : ''), o[1]); b.type = 'button';
+            var b = el('button', 'seg' + (v[k] === o[0] ? ' on' : '')); b.type = 'button';
+            b.innerHTML = o[1];
             b.addEventListener('click', function () { themeSet(k, o[0]); });
             sg.appendChild(b);
           });
@@ -3170,7 +3208,6 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     var hand = !!(state.meta && state.meta.hideTitle), h1 = $('monthName'), mn = h1.querySelector('.mn');
     h1.classList.toggle('hand', hand);
     if (mn) styleTitle(mn, h1, titleStyle(), 520);
-    if (EDIT) $('titleBtn').textContent = '✎ Month title';
   }
   // ---- Holiday border: up to 8 pictures repeated around the calendar (wall, tablet and family screens) ----
   var BORDER_SZ = { s: 20, m: 26, l: 34 };
@@ -3196,8 +3233,13 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   function applyMenuPos() {
     var left = isMenuDrawer(), cork = document.querySelector('.cork');
+    var nextH = left ? 692 : 642, changedH = SLATE_H !== nextH;
+    SLATE_H = nextH;
+    GRID_H = left ? 576 : 526;
     document.body.classList.toggle('menudrawer', left);
     if (!left) setDrawerOpen(false);
+    var svg = $('artSvg');
+    if (svg) { svg.setAttribute('viewBox', '0 0 ' + SLATE_W + ' ' + SLATE_H); svg.setAttribute('height', String(SLATE_H)); }
     if (cork) {
       if (left) {
         cork.classList.remove('floating'); cork.style.transform = '';
@@ -3208,6 +3250,11 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       }
     }
     applyBoardPad();
+    if (changedH) {
+      if (state.lastMonth && typeof renderMonth === 'function') renderMonth(state.lastMonth);
+      if (state.meta && state.meta.border && typeof drawBorder === 'function') drawBorder(state.meta.border);
+      if (typeof fitMeals === 'function') setTimeout(fitMeals, 0);
+    }
   }
   function savedBoardPad() {
     try { var v = localStorage.getItem('chalkBoardPad'); if (v != null && v !== '') return Math.max(0, Math.min(80, Math.round(+v))); } catch (e) {}
@@ -3222,9 +3269,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   function applyBoardPad(p) {
     var pad = p != null ? Math.max(0, Math.min(80, Math.round(+p))) : (state.boardPadDraft != null ? state.boardPadDraft : savedBoardPad());
-    var hasCork = (EDIT || document.body.classList.contains('framed') || isFamily()) && !isMenuDrawer();
+    var fullH = EDIT || document.body.classList.contains('framed') || isFamily() || isMenuDrawer();
     BOARD_W = 1252 + 2 * pad;
-    BOARD_H = (hasCork ? 692 : 642) + 2 * pad;
+    BOARD_H = (fullH ? 692 : 642) + 2 * pad;
     var brd = $('board');
     brd.style.padding = pad + 'px';
     brd.style.width = BOARD_W + 'px';
@@ -3321,9 +3368,10 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   // Backing resolution follows zoom so close-up drawing stays crisp (capped for iPad memory)
   function setRes(r) {
     r = Math.max(2, Math.min(3, Math.round(r * 2) / 2));
-    if (r === artRes) return;
+    var w = Math.round(SLATE_W * r), h = Math.round(SLATE_H * r);
+    if (r === artRes && canvas.width === w && canvas.height === h) return;
     artRes = r;
-    canvas.width = Math.round(SLATE_W * r); canvas.height = Math.round(SLATE_H * r);
+    canvas.width = w; canvas.height = h;
     ctx.setTransform(r, 0, 0, r, 0, 0);
     if (typeof redrawArt === 'function' && state.strokes) redrawArt();
   }
@@ -3926,7 +3974,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       ['🎆 Fireworks', 'fireworks gi-firework-rocket sparkles star', '#F2D479'],
       ['☀️ Summer', 'sun watermelon gi-palm-tree beach-with-umbrella', '#F2D479'],
       ['🎂 Birthday', 'birthday-cake balloon party-popper wrapped-gift', '#F6B3CB'],
-      ['🎒 Back to school', 'school-bus books pencil backpack red-apple', '#EDEAE0']
+      ['🎒 Back to school', 'bus books pencil backpack red-apple', '#EDEAE0']
     ];
     var bd = null, bNames = null, bTimer = null;
     var bHave = function (n) { return bNames && bNames.indexOf(n) >= 0; };

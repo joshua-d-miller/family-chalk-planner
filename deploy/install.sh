@@ -93,9 +93,9 @@ if [ "$UNIT_ONLY" = yes ]; then write_unit; say "Service updated to run from $AP
 node_ok() { command -v node >/dev/null && node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=5)?0:1)'; }
 if [ "${SKIP_PACKAGES:-}" != 1 ]; then
   export DEBIAN_FRONTEND=noninteractive
-  say "Installing packages (curl, git, ca-certificates)"
+  say "Installing packages (curl, git, ca-certificates, fonts-noto-color-emoji)"
   apt-get update -qq
-  apt-get install -y -qq curl git ca-certificates >/dev/null
+  apt-get install -y -qq curl git ca-certificates fonts-noto-color-emoji >/dev/null
   if ! node_ok; then
     say "Installing Node.js 22 (NodeSource)"
     curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource_setup.sh
