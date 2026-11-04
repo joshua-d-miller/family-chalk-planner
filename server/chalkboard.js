@@ -704,7 +704,7 @@ function trashCfg() {
   return r ? JSON.parse(r.data) : { day: TRASH_DAY, recycle: { mode: 'same' } };
 }
 // Which mini-pages show in the right-hand column (up to 3)
-const RIGHT_PAGES = ['info', 'reminders', 'meals', 'jars', 'chores', 'upnext', 'today', 'photos'];
+const RIGHT_PAGES = ['info', 'reminders', 'meals', 'jars', 'chores', 'upnext', 'today', 'photos', 'timers'];
 function cleanRightPages(list, fallbackBottom) {
   if (Array.isArray(list)) {
     const out = [];
@@ -1487,6 +1487,37 @@ app.post('/api/reminders', (req, res) => {
   qKvSet.run('reminders', JSON.stringify({ items, updated: Date.now() }));
   const v = remindersView();
   broadcast('reminders', v);
+  res.json(v);
+});
+
+// Timers: several named countdowns shared by every screen. Each is running (endsAt), paused (left) or done.
+// Screens count down on their own (using `now` to correct their clock) and say the name out loud when one ends.
+function loadTimersRaw() {
+  const row = qKvGet.get('timers');
+  return row ? (JSON.parse(row.data).items || []) : [];
+}
+function timersView() { return { items: loadTimersRaw(), now: Date.now() }; }
+function cleanTimer(t, i) {
+  const now = Date.now();
+  const id = typeof (t && t.id) === 'string' && /^[a-z0-9]{1,20}$/.test(t.id) ? t.id : `t${now.toString(36)}${i}`;
+  const name = String((t && t.name) || '').replace(/[\r\n<>]/g, ' ').trim().slice(0, 60) || 'Timer';
+  const duration = Math.max(1000, Math.min(24 * 3600e3, Math.round(+(t && t.duration) || 0) || 60000));
+  const state = ['running', 'paused', 'done'].includes(t && t.state) ? t.state : 'running';
+  const out = { id, name, duration, state };
+  if (state === 'running') out.endsAt = Math.max(now - 3600e3, Math.min(now + 24 * 3600e3, Math.round(+t.endsAt) || now + duration));
+  if (state === 'paused') out.left = Math.max(0, Math.min(24 * 3600e3, Math.round(+t.left) || duration));
+  if (state === 'done') out.doneAt = Math.round(+t.doneAt) || now;
+  return out;
+}
+app.get('/api/timers', (req, res) => res.json(timersView()));
+app.post('/api/timers', (req, res) => {
+  const list = (req.body || {}).items;
+  if (!Array.isArray(list)) return res.status(400).json({ error: 'bad timers' });
+  const seen = new Set();
+  const items = list.slice(0, 20).map(cleanTimer).filter(t => !seen.has(t.id) && seen.add(t.id));
+  qKvSet.run('timers', JSON.stringify({ items, updated: Date.now() }));
+  const v = timersView();
+  broadcast('timers', v);
   res.json(v);
 });
 app.post('/api/reminders/check', (req, res) => {
@@ -2526,7 +2557,8 @@ const MANIFESTS = {
   chores: { name: 'Chores', short_name: 'Chores', start_url: '/chores', scope: '/', display: 'standalone', orientation: 'any' },
   meals: { name: 'Meal Plan', short_name: 'Meals', start_url: '/meals', scope: '/', display: 'standalone', orientation: 'any' },
   jars: { name: 'Reward Jars', short_name: 'Jars', start_url: '/jars', scope: '/', display: 'standalone', orientation: 'any' },
-  reminders: { name: 'Reminders', short_name: 'Reminders', start_url: '/reminders', scope: '/', display: 'standalone', orientation: 'any' }
+  reminders: { name: 'Reminders', short_name: 'Reminders', start_url: '/reminders', scope: '/', display: 'standalone', orientation: 'any' },
+  timers: { name: 'Timers', short_name: 'Timers', start_url: '/timers', scope: '/', display: 'standalone', orientation: 'any' }
 };
 for (const [kind, m] of Object.entries(MANIFESTS)) {
   app.get(`/manifest-${kind}.webmanifest`, (req, res) => {
@@ -2637,6 +2669,7 @@ app.get('/chores', sendBoard('chores'));   // the chores page on a phone (same p
 app.get('/meals', sendBoard('meals'));
 app.get('/jars', sendBoard('jars'));
 app.get('/reminders', sendBoard('reminders'));
+app.get('/timers', sendBoard('timers'));
 // the admin console (sign-in, screens, people, my account) and invite links
 for (const p of ['/admin', '/join']) app.get(p, (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(PUBLIC, 'admin.html')));
 app.use(express.static(PUBLIC));

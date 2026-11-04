@@ -137,6 +137,78 @@ body.chorespage .chempty{font-size:20px}
 .rpitem .rtag{font-size:14px;padding:2px 9px;border-radius:12px;border:1.5px solid rgba(242,212,121,.45);color:var(--yellow);white-space:nowrap}
 .rpitem .rtag.imp{border-color:var(--pink);color:var(--pink);background:rgba(246,179,203,.12)}
 .rpitem .rdel{border:none;background:transparent;color:#F7A1A1;font:700 20px 'Kalam',cursive;cursor:pointer;padding:0 6px}
+/* Timers page */
+#timersPage{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;padding:12px 24px 16px}
+#timersPage[hidden]{display:none}
+body.timerspage{cursor:auto}
+body.timerspage #stage{display:none}
+body.timerspage #timersPage{position:fixed;inset:0;z-index:5;display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));color:var(--chalk)}
+body.timerspage #timersPage .chhead{height:auto;max-width:1100px;margin:0 auto}
+body.timerspage #timersPage .chhead h2{font-size:42px}
+body.timerspage #tpBack{display:none}
+body.timerspage .tmadd,body.timerspage .tmgrid{max-width:1100px;margin-left:auto;margin-right:auto}
+.tmadd{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:6px;flex:none}
+.tmadd input{height:46px;border-radius:12px;border:1.5px solid rgba(var(--ink),.35);background:rgba(0,0,0,.25);color:var(--chalk);font:700 20px 'Kalam',cursive,var(--efont);padding:0 12px}
+.tmadd #tmName{flex:1 1 260px;min-width:0}
+.tmdur{display:flex;align-items:center;gap:4px;font:700 22px 'Kalam',cursive;color:rgba(var(--ink),.7)}
+.tmdur input{width:84px;text-align:center}
+.tmstart{height:46px;padding:0 24px;border-radius:23px;border:2px solid var(--green);background:rgba(169,216,160,.15);color:var(--green);font:700 20px 'Kalam',cursive;cursor:pointer}
+.tmpresets{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 100%}
+.tmpresets button{height:40px;padding:0 14px;border-radius:20px;border:1.5px dashed rgba(var(--ink),.4);background:transparent;color:var(--chalk);font:700 17px 'Kalam',cursive;cursor:pointer}
+.tmadd .err{flex:1 1 100%;margin:0}
+.tmgrid{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));grid-auto-rows:min-content;gap:16px;margin-top:14px;padding-bottom:6px}
+.tmcard{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 14px 12px;border:1.5px solid rgba(var(--ink),.28);border-radius:18px;background:rgba(255,255,255,.03)}
+.tmcard.done{border-color:var(--pink);background:rgba(246,179,203,.1);animation:tmpulse 1.2s ease-in-out infinite}
+.tmcard.paused .tmtime{opacity:.55}
+@keyframes tmpulse{50%{box-shadow:0 0 0 6px rgba(246,179,203,.25)}}
+.tmcard .tmn{font:700 24px/1.1 'Kalam',cursive,var(--efont);color:var(--yellow);text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tmring{position:relative;width:170px;height:170px}
+.tmring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.tmring circle{fill:none;stroke-width:10}
+.tmring .bg{stroke:rgba(var(--ink),.15)}
+.tmring .fg{stroke:var(--green);stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+.tmcard.done .tmring .fg{stroke:var(--pink)}
+.tmtime{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:700 38px 'Kalam',cursive;color:var(--chalk);font-variant-numeric:tabular-nums}
+.tmacts{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.tmacts button{height:40px;min-width:44px;padding:0 12px;border-radius:20px;border:1.5px solid rgba(var(--ink),.4);background:transparent;color:var(--chalk);font:700 16px 'Kalam',cursive;cursor:pointer}
+.tmacts button.go{border-color:var(--green);color:var(--green)}
+.tmcard .tmdel{position:absolute;top:6px;right:8px;border:none;background:transparent;color:#F7A1A1;font:700 24px 'Kalam',cursive;cursor:pointer;padding:0 6px}
+.tmempty{font:700 22px 'Kalam',cursive;color:rgba(var(--ink),.6);padding:30px 4px;grid-column:1/-1}
+body.display #timersBtn,body:not(.edit) #timersBtn{display:none}
+body.drawing #timersBtn{display:none}
+/* Timers mini-page on the right */
+.tmmini{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.tmmini li{display:flex;align-items:baseline;gap:10px;font:700 21px/1.2 'Kalam',cursive;color:var(--chalk)}
+.tmmini li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tmmini li .t{font-variant-numeric:tabular-nums;color:var(--green)}
+.tmmini li.paused .t{opacity:.55}
+.tmmini li.done .t{color:var(--pink)}
+.tmmini li.none{color:rgba(var(--ink),.55);font-size:18px}
+/* Running timers float at the bottom of the screen everywhere */
+#timerChips{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:65;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:94vw;pointer-events:none}
+.tmchip{pointer-events:auto;display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:22px;background:rgba(22,22,22,.92);border:2px solid var(--green);color:var(--chalk);font:700 19px 'Kalam',cursive,var(--efont);box-shadow:0 3px 10px rgba(0,0,0,.5);cursor:pointer}
+.tmchip b{font-variant-numeric:tabular-nums;color:var(--green)}
+.tmchip.paused{border-color:rgba(var(--ink),.4)}
+.tmchip.paused b{color:rgba(var(--ink),.7)}
+.tmchip.done{border-color:var(--pink)}
+.tmchip.done b{color:var(--pink)}
+body.subpageOn.timersOn #timerChips,body.timerspage #timerChips{display:none}
+/* Timer finished: big announcement over everything */
+#timerAlert{display:none;position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.6);align-items:center;justify-content:center}
+#timerAlert.open{display:flex}
+.tacard{min-width:min(92vw,460px);max-width:92vw;padding:28px 34px 24px;border-radius:24px;background:#1b1b1b;border:3px solid var(--pink);text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.6);animation:tapop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes tapop{from{transform:scale(.7);opacity:0}}
+.taicon{font-size:64px;line-height:1;animation:taring .5s ease-in-out infinite alternate}
+@keyframes taring{from{transform:rotate(-12deg)}to{transform:rotate(12deg)}}
+.taname{margin-top:8px;font:700 48px/1.1 'Dancing Script',cursive;color:var(--yellow);word-break:break-word}
+.tasub{font:700 26px 'Kalam',cursive;color:var(--chalk)}
+.tamore{font:700 17px 'Kalam',cursive;color:rgba(var(--ink),.7);margin-top:4px}
+.taacts{display:flex;gap:12px;justify-content:center;margin-top:20px}
+.tabtn{height:52px;padding:0 24px;border-radius:26px;border:2px solid rgba(var(--ink),.45);background:transparent;color:var(--chalk);font:700 21px 'Kalam',cursive;cursor:pointer}
+.tabtn.go{border-color:var(--green);color:var(--green);background:rgba(169,216,160,.12);min-width:120px}
+/* Slideshow quick button beside the month arrows */
+.nav.slidego[hidden]{display:none}
+body.drawing .nav.slidego{display:none}
 /* Change the chores */
 #chedmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:22}
 #chedmodal.open{display:flex}
@@ -296,6 +368,7 @@ body.menudrawer .cork #addBtn{order:1}
 body.menudrawer .cork #choresBtn{order:2}
 body.menudrawer .cork #mealsBtn{order:3}
 body.menudrawer .cork #remindersBtn{order:4}
+body.menudrawer .cork #timersBtn{order:4}
 body.menudrawer .cork #jarsBtn{order:5}
 body.menudrawer .cork #musicBtn{order:6}
 body.menudrawer .cork #drawBtn{order:7}
@@ -693,6 +766,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         <button class="nav" id="prev" aria-label="Previous month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
         <h1 id="monthName">&nbsp;</h1>
         <button class="nav" id="next" aria-label="Next month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+        <button class="nav slidego" id="slideGo" type="button" aria-label="Start photo slideshow" title="Photo slideshow" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M10 9.2v5.6l4.6-2.8z" fill="currentColor"/></svg></button>
       </div>
       <div class="calbody" id="calbody">
         <div class="weekdays"><div>SUNDAY</div><div>MONDAY</div><div>TUESDAY</div><div>WEDNESDAY</div><div>THURSDAY</div><div>FRIDAY</div><div>SATURDAY</div></div>
@@ -747,6 +821,10 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         <h2 class="mh">Up Next</h2>
         <ul class="upnext" id="upnextMpList"></ul>
       </div>
+      <div class="mpsec grow" id="mpTimers" data-mp="timers" hidden>
+        <h2 class="mh" id="mpTimersHead" style="cursor:pointer">Timers</h2>
+        <ul class="tmmini" id="timersMpList"></ul>
+      </div>
       <div class="mpsec grow" id="mpToday" data-mp="today" hidden>
         <h2 class="mh">Today</h2>
         <ul class="upnext" id="todayMpList"></ul>
@@ -794,6 +872,25 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       </div>
       <div class="rpcols" id="rpCols"></div>
     </div>
+    <div id="timersPage" hidden>
+      <div class="chhead">
+        <h2>Timers</h2>
+        <div style="flex:1"></div>
+        <button type="button" class="chlink" id="tpBack"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Calendar</button>
+      </div>
+      <form class="tmadd" id="tmAdd" autocomplete="off">
+        <input type="text" id="tmName" maxlength="60" placeholder="Timer name (e.g. Pizza, Bath time)" aria-label="Timer name">
+        <div class="tmdur">
+          <input type="number" id="tmMin" min="0" max="1440" inputmode="numeric" placeholder="min" aria-label="Minutes">
+          <span>:</span>
+          <input type="number" id="tmSec" min="0" max="59" inputmode="numeric" placeholder="sec" aria-label="Seconds">
+        </div>
+        <button type="submit" class="tmstart">Start</button>
+        <div class="tmpresets" id="tmPresets"></div>
+        <div class="err" id="tmErr"></div>
+      </form>
+      <div class="tmgrid" id="tmGrid"></div>
+    </div>
     <div id="offline" aria-live="polite"><span></span><b id="offlineTxt">Offline</b></div>
     <div id="selGrip" aria-label="Drag to resize"></div>
     <div id="selbar">
@@ -825,6 +922,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <button class="pill" id="choresBtn" aria-label="Chores"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Chores</button>
     <button class="pill" id="mealsBtn" aria-label="Meal Plan"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>Meals</button>
     <button class="pill" id="remindersBtn" aria-label="Reminders"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Reminders</button>
+    <button class="pill" id="timersBtn" aria-label="Timers"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6M12 2v3"/></svg>Timers</button>
     <button class="pill" id="jarsBtn" aria-label="Reward Jars"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="3" rx="1"/><path d="M7 5v2c-1.5 1-2 2.5-2 4.5v7.5a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-7.5c0-2-.5-3.5-2-4.5V5"/></svg>Jars</button>
     <a class="pill" id="musicBtn" href="https://music.youtube.com/" aria-label="YouTube Music"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Music</a>
     <button class="pill" id="acctBtn" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
@@ -837,12 +935,26 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 </div>
 </div>
 
+<div id="timerChips" aria-live="polite"></div>
+<div id="timerAlert" role="alertdialog" aria-modal="true" aria-labelledby="taName">
+  <div class="tacard">
+    <div class="taicon" aria-hidden="true">⏰</div>
+    <div class="taname" id="taName"></div>
+    <div class="tasub">timer is over!</div>
+    <div class="tamore" id="taMore"></div>
+    <div class="taacts">
+      <button type="button" class="tabtn" id="taPlus">+1 minute</button>
+      <button type="button" class="tabtn go" id="taOk">OK</button>
+    </div>
+  </div>
+</div>
+
 <div id="slides" aria-hidden="true">
   <div class="sl"></div>
   <div class="sl"></div>
   <div class="clock" id="sClock"><b id="sTime"></b><span id="sDate"></span></div>
   <div class="dim" id="sDim"></div>
-  <div class="tapx">Tap to close the preview</div>
+  <div class="tapx">Tap to close the slideshow</div>
 </div>
 
 <div id="pmodal" role="dialog" aria-modal="true" aria-labelledby="pTitle">
@@ -971,6 +1083,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <button type="button" class="seg" data-mp="upnext">Up next</button>
       <button type="button" class="seg" data-mp="today">Today</button>
       <button type="button" class="seg" data-mp="photos">Photos</button>
+      <button type="button" class="seg" data-mp="timers">Timers</button>
     </div>
     <div class="sublbl notadmin" style="margin-top:20px">The calendar and trash day settings are for admins: sign in to the admin console (/admin), then come back here.</div>
     <div class="adminonly">
@@ -1394,15 +1507,17 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   var MEALS_PAGE = PATH_CLEAN === '/meals';
   var JARS_PAGE = PATH_CLEAN === '/jars';
   var REMINDERS_PAGE = PATH_CLEAN === '/reminders';
-  var SUB_PAGE = CHORES_PAGE || MEALS_PAGE || JARS_PAGE || REMINDERS_PAGE;
+  var TIMERS_PAGE = PATH_CLEAN === '/timers';
+  var SUB_PAGE = CHORES_PAGE || MEALS_PAGE || JARS_PAGE || REMINDERS_PAGE || TIMERS_PAGE;
   // Test switches for display glitches on kiosk browsers: add ?noart, ?plain and/or ?csszoom to the address
   var Q = new URLSearchParams(location.search);
   var FLAG = { noart: Q.has('noart'), plain: Q.has('plain'), csszoom: Q.has('csszoom') && !EDIT };
-  document.body.className = EDIT ? 'edit' : CHORES_PAGE ? 'display chorespage' : MEALS_PAGE ? 'display mealspage' : JARS_PAGE ? 'display jarspage' : REMINDERS_PAGE ? 'display reminderspage' : 'display';
+  document.body.className = EDIT ? 'edit' : CHORES_PAGE ? 'display chorespage' : MEALS_PAGE ? 'display mealspage' : JARS_PAGE ? 'display jarspage' : REMINDERS_PAGE ? 'display reminderspage' : TIMERS_PAGE ? 'display timerspage' : 'display';
   if (CHORES_PAGE) document.body.appendChild(document.getElementById('chores'));
   if (MEALS_PAGE) document.body.appendChild(document.getElementById('mealsPage'));
   if (JARS_PAGE) document.body.appendChild(document.getElementById('jarsPage'));
   if (REMINDERS_PAGE) document.body.appendChild(document.getElementById('remindersPage'));
+  if (TIMERS_PAGE) document.body.appendChild(document.getElementById('timersPage'));
 
   var CHALK = ['#EDEAE0', '#F6B3CB', '#F2D479', '#9CC9E6', '#A9D8A0', '#E8A35C', '#B49CE0'];
   // Posca paint-marker colors: bright, opaque, flat
@@ -2279,26 +2394,33 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     if ($('mealsPage')) $('mealsPage').hidden = which !== 'meals';
     if ($('jarsPage')) $('jarsPage').hidden = which !== 'jars';
     if ($('remindersPage')) $('remindersPage').hidden = which !== 'reminders';
+    if ($('timersPage')) $('timersPage').hidden = which !== 'timers';
     document.body.classList.toggle('choresOn', which === 'chores');
+    document.body.classList.toggle('timersOn', which === 'timers');
     document.body.classList.toggle('subpageOn', !!which);
     if ($('choresBtn')) $('choresBtn').classList.toggle('on', which === 'chores');
     if ($('mealsBtn')) $('mealsBtn').classList.toggle('on', which === 'meals');
     if ($('jarsBtn')) $('jarsBtn').classList.toggle('on', which === 'jars');
     if ($('remindersBtn')) $('remindersBtn').classList.toggle('on', which === 'reminders');
+    if ($('timersBtn')) $('timersBtn').classList.toggle('on', which === 'timers');
     if (which === 'chores') { if (ch.data) renderChores(); loadChores(); }
     if (which === 'meals') { renderMealsPage(); loadMeals(); }
     if (which === 'jars') { renderJarsPage(); loadJars(); }
     if (which === 'reminders') { renderRemindersPage(); loadReminders(); }
+    if (which === 'timers' && typeof renderTimersPage === 'function') { renderTimersPage(); loadTimers(); }
   }
   function showChores(on) { showSubpage(on ? 'chores' : null); }
   $('chBack').addEventListener('click', function () { showSubpage(null); });
   if ($('mpBack')) $('mpBack').addEventListener('click', function () { showSubpage(null); });
   if ($('jpBack')) $('jpBack').addEventListener('click', function () { showSubpage(null); });
   if ($('rpBack')) $('rpBack').addEventListener('click', function () { showSubpage(null); });
+  if ($('tpBack')) $('tpBack').addEventListener('click', function () { showSubpage(null); });
   if ($('choresBtn')) $('choresBtn').addEventListener('click', function () { showSubpage('chores'); });
   if ($('mealsBtn')) $('mealsBtn').addEventListener('click', function () { showSubpage('meals'); });
   if ($('jarsBtn')) $('jarsBtn').addEventListener('click', function () { showSubpage('jars'); });
   if ($('remindersBtn')) $('remindersBtn').addEventListener('click', function () { showSubpage('reminders'); });
+  if ($('timersBtn')) $('timersBtn').addEventListener('click', function () { showSubpage('timers'); });
+  if ($('mpTimersHead')) $('mpTimersHead').addEventListener('click', function () { if (EDIT) showSubpage('timers'); });
   if ($('mpChoresHead')) $('mpChoresHead').addEventListener('click', function () { showSubpage('chores'); });
   // swipe left on the board for chores, right to go back (not while drawing, zoomed in, or in a popup)
   (function () {
@@ -2929,6 +3051,234 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   loadReminders();
 
+  // ---- Timers: several named countdowns shared by every screen; each says its name out loud when it ends ----
+  var tm = { items: [], skew: 0, seen: {}, ringing: [], dismissed: {}, tick: null, sayTimer: null, ctx: null, loaded: false };
+  var TM_PRESETS = [1, 2, 5, 10, 15, 20, 30, 45, 60];
+  var TM_RING_WINDOW = 10 * 60 * 1000;   // ended while nobody was looking? still ring if it was in the last 10 minutes
+  function tmNow() { return Date.now() + tm.skew; }
+  function tmLeft(t) { return t.state === 'running' ? Math.max(0, t.endsAt - tmNow()) : t.state === 'paused' ? (t.left || 0) : 0; }
+  function tmDone(t) { return t.state === 'done' || (t.state === 'running' && t.endsAt <= tmNow()); }
+  function tmKey(t) { return t.id + '|' + (t.endsAt || t.doneAt || 0); }
+  function tmFmt(ms) {
+    var s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(ss).padStart(2, '0');
+  }
+  function tmSpoken(t) {   // "Pizza timer is over" (not "Pizza timer timer is over")
+    var n = String(t.name || 'Timer').trim().replace(/\s+timer$/i, '');
+    return (n && !/^timer$/i.test(n) ? n + ' timer' : 'Your timer') + ' is over';
+  }
+  // Sound: a short chime, then the name spoken out loud (browsers only allow both after someone has tapped the screen once)
+  function tmAudioCtx() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!tm.ctx) { try { tm.ctx = new AC(); } catch (e) { return null; } }
+    if (tm.ctx.state === 'suspended') tm.ctx.resume().catch(function () {});
+    return tm.ctx;
+  }
+  document.addEventListener('pointerdown', function () { tmAudioCtx(); }, { once: true, capture: true });
+  function tmChime() {
+    var ctx = tmAudioCtx(); if (!ctx) return;
+    [0, 0.28, 0.56].forEach(function (at, i) {
+      var o = ctx.createOscillator(), g = ctx.createGain(), t0 = ctx.currentTime + at;
+      o.type = 'sine'; o.frequency.value = i === 2 ? 1175 : 880;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
+      o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0 + 0.27);
+    });
+  }
+  function tmSay(text) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+      var u = new SpeechSynthesisUtterance(text);
+      var voices = window.speechSynthesis.getVoices() || [];
+      var v = voices.filter(function (x) { return /^en(-|_|$)/i.test(x.lang) && x.localService; })[0] || voices.filter(function (x) { return /^en/i.test(x.lang); })[0];
+      if (v) u.voice = v;
+      u.lang = (v && v.lang) || 'en-US'; u.rate = 0.95; u.pitch = 1; u.volume = 1;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* no voice on this device */ }
+  }
+  function tmAnnounce() {   // chime + "<name> timer is over" for everything still ringing
+    var list = tmRingingItems(); if (!list.length) return;
+    tmChime();
+    setTimeout(function () {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      list.forEach(function (t) { tmSay(tmSpoken(t)); });
+    }, 900);
+  }
+  function tmRingingItems() {
+    return tm.ringing.map(function (k) { return tm.items.filter(function (t) { return tmKey(t) === k && tmDone(t); })[0]; }).filter(Boolean);
+  }
+  function tmUpdateRinging(fresh) {
+    tm.ringing = tm.ringing.filter(function (k) { return !tm.dismissed[k] && tm.items.some(function (t) { return tmKey(t) === k && tmDone(t); }); });
+    var list = tmRingingItems(), box = $('timerAlert');
+    if (!list.length) {
+      box.classList.remove('open');
+      clearInterval(tm.sayTimer); tm.sayTimer = null;
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      return;
+    }
+    var t = list[0];
+    $('taName').textContent = t.name;
+    $('taMore').textContent = list.length > 1 ? 'Also done: ' + list.slice(1).map(function (x) { return x.name; }).join(', ') : '';
+    box.classList.add('open');
+    if (fresh) {
+      tmAnnounce();
+      clearInterval(tm.sayTimer); var reps = 0;
+      tm.sayTimer = setInterval(function () { if (++reps > 5 || !tmRingingItems().length) { clearInterval(tm.sayTimer); tm.sayTimer = null; return; } tmAnnounce(); }, 20000);   // say it again a few times until someone taps OK
+    }
+  }
+  function tmCheck() {   // notice timers that just reached zero
+    var fresh = false;
+    tm.items.forEach(function (t) {
+      var k = tmKey(t);
+      if (!tmDone(t) || tm.seen[k]) return;
+      tm.seen[k] = true;
+      var endedAt = t.state === 'done' ? (t.doneAt || 0) : t.endsAt;
+      if (tm.dismissed[k] || tmNow() - endedAt > TM_RING_WINDOW) return;
+      tm.ringing.push(k); fresh = true;
+    });
+    tmUpdateRinging(fresh);
+  }
+  function tmTick() {
+    tmCheck();
+    Array.prototype.forEach.call(document.querySelectorAll('[data-tm]'), function (node) {
+      var t = tm.items.filter(function (x) { return x.id === node.dataset.tm; })[0]; if (!t) return;
+      var left = tmLeft(t), done = tmDone(t), txt = done ? 'Done!' : tmFmt(left);
+      var tEl = node.querySelector('.tmtime, b, .t'); if (tEl && tEl.textContent !== txt) tEl.textContent = txt;
+      node.classList.toggle('done', done); node.classList.toggle('paused', t.state === 'paused');
+      var fg = node.querySelector('.fg');
+      if (fg) { var c = +fg.dataset.c; fg.style.strokeDashoffset = String(done ? 0 : c * (1 - left / Math.max(1, t.duration))); }
+    });
+    var busy = tm.items.some(function (t) { return t.state === 'running' && !tmDone(t); });
+    if (!busy && tm.tick) { clearInterval(tm.tick); tm.tick = null; }
+    if (busy && !tm.tick) tm.tick = setInterval(tmTick, 250);
+  }
+  function applyTimers(v) {
+    if (!v) return;
+    if (typeof v.now === 'number') tm.skew = v.now - Date.now();
+    var first = !tm.loaded; tm.loaded = true;
+    tm.items = Array.isArray(v.items) ? v.items : [];
+    if (first) tm.items.forEach(function (t) {   // timers that ended long before this screen opened don't ring
+      if (tmDone(t) && tmNow() - (t.state === 'done' ? (t.doneAt || 0) : t.endsAt) > TM_RING_WINDOW) tm.seen[tmKey(t)] = true;
+    });
+    renderTimersPage(); renderTimersMini(); renderTimerChips();
+    tmTick();
+  }
+  function loadTimers() { return api('/api/timers').then(applyTimers).catch(function () {}); }
+  function saveTimers(items) {
+    applyTimers({ items: items });   // show it at once
+    return post('/api/timers', { items: items }).then(applyTimers).catch(function (e) {
+      if ($('tmErr')) $('tmErr').textContent = e.message;
+      throw e;
+    });
+  }
+  function tmEdit(id, fn) {
+    var items = tm.items.map(function (t) { return Object.assign({}, t); });
+    var t = items.filter(function (x) { return x.id === id; })[0]; if (!t) return Promise.resolve();
+    fn(t, items);
+    return saveTimers(items.filter(function (x) { return !x._gone; }));
+  }
+  function tmStart(name, ms) {
+    if (!(ms >= 1000)) { $('tmErr').textContent = 'Pick how long first.'; return; }
+    $('tmErr').textContent = '';
+    var items = tm.items.slice();
+    if (items.length >= 20) { $('tmErr').textContent = 'That’s a lot of timers! Remove one first.'; return; }
+    var nm = String(name || '').trim() || (ms % 60000 === 0 ? ms / 60000 + ' minute' : tmFmt(ms));
+    items.push({ id: 't' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36), name: nm, duration: ms, state: 'running', endsAt: tmNow() + ms });
+    saveTimers(items).catch(function () {});
+    $('tmName').value = ''; $('tmMin').value = ''; $('tmSec').value = '';
+  }
+  function tmPause(t) { t.left = tmLeft(t); t.state = 'paused'; delete t.endsAt; }
+  function tmResume(t) { t.endsAt = tmNow() + (t.left || t.duration); t.state = 'running'; delete t.left; }
+  function tmRestart(t) { t.endsAt = tmNow() + t.duration; t.state = 'running'; delete t.left; delete t.doneAt; }
+  function tmAddMinute(t) {
+    if (tmDone(t)) { t.endsAt = tmNow() + 60000; t.state = 'running'; delete t.doneAt; }
+    else if (t.state === 'paused') t.left = (t.left || 0) + 60000;
+    else t.endsAt += 60000;
+    t.duration = Math.max(t.duration, tmLeft(t));
+  }
+  function tmDismiss(t) {   // OK on the alert: the timer is finished and goes away (on every screen)
+    var k = tmKey(t); tm.dismissed[k] = true;
+    tmEdit(t.id, function (x) { x._gone = true; }).catch(function () { tmUpdateRinging(false); });   // a view-only wall can still silence itself
+    tmUpdateRinging(false);
+  }
+  function renderTimersPage() {
+    var grid = $('tmGrid'); if (!grid) return;
+    var pre = $('tmPresets');
+    if (pre && !pre.children.length) TM_PRESETS.forEach(function (m) {
+      var b = el('button', null, m === 60 ? '1 hour' : m + ' min'); b.type = 'button';
+      b.addEventListener('click', function () { tmStart($('tmName').value, m * 60000); });
+      pre.appendChild(b);
+    });
+    grid.innerHTML = '';
+    if (!tm.items.length) { grid.appendChild(el('div', 'tmempty', 'No timers running. Type a name, pick a time, and tap Start.')); return; }
+    var R = 74, C = 2 * Math.PI * R;
+    tm.items.forEach(function (t) {
+      var card = el('div', 'tmcard'); card.dataset.tm = t.id;
+      card.appendChild(el('div', 'tmn', t.name));
+      var ring = el('div', 'tmring');
+      ring.innerHTML = '<svg viewBox="0 0 170 170" aria-hidden="true"><circle class="bg" cx="85" cy="85" r="' + R + '"/><circle class="fg" cx="85" cy="85" r="' + R + '" stroke-dasharray="' + C.toFixed(1) + '" data-c="' + C.toFixed(1) + '"/></svg>';
+      ring.appendChild(el('div', 'tmtime', ''));
+      card.appendChild(ring);
+      var acts = el('div', 'tmacts');
+      var btn = function (label, cls, fn) { var b = el('button', cls, label); b.type = 'button'; b.addEventListener('click', fn); acts.appendChild(b); };
+      if (tmDone(t)) {
+        btn('OK', 'go', function () { tmDismiss(t); });
+        btn('Restart', null, function () { tm.dismissed[tmKey(t)] = true; tmEdit(t.id, tmRestart).catch(function () {}); });
+      } else if (t.state === 'paused') {
+        btn('Resume', 'go', function () { tmEdit(t.id, tmResume).catch(function () {}); });
+        btn('Reset', null, function () { tmEdit(t.id, function (x) { x.state = 'paused'; x.left = x.duration; delete x.endsAt; }).catch(function () {}); });
+      } else {
+        btn('Pause', null, function () { tmEdit(t.id, tmPause).catch(function () {}); });
+        btn('Restart', null, function () { tmEdit(t.id, tmRestart).catch(function () {}); });
+      }
+      btn('+1 min', null, function () { tm.dismissed[tmKey(t)] = true; tmEdit(t.id, tmAddMinute).catch(function () {}); });
+      card.appendChild(acts);
+      var del = el('button', 'tmdel', '×'); del.type = 'button'; del.setAttribute('aria-label', 'Remove ' + t.name + ' timer');
+      del.addEventListener('click', function () { tm.dismissed[tmKey(t)] = true; tmEdit(t.id, function (x) { x._gone = true; }).catch(function () {}); });
+      card.appendChild(del);
+      grid.appendChild(card);
+    });
+  }
+  function renderTimersMini() {
+    var ul = $('timersMpList'); if (!ul) return;
+    ul.innerHTML = '';
+    if (!tm.items.length) { ul.appendChild(el('li', 'none', EDIT ? 'No timers. Tap “Timers” to start one.' : 'No timers running')); return; }
+    tm.items.slice(0, 6).forEach(function (t) {
+      var li = el('li'); li.dataset.tm = t.id;
+      li.appendChild(el('span', 'n', t.name)); li.appendChild(el('span', 't', ''));
+      ul.appendChild(li);
+    });
+  }
+  function renderTimerChips() {
+    var box = $('timerChips'); if (!box) return;
+    box.innerHTML = '';
+    var mini = (state.notesPages || []).indexOf('timers') >= 0 && !state.subpage && !SUB_PAGE;
+    if (mini) return;   // the right column already shows them
+    tm.items.forEach(function (t) {
+      var c = el('button', 'tmchip'); c.type = 'button'; c.dataset.tm = t.id;
+      c.appendChild(document.createTextNode('⏱ ' + t.name + ' '));
+      c.appendChild(el('b', null, ''));
+      c.addEventListener('click', function () {
+        if (tmDone(t)) tmDismiss(t);
+        else if (EDIT) showSubpage('timers');
+      });
+      box.appendChild(c);
+    });
+  }
+  if ($('tmAdd')) $('tmAdd').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var m = Math.max(0, parseInt($('tmMin').value, 10) || 0), s = Math.max(0, Math.min(59, parseInt($('tmSec').value, 10) || 0));
+    tmStart($('tmName').value, (m * 60 + s) * 1000);
+  });
+  $('taOk').addEventListener('click', function () { var t = tmRingingItems()[0]; if (t) tmDismiss(t); });
+  $('taPlus').addEventListener('click', function () {
+    var t = tmRingingItems()[0]; if (!t) return;
+    tm.dismissed[tmKey(t)] = true;
+    tmEdit(t.id, tmAddMinute).catch(function () {});
+    tmUpdateRinging(false);
+  });
+  if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) window.speechSynthesis.onvoiceschanged = function () {};   // loads the voice list early
+  loadTimers();
   // ---- Right Column Mini-Pages (up to 3 configurable in Settings) ----
   state.notesPages = ['info', 'meals', 'jars'];
   function renderRightCol() {
@@ -2967,6 +3317,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     });
     if (pages.indexOf('chores') >= 0) renderChoresMp();
     if (pages.indexOf('reminders') >= 0) renderReminders();
+    if (pages.indexOf('timers') >= 0 && typeof renderTimersMini === 'function') renderTimersMini();
     setTimeout(fitMeals, 0);
   }
   function loadMpUpnext(ul, todayOnly) {
@@ -5723,7 +6074,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       if (EDIT && !(isFamily() && !state.drawing && !document.querySelector('.open'))) $('updbar').classList.add('on');   // never interrupt your drawing
       else setTimeout(function () { location.reload(); }, 1000 + Math.random() * 3000);   // the wall just updates itself
     });
-    ['stroke', 'undo', 'remove', 'restore', 'update', 'clear', 'meta', 'meals', 'reminders', 'calendar'].forEach(function (t) { es.addEventListener(t, seen); });
+    ['stroke', 'undo', 'remove', 'restore', 'update', 'clear', 'meta', 'meals', 'reminders', 'timers', 'calendar'].forEach(function (t) { es.addEventListener(t, seen); });
+    es.addEventListener('timers', function (m) { if (typeof applyTimers === 'function') applyTimers(JSON.parse(m.data)); });
     es.addEventListener('stroke', function (m) {
       var d = JSON.parse(m.data);
       if (d.ym !== state.ym || d.from === CLIENT) return;
@@ -6253,6 +6605,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       else if (MEALS_PAGE) showSubpage('meals');
       else if (JARS_PAGE) showSubpage('jars');
       else if (REMINDERS_PAGE) showSubpage('reminders');
+      else if (TIMERS_PAGE) showSubpage('timers');
       return w;
     }
     if (!EDIT) {
@@ -6299,7 +6652,235 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       loadMeals();   // catches anything missed while the live connection was down
       loadJars();
       loadReminders();
-      api('/api/month?ym=' + state.ym).then(function (d) { health.calendar = true; renderMonth(d); }).catch(function () { health.calendar = false; });
+
+  // ---- Timers: several named countdowns shared by every screen; each says its name out loud when it ends ----
+  var tm = { items: [], skew: 0, seen: {}, ringing: [], dismissed: {}, tick: null, sayTimer: null, ctx: null, loaded: false };
+  var TM_PRESETS = [1, 2, 5, 10, 15, 20, 30, 45, 60];
+  var TM_RING_WINDOW = 10 * 60 * 1000;   // ended while nobody was looking? still ring if it was in the last 10 minutes
+  function tmNow() { return Date.now() + tm.skew; }
+  function tmLeft(t) { return t.state === 'running' ? Math.max(0, t.endsAt - tmNow()) : t.state === 'paused' ? (t.left || 0) : 0; }
+  function tmDone(t) { return t.state === 'done' || (t.state === 'running' && t.endsAt <= tmNow()); }
+  function tmKey(t) { return t.id + '|' + (t.endsAt || t.doneAt || 0); }
+  function tmFmt(ms) {
+    var s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(ss).padStart(2, '0');
+  }
+  function tmSpoken(t) {   // "Pizza timer is over" (not "Pizza timer timer is over")
+    var n = String(t.name || 'Timer').trim().replace(/\s+timer$/i, '');
+    return (n && !/^timer$/i.test(n) ? n + ' timer' : 'Your timer') + ' is over';
+  }
+  // Sound: a short chime, then the name spoken out loud (browsers only allow both after someone has tapped the screen once)
+  function tmAudioCtx() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!tm.ctx) { try { tm.ctx = new AC(); } catch (e) { return null; } }
+    if (tm.ctx.state === 'suspended') tm.ctx.resume().catch(function () {});
+    return tm.ctx;
+  }
+  document.addEventListener('pointerdown', function () { tmAudioCtx(); }, { once: true, capture: true });
+  function tmChime() {
+    var ctx = tmAudioCtx(); if (!ctx) return;
+    [0, 0.28, 0.56].forEach(function (at, i) {
+      var o = ctx.createOscillator(), g = ctx.createGain(), t0 = ctx.currentTime + at;
+      o.type = 'sine'; o.frequency.value = i === 2 ? 1175 : 880;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
+      o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0 + 0.27);
+    });
+  }
+  function tmSay(text) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+      var u = new SpeechSynthesisUtterance(text);
+      var voices = window.speechSynthesis.getVoices() || [];
+      var v = voices.filter(function (x) { return /^en(-|_|$)/i.test(x.lang) && x.localService; })[0] || voices.filter(function (x) { return /^en/i.test(x.lang); })[0];
+      if (v) u.voice = v;
+      u.lang = (v && v.lang) || 'en-US'; u.rate = 0.95; u.pitch = 1; u.volume = 1;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* no voice on this device */ }
+  }
+  function tmAnnounce() {   // chime + "<name> timer is over" for everything still ringing
+    var list = tmRingingItems(); if (!list.length) return;
+    tmChime();
+    setTimeout(function () {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      list.forEach(function (t) { tmSay(tmSpoken(t)); });
+    }, 900);
+  }
+  function tmRingingItems() {
+    return tm.ringing.map(function (k) { return tm.items.filter(function (t) { return tmKey(t) === k && tmDone(t); })[0]; }).filter(Boolean);
+  }
+  function tmUpdateRinging(fresh) {
+    tm.ringing = tm.ringing.filter(function (k) { return !tm.dismissed[k] && tm.items.some(function (t) { return tmKey(t) === k && tmDone(t); }); });
+    var list = tmRingingItems(), box = $('timerAlert');
+    if (!list.length) {
+      box.classList.remove('open');
+      clearInterval(tm.sayTimer); tm.sayTimer = null;
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      return;
+    }
+    var t = list[0];
+    $('taName').textContent = t.name;
+    $('taMore').textContent = list.length > 1 ? 'Also done: ' + list.slice(1).map(function (x) { return x.name; }).join(', ') : '';
+    box.classList.add('open');
+    if (fresh) {
+      tmAnnounce();
+      clearInterval(tm.sayTimer); var reps = 0;
+      tm.sayTimer = setInterval(function () { if (++reps > 5 || !tmRingingItems().length) { clearInterval(tm.sayTimer); tm.sayTimer = null; return; } tmAnnounce(); }, 20000);   // say it again a few times until someone taps OK
+    }
+  }
+  function tmCheck() {   // notice timers that just reached zero
+    var fresh = false;
+    tm.items.forEach(function (t) {
+      var k = tmKey(t);
+      if (!tmDone(t) || tm.seen[k]) return;
+      tm.seen[k] = true;
+      var endedAt = t.state === 'done' ? (t.doneAt || 0) : t.endsAt;
+      if (tm.dismissed[k] || tmNow() - endedAt > TM_RING_WINDOW) return;
+      tm.ringing.push(k); fresh = true;
+    });
+    tmUpdateRinging(fresh);
+  }
+  function tmTick() {
+    tmCheck();
+    Array.prototype.forEach.call(document.querySelectorAll('[data-tm]'), function (node) {
+      var t = tm.items.filter(function (x) { return x.id === node.dataset.tm; })[0]; if (!t) return;
+      var left = tmLeft(t), done = tmDone(t), txt = done ? 'Done!' : tmFmt(left);
+      var tEl = node.querySelector('.tmtime, b, .t'); if (tEl && tEl.textContent !== txt) tEl.textContent = txt;
+      node.classList.toggle('done', done); node.classList.toggle('paused', t.state === 'paused');
+      var fg = node.querySelector('.fg');
+      if (fg) { var c = +fg.dataset.c; fg.style.strokeDashoffset = String(done ? 0 : c * (1 - left / Math.max(1, t.duration))); }
+    });
+    var busy = tm.items.some(function (t) { return t.state === 'running' && !tmDone(t); });
+    if (!busy && tm.tick) { clearInterval(tm.tick); tm.tick = null; }
+    if (busy && !tm.tick) tm.tick = setInterval(tmTick, 250);
+  }
+  function applyTimers(v) {
+    if (!v) return;
+    if (typeof v.now === 'number') tm.skew = v.now - Date.now();
+    var first = !tm.loaded; tm.loaded = true;
+    tm.items = Array.isArray(v.items) ? v.items : [];
+    if (first) tm.items.forEach(function (t) {   // timers that ended long before this screen opened don't ring
+      if (tmDone(t) && tmNow() - (t.state === 'done' ? (t.doneAt || 0) : t.endsAt) > TM_RING_WINDOW) tm.seen[tmKey(t)] = true;
+    });
+    renderTimersPage(); renderTimersMini(); renderTimerChips();
+    tmTick();
+  }
+  function loadTimers() { return api('/api/timers').then(applyTimers).catch(function () {}); }
+  function saveTimers(items) {
+    applyTimers({ items: items });   // show it at once
+    return post('/api/timers', { items: items }).then(applyTimers).catch(function (e) {
+      if ($('tmErr')) $('tmErr').textContent = e.message;
+      throw e;
+    });
+  }
+  function tmEdit(id, fn) {
+    var items = tm.items.map(function (t) { return Object.assign({}, t); });
+    var t = items.filter(function (x) { return x.id === id; })[0]; if (!t) return Promise.resolve();
+    fn(t, items);
+    return saveTimers(items.filter(function (x) { return !x._gone; }));
+  }
+  function tmStart(name, ms) {
+    if (!(ms >= 1000)) { $('tmErr').textContent = 'Pick how long first.'; return; }
+    $('tmErr').textContent = '';
+    var items = tm.items.slice();
+    if (items.length >= 20) { $('tmErr').textContent = 'That’s a lot of timers! Remove one first.'; return; }
+    var nm = String(name || '').trim() || (ms % 60000 === 0 ? ms / 60000 + ' minute' : tmFmt(ms));
+    items.push({ id: 't' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36), name: nm, duration: ms, state: 'running', endsAt: tmNow() + ms });
+    saveTimers(items).catch(function () {});
+    $('tmName').value = ''; $('tmMin').value = ''; $('tmSec').value = '';
+  }
+  function tmPause(t) { t.left = tmLeft(t); t.state = 'paused'; delete t.endsAt; }
+  function tmResume(t) { t.endsAt = tmNow() + (t.left || t.duration); t.state = 'running'; delete t.left; }
+  function tmRestart(t) { t.endsAt = tmNow() + t.duration; t.state = 'running'; delete t.left; delete t.doneAt; }
+  function tmAddMinute(t) {
+    if (tmDone(t)) { t.endsAt = tmNow() + 60000; t.state = 'running'; delete t.doneAt; }
+    else if (t.state === 'paused') t.left = (t.left || 0) + 60000;
+    else t.endsAt += 60000;
+    t.duration = Math.max(t.duration, tmLeft(t));
+  }
+  function tmDismiss(t) {   // OK on the alert: the timer is finished and goes away (on every screen)
+    var k = tmKey(t); tm.dismissed[k] = true;
+    tmEdit(t.id, function (x) { x._gone = true; }).catch(function () { tmUpdateRinging(false); });   // a view-only wall can still silence itself
+    tmUpdateRinging(false);
+  }
+  function renderTimersPage() {
+    var grid = $('tmGrid'); if (!grid) return;
+    var pre = $('tmPresets');
+    if (pre && !pre.children.length) TM_PRESETS.forEach(function (m) {
+      var b = el('button', null, m === 60 ? '1 hour' : m + ' min'); b.type = 'button';
+      b.addEventListener('click', function () { tmStart($('tmName').value, m * 60000); });
+      pre.appendChild(b);
+    });
+    grid.innerHTML = '';
+    if (!tm.items.length) { grid.appendChild(el('div', 'tmempty', 'No timers running. Type a name, pick a time, and tap Start.')); return; }
+    var R = 74, C = 2 * Math.PI * R;
+    tm.items.forEach(function (t) {
+      var card = el('div', 'tmcard'); card.dataset.tm = t.id;
+      card.appendChild(el('div', 'tmn', t.name));
+      var ring = el('div', 'tmring');
+      ring.innerHTML = '<svg viewBox="0 0 170 170" aria-hidden="true"><circle class="bg" cx="85" cy="85" r="' + R + '"/><circle class="fg" cx="85" cy="85" r="' + R + '" stroke-dasharray="' + C.toFixed(1) + '" data-c="' + C.toFixed(1) + '"/></svg>';
+      ring.appendChild(el('div', 'tmtime', ''));
+      card.appendChild(ring);
+      var acts = el('div', 'tmacts');
+      var btn = function (label, cls, fn) { var b = el('button', cls, label); b.type = 'button'; b.addEventListener('click', fn); acts.appendChild(b); };
+      if (tmDone(t)) {
+        btn('OK', 'go', function () { tmDismiss(t); });
+        btn('Restart', null, function () { tm.dismissed[tmKey(t)] = true; tmEdit(t.id, tmRestart).catch(function () {}); });
+      } else if (t.state === 'paused') {
+        btn('Resume', 'go', function () { tmEdit(t.id, tmResume).catch(function () {}); });
+        btn('Reset', null, function () { tmEdit(t.id, function (x) { x.state = 'paused'; x.left = x.duration; delete x.endsAt; }).catch(function () {}); });
+      } else {
+        btn('Pause', null, function () { tmEdit(t.id, tmPause).catch(function () {}); });
+        btn('Restart', null, function () { tmEdit(t.id, tmRestart).catch(function () {}); });
+      }
+      btn('+1 min', null, function () { tm.dismissed[tmKey(t)] = true; tmEdit(t.id, tmAddMinute).catch(function () {}); });
+      card.appendChild(acts);
+      var del = el('button', 'tmdel', '×'); del.type = 'button'; del.setAttribute('aria-label', 'Remove ' + t.name + ' timer');
+      del.addEventListener('click', function () { tm.dismissed[tmKey(t)] = true; tmEdit(t.id, function (x) { x._gone = true; }).catch(function () {}); });
+      card.appendChild(del);
+      grid.appendChild(card);
+    });
+  }
+  function renderTimersMini() {
+    var ul = $('timersMpList'); if (!ul) return;
+    ul.innerHTML = '';
+    if (!tm.items.length) { ul.appendChild(el('li', 'none', EDIT ? 'No timers. Tap “Timers” to start one.' : 'No timers running')); return; }
+    tm.items.slice(0, 6).forEach(function (t) {
+      var li = el('li'); li.dataset.tm = t.id;
+      li.appendChild(el('span', 'n', t.name)); li.appendChild(el('span', 't', ''));
+      ul.appendChild(li);
+    });
+  }
+  function renderTimerChips() {
+    var box = $('timerChips'); if (!box) return;
+    box.innerHTML = '';
+    var mini = (state.notesPages || []).indexOf('timers') >= 0 && !state.subpage && !SUB_PAGE;
+    if (mini) return;   // the right column already shows them
+    tm.items.forEach(function (t) {
+      var c = el('button', 'tmchip'); c.type = 'button'; c.dataset.tm = t.id;
+      c.appendChild(document.createTextNode('⏱ ' + t.name + ' '));
+      c.appendChild(el('b', null, ''));
+      c.addEventListener('click', function () {
+        if (tmDone(t)) tmDismiss(t);
+        else if (EDIT) showSubpage('timers');
+      });
+      box.appendChild(c);
+    });
+  }
+  if ($('tmAdd')) $('tmAdd').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var m = Math.max(0, parseInt($('tmMin').value, 10) || 0), s = Math.max(0, Math.min(59, parseInt($('tmSec').value, 10) || 0));
+    tmStart($('tmName').value, (m * 60 + s) * 1000);
+  });
+  $('taOk').addEventListener('click', function () { var t = tmRingingItems()[0]; if (t) tmDismiss(t); });
+  $('taPlus').addEventListener('click', function () {
+    var t = tmRingingItems()[0]; if (!t) return;
+    tm.dismissed[tmKey(t)] = true;
+    tmEdit(t.id, tmAddMinute).catch(function () {});
+    tmUpdateRinging(false);
+  });
+  if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) window.speechSynthesis.onvoiceschanged = function () {};   // loads the voice list early
+  loadTimers();      api('/api/month?ym=' + state.ym).then(function (d) { health.calendar = true; renderMonth(d); }).catch(function () { health.calendar = false; });
     }).catch(function () {});
   }, 2 * 60 * 1000);
   setInterval(loadExtras, 10 * 60 * 1000);
