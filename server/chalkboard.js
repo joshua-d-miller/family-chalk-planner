@@ -703,8 +703,24 @@ function trashCfg() {
   const r = qKvGet.get('trash');
   return r ? JSON.parse(r.data) : { day: TRASH_DAY, recycle: { mode: 'same' } };
 }
-// Which part of the bottom of the Notes column shows: the reward jars, or "Up next" events
-function notesCfg() { const r = qKvGet.get('notes'); return r ? JSON.parse(r.data) : { bottom: 'jars' }; }
+// Which mini-pages show in the right-hand column (up to 3)
+const RIGHT_PAGES = ['info', 'reminders', 'meals', 'jars', 'chores', 'upnext', 'today', 'photos'];
+function cleanRightPages(list, fallbackBottom) {
+  if (Array.isArray(list)) {
+    const out = [];
+    for (const p of list) if (RIGHT_PAGES.includes(p) && !out.includes(p) && out.length < 3) out.push(p);
+    return out;
+  }
+  const b = ['jars', 'upnext', 'today', 'photos'].includes(fallbackBottom) ? fallbackBottom : fallbackBottom === 'none' ? null : 'jars';
+  return b ? ['info', 'meals', b] : ['info', 'meals'];
+}
+function notesCfg() {
+  const r = qKvGet.get('notes');
+  const raw = r ? JSON.parse(r.data) : { bottom: 'jars' };
+  const bottom = ['jars', 'upnext', 'today', 'photos', 'none'].includes(raw.bottom) ? raw.bottom : 'jars';
+  const pages = cleanRightPages(raw.pages, bottom);
+  return { bottom, pages };
+}
 function cleanTrash(b) {
   const d = v => (Number.isInteger(+v) && +v >= 0 && +v <= 6 && v !== '' && v !== null ? +v : null);
   const r = (b && b.recycle) || {};
@@ -851,13 +867,17 @@ app.post('/api/trash', (req, res) => {
   broadcast('extras', {});
   res.json(trash() || { cfg });
 });
-app.post('/api/notes', (req, res) => {
-  const b = (req.body || {}).bottom;
-  const cfg = { bottom: ['jars', 'upnext', 'today', 'photos', 'none'].includes(b) ? b : 'jars' };
+function saveNotesCfg(req, res) {
+  const body = req.body || {}, cur = notesCfg();
+  const b = ['jars', 'upnext', 'today', 'photos', 'none'].includes(body.bottom) ? body.bottom : cur.bottom;
+  const pages = Array.isArray(body.pages) ? cleanRightPages(body.pages, b) : cleanRightPages(null, b);
+  const cfg = { bottom: b, pages };
   qKvSet.run('notes', JSON.stringify(cfg));
   broadcast('extras', {});
   res.json(cfg);
-});
+}
+app.post('/api/notes', saveNotesCfg);
+app.post('/api/right-pages', saveNotesCfg);
 
 // "Up next": the next events from today on (two weeks ahead), for the bottom of the Notes column
 app.get('/api/upnext', async (req, res) => {
@@ -1405,21 +1425,90 @@ app.post('/api/art/relayout', (req, res) => {
   res.json({ ok: true, artPad: padTo, moved: done.length });
 });
 
-// Per-month options, e.g. {hideTitle:true} when you hand-letters the month name
-// Meal plan: one simple list for "the week", not tied to a month
+// Meal plan: assigned to days of the week (or unassigned), shown in the right column and on its own page
+const MEAL_DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', ''];
+function unpackServerMeal(it) {
+  let rawT = String((it && it.t) || '').trim();
+  let day = String((it && it.day) || '').toLowerCase().trim();
+  const m = rawT.match(/^\[(sun|mon|tue|wed|thu|fri|sat)\]\s*(.*)$/i);
+  if (m) {
+    if (!day) day = m[1].toLowerCase();
+    rawT = m[2].trim();
+  }
+  if (!MEAL_DAYS.includes(day)) day = '';
+  return { t: rawT.slice(0, 60), day, done: !!(it && it.done) };
+}
 app.get('/api/meals', (req, res) => {
   const row = qKvGet.get('meals');
-  res.json(row ? JSON.parse(row.data) : { items: [] });
+  const parsed = row ? JSON.parse(row.data) : { items: [] };
+  parsed.items = Array.isArray(parsed.items) ? parsed.items.map(unpackServerMeal).filter(it => it.t) : [];
+  res.json(parsed);
 });
 
 app.post('/api/meals', (req, res) => {
   const list = (req.body || {}).items;
   if (!Array.isArray(list)) return res.status(400).json({ error: 'bad list' });
-  const items = list.slice(0, 14).map(it => ({ t: String((it && it.t) || '').trim().slice(0, 60), done: !!(it && it.done) })).filter(it => it.t);
+  const items = list.slice(0, 21).map(unpackServerMeal).filter(it => it.t);
   const meals = { items, updated: Date.now() };
   qKvSet.run('meals', JSON.stringify(meals));
   broadcast('meals', meals);
   res.json(meals);
+});
+
+// Reminders: always-on reminders or timed daily/one-off popup reminders, managed from their own page
+function loadRemindersRaw() {
+  const row = qKvGet.get('reminders');
+  return row ? (JSON.parse(row.data).items || []) : [];
+}
+function remindersView() {
+  const now = nyParts(new Date());
+  return { items: loadRemindersRaw(), today: now.dateStr, nowHm: `${pad2(now.h)}:${pad2(now.mi)}` };
+}
+app.get('/api/reminders', (req, res) => {
+  res.json(remindersView());
+});
+app.post('/api/reminders', (req, res) => {
+  const list = (req.body || {}).items;
+  if (!Array.isArray(list)) return res.status(400).json({ error: 'bad reminders' });
+  const seen = new Set();
+  const items = list.slice(0, 50).map((r, i) => {
+    let id = typeof (r && r.id) === 'string' && /^[a-z0-9]{1,16}$/.test(r.id) ? r.id : `r${Date.now().toString(36)}${i}`;
+    while (seen.has(id)) id = `r${crypto.randomBytes(4).toString('hex')}`;
+    seen.add(id);
+    const title = String((r && r.title) || '').replace(/[\r\n<>]/g, ' ').trim().slice(0, 100);
+    const mode = r && r.mode === 'time' ? 'time' : 'always';
+    const time = /^([01]\d|2[0-3]):[0-5]\d$/.test((r && r.time) || '') ? r.time : '09:00';
+    const repeat = r && r.repeat === 'once' ? 'once' : 'daily';
+    const important = r && r.important !== undefined ? !!r.important : true;
+    const done = !!(r && r.done);
+    const ackDate = isDate(r && r.ackDate) ? r.ackDate : null;
+    return { id, title, mode, time, repeat, important, done, ackDate };
+  }).filter(r => r.title);
+  qKvSet.run('reminders', JSON.stringify({ items, updated: Date.now() }));
+  const v = remindersView();
+  broadcast('reminders', v);
+  res.json(v);
+});
+app.post('/api/reminders/check', (req, res) => {
+  const { id, done, ack } = req.body || {};
+  const items = loadRemindersRaw();
+  const r = items.find(x => x.id === id);
+  if (!r) return res.status(404).json({ error: 'Reminder not found' });
+  const today = nyParts(new Date()).dateStr;
+  if (ack) {
+    r.ackDate = today;
+    if (r.mode === 'time' && r.repeat === 'once') r.done = true;
+  } else if (r.mode === 'time' && r.repeat === 'daily') {
+    const isAcked = r.ackDate === today;
+    r.ackDate = (done !== undefined ? !!done : !isAcked) ? today : null;
+  } else {
+    r.done = done !== undefined ? !!done : !r.done;
+    r.ackDate = r.done ? today : null;
+  }
+  qKvSet.run('reminders', JSON.stringify({ items, updated: Date.now() }));
+  const v = remindersView();
+  broadcast('reminders', v);
+  res.json(v);
 });
 
 // Board style ("theme"): a preset name plus your per-part tweaks. The presets
@@ -1988,7 +2077,6 @@ function findFaces(files) {
   });
 }
 const PHOTO_URL = (process.env.PHOTO_ALBUM_URL || '').trim();
-const PHOTO_KIND = /^https:\/\/(photos\.app\.goo\.gl|goo\.gl\/photos|photos\.google\.com\/(u\/\d+\/)?share)\//i.test(PHOTO_URL) || process.env.PHOTO_GOOGLE_HOST ? 'google' : 'icloud';
 const GP_HOST = process.env.PHOTO_GOOGLE_HOST || 'https://photos.google.com';   // override only for testing
 const GP_UA = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36', 'Accept-Language': 'en' };
 const CK = 'database/1/com.apple.photos.cloud/production';
@@ -2000,6 +2088,159 @@ function photoCfg() {
   return { ...PHOTO_CFG_DEFAULT, ...(r ? JSON.parse(r.data) : {}) };
 }
 { const r = qKvGet.get('photos'); if (r) photoState.list = JSON.parse(r.data); }
+
+function normalizeImmichUrl(u) {
+  // Accept whatever got pasted from the browser bar: strip /api and Immich web-UI pages (/photos, /albums/…, /auth/login, …)
+  return String(u || '').trim().replace(/[?#].*$/, '').replace(/\/+$/, '')
+    .replace(/\/(photos|albums|album|people|explore|favorites|sharing|search|map|user-settings|admin|auth\/login|auth)(\/.*)?$/i, '')
+    .replace(/\/api(\/.*)?$/i, '').replace(/\/+$/, '');
+}
+function photoSourceCfg() {
+  const immichUrl = normalizeImmichUrl(boardSettings.get('IMMICH_URL') || process.env.IMMICH_URL || '');
+  const immichKey = String(boardSettings.get('IMMICH_API_KEY') || process.env.IMMICH_API_KEY || '').trim();
+  const immichAlbum = String(boardSettings.get('IMMICH_ALBUM') || process.env.IMMICH_ALBUM || '').trim();
+  const albumUrl = String(boardSettings.get('PHOTO_ALBUM_URL') || process.env.PHOTO_ALBUM_URL || '').trim();
+  if (immichUrl && immichKey) {
+    return { kind: 'immich', immichUrl, immichKey, immichAlbum, albumUrl, enabled: true };
+  }
+  if (albumUrl) {
+    const sh = /^(https?:\/\/[^/]+(?:\/[^/]+)*?)\/share\/([A-Za-z0-9_-]{10,})/i.exec(albumUrl);
+    if (sh && !/photos\.google\.com|icloud\.com|goo\.gl/i.test(sh[1])) {
+      return { kind: 'immich-share', immichUrl: normalizeImmichUrl(sh[1]), shareKey: sh[2], immichKey: '', immichAlbum: '', albumUrl, enabled: true };
+    }
+    const isGoogle = /^https:\/\/(photos\.app\.goo\.gl|goo\.gl\/photos|photos\.google\.com\/(u\/\d+\/)?share)\//i.test(albumUrl) || !!process.env.PHOTO_GOOGLE_HOST;
+    return { kind: isGoogle ? 'google' : 'icloud', immichUrl, immichKey, immichAlbum, albumUrl, enabled: true };
+  }
+  return { kind: 'none', immichUrl, immichKey, immichAlbum, albumUrl, enabled: false };
+}
+
+async function immichRequest(baseUrl, apiKey, apiPath, opts = {}) {
+  const headers = { Accept: 'application/json', ...(apiKey ? { 'x-api-key': apiKey } : {}), ...(opts.headers || {}) };
+  let r;
+  try {
+    r = await fetch(`${baseUrl}${apiPath}`, { ...opts, headers, signal: AbortSignal.timeout(30000) });
+  } catch (e) {
+    throw new Error(`Couldn’t reach Immich at ${baseUrl} (${e.message})`);
+  }
+  if (r.status === 401) throw new Error('Immich rejected the API key: check you copied the whole key');
+  if (r.status === 403) throw new Error(`The Immich API key is missing a permission for ${apiPath.replace(/\?.*$/, '')}: it needs album.read, asset.read and asset.view (person.read is optional, for face framing)`);
+  if (r.status === 404) throw new Error(`Immich answered 404 for ${baseUrl}${apiPath.replace(/\?.*$/, '')}: that address isn’t the Immich server. Use the address you open Immich at, e.g. http://192.168.1.50:2283 (no /photos or /api on the end)`);
+  if (!r.ok) throw new Error(`Immich said HTTP ${r.status}`);
+  return r.json();
+}
+
+async function listImmichAlbums(baseUrl, apiKey) {
+  const [own, shared] = await Promise.all([
+    immichRequest(baseUrl, apiKey, '/api/albums'),
+    immichRequest(baseUrl, apiKey, '/api/albums?shared=true').catch(() => [])
+  ]);
+  const seen = new Set(), out = [];
+  for (const a of [...(Array.isArray(own) ? own : []), ...(Array.isArray(shared) ? shared : [])]) {
+    if (!a || !a.id || seen.has(a.id)) continue;
+    seen.add(a.id);
+    const name = String(a.albumName || 'Untitled');
+    out.push({
+      id: String(a.id),
+      name,
+      title: name,
+      count: a.assetCount ?? (Array.isArray(a.assets) ? a.assets.length : 0),
+      shared: !!a.shared
+    });
+  }
+  return out;
+}
+
+function immichAssetsToPhotos(assets, baseUrl, apiKey, shareKey) {
+  const out = [], seen = new Set();
+  for (const a of assets || []) {
+    if (!a || !a.id || a.isTrashed || a.isArchived) continue;
+    const type = String(a.type || '').toUpperCase();
+    if (type === 'VIDEO' || /video|mp4|quicktime/i.test(String(a.originalMimeType || ''))) continue;
+    if (seen.has(a.id)) continue;
+    seen.add(a.id);
+    const ex = a.exifInfo || {};
+    let w = +ex.exifImageWidth || +a.width || 0;
+    let h = +ex.exifImageHeight || +a.height || 0;
+    if (/^(5|6|7|8|.*90|.*270)/i.test(String(ex.orientation || '')) && w && h) [w, h] = [h, w];
+    const faces = [];
+    const rawFaces = [
+      ...((Array.isArray(a.people) ? a.people : []).flatMap(p => Array.isArray(p.faces) ? p.faces : [])),
+      ...(Array.isArray(a.unassignedFaces) ? a.unassignedFaces : [])
+    ];
+    for (const fc of rawFaces) {
+      const iw = +fc.imageWidth || w, ih = +fc.imageHeight || h;
+      if (iw > 0 && ih > 0 && fc.boundingBoxX1 != null && fc.boundingBoxX2 != null) {
+        const x1 = Math.max(0, Math.min(1, fc.boundingBoxX1 / iw));
+        const y1 = Math.max(0, Math.min(1, fc.boundingBoxY1 / ih));
+        const fw = Math.max(0, Math.min(1 - x1, (fc.boundingBoxX2 - fc.boundingBoxX1) / iw));
+        const fh = Math.max(0, Math.min(1 - y1, (fc.boundingBoxY2 - fc.boundingBoxY1) / ih));
+        if (fw > 0.01 && fh > 0.01) faces.push([+x1.toFixed(4), +y1.toFixed(4), +fw.toFixed(4), +fh.toFixed(4)]);
+      }
+    }
+    const qsPrev = new URLSearchParams({ size: 'preview', ...(shareKey ? { key: shareKey } : {}) }).toString();
+    const qsThumb = new URLSearchParams({ size: 'thumbnail', ...(shareKey ? { key: shareKey } : {}) }).toString();
+    const date = Date.parse(a.localDateTime || a.fileCreatedAt || ex.dateTimeOriginal || a.createdAt || '') || 0;
+    out.push({
+      id: 'im_' + crypto.createHash('sha1').update(String(a.id) + '|' + String(a.checksum || '')).digest('hex').slice(0, 21),
+      url: `${baseUrl}/api/assets/${encodeURIComponent(a.id)}/thumbnail?${qsPrev}`,
+      fallbackUrl: `${baseUrl}/api/assets/${encodeURIComponent(a.id)}/thumbnail?${qsThumb}`,
+      headers: apiKey ? { 'x-api-key': apiKey } : {},
+      w,
+      h,
+      date,
+      faces: faces.length ? faces : undefined
+    });
+  }
+  return out.sort((a, b) => b.date - a.date);
+}
+
+async function immichAlbum(src) {
+  if (src.kind === 'immich-share') {
+    const info = await immichRequest(src.immichUrl, null, `/api/shared-links/me?key=${encodeURIComponent(src.shareKey)}`);
+    let assets = (info && info.assets) || (info && info.album && info.album.assets) || [];
+    if ((!assets || !assets.length) && info && info.album && info.album.id) {
+      const alb = await immichRequest(src.immichUrl, null, `/api/albums/${encodeURIComponent(info.album.id)}?key=${encodeURIComponent(src.shareKey)}`);
+      assets = (alb && alb.assets) || [];
+    }
+    return immichAssetsToPhotos(assets, src.immichUrl, null, src.shareKey);
+  }
+  const want = (src.immichAlbum || '').trim();
+  const searchMeta = async (extra) => {
+    const r = await immichRequest(src.immichUrl, src.immichKey, '/api/search/metadata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'IMAGE', size: 250, withExif: true, withPeople: true, ...extra })
+    });
+    return (r && r.assets && Array.isArray(r.assets.items)) ? r.assets.items : (Array.isArray(r) ? r : []);
+  };
+  if (want === '__favorites__' || want.toLowerCase() === 'favorites') {
+    return immichAssetsToPhotos(await searchMeta({ isFavorite: true }), src.immichUrl, src.immichKey, null);
+  }
+  if (want === '__all__' || want.toLowerCase() === 'all') {
+    return immichAssetsToPhotos(await searchMeta({}), src.immichUrl, src.immichKey, null);
+  }
+  if (want) {
+    let albumId = want;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(want)) {
+      const albums = await listImmichAlbums(src.immichUrl, src.immichKey);
+      const hit = albums.find(a => a.id === want || a.name.toLowerCase() === want.toLowerCase());
+      if (!hit) throw new Error(`Immich album “${want}” not found`);
+      albumId = hit.id;
+    }
+    const alb = await immichRequest(src.immichUrl, src.immichKey, `/api/albums/${encodeURIComponent(albumId)}`);
+    return immichAssetsToPhotos((alb && alb.assets) || [], src.immichUrl, src.immichKey, null);
+  }
+  // No specific album chosen: try Favorites first, then recent photos, then the first album with photos
+  const favs = await searchMeta({ isFavorite: true }).catch(() => []);
+  if (favs.length) return immichAssetsToPhotos(favs, src.immichUrl, src.immichKey, null);
+  const recent = await searchMeta({}).catch(() => []);
+  if (recent.length) return immichAssetsToPhotos(recent, src.immichUrl, src.immichKey, null);
+  const albums = await listImmichAlbums(src.immichUrl, src.immichKey);
+  const firstAlb = albums.find(a => a.count > 0) || albums[0];
+  if (!firstAlb) return [];
+  const alb = await immichRequest(src.immichUrl, src.immichKey, `/api/albums/${encodeURIComponent(firstAlb.id)}`);
+  return immichAssetsToPhotos((alb && alb.assets) || [], src.immichUrl, src.immichKey, null);
+}
 
 async function ckPost(url, body) {
   const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body), signal: AbortSignal.timeout(30000) });
@@ -2057,8 +2298,9 @@ function gpItems(items) {
   }
   return out;
 }
-async function googleAlbum() {
-  const page = await fetch(PHOTO_URL.replace(/^https:\/\/photos\.google\.com/i, GP_HOST), { headers: GP_UA, redirect: 'follow', signal: AbortSignal.timeout(30000) });
+async function googleAlbum(albumUrl) {
+  const targetUrl = (albumUrl || PHOTO_URL).replace(/^https:\/\/photos\.google\.com/i, GP_HOST);
+  const page = await fetch(targetUrl, { headers: GP_UA, redirect: 'follow', signal: AbortSignal.timeout(30000) });
   if (page.status === 404) throw new Error('Google Photos album not found - check the link, and that link sharing is on');
   if (!page.ok) throw new Error(`Google Photos said ${page.status}`);
   const html = await page.text();
@@ -2082,9 +2324,9 @@ async function googleAlbum() {
   for (let i = 0; next && i < 40; i++) { const p = await rpc(next); items = items.concat(p.items); next = p.next; }
   return gpItems(items).sort((a, b) => b.date - a.date);
 }
-async function icloudAlbum() {
-  const guid = (/\/album\/([A-Za-z0-9_-]{10,})/.exec(PHOTO_URL) || [])[1];
-  if (!guid) throw new Error('PHOTO_ALBUM_URL doesn’t look like an iCloud or Google Photos shared album link');
+async function icloudAlbum(albumUrl) {
+  const guid = (/\/album\/([A-Za-z0-9_-]{10,})/.exec(albumUrl || PHOTO_URL) || [])[1];
+  if (!guid) throw new Error('PHOTO_ALBUM_URL doesn’t look like an iCloud, Google Photos, or Immich shared album link');
   {
     const res = (await ckPost(`${CK_HOST}/${CK}/public/records/resolve?remapEnums=true`, { shortGUIDs: [{ value: guid, shouldFetchRootRecord: true }] })).results[0];
     if (!res || !res.anonymousPublicAccess) throw new Error('album isn’t shared by link (set “anyone with the link”)');
@@ -2101,32 +2343,52 @@ async function icloudAlbum() {
   }
 }
 // only download from the album service's own image hosts
-const photoHostOk = u => (PHOTO_KIND === 'google'
-  ? !!process.env.PHOTO_GOOGLE_HOST || /^https:\/\/lh\d\.googleusercontent\.com\//.test(u)
-  : !!process.env.PHOTO_CK_HOST || /^https:\/\/[a-z0-9.-]+\.(icloud-content\.com|icloud\.com)\//.test(u));
-const isJpegPng = b => b.length > 8 && ((b[0] === 0xff && b[1] === 0xd8) || b.readUInt32BE(0) === 0x89504e47);
-async function getImage(url) {
-  const r = await fetch(url, { headers: PHOTO_KIND === 'google' ? { ...GP_UA, Accept: 'image/jpeg,image/png' } : {}, signal: AbortSignal.timeout(60000) });
-  if (!r.ok) return null;
-  let buf = Buffer.from(await r.arrayBuffer());
-  if (!isJpegPng(buf) && PHOTO_KIND === 'google' && !url.endsWith('-rj')) return getImage(url + '-rj');   // ask Google for JPEG explicitly
-  return isJpegPng(buf) ? buf : null;   // JPEG or PNG only (the wall can't show HEIC)
+function photoHostOk(u, src) {
+  if (src.kind === 'immich' || src.kind === 'immich-share') {
+    return u.startsWith(src.immichUrl + '/');
+  }
+  if (src.kind === 'google') {
+    return !!process.env.PHOTO_GOOGLE_HOST || /^https:\/\/lh\d\.googleusercontent\.com\//.test(u);
+  }
+  return !!process.env.PHOTO_CK_HOST || /^https:\/\/[a-z0-9.-]+\.(icloud-content\.com|icloud\.com)\//.test(u);
+}
+const isWebpBuf = b => b.length > 12 && b.subarray(0, 4).toString() === 'RIFF' && b.subarray(8, 12).toString() === 'WEBP';
+const isJpegPngWebp = b => b.length > 8 && ((b[0] === 0xff && b[1] === 0xd8) || b.readUInt32BE(0) === 0x89504e47 || isWebpBuf(b));
+async function getImage(url, src, extraHeaders = {}, fallbackUrl = null) {
+  const headers = src.kind === 'google' ? { ...GP_UA, Accept: 'image/jpeg,image/png' } : { Accept: 'image/jpeg,image/png,image/webp,image/*', ...extraHeaders };
+  const r = await fetch(url, { headers, signal: AbortSignal.timeout(60000) });
+  if (!r.ok) {
+    if (fallbackUrl && fallbackUrl !== url) return getImage(fallbackUrl, src, extraHeaders, null);
+    return null;
+  }
+  const buf = Buffer.from(await r.arrayBuffer());
+  if (!isJpegPngWebp(buf) && src.kind === 'google' && !url.endsWith('-rj')) return getImage(url + '-rj', src, extraHeaders, null);   // ask Google for JPEG explicitly
+  if (!isJpegPngWebp(buf) && fallbackUrl && fallbackUrl !== url) return getImage(fallbackUrl, src, extraHeaders, null);
+  return isJpegPngWebp(buf) ? buf : null;   // JPEG, PNG or WebP (Immich previews can be JPEG or WebP)
 }
 
 async function syncPhotos() {
-  if (!PHOTO_URL || photoState.running) return;
+  const src = photoSourceCfg();
+  if (!src.enabled || photoState.running) return;
   photoState.running = true;
   try {
-    const assets = PHOTO_KIND === 'google' ? await googleAlbum() : await icloudAlbum();
+    const assets = (src.kind === 'immich' || src.kind === 'immich-share')
+      ? await immichAlbum(src)
+      : src.kind === 'google'
+        ? await googleAlbum(src.albumUrl)
+        : await icloudAlbum(src.albumUrl);
     fs.mkdirSync(PHOTO_DIR, { recursive: true });
     for (const a of assets) {
       const file = path.join(PHOTO_DIR, `${a.id}.jpg`);
       if (fs.existsSync(file)) continue;
-      if (!photoHostOk(a.url)) continue;
-      const buf = await getImage(a.url);
+      if (!photoHostOk(a.url, src)) continue;
+      const buf = await getImage(a.url, src, a.headers || {}, a.fallbackUrl || null);
       if (!buf) continue;
       fs.writeFileSync(file + '.part', buf);
       fs.renameSync(file + '.part', file);
+      if (a.faces && a.faces.length && a.w && a.h && !fs.existsSync(path.join(PHOTO_DIR, `${a.id}.json`))) {
+        fs.writeFileSync(path.join(PHOTO_DIR, `${a.id}.json`), JSON.stringify({ w: a.w, h: a.h, faces: a.faces }));
+      }
     }
     const have = assets.filter(a => fs.existsSync(path.join(PHOTO_DIR, `${a.id}.jpg`)));
     const todo = have.filter(a => !fs.existsSync(path.join(PHOTO_DIR, `${a.id}.json`))).map(a => path.join(PHOTO_DIR, `${a.id}.jpg`));
@@ -2134,10 +2396,10 @@ async function syncPhotos() {
       if (r.error || !r.w) continue;
       fs.writeFileSync(path.join(PHOTO_DIR, path.basename(r.file, '.jpg') + '.json'), JSON.stringify({ w: r.w, h: r.h, faces: r.faces }));
     }
-    const list = have.map(({ id, w, h, date }) => {
+    const list = have.map(({ id, w, h, date, faces }) => {
       let f = null;
       try { f = JSON.parse(fs.readFileSync(path.join(PHOTO_DIR, `${id}.json`), 'utf8')); } catch {}
-      return f ? { id, w: f.w, h: f.h, date, faces: f.faces } : { id, w, h, date };
+      return f ? { id, w: f.w || w, h: f.h || h, date, faces: f.faces } : (faces ? { id, w, h, date, faces } : { id, w, h, date });
     });
     const keep = new Set(list.flatMap(p => [`${p.id}.jpg`, `${p.id}.json`]));
     for (const f of fs.readdirSync(PHOTO_DIR)) if (!keep.has(f)) fs.rmSync(path.join(PHOTO_DIR, f), { force: true });   // removed from the album
@@ -2149,20 +2411,64 @@ async function syncPhotos() {
     console.error('Photo sync:', e.message);
   } finally { photoState.running = false; }
 }
-if (PHOTO_URL) { setTimeout(syncPhotos, 5000); setInterval(syncPhotos, 15 * 60 * 1000); }
+setTimeout(() => { if (photoSourceCfg().enabled) syncPhotos(); }, 5000);
+setInterval(() => { if (photoSourceCfg().enabled) syncPhotos(); }, 15 * 60 * 1000);
 
 app.get('/api/photos', (req, res) => {
-  res.json({ enabled: !!PHOTO_URL, photos: photoState.list, cfg: photoCfg(), synced: photoState.synced, error: photoState.error });
+  const src = photoSourceCfg();
+  res.json({
+    enabled: src.enabled,
+    kind: src.kind,
+    immich: { url: src.immichUrl || '', hasKey: !!src.immichKey, album: src.immichAlbum || '' },
+    albumUrl: src.albumUrl || '',
+    photos: photoState.list,
+    cfg: photoCfg(),
+    synced: photoState.synced,
+    error: photoState.error
+  });
 });
 app.get('/api/photos/img/:id', (req, res) => {
   if (!/^[A-Za-z0-9_-]{1,80}$/.test(req.params.id)) return res.sendStatus(404);
   const file = path.join(PHOTO_DIR, `${req.params.id}.jpg`);
-  let png = false;
-  try { const fd = fs.openSync(file, 'r'), b = Buffer.alloc(4); fs.readSync(fd, b, 0, 4, 0); fs.closeSync(fd); png = b.readUInt32BE(0) === 0x89504e47; } catch { return res.sendStatus(404); }
-  res.set('Cache-Control', 'public, max-age=31536000, immutable').type(png ? 'image/png' : 'image/jpeg');
+  let mime = 'image/jpeg';
+  try {
+    const fd = fs.openSync(file, 'r'), b = Buffer.alloc(12);
+    fs.readSync(fd, b, 0, 12, 0); fs.closeSync(fd);
+    if (b.readUInt32BE(0) === 0x89504e47) mime = 'image/png';
+    else if (isWebpBuf(b)) mime = 'image/webp';
+  } catch { return res.sendStatus(404); }
+  res.set('Cache-Control', 'public, max-age=31536000, immutable').type(mime);
   res.sendFile(file, err => { if (err && !res.headersSent) res.sendStatus(404); });
 });
-app.post('/api/photos/settings', (req, res) => {
+app.post('/api/photos/immich-albums', async (req, res) => {
+  const b = req.body || {};
+  const cur = photoSourceCfg();
+  const url = normalizeImmichUrl(b.url !== undefined ? b.url : cur.immichUrl);
+  const key = String(b.apiKey ? b.apiKey : cur.immichKey).trim();
+  if (!url) return res.status(400).json({ error: 'Enter your Immich server URL first (e.g. http://192.168.1.50:2283)' });
+  try { const u = new URL(url); if (!/^https?:$/.test(u.protocol)) throw 0; } catch { return res.status(400).json({ error: 'The Immich URL should start with http:// or https://' }); }
+  if (!key) return res.status(400).json({ error: 'Enter your Immich API key first (Account Settings → API Keys in Immich)' });
+  try {
+    const albums = await listImmichAlbums(url, key);
+    res.json({ albums });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+app.post('/api/board-settings/immich-test', async (req, res) => {
+  const b = req.body || {};
+  const cur = photoSourceCfg();
+  const url = normalizeImmichUrl(b.url !== undefined ? b.url : cur.immichUrl);
+  const key = String(b.apiKey ? b.apiKey : cur.immichKey).trim();
+  if (!url || !key) return res.status(400).json({ error: 'Enter the Immich server URL and API key first' });
+  try {
+    const albums = await listImmichAlbums(url, key);
+    res.json({ albums });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+app.post('/api/photos/settings', async (req, res) => {
   const b = req.body || {}, hm = v => (typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : null);
   const cur = photoCfg();
   const cfg = {
@@ -2173,7 +2479,24 @@ app.post('/api/photos/settings', (req, res) => {
     every: [10, 20, 30, 60].includes(+b.every) ? +b.every : cur.every,
     dim: [30, 50, 70, 100].includes(+b.dim) ? +b.dim : cur.dim   // slideshow brightness, %
   };
+  const sv = {};
+  if (b.immichUrl !== undefined) sv.IMMICH_URL = normalizeImmichUrl(b.immichUrl);
+  if (b.immichKey !== undefined && String(b.immichKey).trim() !== '') sv.IMMICH_API_KEY = String(b.immichKey).trim();
+  if (b.clearImmich) { sv.IMMICH_URL = ''; sv.IMMICH_API_KEY = ''; sv.IMMICH_ALBUM = ''; }
+  if (b.immichAlbum !== undefined) sv.IMMICH_ALBUM = String(b.immichAlbum).trim();
+  if (b.albumUrl !== undefined) sv.PHOTO_ALBUM_URL = String(b.albumUrl).trim();
+  if (Object.keys(sv).length) {
+    const r = boardSettings.save(sv);
+    if (r.errors) return res.status(400).json({ error: Object.values(r.errors).join('; ') });
+    for (const [k, v] of Object.entries(sv)) {
+      if (v === '') delete process.env[k];
+      else process.env[k] = v;
+    }
+  }
   qKvSet.run('photoCfg', JSON.stringify(cfg));
+  if (Object.keys(sv).length && photoSourceCfg().enabled) {
+    await syncPhotos();
+  }
   broadcast('photos', {});
   res.json(cfg);
 });
@@ -2200,7 +2523,10 @@ app.get('/icons/:name', (req, res) => {
 const MANIFESTS = {
   wall: { name: BOARD_TITLE, short_name: 'Chalk Planner', start_url: '/', scope: '/', display: 'fullscreen', orientation: 'landscape' },
   edit: { name: BOARD_TITLE + ' (edit)', short_name: 'Planner edit', start_url: '/edit', scope: '/', display: 'standalone', orientation: 'any' },
-  chores: { name: 'Chores', short_name: 'Chores', start_url: '/chores', scope: '/', display: 'standalone', orientation: 'any' }
+  chores: { name: 'Chores', short_name: 'Chores', start_url: '/chores', scope: '/', display: 'standalone', orientation: 'any' },
+  meals: { name: 'Meal Plan', short_name: 'Meals', start_url: '/meals', scope: '/', display: 'standalone', orientation: 'any' },
+  jars: { name: 'Reward Jars', short_name: 'Jars', start_url: '/jars', scope: '/', display: 'standalone', orientation: 'any' },
+  reminders: { name: 'Reminders', short_name: 'Reminders', start_url: '/reminders', scope: '/', display: 'standalone', orientation: 'any' }
 };
 for (const [kind, m] of Object.entries(MANIFESTS)) {
   app.get(`/manifest-${kind}.webmanifest`, (req, res) => {
@@ -2308,6 +2634,9 @@ app.get('/fonts/:pkg/files/:file', (req, res) => {
 app.get('/', sendBoard('wall'));
 app.get('/edit', sendBoard('edit'));
 app.get('/chores', sendBoard('chores'));   // the chores page on a phone (same page, chores mode)
+app.get('/meals', sendBoard('meals'));
+app.get('/jars', sendBoard('jars'));
+app.get('/reminders', sendBoard('reminders'));
 // the admin console (sign-in, screens, people, my account) and invite links
 for (const p of ['/admin', '/join']) app.get(p, (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(PUBLIC, 'admin.html')));
 app.use(express.static(PUBLIC));

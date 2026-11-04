@@ -40,10 +40,11 @@ body.family .slate{box-shadow:none}
 /* cork is busy: a soft dark shadow keeps small writing crisp on it */
 body[data-surface=cork] .slate,body[data-surface=cork] .slate .chalk,body[data-surface=wood] .slate,body[data-surface=wood] .slate .chalk{text-shadow:0 1px 2px rgba(20,10,0,.85),0 0 3px rgba(20,10,0,.6)}
 .cal{flex:1;min-width:0;display:flex;flex-direction:column}
-/* Chores: a page of its own over the board (swipe from the calendar), big and easy to read */
-#chores{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;padding:12px 24px 16px;--chz:24px}
-#chores[hidden]{display:none}
-body.choresOn .cal,body.choresOn .notes,body.choresOn #art,body.choresOn #artSvg,body.choresOn #gifLayer,body.choresOn #ptitle,body.choresOn #wx{visibility:hidden}
+/* Chores, Meals, Jars, Reminders: full-board pages over the board */
+#chores,#mealsPage,#jarsPage,#remindersPage{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;padding:12px 24px 16px;--chz:24px}
+#chores[hidden],#mealsPage[hidden],#jarsPage[hidden],#remindersPage[hidden]{display:none}
+body.choresOn .cal,body.choresOn .notes,body.choresOn #art,body.choresOn #artSvg,body.choresOn #gifLayer,body.choresOn #ptitle,body.choresOn #wx,
+body.subpageOn .cal,body.subpageOn .notes,body.subpageOn #art,body.subpageOn #artSvg,body.subpageOn #gifLayer,body.subpageOn #ptitle,body.subpageOn #wx{visibility:hidden}
 .chhead{display:flex;align-items:center;gap:18px;height:68px;flex:none}
 .chhead h2{margin:0 8px 0 0;font-family:'Dancing Script',cursive;font-size:54px;line-height:1;color:var(--pink)}
 .chtabs{display:flex;gap:8px;flex:1}
@@ -64,22 +65,78 @@ body.choresOn .cal,body.choresOn .notes,body.choresOn #art,body.choresOn #artSvg
 .chitem.done .ct{text-decoration:line-through;text-decoration-thickness:2px;opacity:.55}
 .chitem .cn{font-size:.7em;opacity:.7;margin-left:6px;white-space:nowrap}
 .chempty{font:700 22px 'Kalam',cursive;color:rgba(var(--ink),.6);padding:30px 4px}
-body.display #choresBtn,body:not(.edit) #choresBtn{display:none}
-/* /chores on a phone (or any browser): just the chores, one easy-to-read page that scrolls, on the board's surface */
-body.chorespage{cursor:auto}
-body.chorespage #stage{display:none}
-body.chorespage #chores{position:fixed;inset:0;z-index:5;display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+body.display #choresBtn,body:not(.edit) #choresBtn,
+body.display #mealsBtn,body:not(.edit) #mealsBtn,
+body.display #jarsBtn,body:not(.edit) #jarsBtn,
+body.display #remindersBtn,body:not(.edit) #remindersBtn{display:none}
+/* /chores, /meals, /jars, /reminders on a phone (or any browser): one easy-to-read page that scrolls */
+body.chorespage,body.mealspage,body.jarspage,body.reminderspage{cursor:auto}
+body.chorespage #stage,body.mealspage #stage,body.jarspage #stage,body.reminderspage #stage{display:none}
+body.chorespage #chores,body.mealspage #mealsPage,body.jarspage #jarsPage,body.reminderspage #remindersPage{position:fixed;inset:0;z-index:5;display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
   padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));--chz:22px;color:var(--chalk);text-shadow:0 1px 2px rgba(0,0,0,.35)}
-body.chorespage .chhead{height:auto;flex-wrap:wrap;gap:10px 12px;max-width:1100px;margin:0 auto}
-body.chorespage #chores .chhead h2{font-size:42px;flex:1;margin:0}
+body.chorespage .chhead,body.mealspage .chhead,body.jarspage .chhead,body.reminderspage .chhead{height:auto;flex-wrap:wrap;gap:10px 12px;max-width:1100px;margin:0 auto}
+body.chorespage #chores .chhead h2,body.mealspage #mealsPage .chhead h2,body.jarspage #jarsPage .chhead h2,body.reminderspage #remindersPage .chhead h2{font-size:42px;flex:1;margin:0}
 body.chorespage .chtabs{order:3;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}
 body.chorespage .chtabs button{height:44px;padding:0 14px;font-size:18px}
-body.chorespage #chBack{display:none}
-body.chorespage .chcols{display:grid;grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:0 32px;margin:16px auto 0;max-width:1100px}
+body.chorespage #chBack,body.mealspage #mpBack,body.jarspage #jpBack,body.reminderspage #rpBack{display:none}
+body.chorespage .chcols,body.mealspage .mpcols,body.jarspage .jpcols,body.reminderspage .rpcols{display:grid;grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px 28px;margin:16px auto 0;max-width:1100px}
 body.chorespage .chcol,body.chorespage .chcol:first-child{overflow:visible;border-left:none;padding:0 0 14px;margin-bottom:14px;border-bottom:1.5px solid rgba(var(--ink),.25)}
 body.chorespage .chitem{padding:9px 2px;min-height:48px}
 body.chorespage .chempty{font-size:20px}
-@media (min-width:700px){ body.chorespage #chores{--chz:25px} }
+@media (min-width:700px){ body.chorespage #chores,body.mealspage #mealsPage,body.jarspage #jarsPage,body.reminderspage #remindersPage{--chz:25px} }
+/* Meal Plan Page, Jars Page, Reminders Page */
+.mpcols{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:12px 18px;margin-top:10px;overflow-y:auto}
+.mpcol{display:flex;flex-direction:column;padding:10px 14px;border:1.5px solid rgba(var(--ink),.25);border-radius:14px;background:rgba(255,255,255,.02);min-height:0}
+.mpcol h3{margin:0 0 6px;font-family:'Dancing Script',cursive;font-size:32px;line-height:1;color:var(--yellow);display:flex;align-items:center;justify-content:space-between}
+.mpcol h3 button{height:28px;padding:0 10px;border-radius:14px;border:1.5px dashed rgba(var(--ink),.4);background:transparent;color:rgba(var(--ink),.8);font:700 14px 'Kalam',cursive;cursor:pointer}
+.mpcol .mplist{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.mpcol .mpadd{display:flex;gap:6px;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(var(--ink),.2)}
+.mpcol .mpadd input{flex:1;min-width:0;height:32px;padding:0 8px;border-radius:8px;border:1px solid rgba(var(--ink),.3);background:rgba(0,0,0,.2);color:var(--chalk);font:700 15px 'Kalam',cursive}
+.mpcol .mpadd button{height:32px;padding:0 10px;border-radius:8px;border:1.5px solid var(--yellow);background:transparent;color:var(--yellow);font:700 15px 'Kalam',cursive;cursor:pointer}
+.jpcols{flex:1;min-height:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-top:12px;overflow-y:auto;align-items:start}
+.jpcard{display:flex;flex-direction:column;align-items:center;padding:14px 16px;border:1.5px solid rgba(var(--ink),.28);border-radius:18px;background:rgba(255,255,255,.03);gap:8px;position:relative}
+.jpcard svg.jpsvg{width:110px;height:150px;display:block;overflow:visible}
+.jpcard .jpname{font:700 28px/1.1 'Dancing Script',cursive;color:var(--pink)}
+.jpcard .jpgoal{font:700 18px 'Kalam',cursive;color:var(--yellow)}
+.jpcard .jppick{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:2px 0}
+.jpcard .jppick button{width:38px;height:38px;border-radius:12px;border:1.5px solid rgba(var(--ink),.3);background:rgba(255,255,255,.04);cursor:pointer;padding:5px;display:flex;align-items:center;justify-content:center}
+.jpcard .jppick button:active{transform:scale(.92)}
+.jpcard .jppick button svg{width:24px;height:24px;display:block}
+.jpcard .jpbtns{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+.jpcard .jpbtns button{height:38px;min-width:38px;padding:0 14px;border-radius:19px;border:2px solid rgba(var(--ink),.35);background:transparent;color:var(--chalk);font:700 18px 'Kalam',cursive;cursor:pointer}
+.jpcard .jpbtns button.plus{border-color:var(--yellow);color:var(--yellow)}
+/* Home page Big Jar Zoom overlay */
+#jarZoom{position:fixed;inset:0;z-index:26;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0);pointer-events:none;visibility:hidden;transition:background .34s ease,visibility .34s;--jzx:0px;--jzy:0px;--jzs:.32}
+#jarZoom.starting{visibility:visible;pointer-events:auto;background:rgba(0,0,0,0);transition:none}
+#jarZoom.open{visibility:visible;pointer-events:auto;background:rgba(0,0,0,.62)}
+#jarZoom.closing{visibility:visible;pointer-events:none;background:rgba(0,0,0,0)}
+#jarZoom .jzcard{display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 32px 22px;border-radius:28px;background:rgba(22,25,22,.94);border:2px solid rgba(255,255,255,.2);box-shadow:0 24px 64px rgba(0,0,0,.75);transform:translate(var(--jzx),var(--jzy)) scale(var(--jzs));opacity:0;transition:transform .42s cubic-bezier(.2,.9,.25,1),opacity .28s ease;position:relative;max-width:92vw}
+#jarZoom.starting .jzcard{transform:translate(var(--jzx),var(--jzy)) scale(var(--jzs));opacity:.35;transition:none}
+#jarZoom.open .jzcard{transform:translate(0,0) scale(1);opacity:1}
+#jarZoom.closing .jzcard{transform:translate(var(--jzx),var(--jzy)) scale(var(--jzs));opacity:0;transition:transform .36s cubic-bezier(.4,0,.2,1),opacity .3s ease}
+#jarZoom .jztitle{font:700 42px/1.05 'Dancing Script',cursive;color:var(--pink);text-align:center}
+#jarZoom .jzjar{position:relative;display:flex;align-items:center;justify-content:center;padding:6px 0}
+#jarZoom .jzjar svg{width:200px;height:275px;display:block;overflow:visible}
+#jarZoom .jzcount{font:700 22px/1.1 'Kalam',cursive;color:var(--yellow)}
+#jarZoom .jzpick{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+#jarZoom .jzpick .jpc{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:68px;padding:8px 10px;border-radius:16px;border:2px solid rgba(255,255,255,.25);background:rgba(255,255,255,.05);color:var(--chalk);font:700 15px/1 'Kalam',cursive;cursor:pointer;transition:transform .12s,border-color .15s}
+#jarZoom .jzpick .jpc:hover{border-color:var(--yellow)}
+#jarZoom .jzpick .jpc:active{transform:scale(.92)}
+#jarZoom .jzpick .jpc svg{width:32px;height:32px;display:block}
+#jarZoom .jzactions{display:flex;gap:10px;align-items:center;margin-top:2px}
+#jarZoom .jzactions button{height:38px;padding:0 16px;border-radius:19px;border:1.5px solid rgba(255,255,255,.3);background:transparent;color:var(--chalk);font:700 17px 'Kalam',cursive;cursor:pointer}
+#jarZoom .jzactions button.rew{border-color:var(--yellow);color:var(--yellow)}
+#jarZoom .jzhint{font:400 14px 'Kalam',cursive;color:rgba(255,255,255,.5);margin-top:2px}
+.rpcols{flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:12px;overflow-y:auto}
+.rpcol{display:flex;flex-direction:column;padding:12px 16px;border:1.5px solid rgba(var(--ink),.25);border-radius:16px;background:rgba(255,255,255,.02);min-height:0;overflow-y:auto}
+.rpcol h3{margin:0 0 10px;font-family:'Dancing Script',cursive;font-size:36px;line-height:1.1;color:var(--yellow);display:flex;align-items:baseline;gap:10px}
+.rpcol h3 small{font:700 16px 'Kalam',cursive;color:rgba(var(--ink),.6)}
+.rpitem{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px dashed rgba(var(--ink),.2);font:700 21px/1.2 'Kalam',cursive;color:var(--chalk)}
+.rpitem.done .rt{text-decoration:line-through;opacity:.5}
+.rpitem .rt{flex:1;min-width:0}
+.rpitem .rtag{font-size:14px;padding:2px 9px;border-radius:12px;border:1.5px solid rgba(242,212,121,.45);color:var(--yellow);white-space:nowrap}
+.rpitem .rtag.imp{border-color:var(--pink);color:var(--pink);background:rgba(246,179,203,.12)}
+.rpitem .rdel{border:none;background:transparent;color:#F7A1A1;font:700 20px 'Kalam',cursive;cursor:pointer;padding:0 6px}
 /* Change the chores */
 #chedmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:22}
 #chedmodal.open{display:flex}
@@ -176,32 +233,50 @@ body.edit .day{cursor:pointer}
 .meals{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;border-radius:8px;margin:-4px -4px 0;padding:2px 4px}
 body.edit:not(.drawing) .meals{cursor:pointer}
 body.edit:not(.drawing) .meals:active{background:rgba(242,212,121,.08)}
-.meals .mh{margin:0 0 6px;font-family:'Dancing Script',cursive;font-weight:700;font-size:32px;line-height:1;color:var(--pink);text-align:center}
+.meals .mh,.mpsec .mh{margin:0 0 6px;font-family:'Dancing Script',cursive;font-weight:700;font-size:30px;line-height:1;color:var(--pink);text-align:center;display:flex;align-items:center;justify-content:center;gap:6px}
 .meals ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
-.meals li{font-size:var(--mealsz,18px);line-height:1.2;color:var(--chalk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:16px;position:relative}
+.meals li{font-size:var(--mealsz,17px);line-height:1.2;color:var(--chalk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:14px;position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:6px}
 .meals li::before{content:'';position:absolute;left:3px;top:.55em;width:6px;height:6px;border-radius:50%;background:var(--yellow)}
-.meals li.more-meals{padding-left:0;color:rgba(var(--ink),.6);font-size:calc(var(--mealsz,18px) - 2px)}
+.meals li .mt{overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.meals li .md{color:var(--yellow);font-size:.82em;font-weight:700;flex:none}
+.meals li.more-meals{padding-left:0;color:rgba(var(--ink),.6);font-size:calc(var(--mealsz,17px) - 2px)}
 .meals li.more-meals::before{display:none}
 .meals li.done{color:rgba(var(--ink),.45);text-decoration:line-through;text-decoration-color:rgba(246,179,203,.8)}
 .meals li.done::before{background:rgba(242,212,121,.35)}
-.meals li.empty-meals{padding-left:0}
+.meals li.empty-meals{padding-left:0;justify-content:center}
 .meals li.empty-meals::before{display:none}
 .meals .empty-meals{font-size:15px;color:rgba(var(--ink),.45);text-align:center;margin-top:6px}
 body.display .meals .empty-meals{display:none}
-#mmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
-#mmodal.open{display:flex}
-#mmodal .card{width:min(520px,94vw)}
+#mmodal,#remmodal,#remAlertModal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:22}
+#mmodal.open,#remmodal.open,#remAlertModal.open{display:flex}
+#mmodal .card,#remmodal .card,#remAlertModal .card{width:min(560px,94vw)}
 .mrows{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow-y:auto;margin-top:6px;touch-action:pan-y}
-.mrow{display:flex;align-items:center;gap:10px}
+.mrow{display:flex;align-items:center;gap:8px}
 .mrow input[type=checkbox]{width:26px;height:26px;flex:none;accent-color:var(--yellow)}
-.mrow input[type=text]{flex:1;height:44px;background:transparent;border:none;border-bottom:2px dashed rgba(var(--ink),.5);color:var(--chalk);font-family:'Kalam',cursive;font-size:21px;padding:0 2px;outline:none}
+.mrow .mday{width:118px;height:40px;flex:none;background:#161616;border:1.5px solid rgba(var(--ink),.4);border-radius:10px;color:var(--yellow);font:700 16px 'Kalam',cursive;padding:0 6px;margin:0}
+.mrow input[type=text]{flex:1;min-width:0;height:44px;background:transparent;border:none;border-bottom:2px dashed rgba(var(--ink),.5);color:var(--chalk);font-family:'Kalam',cursive;font-size:21px;padding:0 2px;outline:none}
 .mrow .x{width:40px;height:40px;flex:none;border-radius:50%;border:1.5px solid rgba(247,161,161,.6);background:transparent;color:#F7A1A1;font-size:20px;cursor:pointer}
-.notes{width:214px;flex:none;display:flex;flex-direction:column;padding:6px 4px 4px 14px;border-left:1.5px solid var(--gold);gap:12px}
-.notes h2{margin:0;font-family:'Dancing Script',cursive;font-weight:700;font-size:40px;line-height:1;color:#EDE6D2;text-align:center}
+.notes{width:214px;flex:none;display:flex;flex-direction:column;padding:6px 4px 4px 14px;border-left:1.5px solid var(--gold);gap:8px;overflow:hidden}
+.notes h2{margin:0;font-family:'Dancing Script',cursive;font-weight:700;font-size:36px;line-height:1;color:#EDE6D2;text-align:center}
+.mpsec{display:flex;flex-direction:column;gap:6px;min-height:0;overflow:hidden}
+.mpsec.grow{flex:1 1 0;min-height:0}
+.mpsec[hidden]{display:none!important}
+.nhead{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.ntabs{display:flex;align-items:center;gap:4px;flex:1;justify-content:center}
+.ntabs button{background:transparent;border:none;padding:2px 6px;font-family:'Dancing Script',cursive;font-weight:700;font-size:30px;line-height:1;color:rgba(var(--ink),.45);cursor:pointer;border-bottom:2px solid transparent}
+.ntabs button.on{color:#EDE6D2;border-bottom-color:var(--yellow)}
+.rembadge{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:24px;padding:0 7px;border-radius:12px;border:1.5px solid #FF4FA3;background:#E8262B;color:#fff;font:700 14px/1 'Kalam',cursive;cursor:pointer;box-shadow:0 0 8px rgba(232,38,43,.65);animation:remPulse 1.8s infinite;flex:none}
+.rembadge[hidden]{display:none}
+@keyframes remPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.remlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.remlist li{font-size:16px;line-height:1.2;color:var(--chalk);display:flex;align-items:center;gap:6px;cursor:pointer}
+.remlist li.done{opacity:.45;text-decoration:line-through}
+.remlist li .rtm{color:var(--yellow);font-size:13px;flex:none}
 .info{display:flex;align-items:center;gap:10px}
 .info .lbl{font-size:13px;color:rgba(var(--ink),.75)}
 .info .val{font-size:20px;font-weight:700;line-height:1.15}
-.rule{height:1.5px;background:rgba(201,180,122,.6)}
+.rule{height:1.5px;background:rgba(201,180,122,.6);flex:none}
+.rule[hidden]{display:none}
 #art{position:absolute;inset:0;width:1252px;height:642px;pointer-events:none;z-index:5}
 body.drawing #art{pointer-events:auto;touch-action:none;cursor:crosshair}
 .cork{height:50px;flex:none;background-color:#B98D58;
@@ -219,15 +294,18 @@ body.menudrawer.draweropen .cork{transform:translateX(0)}
 body.menudrawer .cork .pill{width:100%;justify-content:flex-start}
 body.menudrawer .cork #addBtn{order:1}
 body.menudrawer .cork #choresBtn{order:2}
-body.menudrawer .cork #musicBtn{order:3}
-body.menudrawer .cork #drawBtn{order:4}
-body.menudrawer .cork #tools{order:5}
-body.menudrawer .cork #photosBtn{order:6}
-body.menudrawer .cork #styleBtn{order:7}
-body.menudrawer .cork #borderBtn{order:8}
-body.menudrawer .cork #sideBtn{order:9}
-body.menudrawer .cork #acctBtn{order:10;margin-top:auto}
-body.menudrawer .cork #settingsBtn{order:11}
+body.menudrawer .cork #mealsBtn{order:3}
+body.menudrawer .cork #remindersBtn{order:4}
+body.menudrawer .cork #jarsBtn{order:5}
+body.menudrawer .cork #musicBtn{order:6}
+body.menudrawer .cork #drawBtn{order:7}
+body.menudrawer .cork #tools{order:8}
+body.menudrawer .cork #photosBtn{order:9}
+body.menudrawer .cork #styleBtn{order:10}
+body.menudrawer .cork #borderBtn{order:11}
+body.menudrawer .cork #sideBtn{order:12}
+body.menudrawer .cork #acctBtn{order:13;margin-top:auto}
+body.menudrawer .cork #settingsBtn{order:14}
 body.menudrawer .cork #acctBtn::after{content:'Account'}
 body.menudrawer .cork #settingsBtn::after{content:'Settings'}
 body.menudrawer .cork #styleBtn::after{content:'Board style'}
@@ -241,7 +319,7 @@ body.menudrawer .cork #swatches{flex-wrap:wrap;max-width:100%;justify-content:ce
 .pill.add{border-color:var(--yellow);color:var(--yellow)}
 .tools{display:none;align-items:center;gap:2px;background:#161616;border-radius:24px;padding:0 6px;box-shadow:0 2px 4px rgba(0,0,0,.35)}
 body.drawing .tools{display:flex}
-body.drawing #addBtn,body.drawing #photosBtn,body.drawing #styleBtn,body.drawing #settingsBtn{display:none}
+body.drawing #addBtn,body.drawing #photosBtn,body.drawing #styleBtn,body.drawing #settingsBtn,body.drawing #mealsBtn,body.drawing #jarsBtn,body.drawing #remindersBtn{display:none}
 body.display #photosBtn{display:none}
 .tool:disabled{opacity:.3;cursor:default}
 .tool.medium{width:auto;padding:0 10px;border-radius:22px;font-family:'Kalam',cursive;font-size:15px;font-weight:700;gap:5px}
@@ -314,10 +392,10 @@ body.edit:not(.drawing) .jar{cursor:pointer}
 .jar .jn{font-size:17px;font-weight:700;line-height:1;margin-top:1px}
 .jar .jc{font-size:13px;color:rgba(var(--ink),.6);line-height:1.2}
 .jar.full .jc{color:var(--yellow)}
-.jar .jarline{fill:none;stroke:rgba(var(--ink),.85);stroke-width:2.2;stroke-linejoin:round}
-.jar.full .jarline{stroke:#F2D479;animation:jarglow 2.4s ease-in-out infinite}
+.jarline{fill:none;stroke:rgba(var(--ink),.85);stroke-width:2.2;stroke-linejoin:round}
+.jar.full .jarline,.jpcard.full .jarline,.jzcard.full .jarline{stroke:#F2D479;animation:jarglow 2.4s ease-in-out infinite}
 @keyframes jarglow{50%{stroke:#FFF3B0}}
-.jar .pc.drop{animation:pcdrop .9s cubic-bezier(.3,.1,.4,1) both}
+.pc.drop{animation:pcdrop .9s cubic-bezier(.3,.1,.4,1) both}
 @keyframes pcdrop{0%{transform:translateY(-130px);opacity:0}15%{opacity:1}70%{transform:translateY(0)}82%{transform:translateY(-7px)}100%{transform:translateY(0)}}
 .burst{position:absolute;width:7px;height:7px;border-radius:2px;pointer-events:none;z-index:9;animation:burst 2.2s ease-out forwards}
 @keyframes burst{0%{transform:translate(0,0) rotate(0);opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(540deg);opacity:0}}
@@ -622,26 +700,56 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         <div id="borderLayer" aria-hidden="true"></div>
       </div>
     </div>
-    <div class="notes">
-      <h2>Notes</h2>
-      <div class="info"><span id="wNowIcon"></span><div><div class="lbl">Today</div><div class="val chalk" id="wNow" style="color:var(--yellow)">&nbsp;</div></div></div>
-      <div class="info"><span id="wTomIcon"></span><div><div class="lbl" id="wTomLbl">Tomorrow</div><div class="val chalk" id="wTom" style="color:var(--blue)">&nbsp;</div></div></div>
-      <div class="info">
-        <svg width="34" height="36" viewBox="0 0 40 44" fill="none" stroke="#A9D8A0" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11h26M15 11V6h10v5M10 11l2 27h16l2-27M17 18v14M23 18v14"/></svg>
-        <div><div class="lbl" id="trashLbl">Trash &amp; recycling</div><div class="val chalk" id="trash" style="color:var(--green)">&nbsp;</div><div class="lbl" id="trashSub"></div></div>
+    <div class="notes" id="notesCol">
+      <div class="mpsec" id="mpInfo" data-mp="info">
+        <div class="nhead">
+          <div class="ntabs">
+            <button type="button" class="on" id="tabNotesBtn">Notes</button>
+            <button type="button" id="tabRemBtn">Reminders</button>
+          </div>
+          <button type="button" class="rembadge" id="remBadge" hidden aria-label="Important reminders">+1</button>
+        </div>
+        <div id="notesPane" style="display:flex;flex-direction:column;gap:8px">
+          <div class="info"><span id="wNowIcon"></span><div><div class="lbl">Today</div><div class="val chalk" id="wNow" style="color:var(--yellow)">&nbsp;</div></div></div>
+          <div class="info"><span id="wTomIcon"></span><div><div class="lbl" id="wTomLbl">Tomorrow</div><div class="val chalk" id="wTom" style="color:var(--blue)">&nbsp;</div></div></div>
+          <div class="info">
+            <svg width="34" height="36" viewBox="0 0 40 44" fill="none" stroke="#A9D8A0" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11h26M15 11V6h10v5M10 11l2 27h16l2-27M17 18v14M23 18v14"/></svg>
+            <div><div class="lbl" id="trashLbl">Trash &amp; recycling</div><div class="val chalk" id="trash" style="color:var(--green)">&nbsp;</div><div class="lbl" id="trashSub"></div></div>
+          </div>
+          <div class="cdown" id="cdown" aria-label="Coming up"></div>
+        </div>
+        <div id="remTabPane" hidden style="display:flex;flex-direction:column;gap:4px;min-height:0">
+          <ul class="remlist" id="remTabList"></ul>
+        </div>
       </div>
-      <div class="cdown" id="cdown" aria-label="Coming up"></div>
-      <div class="rule"></div>
-      <div class="meals" id="meals" role="button" aria-label="Meal plan">
+      <div class="mpsec grow" id="mpReminders" data-mp="reminders" hidden>
+        <div class="nhead">
+          <h2 class="mh" style="flex:1;margin:0">Reminders</h2>
+          <button type="button" class="rembadge" id="remMpBadge" hidden aria-label="Important reminders">+1</button>
+        </div>
+        <ul class="remlist" id="remMpList"></ul>
+      </div>
+      <div class="meals mpsec grow" id="meals" data-mp="meals" role="button" aria-label="Meal plan">
         <h2 class="mh">Meal Plan</h2>
         <ul id="mealList"></ul>
       </div>
-      <div class="bottom" id="bottom">
-        <div class="rule"></div>
+      <div class="mpsec grow" id="mpChores" data-mp="chores" hidden>
+        <h2 class="mh" id="mpChoresHead" style="cursor:pointer">Chores</h2>
+        <ul class="remlist" id="choresMpList"></ul>
+      </div>
+      <div class="bottom mpsec" id="bottom" data-mp="jars">
         <div class="bhead"><h2 class="bh" id="botHead">Reward Jars</h2><div class="bslide" id="bSlide" role="tablist" aria-label="Show in this space"></div></div>
         <div class="bphoto" id="bPhoto"><div class="ph"><img alt=""><img alt=""></div></div>
         <div class="jars" id="jars" aria-label="Reward jars"></div>
         <ul class="upnext" id="upnext" aria-label="Up next"></ul>
+      </div>
+      <div class="mpsec grow" id="mpUpnext" data-mp="upnext" hidden>
+        <h2 class="mh">Up Next</h2>
+        <ul class="upnext" id="upnextMpList"></ul>
+      </div>
+      <div class="mpsec grow" id="mpToday" data-mp="today" hidden>
+        <h2 class="mh">Today</h2>
+        <ul class="upnext" id="todayMpList"></ul>
       </div>
     </div>
     <div id="ptitle" aria-hidden="true"></div>
@@ -658,6 +766,33 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         <button type="button" class="chlink" id="chBack"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Calendar</button>
       </div>
       <div class="chcols" id="chCols"></div>
+    </div>
+    <div id="mealsPage" hidden>
+      <div class="chhead">
+        <h2>Meal Plan</h2>
+        <div style="flex:1"></div>
+        <button type="button" class="chlink" id="mpEditBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg>Edit all meals</button>
+        <button type="button" class="chlink" id="mpBack"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Calendar</button>
+      </div>
+      <div class="mpcols" id="mpCols"></div>
+    </div>
+    <div id="jarsPage" hidden>
+      <div class="chhead">
+        <h2>Reward Jars</h2>
+        <div style="flex:1"></div>
+        <button type="button" class="chlink" id="jpAddBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a reward jar</button>
+        <button type="button" class="chlink" id="jpBack"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Calendar</button>
+      </div>
+      <div class="jpcols" id="jpCols"></div>
+    </div>
+    <div id="remindersPage" hidden>
+      <div class="chhead">
+        <h2>Reminders</h2>
+        <div style="flex:1"></div>
+        <button type="button" class="chlink" id="rpAddBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add reminder</button>
+        <button type="button" class="chlink" id="rpBack"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Calendar</button>
+      </div>
+      <div class="rpcols" id="rpCols"></div>
     </div>
     <div id="offline" aria-live="polite"><span></span><b id="offlineTxt">Offline</b></div>
     <div id="selGrip" aria-label="Drag to resize"></div>
@@ -688,6 +823,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <button class="pill" id="sideBtn" type="button" aria-pressed="false" hidden><span class="sw" aria-hidden="true"></span>Title photos</button>
     <button class="pill" id="borderBtn" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>Border</button>
     <button class="pill" id="choresBtn" aria-label="Chores"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Chores</button>
+    <button class="pill" id="mealsBtn" aria-label="Meal Plan"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>Meals</button>
+    <button class="pill" id="remindersBtn" aria-label="Reminders"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Reminders</button>
+    <button class="pill" id="jarsBtn" aria-label="Reward Jars"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="3" rx="1"/><path d="M7 5v2c-1.5 1-2 2.5-2 4.5v7.5a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-7.5c0-2-.5-3.5-2-4.5V5"/></svg>Jars</button>
     <a class="pill" id="musicBtn" href="https://music.youtube.com/" aria-label="YouTube Music"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Music</a>
     <button class="pill" id="acctBtn" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
     <button class="pill" id="settingsBtn" aria-label="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
@@ -711,6 +849,30 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   <form class="card" id="pForm">
     <h3 id="pTitle">Photos</h3>
     <div class="sublbl" id="pInfo" style="margin-top:0"></div>
+    <div class="sublbl" style="margin-top:10px">Immich Server</div>
+    <div class="row">
+      <div>
+        <label for="pImmichUrl">Server URL (or /share/ link)</label>
+        <input type="text" id="pImmichUrl" placeholder="http://192.168.1.50:2283" autocomplete="off" spellcheck="false">
+      </div>
+      <div>
+        <label for="pImmichKey">API Key</label>
+        <input type="password" id="pImmichKey" placeholder="Paste Immich API key" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="row" style="align-items:flex-end;margin-top:6px">
+      <div style="flex:1">
+        <label for="pImmichAlbum">Immich Album</label>
+        <select id="pImmichAlbum">
+          <option value="">Auto (Favorites, or recent photos)</option>
+          <option value="__favorites__">★ Favorites</option>
+          <option value="__all__">All recent photos</option>
+        </select>
+      </div>
+      <div style="flex:0 0 auto">
+        <button type="button" class="seg" id="pImmichLoad" style="height:40px">Load albums</button>
+      </div>
+    </div>
     <div class="sublbl" id="pMonthLbl">Beside the month name</div>
     <div class="opts" id="pSide">
       <button type="button" class="seg" data-side="random"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/></svg>Random photos</button>
@@ -799,9 +961,20 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <div class="opts" id="setTodayC"></div>
     <div class="sublbl" style="margin-top:20px">Holidays</div>
     <div class="opts"><button type="button" class="seg" id="setHol"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.4 5.2 5.6.8-4 4 .9 5.6L12 15l-4.9 2.6.9-5.6-4-4 5.6-.8z"/></svg>Show or hide holidays</button><span id="setHolN" class="sublbl" style="margin:0"></span></div>
-    <div class="sublbl notadmin" style="margin-top:20px">The calendar, trash day and Notes settings are for admins: sign in to the admin console (/admin), then come back here.</div>
+    <div class="sublbl" style="margin-top:20px">Right column mini-pages (pick up to 3)</div>
+    <div class="opts" id="setRightPages">
+      <button type="button" class="seg" data-mp="info">Notes &amp; weather</button>
+      <button type="button" class="seg" data-mp="reminders">Reminders</button>
+      <button type="button" class="seg" data-mp="meals">Meal plan</button>
+      <button type="button" class="seg" data-mp="jars">Reward jars</button>
+      <button type="button" class="seg" data-mp="chores">Chores</button>
+      <button type="button" class="seg" data-mp="upnext">Up next</button>
+      <button type="button" class="seg" data-mp="today">Today</button>
+      <button type="button" class="seg" data-mp="photos">Photos</button>
+    </div>
+    <div class="sublbl notadmin" style="margin-top:20px">The calendar and trash day settings are for admins: sign in to the admin console (/admin), then come back here.</div>
     <div class="adminonly">
-    <div class="sublbl" style="margin-top:20px">Bottom of the Notes column (what it shows normally; tap the switch above it, or swipe, to see the others)</div>
+    <div class="sublbl" style="margin-top:20px">Bottom switcher default (when Jars / Today / Up next / Photos is shown)</div>
     <div class="opts" id="nBottom">
       <button type="button" class="seg" data-b="jars"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="3" rx="1"/><path d="M7 5v2c-1.5 1-2 2.5-2 4.5v7.5a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-7.5c0-2-.5-3.5-2-4.5V5"/></svg>Reward jars</button>
       <button type="button" class="seg" data-b="today"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/></svg>Today</button>
@@ -928,6 +1101,42 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     </div>
   </form>
 </div>
+<div id="remmodal" role="dialog" aria-modal="true" aria-labelledby="remTitle">
+  <form class="card" id="remForm">
+    <h3 id="remTitle">Add a reminder</h3>
+    <label for="remText">What to remember</label>
+    <input type="text" id="remText" maxlength="100" autocomplete="off" placeholder="Take out permission slip, call dentist…" required>
+    <div class="sublbl">When should it show?</div>
+    <div class="opts" id="remModeOpts">
+      <button type="button" class="seg on" data-mode="always">Always show</button>
+      <button type="button" class="seg" data-mode="time">Pop up at a time</button>
+    </div>
+    <div id="remTimeWrap" hidden>
+      <div class="row">
+        <div><label for="remTime">Time of day</label><input type="time" id="remTime" value="08:00"></div>
+        <div><label for="remRepeat">How often</label><select id="remRepeat"><option value="daily">Every day</option><option value="once">Just once</option></select></div>
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" id="remImp" checked> Show in the <b>+1</b> alert badge until clicked</label>
+    <div class="err" id="remErr"></div>
+    <div class="actions">
+      <button type="button" class="btn del" id="remDelete" hidden>Delete</button>
+      <button type="button" class="btn" id="remCancel">Cancel</button>
+      <button type="submit" class="btn go" id="remSave">Save</button>
+    </div>
+  </form>
+</div>
+<div id="remAlertModal" role="dialog" aria-modal="true" aria-labelledby="remAlertTitle">
+  <div class="card">
+    <h3 id="remAlertTitle">Reminders</h3>
+    <div class="sublbl" style="margin-top:0">Tap a reminder to mark it done or dismiss today’s alert:</div>
+    <div id="remAlertList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:50vh;overflow-y:auto"></div>
+    <div class="actions">
+      <button type="button" class="btn" id="remAlertManage">Manage reminders</button>
+      <button type="button" class="btn go" id="remAlertClose">Got it</button>
+    </div>
+  </div>
+</div>
 
 <div id="ttmodal" role="dialog" aria-modal="true" aria-labelledby="ttTitle">
   <form class="card" id="ttForm">
@@ -988,6 +1197,17 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <button type="button" class="btn del" id="jReward"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.4 5.2 5.6.8-4 4 .9 5.6L12 15l-4.9 2.6.9-5.6-4-4 5.6-.8z"/></svg>Reward!</button>
       <button type="button" class="btn go" id="jClose">Done</button>
     </div>
+  </div>
+</div>
+
+<div id="jarZoom" role="dialog" aria-modal="true" aria-labelledby="jzTitle">
+  <div class="jzcard" id="jzCard">
+    <div class="jztitle chalk" id="jzTitle"></div>
+    <div class="jzjar" id="jzJarSvg"></div>
+    <div class="jzcount" id="jzCount"></div>
+    <div class="jzpick" id="jzPick"></div>
+    <div class="jzactions" id="jzActions"></div>
+    <div class="jzhint">Tap anywhere outside the jar to put it back</div>
   </div>
 </div>
 
@@ -1168,13 +1388,21 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 <script>
 (function () {
   'use strict';
-  var EDIT = location.pathname.replace(/\/+$/, '') === '/edit';
-  var CHORES_PAGE = location.pathname.replace(/\/+$/, '') === '/chores';   // the chores on their own (phones)
+  var PATH_CLEAN = location.pathname.replace(/\/+$/, '');
+  var EDIT = PATH_CLEAN === '/edit';
+  var CHORES_PAGE = PATH_CLEAN === '/chores';   // the chores on their own (phones)
+  var MEALS_PAGE = PATH_CLEAN === '/meals';
+  var JARS_PAGE = PATH_CLEAN === '/jars';
+  var REMINDERS_PAGE = PATH_CLEAN === '/reminders';
+  var SUB_PAGE = CHORES_PAGE || MEALS_PAGE || JARS_PAGE || REMINDERS_PAGE;
   // Test switches for display glitches on kiosk browsers: add ?noart, ?plain and/or ?csszoom to the address
   var Q = new URLSearchParams(location.search);
   var FLAG = { noart: Q.has('noart'), plain: Q.has('plain'), csszoom: Q.has('csszoom') && !EDIT };
-  document.body.className = EDIT ? 'edit' : CHORES_PAGE ? 'display chorespage' : 'display';
+  document.body.className = EDIT ? 'edit' : CHORES_PAGE ? 'display chorespage' : MEALS_PAGE ? 'display mealspage' : JARS_PAGE ? 'display jarspage' : REMINDERS_PAGE ? 'display reminderspage' : 'display';
   if (CHORES_PAGE) document.body.appendChild(document.getElementById('chores'));
+  if (MEALS_PAGE) document.body.appendChild(document.getElementById('mealsPage'));
+  if (JARS_PAGE) document.body.appendChild(document.getElementById('jarsPage'));
+  if (REMINDERS_PAGE) document.body.appendChild(document.getElementById('remindersPage'));
 
   var CHALK = ['#EDEAE0', '#F6B3CB', '#F2D479', '#9CC9E6', '#A9D8A0', '#E8A35C', '#B49CE0'];
   // Posca paint-marker colors: bright, opaque, flat
@@ -1599,10 +1827,13 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       }, 900);
       jarSeen[j.id] = j.count;
     });
-    if (EDIT && n < 4) {   // iPad only: add a jar (up to 4); with none, the jars are simply off
-      var add = el('button', 'jaradd', n ? '+' : '+ Reward jar'); add.type = 'button'; add.setAttribute('aria-label', 'Add a reward jar');
-      box.appendChild(add);
+    if (!n && EDIT) {
+      var hint = el('div', 'empty-meals', 'Tap Jars to add a reward jar');
+      hint.style.cursor = 'pointer';
+      hint.addEventListener('click', function () { if (typeof showSubpage === 'function') showSubpage('jars'); });
+      box.appendChild(hint);
     }
+    if (typeof renderJarsPage === 'function') renderJarsPage();
     if (typeof renderBottom === 'function' && state.notesBottom !== undefined) renderBottom();
     if (typeof fitMeals === 'function') setTimeout(fitMeals, 0);
   }
@@ -1742,27 +1973,170 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     });
   }
   function jarAdd(p) {
-    jarChange(function (j) {
-      if (j.count >= 200) return;
-      j.items.push(p || j.pieces[j.count % j.pieces.length]);   // + on its own: the usual rotation
-      j.count = j.items.length;
+    var j = curJar(), prev = j ? j.count : null;
+    jarChange(function (x) {
+      if (x.count >= 200) return;
+      x.items.push(p || x.pieces[x.count % x.pieces.length]);   // + on its own: the usual rotation
+      x.count = x.items.length;
+    }, prev);
+  }
+  var jpDrop = {};
+  function jarChange(fn, dropFrom) {
+    var j = curJar(); if (!j) return;
+    fn(j);
+    if (dropFrom != null) jpDrop[j.id] = dropFrom;
+    renderJars();
+    jarCard();
+    if ($('jarZoom') && $('jarZoom').classList.contains('open')) renderJarZoom(dropFrom);
+    delete jpDrop[j.id];
+    saveJars();
+  }
+  var jzCloseTimer = null;
+  function setJarZoomOrigin(node) {
+    var z = $('jarZoom'); if (!z) return;
+    if (!node || !node.getBoundingClientRect) {
+      z.style.setProperty('--jzx', '38vw');
+      z.style.setProperty('--jzy', '34vh');
+      z.style.setProperty('--jzs', '0.28');
+      return;
+    }
+    var r = node.getBoundingClientRect();
+    if (!r.width && !r.height) return;
+    var dx = Math.round((r.left + r.width / 2) - window.innerWidth / 2);
+    var dy = Math.round((r.top + r.height / 2) - window.innerHeight / 2);
+    var sc = Math.max(0.18, Math.min(0.55, r.width / 240)).toFixed(2);
+    z.style.setProperty('--jzx', dx + 'px');
+    z.style.setProperty('--jzy', dy + 'px');
+    z.style.setProperty('--jzs', sc);
+  }
+  function renderJarZoom(dropFrom) {
+    var j = curJar(); if (!j || !$('jarZoom')) return;
+    $('jzCard').className = 'jzcard' + (j.count >= j.goal ? ' full' : '');
+    $('jzTitle').textContent = j.name + '’s Jar';
+    $('jzJarSvg').innerHTML = jarSvg(j, dropFrom);
+    $('jzCount').textContent = j.count >= j.goal ? '★ Full! ' + j.count + ' / ' + j.goal : j.count + ' of ' + j.goal;
+    var pick = $('jzPick');
+    if (!pick.children.length) {
+      Object.keys(PIECE_NAMES).forEach(function (p) {
+        var b = el('button', 'jpc'); b.type = 'button'; b.setAttribute('aria-label', 'Add a ' + PIECE_ONE[p]);
+        b.innerHTML = '<svg viewBox="-10 -10 20 20" aria-hidden="true">' + pieceSvg(p, PIECE_COLORS[p][0]) + '</svg>';
+        b.appendChild(el('span', null, p === 'bolt' ? 'lightning' : PIECE_ONE[p]));
+        b.addEventListener('click', function () {
+          var cur = curJar(); if (!cur || cur.count >= 200) return;
+          var prev = cur.count;
+          jarSeen[cur.id] = prev + 1;
+          jarAdd(p);
+          if (prev < cur.goal && cur.count >= cur.goal) setTimeout(function () { if ($('jzJarSvg')) burstAt($('jzJarSvg')); }, 850);
+        });
+        pick.appendChild(b);
+      });
+    }
+    var acts = $('jzActions'); acts.innerHTML = '';
+    if (j.count > 0) {
+      var minus = el('button', null, '− Take one out'); minus.type = 'button';
+      minus.addEventListener('click', function () {
+        jarChange(function (x) { x.items.pop(); x.count = x.items.length; jarSeen[x.id] = x.count; }, null);
+      });
+      acts.appendChild(minus);
+    }
+    if (j.count >= j.goal) {
+      var rew = el('button', 'rew', '★ Reward!'); rew.type = 'button';
+      rew.addEventListener('click', function () {
+        if (!confirm('Reward time for ' + j.name + '? This celebrates and empties the jar.')) return;
+        jarChange(function (x) { x.count = 0; x.items = []; jarSeen[x.id] = 0; }, null);
+      });
+      acts.appendChild(rew);
+    }
+  }
+  function openJarZoom(id, jarNode) {
+    var z = $('jarZoom'); if (!z) return;
+    clearTimeout(jzCloseTimer);
+    jarOpen = id;
+    if (!$('jzPick').children.length) $('jzPick').innerHTML = '';
+    renderJarZoom(null);
+    setJarZoomOrigin(jarNode || ($('jars') && $('jars').querySelector('.jar[data-id="' + id + '"]')));
+    z.classList.remove('closing', 'open');
+    z.classList.add('starting');
+    void z.offsetWidth;
+    z.classList.remove('starting');
+    z.classList.add('open');
+  }
+  function closeJarZoom() {
+    var z = $('jarZoom'); if (!z || !z.classList.contains('open')) return;
+    var liveNode = $('jars') && $('jars').querySelector('.jar[data-id="' + jarOpen + '"]');
+    if (liveNode) setJarZoomOrigin(liveNode);
+    z.classList.remove('open');
+    z.classList.add('closing');
+    clearTimeout(jzCloseTimer);
+    jzCloseTimer = setTimeout(function () { z.classList.remove('closing'); }, 380);
+  }
+  if ($('jarZoom')) {
+    $('jarZoom').addEventListener('click', function (e) {
+      if (!e.target.closest('#jzCard')) closeJarZoom();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && $('jarZoom').classList.contains('open')) closeJarZoom();
     });
   }
-  function jarChange(fn) { var j = curJar(); if (!j) return; fn(j); renderJars(); jarCard(); saveJars(); }
-  if (EDIT) {
-    $('jars').addEventListener('click', function (e) {
-      if (state.drawing) return;
-      if (e.target.closest('.jaradd')) {
-        var id = 'j' + Math.random().toString(36).slice(2, 9);
-        state.jars = (state.jars || []).concat([{ id: id, name: 'Jar ' + ((state.jars || []).length + 1), pieces: ['star'], count: 0, items: [], goal: 20 }]);
-        renderJars(); saveJars();
-        jarOpen = id; jarCard(); $('jmodal').classList.add('open');
-        setTimeout(function () { $('jName').select(); }, 60);
-        return;
+  function createNewJar() {
+    if ((state.jars || []).length >= 4) return;
+    var id = 'j' + Math.random().toString(36).slice(2, 9);
+    state.jars = (state.jars || []).concat([{ id: id, name: 'Jar ' + ((state.jars || []).length + 1), pieces: ['star'], count: 0, items: [], goal: 20 }]);
+    renderJars(); saveJars();
+    jarOpen = id; jarCard(); $('jmodal').classList.add('open');
+    setTimeout(function () { $('jName').select(); }, 60);
+  }
+  function renderJarsPage() {
+    var cols = $('jpCols'); if (!cols) return;
+    cols.innerHTML = '';
+    var list = state.jars || [];
+    if ($('jpAddBtn')) $('jpAddBtn').hidden = list.length >= 4;
+    if (!list.length) {
+      cols.appendChild(el('div', 'chempty', 'No reward jars yet — tap “+ Add a reward jar” above to start one.'));
+      return;
+    }
+    list.forEach(function (j) {
+      var card = el('div', 'jpcard' + (j.count >= j.goal ? ' full' : ''));
+      var svgWrap = el('div'); svgWrap.innerHTML = jarSvg(j, jpDrop[j.id] != null ? jpDrop[j.id] : null);
+      var svgEl = svgWrap.querySelector('svg'); if (svgEl) svgEl.setAttribute('class', 'jpsvg');
+      card.appendChild(svgWrap);
+      card.appendChild(el('div', 'jpname chalk', j.name));
+      card.appendChild(el('div', 'jpgoal', j.count >= j.goal ? '★ Full! ' + j.count + ' / ' + j.goal : j.count + ' of ' + j.goal));
+      var pick = el('div', 'jppick');
+      Object.keys(PIECE_NAMES).forEach(function (p) {
+        var pb = el('button'); pb.type = 'button'; pb.title = 'Add a ' + PIECE_ONE[p]; pb.setAttribute('aria-label', pb.title);
+        pb.innerHTML = '<svg viewBox="-10 -10 20 20" aria-hidden="true">' + pieceSvg(p, PIECE_COLORS[p][0]) + '</svg>';
+        pb.addEventListener('click', function () { jarOpen = j.id; jarAdd(p); });
+        pick.appendChild(pb);
+      });
+      card.appendChild(pick);
+      var btns = el('div', 'jpbtns');
+      var minus = el('button', null, '−'); minus.type = 'button'; minus.setAttribute('aria-label', 'Take one out');
+      minus.addEventListener('click', function () { jarOpen = j.id; jarChange(function (x) { x.items.pop(); x.count = x.items.length; }); });
+      var plus = el('button', 'plus', '+ Add one'); plus.type = 'button';
+      plus.addEventListener('click', function () { jarOpen = j.id; jarAdd(); });
+      var edit = el('button', null, 'Settings'); edit.type = 'button';
+      edit.addEventListener('click', function () { jarOpen = j.id; jarCard(); $('jmodal').classList.add('open'); });
+      btns.appendChild(minus); btns.appendChild(plus); btns.appendChild(edit);
+      if (j.count >= j.goal) {
+        var rew = el('button', 'plus', '★ Reward!'); rew.type = 'button';
+        rew.addEventListener('click', function () {
+          if (!confirm('Reward time for ' + j.name + '? This celebrates and empties the jar.')) return;
+          jarOpen = j.id; jarChange(function (x) { x.count = 0; x.items = []; });
+        });
+        btns.appendChild(rew);
       }
-      var n = e.target.closest('.jar'); if (!n) return;
-      jarOpen = n.dataset.id; jarCard(); $('jmodal').classList.add('open');
+      card.appendChild(btns);
+      cols.appendChild(card);
     });
+  }
+  if ($('jpAddBtn')) $('jpAddBtn').addEventListener('click', createNewJar);
+  $('jars').addEventListener('click', function (e) {
+    if (state.drawing) return;
+    var n = e.target.closest('.jar'); if (!n) return;
+    openJarZoom(n.dataset.id, n);
+  });
+  if (EDIT || JARS_PAGE) {
     Object.keys(PIECE_NAMES).forEach(function (p) {
       var b = el('button', 'seg'); b.type = 'button'; b.dataset.p = p;
       b.innerHTML = '<svg viewBox="-10 -10 20 20" aria-hidden="true">' + pieceSvg(p, PIECE_COLORS[p][0]) + '</svg>';
@@ -1796,7 +2170,30 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   // ---- Chores: a page of their own (swipe left from the calendar, or 🧹 Chores) ----
   var ch = { data: null, tab: 'day', on: false, at: 0 };
   var CH_TABS = [['day', 'Today'], ['week', 'This week'], ['month', 'This month']];
-  function loadChores() { return api('/api/chores').then(function (d) { ch.data = d; if (ch.on) renderChores(); }).catch(function () {}); }
+  function loadChores() { return api('/api/chores').then(function (d) { ch.data = d; if (ch.on) renderChores(); renderChoresMp(); }).catch(function () {}); }
+  function renderChoresMp() {
+    var ul = $('choresMpList'); if (!ul) return;
+    ul.innerHTML = '';
+    var d = ch.data;
+    if (!d || !d.chores || !d.chores.length) {
+      var empty = el('li', 'empty-meals', 'Tap to open Chores');
+      empty.addEventListener('click', function () { showSubpage('chores'); });
+      ul.appendChild(empty);
+      return;
+    }
+    var names = {}; (d.people || []).forEach(function (p) { names[p.id] = p.name; });
+    var entries = chEntries(d, 'day');
+    if (!entries.length) entries = chEntries(d, 'week');
+    entries.slice(0, 8).forEach(function (en) {
+      var full = en.done >= en.c.times;
+      var li = el('li', 'chalk' + (full ? ' done' : ''));
+      var whoTxt = en.who.map(function (id) { return names[id] || ''; }).filter(Boolean).join('/');
+      li.appendChild(el('span', 'mt', en.c.title));
+      if (whoTxt) li.appendChild(el('span', 'rtm', whoTxt));
+      li.addEventListener('click', function () { showSubpage('chores'); });
+      ul.appendChild(li);
+    });
+  }
   // who may tick it here: signed-in people and family screens, anyone's; a kid's tablet, their own; the wall, none
   function chCan(en) {
     if (state.role === 'editor' || state.role === 'family') return true;
@@ -1855,8 +2252,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         b.title = full && c.by ? 'Done (' + c.by + ')' : '';
         if (can) b.addEventListener('click', function () {
           if (en.person) { c.doneEach = c.doneEach || {}; c.doneEach[en.person] = en.done + (full ? -1 : 1); } else c.done = en.done + (full ? -1 : 1);
-          renderChores();   // shows at once; the server has the last word
-          post('/api/chores/check', { id: c.id, undo: full, person: en.person }).then(function (v) { ch.data = Object.assign(v, { mine: d.mine }); renderChores(); })
+          renderChores(); renderChoresMp();   // shows at once; the server has the last word
+          post('/api/chores/check', { id: c.id, undo: full, person: en.person }).then(function (v) { ch.data = Object.assign(v, { mine: d.mine }); renderChores(); renderChoresMp(); })
             .catch(function (e) { status(e.message); loadChores(); });
         });
         col.appendChild(b);
@@ -1872,34 +2269,58 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     var over = function () { return Array.prototype.some.call(document.querySelectorAll('#chCols .chcol'), function (c) { return c.scrollHeight > c.clientHeight + 1; }); };
     while (size > 14 && over()) { size -= 1; box.style.setProperty('--chz', size + 'px'); }
   }
-  function showChores(on) {
-    ch.on = !!on; ch.at = Date.now();
-    $('chores').hidden = !on; document.body.classList.toggle('choresOn', !!on);
-    if (on) { if (ch.data) renderChores(); loadChores(); }
+  state.subpage = null;
+  function showSubpage(which) {
+    if (state.subpage === which) which = null;
+    state.subpage = which || null;
+    ch.on = which === 'chores';
+    ch.at = Date.now();
+    $('chores').hidden = which !== 'chores';
+    if ($('mealsPage')) $('mealsPage').hidden = which !== 'meals';
+    if ($('jarsPage')) $('jarsPage').hidden = which !== 'jars';
+    if ($('remindersPage')) $('remindersPage').hidden = which !== 'reminders';
+    document.body.classList.toggle('choresOn', which === 'chores');
+    document.body.classList.toggle('subpageOn', !!which);
+    if ($('choresBtn')) $('choresBtn').classList.toggle('on', which === 'chores');
+    if ($('mealsBtn')) $('mealsBtn').classList.toggle('on', which === 'meals');
+    if ($('jarsBtn')) $('jarsBtn').classList.toggle('on', which === 'jars');
+    if ($('remindersBtn')) $('remindersBtn').classList.toggle('on', which === 'reminders');
+    if (which === 'chores') { if (ch.data) renderChores(); loadChores(); }
+    if (which === 'meals') { renderMealsPage(); loadMeals(); }
+    if (which === 'jars') { renderJarsPage(); loadJars(); }
+    if (which === 'reminders') { renderRemindersPage(); loadReminders(); }
   }
-  $('chBack').addEventListener('click', function () { showChores(false); });
-  if ($('choresBtn')) $('choresBtn').addEventListener('click', function () { showChores(!ch.on); });
+  function showChores(on) { showSubpage(on ? 'chores' : null); }
+  $('chBack').addEventListener('click', function () { showSubpage(null); });
+  if ($('mpBack')) $('mpBack').addEventListener('click', function () { showSubpage(null); });
+  if ($('jpBack')) $('jpBack').addEventListener('click', function () { showSubpage(null); });
+  if ($('rpBack')) $('rpBack').addEventListener('click', function () { showSubpage(null); });
+  if ($('choresBtn')) $('choresBtn').addEventListener('click', function () { showSubpage('chores'); });
+  if ($('mealsBtn')) $('mealsBtn').addEventListener('click', function () { showSubpage('meals'); });
+  if ($('jarsBtn')) $('jarsBtn').addEventListener('click', function () { showSubpage('jars'); });
+  if ($('remindersBtn')) $('remindersBtn').addEventListener('click', function () { showSubpage('reminders'); });
+  if ($('mpChoresHead')) $('mpChoresHead').addEventListener('click', function () { showSubpage('chores'); });
   // swipe left on the board for chores, right to go back (not while drawing, zoomed in, or in a popup)
   (function () {
     var sx = null, sy = 0;
     document.addEventListener('pointerdown', function (e) {
       sx = null;
-      if (CHORES_PAGE || state.drawing || (typeof view !== 'undefined' && view.z > 1.01) || document.querySelector('[role=dialog].open') || !e.isPrimary) return;
-      if (e.target.closest && e.target.closest('#bottom, .chtabs, input, textarea')) return;   // the Notes switch has its own swipe
+      if (SUB_PAGE || state.drawing || (typeof view !== 'undefined' && view.z > 1.01) || document.querySelector('[role=dialog].open') || !e.isPrimary) return;
+      if (e.target.closest && e.target.closest('#bottom, .chtabs, input, textarea, select')) return;   // the Notes switch has its own swipe
       sx = e.clientX; sy = e.clientY; ch.at = Date.now();
     }, true);
     document.addEventListener('pointerup', function (e) {
       if (sx === null) return;
       var dx = e.clientX - sx, dy = e.clientY - sy; sx = null;
       if (Math.abs(dx) < 90 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
-      if (dx < 0 && !ch.on) showChores(true); else if (dx > 0 && ch.on) showChores(false);
+      if (dx < 0 && !state.subpage) showChores(true); else if (dx > 0 && state.subpage) showSubpage(null);
     }, true);
   })();
   // after 3 quiet minutes: shared screens go back to the calendar, a kid's tablet back to its chores
   setInterval(function () {
-    if (CHORES_PAGE || Date.now() - ch.at < 3 * 60e3 || state.role === 'editor') return;
+    if (SUB_PAGE || Date.now() - ch.at < 3 * 60e3 || state.role === 'editor') return;
     var kid = /^kid:/.test(state.role || '');
-    if (kid && !ch.on) showChores(true); else if (!kid && ch.on) showChores(false);
+    if (kid && !ch.on) showChores(true); else if (!kid && state.subpage) showSubpage(null);
   }, 30e3);
 
   // ---- Change the chores (signed-in people): the family, and the chores by how often ----
@@ -1993,7 +2414,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   });
   $('chedCancel').addEventListener('click', function () { $('chedmodal').classList.remove('open'); ched = null; });
   function chedSaved(v) {
-    ch.data = Object.assign(v, { mine: ch.data && ch.data.mine }); renderChores();
+    ch.data = Object.assign(v, { mine: ch.data && ch.data.mine }); renderChores(); renderChoresMp();
   }
   $('chedSave').addEventListener('click', function () {
     var err = '';
@@ -2017,16 +2438,119 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   });
   $('chEdit').addEventListener('click', chedOpen);
 
-  // ---- Meal plan ----
+  // ---- Meal plan (assigned to a day of the week + full Meal Plan page) ----
+  var MEAL_DAYS = [
+    ['mon', 'Monday'], ['tue', 'Tuesday'], ['wed', 'Wednesday'],
+    ['thu', 'Thursday'], ['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday']
+  ];
+  var MEAL_DAY_NAMES = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
+  var MEAL_DAY_ORDER = { mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7, '': 8 };
   state.meals = { items: [] };
+  function unpackClientMeal(it) {
+    var rawT = String((it && it.t) || '').trim();
+    var day = String((it && it.day) || '').toLowerCase().trim();
+    var m = rawT.match(/^\[(sun|mon|tue|wed|thu|fri|sat)\]\s*(.*)$/i);
+    if (m) {
+      if (!day) day = m[1].toLowerCase();
+      rawT = m[2].trim();
+    }
+    if (!MEAL_DAY_NAMES[day]) day = '';
+    return { t: rawT, day: day, done: !!(it && it.done) };
+  }
+  function normalizeMeals(m) {
+    var list = (m && Array.isArray(m.items)) ? m.items : [];
+    return { items: list.map(unpackClientMeal).filter(function (it) { return it.t; }), updated: (m && m.updated) || Date.now() };
+  }
+  function saveMeals(items) {
+    var clean = (items || []).map(unpackClientMeal).filter(function (it) { return it.t; });
+    state.meals = { items: clean, updated: Date.now() };
+    renderMeals();
+    var payload = clean.map(function (it) {
+      return {
+        t: (it.day ? '[' + it.day + '] ' : '') + it.t,
+        day: it.day || '',
+        done: !!it.done
+      };
+    });
+    return post('/api/meals', { items: payload }).then(function (m) {
+      state.meals = normalizeMeals(m);
+      renderMeals();
+      return state.meals;
+    });
+  }
+  function sortedMeals() {
+    var items = ((state.meals && state.meals.items) || []).slice();
+    items.sort(function (a, b) {
+      return (MEAL_DAY_ORDER[a.day || ''] || 8) - (MEAL_DAY_ORDER[b.day || ''] || 8);
+    });
+    return items;
+  }
   function renderMeals() {
-    var ul = $('mealList'), items = (state.meals && state.meals.items) || [];
+    var ul = $('mealList'), items = sortedMeals();
     ul.innerHTML = '';
-    // shrink the text a little when the list gets long so it still fits
-    $('meals').style.setProperty('--mealsz', items.length > 10 ? '15px' : items.length > 8 ? '16px' : '18px');
-    items.forEach(function (it) { ul.appendChild(el('li', 'chalk' + (it.done ? ' done' : ''), it.t)); });
+    $('meals').style.setProperty('--mealsz', items.length > 10 ? '14px' : items.length > 7 ? '15px' : '17px');
+    items.forEach(function (it) {
+      var li = el('li', 'chalk' + (it.done ? ' done' : ''));
+      li.appendChild(el('span', 'mt', it.t));
+      if (it.day && MEAL_DAY_NAMES[it.day]) li.appendChild(el('span', 'md', MEAL_DAY_NAMES[it.day]));
+      ul.appendChild(li);
+    });
     if (!items.length) ul.appendChild(el('li', 'empty-meals', 'Tap to plan meals'));
+    if (typeof renderMealsPage === 'function') renderMealsPage();
     fitMeals();
+  }
+  function renderMealsPage() {
+    var cols = $('mpCols'); if (!cols) return;
+    cols.innerHTML = '';
+    var items = (state.meals && state.meals.items) || [];
+    var groups = MEAL_DAYS.slice();
+    if (items.some(function (it) { return !it.day; })) groups.push(['', 'Any day']);
+    groups.forEach(function (g) {
+      var dayKey = g[0], dayLabel = g[1];
+      var col = el('div', 'mpcol'), h = el('h3');
+      h.appendChild(el('span', null, dayLabel));
+      if (EDIT || MEALS_PAGE) {
+        var addB = el('button', null, 'Edit'); addB.type = 'button';
+        addB.addEventListener('click', function () { openMeals(dayKey); });
+        h.appendChild(addB);
+      }
+      col.appendChild(h);
+      var list = el('div', 'mplist');
+      var dayItems = items.filter(function (it) { return (it.day || '') === dayKey; });
+      if (!dayItems.length) {
+        var none = el('div', 'sublbl', 'Nothing planned');
+        none.style.marginTop = '4px';
+        list.appendChild(none);
+      } else {
+        dayItems.forEach(function (it) {
+          var b = el('button', 'chitem can' + (it.done ? ' done' : '')); b.type = 'button';
+          b.style.setProperty('--chz', '20px');
+          b.appendChild(el('span', 'chbox'));
+          b.appendChild(el('span', 'ct', it.t));
+          b.addEventListener('click', function () {
+            it.done = !it.done;
+            saveMeals(state.meals.items).catch(function () {});
+          });
+          list.appendChild(b);
+        });
+      }
+      col.appendChild(list);
+      if (EDIT || MEALS_PAGE) {
+        var addForm = el('form', 'mpadd');
+        var inp = el('input'); inp.type = 'text'; inp.maxLength = 50; inp.placeholder = '+ Add to ' + dayLabel + '…'; inp.autocomplete = 'off';
+        var subB = el('button', null, '+'); subB.type = 'submit'; subB.setAttribute('aria-label', 'Add meal to ' + dayLabel);
+        addForm.appendChild(inp); addForm.appendChild(subB);
+        addForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var v = inp.value.trim(); if (!v) return;
+          inp.value = '';
+          var next = ((state.meals && state.meals.items) || []).concat([{ t: v, day: dayKey, done: false }]);
+          saveMeals(next).catch(function () {});
+        });
+        col.appendChild(addForm);
+      }
+      cols.appendChild(col);
+    });
   }
   // Shrink the list until it fits; if it still can't, end it with "+N more" instead of a cut-off line
   if (window.ResizeObserver) new ResizeObserver(function () { fitMeals(); }).observe($('meals'));
@@ -2038,49 +2562,432 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     var more = ul.querySelector('.more-meals'); if (more) more.remove();
     var room = function () { return box.clientHeight - head.offsetHeight - 8; };
     if (room() <= 0) return;   // not laid out yet
-    var size = parseFloat(getComputedStyle(lis[0]).fontSize) || 18;
+    var size = parseFloat(getComputedStyle(lis[0]).fontSize) || 17;
     while (ul.scrollHeight > room() && size > 13) { size -= 1; box.style.setProperty('--mealsz', size + 'px'); }
     if (ul.scrollHeight <= room()) return;
     var hidden = 0;
     more = el('li', 'more-meals chalk'); ul.appendChild(more);
     for (var i = lis.length - 1; i > 0 && ul.scrollHeight > room(); i--) { lis[i].style.display = 'none'; hidden++; more.textContent = '+' + hidden + ' more'; }
   }
-  function loadMeals() { return api('/api/meals').then(function (m) { state.meals = m; renderMeals(); }).catch(function () {}); }
-  function mealRow(it) {
+  function loadMeals() { return api('/api/meals').then(function (m) { state.meals = normalizeMeals(m); renderMeals(); }).catch(function () {}); }
+  function mealRow(it, defaultDay) {
     var row = el('div', 'mrow');
     var cb = el('input'); cb.type = 'checkbox'; cb.checked = !!(it && it.done); cb.setAttribute('aria-label', 'Made it');
-    var tx = el('input'); tx.type = 'text'; tx.maxLength = 60; tx.value = (it && it.t) || ''; tx.placeholder = 'Tacos, pasta night…'; tx.autocomplete = 'off';
-    tx.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var r = mealRow(null); row.after(r); r.querySelector('input[type=text]').focus(); } });
+    var sel = el('select', 'mday'); sel.setAttribute('aria-label', 'Day of week');
+    var optAny = el('option', null, 'Any day'); optAny.value = ''; sel.appendChild(optAny);
+    MEAL_DAYS.forEach(function (d) {
+      var o = el('option', null, d[1]); o.value = d[0]; sel.appendChild(o);
+    });
+    var chosenDay = (it && it.day) ? it.day : (typeof defaultDay === 'string' ? defaultDay : '');
+    sel.value = chosenDay;
+    var tx = el('input'); tx.type = 'text'; tx.maxLength = 52; tx.value = (it && it.t) || ''; tx.placeholder = 'Tacos, pasta night…'; tx.autocomplete = 'off';
+    tx.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var r = mealRow(null, sel.value); row.after(r); r.querySelector('input[type=text]').focus(); } });
     var x = el('button', 'x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Remove');
     x.addEventListener('click', function () { row.remove(); });
-    row.appendChild(cb); row.appendChild(tx); row.appendChild(x);
+    row.appendChild(cb); row.appendChild(sel); row.appendChild(tx); row.appendChild(x);
     return row;
   }
-  function openMeals() {
+  var lastMealDefaultDay = '';
+  function openMeals(defaultDay) {
+    var dDay = typeof defaultDay === 'string' ? defaultDay : '';
+    lastMealDefaultDay = dDay;
     var rows = $('mRows'); rows.innerHTML = ''; $('mErr').textContent = '';
     var items = (state.meals && state.meals.items) || [];
     items.forEach(function (it) { rows.appendChild(mealRow(it)); });
-    if (!items.length) rows.appendChild(mealRow(null));
+    if (!items.length || typeof defaultDay === 'string') {
+      var nr = mealRow(null, dDay);
+      rows.appendChild(nr);
+      setTimeout(function () { nr.querySelector('input[type=text]').focus(); }, 50);
+    }
     $('mmodal').classList.add('open');
-    if (!items.length) setTimeout(function () { rows.querySelector('input[type=text]').focus(); }, 50);
   }
-  if (EDIT) {
+  if ($('mpEditBtn')) $('mpEditBtn').addEventListener('click', function () { openMeals(); });
+  if (EDIT || MEALS_PAGE) {
     $('meals').addEventListener('click', function () { if (!state.drawing) openMeals(); });
-    $('mAdd').addEventListener('click', function () { var r = mealRow(null); $('mRows').appendChild(r); r.querySelector('input[type=text]').focus(); });
-    $('mClear').addEventListener('click', function () { if (confirm('Clear the whole meal plan for a new week?')) { $('mRows').innerHTML = ''; $('mRows').appendChild(mealRow(null)); } });
+    $('mAdd').addEventListener('click', function () {
+      var lastSel = $('mRows').lastElementChild && $('mRows').lastElementChild.querySelector('.mday');
+      var r = mealRow(null, lastSel ? lastSel.value : lastMealDefaultDay);
+      $('mRows').appendChild(r);
+      r.querySelector('input[type=text]').focus();
+    });
+    $('mClear').addEventListener('click', function () { if (confirm('Clear the whole meal plan for a new week?')) { $('mRows').innerHTML = ''; $('mRows').appendChild(mealRow(null, lastMealDefaultDay)); } });
     $('mCancel').addEventListener('click', function () { $('mmodal').classList.remove('open'); });
     $('mForm').addEventListener('submit', function (e) {
       e.preventDefault();
       var items = Array.prototype.map.call($('mRows').children, function (r) {
-        return { t: r.querySelector('input[type=text]').value.trim(), done: r.querySelector('input[type=checkbox]').checked };
+        var dayEl = r.querySelector('.mday');
+        return { t: r.querySelector('input[type=text]').value.trim(), day: dayEl ? dayEl.value : '', done: r.querySelector('input[type=checkbox]').checked };
       }).filter(function (it) { return it.t; });
       $('mSave').disabled = true;
-      post('/api/meals', { items: items }).then(function (m) { state.meals = m; renderMeals(); $('mmodal').classList.remove('open'); })
+      saveMeals(items).then(function () { $('mmodal').classList.remove('open'); })
         .catch(function (err) { $('mErr').textContent = err.message; })
         .then(function () { $('mSave').disabled = false; });
     });
   }
   loadMeals();
+
+  // ---- Reminders (always-on + timed popups + +1 alert badge + Reminders page) ----
+  function loadLocalReminders() {
+    try {
+      var raw = localStorage.getItem('chalkReminders');
+      var p = raw ? JSON.parse(raw) : null;
+      return (p && Array.isArray(p.items)) ? p.items : [];
+    } catch (e) { return []; }
+  }
+  function saveLocalReminders(items) {
+    try { localStorage.setItem('chalkReminders', JSON.stringify({ items: items || [], updated: Date.now() })); } catch (e) {}
+  }
+  state.reminders = { items: loadLocalReminders() };
+  function saveRemindersList(items) {
+    var clean = (items || []).filter(function (x) { return x && x.title; });
+    saveLocalReminders(clean);
+    state.reminders = { items: clean };
+    renderReminders();
+    return post('/api/reminders', { items: clean }).then(function (r) {
+      if (r && Array.isArray(r.items)) {
+        state.reminders = r;
+        saveLocalReminders(r.items);
+        renderReminders();
+      }
+      return state.reminders;
+    }).catch(function (err) {
+      if (/404/.test(String(err && err.message))) return state.reminders;
+      throw err;
+    });
+  }
+  function updateReminderCheck(id, opts) {
+    var items = ((state.reminders && state.reminders.items) || []).slice();
+    var target = items.find(function (x) { return x.id === id; });
+    if (target) {
+      if (opts.done !== undefined) target.done = !!opts.done;
+      if (opts.ackDate !== undefined) target.ackDate = opts.ackDate;
+      if (opts.ack && target.mode === 'time' && target.repeat === 'once') target.done = true;
+    }
+    saveLocalReminders(items);
+    state.reminders = { items: items };
+    renderReminders();
+    return post('/api/reminders/check', Object.assign({ id: id }, opts)).then(function (r) {
+      if (r && Array.isArray(r.items)) {
+        state.reminders = r;
+        saveLocalReminders(r.items);
+        renderReminders();
+      }
+      return state.reminders;
+    }).catch(function () { return state.reminders; });
+  }
+  var remPoppedKey = {};
+  function todayStr() {
+    if (state.today) return state.today;
+    var d = new Date();
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+  function nowHmStr() {
+    var d = new Date();
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  }
+  function fmtTime12(hm) {
+    if (!hm || !/^\d{2}:\d{2}$/.test(hm)) return hm || '';
+    var p = hm.split(':').map(Number), h = p[0], m = p[1];
+    if (state.time24) return hm;
+    var ap = h >= 12 ? 'pm' : 'am', h12 = h % 12 || 12;
+    return h12 + (m ? ':' + ('0' + m).slice(-2) : '') + ap;
+  }
+  function isReminderAlertActive(it) {
+    if (!it || it.done) return false;
+    var td = todayStr();
+    if (it.ackDate === td) return false;
+    if (it.mode === 'time') return nowHmStr() >= (it.time || '09:00');
+    return !!it.important;
+  }
+  function isReminderVisibleOnBoard(it) {
+    if (!it || it.done) return false;
+    if (it.mode === 'always') return true;
+    return isReminderAlertActive(it);
+  }
+  function activeAlertReminders() {
+    return ((state.reminders && state.reminders.items) || []).filter(isReminderAlertActive);
+  }
+  function renderRemindersListInto(ul) {
+    if (!ul) return;
+    ul.innerHTML = '';
+    var items = ((state.reminders && state.reminders.items) || []).filter(isReminderVisibleOnBoard);
+    if (!items.length) {
+      var empty = el('li', 'empty-meals', 'No active reminders');
+      empty.addEventListener('click', function () { if (EDIT || REMINDERS_PAGE) showSubpage('reminders'); });
+      ul.appendChild(empty);
+      return;
+    }
+    items.forEach(function (it) {
+      var li = el('li', 'chalk' + (it.done ? ' done' : ''));
+      li.appendChild(el('span', 'mt', it.title));
+      if (it.mode === 'time' && it.time) li.appendChild(el('span', 'rtm', fmtTime12(it.time)));
+      li.addEventListener('click', function () {
+        if (isReminderAlertActive(it)) openRemAlertModal();
+        else if (EDIT || REMINDERS_PAGE) showSubpage('reminders');
+      });
+      ul.appendChild(li);
+    });
+  }
+  function renderReminders() {
+    renderRemindersListInto($('remTabList'));
+    renderRemindersListInto($('remMpList'));
+    var alerts = activeAlertReminders(), n = alerts.length;
+    ['remBadge', 'remMpBadge'].forEach(function (id) {
+      var b = $(id); if (!b) return;
+      b.hidden = n === 0;
+      b.textContent = '+' + n;
+      b.title = n + ' active reminder' + (n === 1 ? '' : 's') + ' — tap to view';
+    });
+    if (typeof renderRemindersPage === 'function') renderRemindersPage();
+    if ($('remAlertModal') && $('remAlertModal').classList.contains('open')) renderRemAlertList();
+  }
+  function checkReminderTimePopups() {
+    var td = todayStr(), hm = nowHmStr();
+    var dueTimed = ((state.reminders && state.reminders.items) || []).filter(function (it) {
+      return !it.done && it.mode === 'time' && it.ackDate !== td && hm >= (it.time || '09:00');
+    });
+    var shouldPop = false;
+    dueTimed.forEach(function (it) {
+      var k = it.id + ':' + td + ':' + (it.time || '09:00');
+      if (!remPoppedKey[k]) { remPoppedKey[k] = true; shouldPop = true; }
+    });
+    renderReminders();
+    if (shouldPop && !document.querySelector('[role=dialog].open')) openRemAlertModal();
+  }
+  setInterval(checkReminderTimePopups, 15000);
+  function renderRemAlertList() {
+    var box = $('remAlertList'); if (!box) return;
+    box.innerHTML = '';
+    var alerts = activeAlertReminders();
+    if (!alerts.length) alerts = ((state.reminders && state.reminders.items) || []).filter(function (it) { return !it.done; });
+    if (!alerts.length) {
+      box.appendChild(el('div', 'sublbl', 'All caught up! No active reminders.'));
+      return;
+    }
+    var td = todayStr();
+    alerts.forEach(function (it) {
+      var row = el('div', 'rpitem' + (it.done ? ' done' : ''));
+      var cb = el('button', 'chitem can' + (it.done ? ' done' : '')); cb.type = 'button';
+      cb.style.setProperty('--chz', '20px');
+      cb.appendChild(el('span', 'chbox'));
+      cb.appendChild(el('span', 'ct', it.title));
+      cb.addEventListener('click', function () {
+        updateReminderCheck(it.id, { done: !it.done, ackDate: td });
+      });
+      row.appendChild(cb);
+      if (it.mode === 'time' && it.time) row.appendChild(el('span', 'rtag', fmtTime12(it.time)));
+      box.appendChild(row);
+    });
+  }
+  function openRemAlertModal() {
+    renderRemAlertList();
+    $('remAlertModal').classList.add('open');
+  }
+  if ($('remBadge')) $('remBadge').addEventListener('click', function (e) { e.stopPropagation(); openRemAlertModal(); });
+  if ($('remMpBadge')) $('remMpBadge').addEventListener('click', function (e) { e.stopPropagation(); openRemAlertModal(); });
+  if ($('remAlertClose')) $('remAlertClose').addEventListener('click', function () {
+    var td = todayStr(), alerts = activeAlertReminders();
+    $('remAlertModal').classList.remove('open');
+    alerts.forEach(function (it) {
+      updateReminderCheck(it.id, { ack: true, ackDate: td });
+    });
+  });
+  if ($('remAlertManage')) $('remAlertManage').addEventListener('click', function () {
+    $('remAlertModal').classList.remove('open');
+    showSubpage('reminders');
+  });
+  if ($('tabNotesBtn') && $('tabRemBtn')) {
+    $('tabNotesBtn').addEventListener('click', function () {
+      $('tabNotesBtn').classList.add('on'); $('tabRemBtn').classList.remove('on');
+      $('notesPane').hidden = false; $('notesPane').style.display = 'flex';
+      $('remTabPane').hidden = true; $('remTabPane').style.display = 'none';
+    });
+    $('tabRemBtn').addEventListener('click', function () {
+      $('tabRemBtn').classList.add('on'); $('tabNotesBtn').classList.remove('on');
+      $('remTabPane').hidden = false; $('remTabPane').style.display = 'flex';
+      $('notesPane').hidden = true; $('notesPane').style.display = 'none';
+    });
+  }
+  var remEditing = null, remModeVal = 'always';
+  function setRemModeUI(m) {
+    remModeVal = m === 'time' ? 'time' : 'always';
+    Array.prototype.forEach.call(document.querySelectorAll('#remModeOpts .seg'), function (b) {
+      b.classList.toggle('on', b.dataset.mode === remModeVal);
+    });
+    if ($('remTimeWrap')) $('remTimeWrap').hidden = remModeVal !== 'time';
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#remModeOpts .seg'), function (b) {
+    b.addEventListener('click', function () { setRemModeUI(b.dataset.mode); });
+  });
+  function openRemModal(it) {
+    remEditing = it || null;
+    $('remTitle').textContent = it ? 'Edit reminder' : 'Add a reminder';
+    $('remText').value = (it && it.title) || '';
+    setRemModeUI((it && it.mode) || 'always');
+    $('remTime').value = (it && it.time) || '09:00';
+    $('remRepeat').value = (it && it.repeat) || 'daily';
+    $('remImp').checked = it ? !!it.important : true;
+    $('remDelete').hidden = !it;
+    $('remErr').textContent = '';
+    $('remmodal').classList.add('open');
+    setTimeout(function () { $('remText').focus(); }, 50);
+  }
+  if ($('rpAddBtn')) $('rpAddBtn').addEventListener('click', function () { openRemModal(null); });
+  if ($('remCancel')) $('remCancel').addEventListener('click', function () { $('remmodal').classList.remove('open'); });
+  if ($('remDelete')) $('remDelete').addEventListener('click', function () {
+    if (!remEditing) return;
+    var items = ((state.reminders && state.reminders.items) || []).filter(function (x) { return x.id !== remEditing.id; });
+    saveRemindersList(items).then(function () { $('remmodal').classList.remove('open'); }).catch(function (e) { $('remErr').textContent = e.message; });
+  });
+  if ($('remForm')) $('remForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var title = $('remText').value.trim();
+    if (!title) return;
+    var items = ((state.reminders && state.reminders.items) || []).slice();
+    var entry = {
+      id: remEditing ? remEditing.id : 'r' + Math.random().toString(36).slice(2, 9),
+      title: title,
+      mode: remModeVal,
+      time: remModeVal === 'time' ? ($('remTime').value || '09:00') : '',
+      repeat: $('remRepeat').value || 'daily',
+      important: $('remImp').checked,
+      done: remEditing ? !!remEditing.done : false,
+      ackDate: ''
+    };
+    if (remEditing) {
+      items = items.map(function (x) { return x.id === remEditing.id ? entry : x; });
+    } else {
+      items.push(entry);
+    }
+    $('remSave').disabled = true;
+    saveRemindersList(items).then(function () {
+      $('remmodal').classList.remove('open');
+    }).catch(function (err) { $('remErr').textContent = err.message; })
+      .then(function () { $('remSave').disabled = false; });
+  });
+  function renderRemindersPage() {
+    var cols = $('rpCols'); if (!cols) return;
+    cols.innerHTML = '';
+    var items = (state.reminders && state.reminders.items) || [];
+    var groups = [
+      { mode: 'always', title: 'Always Shown', sub: 'Stays on the board until checked off' },
+      { mode: 'time', title: 'Timed Popups', sub: 'Pops up at a set time of day' }
+    ];
+    groups.forEach(function (g) {
+      var col = el('div', 'rpcol'), h = el('h3', null, g.title);
+      h.appendChild(el('small', null, g.sub));
+      col.appendChild(h);
+      var list = items.filter(function (it) { return (it.mode || 'always') === g.mode; });
+      if (!list.length) {
+        col.appendChild(el('div', 'sublbl', 'None yet — tap “+ Add reminder” above.'));
+      } else {
+        list.forEach(function (it) {
+          var row = el('div', 'rpitem' + (it.done ? ' done' : ''));
+          var cb = el('button', 'chitem can' + (it.done ? ' done' : '')); cb.type = 'button';
+          cb.style.setProperty('--chz', '20px'); cb.style.width = 'auto'; cb.style.flex = '1';
+          cb.appendChild(el('span', 'chbox'));
+          cb.appendChild(el('span', 'ct', it.title));
+          cb.addEventListener('click', function () {
+            updateReminderCheck(it.id, { done: !it.done });
+          });
+          row.appendChild(cb);
+          if (it.mode === 'time' && it.time) {
+            row.appendChild(el('span', 'rtag', fmtTime12(it.time) + (it.repeat === 'once' ? ' · once' : ' · daily')));
+          }
+          if (it.important) {
+            row.appendChild(el('span', 'rtag imp', '+1 badge'));
+          }
+          var ed = el('button', 'rtag', 'Edit'); ed.type = 'button'; ed.style.cursor = 'pointer'; ed.style.background = 'transparent';
+          ed.addEventListener('click', function () { openRemModal(it); });
+          row.appendChild(ed);
+          var del = el('button', 'rdel', '×'); del.type = 'button'; del.setAttribute('aria-label', 'Delete reminder');
+          del.addEventListener('click', function () {
+            var next = ((state.reminders && state.reminders.items) || []).filter(function (x) { return x.id !== it.id; });
+            saveRemindersList(next).catch(function () {});
+          });
+          row.appendChild(del);
+          col.appendChild(row);
+        });
+      }
+      cols.appendChild(col);
+    });
+  }
+  function loadReminders() {
+    return api('/api/reminders').then(function (r) {
+      var srvItems = (r && Array.isArray(r.items)) ? r.items : [];
+      var locItems = loadLocalReminders();
+      if (!srvItems.length && locItems.length) {
+        return saveRemindersList(locItems).then(function () { checkReminderTimePopups(); });
+      }
+      state.reminders = { items: srvItems };
+      saveLocalReminders(srvItems);
+      checkReminderTimePopups();
+    }).catch(function () {
+      state.reminders = { items: loadLocalReminders() };
+      checkReminderTimePopups();
+    });
+  }
+  loadReminders();
+
+  // ---- Right Column Mini-Pages (up to 3 configurable in Settings) ----
+  state.notesPages = ['info', 'meals', 'jars'];
+  function renderRightCol() {
+    var col = $('notesCol'); if (!col) return;
+    var pages = (state.notesPages && state.notesPages.length ? state.notesPages : ['info', 'meals', 'jars']).slice(0, 3);
+    Array.prototype.forEach.call(col.querySelectorAll('.rule.mprule'), function (r) { r.remove(); });
+    var allSecs = Array.prototype.slice.call(col.querySelectorAll('.mpsec'));
+    allSecs.forEach(function (s) { s.hidden = true; });
+    var bottomGroup = ['jars', 'today', 'upnext', 'photos'];
+    var bottomUsed = false;
+    var visibleSecs = [];
+    pages.forEach(function (p) {
+      if (bottomGroup.indexOf(p) >= 0 && !bottomUsed) {
+        bottomUsed = true;
+        state.notesBottom = p;
+        var bSec = $('bottom');
+        if (bSec) { bSec.hidden = false; visibleSecs.push(bSec); }
+        renderBottom();
+      } else if (p === 'upnext' && $('mpUpnext')) {
+        $('mpUpnext').hidden = false; visibleSecs.push($('mpUpnext'));
+        loadMpUpnext($('upnextMpList'), false);
+      } else if (p === 'today' && $('mpToday')) {
+        $('mpToday').hidden = false; visibleSecs.push($('mpToday'));
+        loadMpUpnext($('todayMpList'), true);
+      } else {
+        var sec = col.querySelector('.mpsec[data-mp="' + p + '"]');
+        if (sec) { sec.hidden = false; visibleSecs.push(sec); }
+      }
+    });
+    visibleSecs.forEach(function (sec, idx) {
+      if (idx > 0) {
+        var rule = el('div', 'rule mprule');
+        col.appendChild(rule);
+      }
+      col.appendChild(sec);
+    });
+    if (pages.indexOf('chores') >= 0) renderChoresMp();
+    if (pages.indexOf('reminders') >= 0) renderReminders();
+    setTimeout(fitMeals, 0);
+  }
+  function loadMpUpnext(ul, todayOnly) {
+    if (!ul) return;
+    api('/api/upnext').then(function (u) {
+      ul.innerHTML = '';
+      var last = '';
+      (u.events || []).filter(function (e) { return !todayOnly || e.date === u.today; }).slice(0, 6).forEach(function (e) {
+        if (!todayOnly && e.date !== last) {
+          last = e.date;
+          var dd = new Date(e.date + 'T12:00:00Z'), rel = e.date === u.today ? 'Today' : e.date === addDays(u.today, 1) ? 'Tomorrow' : DOW3[dd.getUTCDay()] + ' ' + dd.getUTCDate();
+          ul.appendChild(el('li', 'd', rel));
+        }
+        var li = el('li', 'chalk');
+        if (e.time) li.appendChild(el('span', 't', e.time));
+        li.appendChild(document.createTextNode(e.title));
+        ul.appendChild(li);
+      });
+      if (!ul.children.length) ul.appendChild(el('li', 'none', todayOnly ? 'Nothing else today' : 'Nothing coming up'));
+    }).catch(function () {});
+  }
 
   // ---- Countdowns ----
   function renderCountdowns(list) {
@@ -2431,15 +3338,63 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     var pTimes = function () { $('pTimes').style.opacity = $('pNight').checked ? '1' : '.4'; };
     var pInfo = function () {
       var d = ph.info, n = ph.list.length;
-      if (!d.enabled) return 'No album set up yet (PHOTO_ALBUM_URL).';
+      if (!d.enabled) return 'No photo source set up yet (enter your Immich server below or set an album link in Admin).';
+      var src = d.kind === 'immich' ? 'from Immich' : 'from the shared album';
       var ago = d.synced ? Math.max(0, Math.round((Date.now() - d.synced) / 60000)) : null;
-      return n + ' photo' + (n === 1 ? '' : 's') + ' from the shared album' + (ago === null ? '' : ' · checked ' + (ago < 1 ? 'just now' : ago + ' min ago')) + (d.error ? ' · ⚠ ' + d.error : '');
+      return n + ' photo' + (n === 1 ? '' : 's') + ' ' + src + (ago === null ? '' : ' · checked ' + (ago < 1 ? 'just now' : ago + ' min ago')) + (d.error ? ' · ⚠ ' + d.error : '');
     };
+    var populateImmichAlbums = function (albums, selectedVal) {
+      var sel = $('pImmichAlbum');
+      if (!sel) return;
+      var cur = selectedVal !== undefined ? selectedVal : sel.value;
+      sel.innerHTML = '';
+      sel.appendChild(new Option('Auto (Favorites, or recent photos)', ''));
+      sel.appendChild(new Option('★ Favorites', '__favorites__'));
+      sel.appendChild(new Option('All recent photos', '__all__'));
+      (albums || []).forEach(function (a) {
+        sel.appendChild(new Option(a.title + ' (' + a.count + ')' + (a.shared ? ' · shared' : ''), a.id));
+      });
+      if (cur && !Array.prototype.some.call(sel.options, function (o) { return o.value === cur; })) {
+        sel.appendChild(new Option('Saved album (' + cur + ')', cur));
+      }
+      sel.value = cur || '';
+    };
+    if ($('pImmichLoad')) {
+      $('pImmichLoad').addEventListener('click', function () {
+        var btn = $('pImmichLoad');
+        btn.disabled = true; $('pErr').textContent = '';
+        post('/api/photos/immich-albums', {
+          url: $('pImmichUrl').value.trim(),
+          apiKey: $('pImmichKey').value.trim() || undefined
+        }).then(function (r) {
+          populateImmichAlbums(r.albums || [], $('pImmichAlbum').value);
+          $('pInfo').textContent = 'Found ' + (r.albums ? r.albums.length : 0) + ' Immich album' + (r.albums && r.albums.length === 1 ? '' : 's') + '. Pick one and click Save.';
+        }).catch(function (e) {
+          $('pErr').textContent = e.status === 404 && !(e.body && e.body.error)
+            ? 'The board server is still running the old code. Restart it and try again.'
+            : e.message;
+        }).then(function () {
+          btn.disabled = false;
+        });
+      });
+    }
     $('photosBtn').addEventListener('click', function () {
       if (state.drawing) return;
-      var c = ph.cfg;
+      var c = ph.cfg, im = (ph.info && ph.info.immich) || {};
       $('pFrame').checked = !!c.frame; $('pNight').checked = !!c.night;
       $('pFrom').value = c.from || '21:00'; $('pTo').value = c.to || '06:00'; $('pEvery').value = String(c.every || 20); $('pDim').value = String(c.dim || 50);
+      if ($('pImmichUrl')) $('pImmichUrl').value = im.url || '';
+      if ($('pImmichKey')) {
+        $('pImmichKey').value = '';
+        $('pImmichKey').placeholder = im.hasKey ? '•••• saved (type to replace)' : 'Paste Immich API key';
+      }
+      populateImmichAlbums(ph.immichAlbums || [], im.album || '');
+      if (im.url && im.hasKey && !ph.immichAlbums) {
+        post('/api/photos/immich-albums', {}).then(function (r) {
+          ph.immichAlbums = r.albums || [];
+          populateImmichAlbums(ph.immichAlbums, $('pImmichAlbum').value || im.album || '');
+        }).catch(function () {});
+      }
       $('pInfo').textContent = pInfo(); $('pErr').textContent = ''; pTimes();
       var sd = tpSide();
       sideDraft = sd ? JSON.parse(JSON.stringify(sd)) : { mode: c.frame ? 'photos' : 'art', pick: 'random', ids: [] };
@@ -2487,21 +3442,33 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     });
     $('pSync').addEventListener('click', function () {
       $('pSync').disabled = true; $('pInfo').textContent = 'Checking the album…';
-      post('/api/photos/sync', {}).then(loadPhotos).then(function () { $('pInfo').textContent = pInfo(); })
+      post('/api/photos/sync', {}).then(loadPhotos).then(function () { $('pInfo').textContent = pInfo(); drawSide(); })
         .catch(function (e) { $('pErr').textContent = e.message; })
         .then(function () { $('pSync').disabled = false; });
     });
     $('pForm').addEventListener('submit', function (e) {
       e.preventDefault();
-      $('pSave').disabled = true;
-      post('/api/photos/settings', { frame: $('pFrame').checked, night: $('pNight').checked, from: $('pFrom').value, to: $('pTo').value, every: +$('pEvery').value, dim: +$('pDim').value })
+      $('pSave').disabled = true; $('pErr').textContent = '';
+      var payload = {
+        frame: $('pFrame').checked,
+        night: $('pNight').checked,
+        from: $('pFrom').value,
+        to: $('pTo').value,
+        every: +$('pEvery').value,
+        dim: +$('pDim').value
+      };
+      if ($('pImmichUrl')) payload.immichUrl = $('pImmichUrl').value.trim();
+      if ($('pImmichKey') && $('pImmichKey').value.trim()) payload.immichKey = $('pImmichKey').value.trim();
+      if ($('pImmichAlbum')) payload.immichAlbum = $('pImmichAlbum').value;
+      post('/api/photos/settings', payload)
         .then(function (c) {
           ph.cfg = c;
           if (JSON.stringify(sideDraft) === sideStart) return;
           if (sideDraft.mode === 'photos' && sideDraft.pick === 'chosen' && !sideDraft.ids.length) sideDraft.pick = 'random';
           return post('/api/meta', { ym: state.ym, side: sideDraft }).then(function (m) { state.meta = m; });
         })
-        .then(function () { applyPhotos(); $('pmodal').classList.remove('open'); })
+        .then(loadPhotos)
+        .then(function () { $('pmodal').classList.remove('open'); })
         .catch(function (err) { $('pErr').textContent = err.message; })
         .then(function () { $('pSave').disabled = false; });
     });
@@ -2555,6 +3522,11 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         $('trashSub').textContent = x.trash.sub || ''; $('trashSub').style.display = x.trash.sub ? '' : 'none';
       }
       state.notesBottom = (x.notes && x.notes.bottom) || 'jars';
+      var locPages = null;
+      try { locPages = JSON.parse(localStorage.getItem('chalkRightPages') || 'null'); } catch (e) {}
+      state.notesPages = (x.notes && Array.isArray(x.notes.pages) && x.notes.pages.length) ? x.notes.pages : (Array.isArray(locPages) && locPages.length ? locPages : ['info', 'meals', state.notesBottom === 'none' ? '' : state.notesBottom].filter(Boolean));
+      try { localStorage.setItem('chalkRightPages', JSON.stringify(state.notesPages)); } catch (e) {}
+      renderRightCol();
       renderBottom();
       if (x.weather) {
         var w = x.weather;
@@ -3096,14 +4068,50 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     });
     Array.prototype.forEach.call(document.querySelectorAll('#nBottom .seg'), function (b) {
       b.addEventListener('click', function () {
-        post('/api/notes', { bottom: b.dataset.b }).then(function (c) { state.notesBottom = c.bottom; loadBins(); renderBottom(); saved('Saved ✓'); })
+        post('/api/notes', { bottom: b.dataset.b, pages: state.notesPages }).then(function (c) { state.notesBottom = c.bottom; if (c.pages) state.notesPages = c.pages; loadBins(); renderRightCol(); renderBottom(); saved('Saved ✓'); })
           .catch(function (e) { $('setErr').textContent = e.message; });
+      });
+    });
+    var drawRightPagesSet = function () {
+      var pages = state.notesPages || ['info', 'meals', 'jars'];
+      Array.prototype.forEach.call(document.querySelectorAll('#setRightPages .seg'), function (b) {
+        var idx = pages.indexOf(b.dataset.mp);
+        b.classList.toggle('on', idx >= 0);
+      });
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('#setRightPages .seg'), function (b) {
+      b.addEventListener('click', function () {
+        var mp = b.dataset.mp, pages = (state.notesPages || ['info', 'meals', 'jars']).slice();
+        var i = pages.indexOf(mp);
+        if (i >= 0) {
+          if (pages.length <= 1) return;
+          pages.splice(i, 1);
+        } else {
+          if (pages.length >= 3) {
+            $('setErr').textContent = 'Maximum of 3 mini-pages on the right — tap one to turn it off first.';
+            return;
+          }
+          pages.push(mp);
+        }
+        $('setErr').textContent = '';
+        state.notesPages = pages;
+        try { localStorage.setItem('chalkRightPages', JSON.stringify(pages)); } catch (e) {}
+        drawRightPagesSet();
+        renderRightCol();
+        post('/api/right-pages', { pages: pages }).then(function (c) {
+          if (c && c.pages) state.notesPages = c.pages;
+          drawRightPagesSet(); renderRightCol(); saved('Saved ✓');
+        }).catch(function (e) {
+          if (/404/.test(String(e && e.message))) { saved('Saved ✓'); return; }
+          $('setErr').textContent = e.message;
+        });
       });
     });
     var drawTodaySet = function () {
       var v = themeVals(state.theme), cbox = $('setTodayC'), mp = savedMenuPos();
       Array.prototype.forEach.call(document.querySelectorAll('#setTodayS .seg'), function (b) { b.classList.toggle('on', b.dataset.s === v.todayS); });
       Array.prototype.forEach.call(document.querySelectorAll('#setMenuPos .seg'), function (b) { b.classList.toggle('on', b.dataset.pos === mp); });
+      drawRightPagesSet();
       colorRow(cbox, { extra: [v.todayC] }, function (c) { if (c) saveTodaySet('todayC', c.toUpperCase()); }, !!cbox.__opts);
       markColor(cbox, null, v.todayC);
     };
@@ -3132,8 +4140,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     $('menuBackdrop').addEventListener('click', function () {
       setDrawerOpen(false);
     });
-    ['borderBtn', 'choresBtn', 'acctBtn', 'settingsBtn', 'styleBtn', 'photosBtn', 'addBtn'].forEach(function (id) {
-      $(id).addEventListener('click', function () { if (isMenuDrawer()) setDrawerOpen(false); });
+    ['borderBtn', 'choresBtn', 'mealsBtn', 'jarsBtn', 'remindersBtn', 'acctBtn', 'settingsBtn', 'styleBtn', 'photosBtn', 'addBtn'].forEach(function (id) {
+      if ($(id)) $(id).addEventListener('click', function () { if (isMenuDrawer()) setDrawerOpen(false); });
     });
     var openSettings = function () {
       $('setErr').textContent = ''; $('setSaved').textContent = ''; $('gPaste').value = ''; holCount(); drawTodaySet();
@@ -4715,7 +5723,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       if (EDIT && !(isFamily() && !state.drawing && !document.querySelector('.open'))) $('updbar').classList.add('on');   // never interrupt your drawing
       else setTimeout(function () { location.reload(); }, 1000 + Math.random() * 3000);   // the wall just updates itself
     });
-    ['stroke', 'undo', 'remove', 'restore', 'update', 'clear', 'meta', 'meals', 'calendar'].forEach(function (t) { es.addEventListener(t, seen); });
+    ['stroke', 'undo', 'remove', 'restore', 'update', 'clear', 'meta', 'meals', 'reminders', 'calendar'].forEach(function (t) { es.addEventListener(t, seen); });
     es.addEventListener('stroke', function (m) {
       var d = JSON.parse(m.data);
       if (d.ym !== state.ym || d.from === CLIENT) return;
@@ -4754,11 +5762,14 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       if (d.ym !== state.ym) return;
       state.strokes = []; state.shownPad = state.borderPad || 0; if (state.meta) state.meta.artPad = state.shownPad; redrawArt();
     });
-    es.addEventListener('meals', function (m) { state.meals = JSON.parse(m.data); renderMeals(); });
+    es.addEventListener('meals', function (m) { state.meals = normalizeMeals(JSON.parse(m.data)); renderMeals(); });
+    es.addEventListener('reminders', function (m) { state.reminders = JSON.parse(m.data); saveLocalReminders(state.reminders.items); checkReminderTimePopups(); });
     es.addEventListener('jars', function (m) {
       var d = JSON.parse(m.data); seen();
       // the iPad already shows its own changes; just keep its copy in sync
-      setJars(d.jars); if (EDIT && $('jmodal').classList.contains('open')) jarCard();
+      setJars(d.jars);
+      if (EDIT && $('jmodal').classList.contains('open')) jarCard();
+      if ($('jarZoom') && $('jarZoom').classList.contains('open')) renderJarZoom(null);
     });
     es.addEventListener('meta', function (m) {
       var d = JSON.parse(m.data);
@@ -5236,9 +6247,13 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     state.who = w; state.rank = w.rank;
     state.role = w.editor ? 'editor' : w.device ? w.device.role : null;
     if (w.admin) document.body.classList.add('isadmin');
-    if (CHORES_PAGE) {
-      if (!w.rank) { if (w.firstRun) location.replace('/admin'); else { $('signTitle').textContent = 'Sign in'; showSignIn('to see and check off the chores'); } return w; }
-      showChores(true); return w;
+    if (SUB_PAGE) {
+      if (!w.rank) { if (w.firstRun) location.replace('/admin'); else { $('signTitle').textContent = 'Sign in'; showSignIn('to view and update this page'); } return w; }
+      if (CHORES_PAGE) showSubpage('chores');
+      else if (MEALS_PAGE) showSubpage('meals');
+      else if (JARS_PAGE) showSubpage('jars');
+      else if (REMINDERS_PAGE) showSubpage('reminders');
+      return w;
     }
     if (!EDIT) {
       if (Q.has('pair') && !w.device) { showPair(); return w; }
@@ -5283,6 +6298,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       if (dayChanged) loadExtras();
       loadMeals();   // catches anything missed while the live connection was down
       loadJars();
+      loadReminders();
       api('/api/month?ym=' + state.ym).then(function (d) { health.calendar = true; renderMonth(d); }).catch(function () { health.calendar = false; });
     }).catch(function () {});
   }, 2 * 60 * 1000);

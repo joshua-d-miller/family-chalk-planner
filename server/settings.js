@@ -41,6 +41,9 @@ const FIELDS = {
   ICS_FEEDS: { type: 'json', private: true, check: v => list(v, c => name(c.name, 60) && hex(c.color) && /^(https?|webcal):\/\/[^\s"<>]+$/i.test(c.url || '') && c.url.length <= 1000) },
   // photos
   PHOTO_ALBUM_URL: { type: 'url', private: true },
+  IMMICH_URL: { type: 'url' },
+  IMMICH_API_KEY: { type: 'secret' },
+  IMMICH_ALBUM: { type: 'text', max: 200 },
   // the board on your network
   PUBLIC_URL: { type: 'url' },
   TRUST_PROXY: { type: 'proxy' },
