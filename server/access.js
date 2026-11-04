@@ -199,6 +199,21 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
   let RP = null;
   try { if (ENV.PUBLIC_URL) { const u = new URL(ENV.PUBLIC_URL); RP = { origin: u.origin, id: u.hostname }; } } catch { console.error('Chalk Planner: PUBLIC_URL is not a valid address - passkeys are off'); }
   const passkeysHere = req => !!RP && `${req.protocol}://${req.get('host')}` === RP.origin;
+  function isLocalIp(ip) {
+    ip = String(ip || '').replace(/^::ffff:/i, '');
+    if (ip === '127.0.0.1' || ip === '::1' || ip === 'localhost') return true;
+    const m = /^(\d+)\.(\d+)\.\d+\.\d+$/.exec(ip);
+    if (m) {
+      const a = +m[1], b = +m[2];
+      return a === 10 || a === 127 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31) || (a === 169 && b === 254);
+    }
+    return /^(fc|fd|fe80):/i.test(ip);
+  }
+  function isLocalHost(h) {
+    const host = String(h || '').replace(/:\d+$/, '').replace(/^\[|\]$/g, '').toLowerCase();
+    return host === 'localhost' || host.endsWith('.local') || isLocalIp(host);
+  }
+  const isLocal = req => isLocalIp(req.ip) && isLocalHost(req.get('host'));
 
   // ---- one-time setup code ----
   function newSetupCode() {
@@ -386,7 +401,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
       user: u ? { username: u.username, name: u.name, role: u.role } : null,
       editor: !!e || !!a, admin: !!a,
       rank: rankOf(req), setup: setupOpen(), firstRun: q.uAdmins.get().n === 0,
-      passkeys: passkeysHere(req), publicUrl: RP ? RP.origin : null, openView: OPEN_VIEW
+      passkeys: passkeysHere(req), publicUrl: RP ? RP.origin : null, openView: OPEN_VIEW, local: isLocal(req)
     });
   });
 
@@ -478,6 +493,16 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
     if (!u) { q.uAdd.run(rid(6), username, String(b.name || username).trim().slice(0, 40) || username, 'admin', Date.now()); u = q.uByName.get(username); }
     q.uUpd.run(String(b.name || u.name).trim().slice(0, 40) || username, 'admin', u.id);
     q.uSetPw.run(hashPassword(b.password), u.id);
+    if (b.skipTotp && isLocal(req)) {
+      useSetupCode();
+      q.uSetTotp.run(null, 1, u.id);
+      audit(req, 'person.created', { actor: u.username, target: `${u.name} (@${u.username})`, detail: 'first admin, with the setup code (local)', refType: 'person', refId: u.id });
+      const fresh = q.uById.get(u.id);
+      startSession(req, res, fresh, 'edit', 'new account');
+      startSession(req, res, fresh, 'admin');
+      broadcast && broadcast('devices', {});
+      return res.json({ ok: true, role: fresh.role, done: true });
+    }
     res.json(await enrollment(u, 'setup', b.password));
   });
   // invite link: the person sets their password -> authenticator QR
@@ -490,6 +515,16 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
     if (b.check) return res.json({ username: u.username, name: u.name, role: u.role });
     const pwErr = pwProblem(b.password); if (pwErr) return res.status(400).json({ error: pwErr });
     q.uSetPw.run(hashPassword(b.password), u.id);
+    if (b.skipTotp && isLocal(req)) {
+      q.iDelUser.run(u.id);
+      q.uSetTotp.run(null, 1, u.id);
+      audit(req, 'person.joined', { actor: u.username, target: `${u.name} (@${u.username})`, detail: `finished the invite as ${u.role} (local)`, refType: 'person', refId: u.id });
+      const fresh = q.uById.get(u.id);
+      startSession(req, res, fresh, 'edit', 'new account');
+      if (fresh.role === 'admin') startSession(req, res, fresh, 'admin');
+      broadcast && broadcast('devices', {});
+      return res.json({ ok: true, role: fresh.role, username: fresh.username, done: true });
+    }
     res.json({ ...(await enrollment(u, 'join:' + inv.code_hash, b.password)), username: u.username });
   });
   // step 2: the first code from the authenticator app proves it's set up -> signed in
@@ -522,17 +557,19 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
     if (tooMany('login:' + req.ip, 20, 15 * 60e3, false) || tooMany('user:' + username, 8, 15 * 60e3, false)) return res.status(429).json({ error: 'Too many tries - wait 15 minutes' });
     const u = q.uByName.get(username);
     const pwOk = checkPassword(b.password, u && u.pw_hash);
-    const secret = u && u.totp_ok && pwOk ? unsealPw(b.password, u.totp_secret) : null;
-    const step = secret ? totpCheck(secret, b.code, u.totp_last) : -1;
+    const hasCode = String(b.code || '').trim().length > 0;
+    const localSkip = isLocal(req) && (!hasCode || !(u && u.totp_secret));
+    const secret = u && u.totp_ok && pwOk && !localSkip ? unsealPw(b.password, u.totp_secret) : null;
+    const step = localSkip ? 0 : (secret ? totpCheck(secret, b.code, u.totp_last) : -1);
     if (!u || !u.totp_ok || !pwOk || step < 0) {
       tooMany('login:' + req.ip, 20, 15 * 60e3); tooMany('user:' + username, 8, 15 * 60e3);
       console.warn(`Chalk Planner: failed sign-in for "${username}" from ${req.ip}`);
       audit(req, 'signin.failed', { actor: null, target: username || '(blank)', detail: !u ? 'unknown username' : !pwOk ? 'wrong password' : 'wrong or reused code', refType: u ? 'person' : null, refId: u ? u.id : null });
-      return res.status(401).json({ error: 'That username, password or code didn’t work' });
+      return res.status(401).json({ error: localSkip ? 'That username or password didn’t work' : 'That username, password or code didn’t work' });
     }
     if (kind === 'admin' && u.role !== 'admin') return res.status(403).json({ error: 'This account isn’t an admin' });
-    q.uTotpLast.run(step, u.id);
-    startSession(req, res, u, kind, 'password + code');
+    if (!localSkip) q.uTotpLast.run(step, u.id);
+    startSession(req, res, u, kind, localSkip ? 'password (local)' : 'password + code');
     if (kind === 'admin' && !sessionOf(req, 'edit')) startSession(req, res, u, 'edit');   // the board works too after an admin sign-in
     res.json({ ok: true, role: u.role });
   });

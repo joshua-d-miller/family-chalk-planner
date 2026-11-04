@@ -1282,8 +1282,8 @@ function cleanItem(it) {
 // Art is placed on the calendar as it looks at the time. A holiday border makes the days a little smaller,
 // so each month remembers which layout its art was placed on (artPad: the border's width, 0 = none); the
 // tablet moves the art onto the days when the border changes (/api/art/relayout).
-const BORDER_PAD = { s: 26, m: 32, l: 40 };   // picture size + 6 (the board's BORDER_SZ)
-const padOf = m => (m && m.border ? BORDER_PAD[m.border.size] || BORDER_PAD.m : 0);
+const BORDER_SZ = { s: 20, m: 26, l: 34 };
+const padOf = m => (m && m.border && Array.isArray(m.border.items) && m.border.items.length) ? (BORDER_SZ[m.border.size] || BORDER_SZ.m) + 6 : 0;
 function storedMeta(ym) { const row = qMetaGet.get(ym); return row ? JSON.parse(row.data) : {}; }
 function noteArtLayout(ym) {   // the first art of a month is placed on the layout it has now
   const cur = storedMeta(ym);
@@ -1426,10 +1426,11 @@ app.post('/api/meals', (req, res) => {
 // themselves live in the page; the server only checks the shape of what's saved.
 const THEME_FONTS = ['kalam', 'caveat', 'marker', 'pacifico', 'chalk', 'tall', 'scratchy', 'script', 'classic'];
 const THEME_KEYS = {
-  numF: 'font', numC: 'color', boxes: ['on', 'off'], todayC: 'color', todayS: ['ring', 'circle', 'heart', 'star', 'box'],
+  numF: 'font', numC: 'color', boxes: ['on', 'off'], todayC: 'color', todayS: ['ring', 'circle', 'heart', 'star', 'box', 'bg'],
   wkF: 'font', wkC: 'color', evF: 'font', evC: 'color', alldayC: 'color', holC: 'color',
   headF: 'font', notesC: 'color', mealsC: 'color', textF: 'font', textC: 'color',
-  lineC: 'color', lineS: ['solid', 'dashed', 'dotted'], lineW: ['thin', 'normal', 'bold']
+  lineC: 'color', lineS: ['solid', 'dashed', 'dotted'], lineW: ['thin', 'normal', 'bold'],
+  menuPos: ['bottom', 'left']
 };
 const THEME_SURFACES = ['slate', 'green', 'blue', 'cork', 'kraft', 'white', 'wood', 'glass', 'linen', 'peg'];
 function cleanTheme(t) {
@@ -1469,6 +1470,8 @@ function metaFor(ym) {
   const m = row ? JSON.parse(row.data) : {};
   const d = qKvGet.get('titleDefault');
   if (d) m.defaultTitle = JSON.parse(d.data);
+  const bp = qKvGet.get('boardPad');
+  if (bp) m.boardPad = JSON.parse(bp.data);
   // border: this month's own, else the one saved for this month every year ({ off: true } = none this year)
   const yearly = yearlyBorders()[ym.slice(5)];
   m.artPad = m.artPad || 0;   // art from before borders: placed with no border
@@ -1486,12 +1489,15 @@ function cleanBorder(b) {
   if (!items.length) return null;
   return { items, color: /^#[0-9a-fA-F]{6}$/.test(b.color || '') ? b.color.toUpperCase() : CHALK, size: ['s', 'm', 'l'].includes(b.size) ? b.size : 'm' };
 }
-// { ym, border: {...} or null, yearly: true = every year in this month }
+// { ym, border: {...} or null, yearly: true = every year in this month, boardPad: number }
 app.post('/api/border', (req, res) => {
-  const { ym, border, yearly } = req.body || {};
+  const { ym, border, yearly, boardPad } = req.body || {};
   if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
   const b = cleanBorder(border);
   if (border && !b) return res.status(400).json({ error: 'Pick at least one picture' });
+  if (boardPad !== undefined && boardPad !== null && Number.isFinite(+boardPad)) {
+    qKvSet.run('boardPad', JSON.stringify(Math.min(Math.max(Math.round(+boardPad), 0), 80)));
+  }
   const row = qMetaGet.get(ym), cur = row ? JSON.parse(row.data) : {}, all = yearlyBorders(), mm = ym.slice(5);
   if (yearly) {
     if (b) all[mm] = b; else delete all[mm];

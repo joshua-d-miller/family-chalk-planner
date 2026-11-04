@@ -29,7 +29,7 @@ body.display:not(.framed) #board{width:1252px;height:642px;padding:0;background:
 body.display:not(.framed) .cork{display:none}
 body.display:not(.framed) .slate{box-shadow:none}
 /* family touch screen: like the wall (no wood frame), but keeps the strip with the buttons */
-body.family #board{width:1252px;height:692px;padding:0;background:transparent!important}
+body.family #board{width:1252px;height:692px;padding:0;background:transparent}
 body.family .slate{box-shadow:none}
 #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
 #board{width:1280px;height:720px;flex:none;padding:14px;background:var(--wood);display:flex;flex-direction:column;transform-origin:center center}
@@ -208,6 +208,19 @@ body.drawing #art{pointer-events:auto;touch-action:none;cursor:crosshair}
   background-size:7px 7px,11px 11px;background-position:0 0,3px 4px;box-shadow:inset 0 3px 6px rgba(0,0,0,.35);
   display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:0 12px}
 body.display .cork > *{display:none}
+#menuBtn{display:none;position:fixed;top:12px;left:12px;z-index:18;width:44px;height:44px;border-radius:50%;border:2px solid rgba(var(--ink),.5);background:#161616;color:var(--chalk);align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.45);padding:0}
+body.edit.menudrawer #menuBtn{display:flex}
+#menuBackdrop{display:none;position:fixed;inset:0;z-index:16;background:rgba(0,0,0,.45)}
+body.edit.menudrawer.draweropen #menuBackdrop{display:block}
+body.menudrawer .cork{position:fixed;top:0;left:0;bottom:0;width:250px;height:auto;z-index:17;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:10px;padding:66px 14px 18px;overflow-y:auto;box-shadow:4px 0 20px rgba(0,0,0,.55);border-right:3px solid var(--wood);transform:translateX(-105%);transition:transform .24s cubic-bezier(.4,0,.2,1)}
+body.menudrawer.draweropen .cork{transform:translateX(0)}
+body.menudrawer .cork .pill{width:100%;justify-content:flex-start}
+body.menudrawer .cork #acctBtn::after{content:'Account'}
+body.menudrawer .cork #settingsBtn::after{content:'Settings'}
+body.menudrawer .cork #styleBtn::after{content:'Board style'}
+body.menudrawer .cork #photosBtn::after{content:'Photos'}
+body.menudrawer .cork .tools{flex-wrap:wrap;border-radius:16px;padding:8px;justify-content:center;gap:4px}
+body.menudrawer .cork #swatches{flex-wrap:wrap;max-width:100%;justify-content:center}
 .pill{height:44px;padding:0 16px;border-radius:22px;border:2px solid rgba(var(--ink),.5);background:#161616;color:var(--chalk);
   font-family:'Kalam',cursive;font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.35);text-decoration:none}
 .pill.on{border-color:var(--pink)}
@@ -425,12 +438,7 @@ body.edit .titlerow h1.hand{outline:2px dashed rgba(246,179,203,.28);outline-off
 body.edit{touch-action:none}
 .card,.stamps,.lscroll{touch-action:pan-y}
 .cork.floating{position:fixed;left:50%;bottom:8px;width:1252px;z-index:14;border-radius:14px;transform-origin:bottom center;box-shadow:0 6px 20px rgba(0,0,0,.6)}
-#zoom{position:fixed;top:10px;right:10px;z-index:15;display:none;gap:6px;align-items:center}
-body.edit #zoom{display:flex}
-#zoom button{width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(var(--ink),.45);background:rgba(20,20,20,.85);color:var(--chalk);
-  font-family:'Kalam',cursive;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
-#zoom #zFit{width:auto;padding:0 14px;border-radius:22px;font-size:15px}
-#zoom #zFit:disabled{opacity:.35}
+.opts .seg:disabled{opacity:.35;cursor:default}
 #pairpad{position:fixed;inset:0;z-index:90;background:rgba(10,8,6,.96);display:none;align-items:center;justify-content:center}
 #pairpad.open{display:flex}
 #pairpad .card{width:min(560px,92vw);text-align:center}
@@ -579,11 +587,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 </head>
 <body class="display">
 <button type="button" id="updbar">Board updated - tap to refresh</button>
-<div id="zoom" aria-label="Zoom">
-  <button type="button" id="zOut" aria-label="Zoom out">−</button>
-  <button type="button" id="zIn" aria-label="Zoom in">+</button>
-  <button type="button" id="zFit" disabled>Fit</button>
-</div>
+<button type="button" id="menuBtn" aria-label="Menu" aria-expanded="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+<div id="menuBackdrop"></div>
 <div id="stage">
 <div id="board">
   <div class="slate" id="slate">
@@ -663,7 +668,6 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <button class="tool" id="clearBtn" aria-label="Wipe this month's art"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
     </div>
     <button class="pill" id="sideBtn" type="button" aria-pressed="false" hidden><span class="sw" aria-hidden="true"></span>Title photos</button>
-    <button class="pill" id="titleBtn" type="button">✎ Month title</button>
     <button class="pill" id="borderBtn" type="button">🖼 Border</button>
     <button class="pill" id="choresBtn" aria-label="Chores">🧹 Chores</button>
     <a class="pill" id="musicBtn" href="https://music.youtube.com/" aria-label="YouTube Music">🎵 Music</a>
@@ -752,8 +756,30 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <div id="rAnchorW"><label for="rAnchor">Next recycling pickup</label><input type="date" id="rAnchor"></div>
     </div>
     </div>
-    <div class="sublbl adminonly" style="margin-top:20px">Holidays</div>
-    <div class="sublbl notadmin" style="margin-top:0">Holidays</div>
+    <div class="sublbl adminonly" style="margin-top:20px">Board &amp; view</div>
+    <div class="sublbl notadmin" style="margin-top:0">Board &amp; view</div>
+    <div class="opts" id="zoom" aria-label="Zoom">
+      <button type="button" class="seg" id="zOut" aria-label="Zoom out">−</button>
+      <button type="button" class="seg" id="zIn" aria-label="Zoom in">+</button>
+      <button type="button" class="seg" id="zFit" disabled>Fit</button>
+      <button type="button" class="seg" id="titleBtn">✎ Month title</button>
+    </div>
+    <div class="sublbl" style="margin-top:20px">Menu bar</div>
+    <div class="opts" id="setMenuPos">
+      <button type="button" class="seg on" data-pos="bottom">▂ Bottom bar</button>
+      <button type="button" class="seg" data-pos="left">☰ Slide-out (left)</button>
+    </div>
+    <div class="sublbl" style="margin-top:20px">Current day</div>
+    <div class="opts" id="setTodayS">
+      <button type="button" class="seg" data-s="ring">◯ Chalk</button>
+      <button type="button" class="seg" data-s="circle">○ Circle</button>
+      <button type="button" class="seg" data-s="heart">♡ Heart</button>
+      <button type="button" class="seg" data-s="star">☆ Star</button>
+      <button type="button" class="seg" data-s="box">■ Box</button>
+      <button type="button" class="seg" data-s="bg">▧ Background</button>
+    </div>
+    <div class="opts" id="setTodayC"></div>
+    <div class="sublbl" style="margin-top:20px">Holidays</div>
     <div class="opts"><button type="button" class="seg" id="setHol">🎉 Show or hide holidays</button><span id="setHolN" class="sublbl" style="margin:0"></span></div>
     <div class="sublbl notadmin" style="margin-top:20px">The calendar, trash day and Notes settings are for admins: sign in to the admin console (/admin), then come back here.</div>
     <div class="adminonly">
@@ -849,6 +875,17 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <div class="opts" id="bColor"></div>
     <div class="sublbl">Size</div>
     <div class="opts" id="bSize"><button type="button" class="seg" data-z="s">Small</button><button type="button" class="seg" data-z="m">Medium</button><button type="button" class="seg" data-z="l">Large</button></div>
+    <div class="sublbl">Padding</div>
+    <div class="opts" id="bPad">
+      <button type="button" class="seg" data-p="0">None</button>
+      <button type="button" class="seg" data-p="6">Small</button>
+      <button type="button" class="seg" data-p="14">Normal</button>
+      <button type="button" class="seg" data-p="24">Wide</button>
+      <button type="button" class="seg" data-p="36">Extra</button>
+      <button type="button" class="seg" id="bPadDown" aria-label="Less padding">−</button>
+      <span id="bPadVal" class="sublbl" style="margin:0;min-width:42px;text-align:center">14px</span>
+      <button type="button" class="seg" id="bPadUp" aria-label="More padding">+</button>
+    </div>
     <label class="check"><input type="checkbox" id="bYearly"> <span id="bYearlyLbl">Every year in this month</span></label>
     <div class="err" id="bErr"></div>
     <div class="actions">
@@ -1428,6 +1465,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       } catch (e) { slate.style.background = sf.base[1]; }
     } else slate.style.background = sf.base[1];
     $('board').style.background = sf.frame || '';
+    if (state.meta && typeof applyBoardPad === 'function') applyBoardPad();
     // the board's own colors (chalk white, pink, yellow…) only change where they'd be hard to read
     var root = getComputedStyle(document.documentElement);
     [['chalk', 4.5], ['pink', 4.5], ['yellow', 4.5], ['blue', 4.5], ['green', 4.5], ['orange', 4.5], ['purple', 4.5], ['gold', 3], ['bartext', 4.5], ['barline', 1.8]].forEach(function (vv) {
@@ -2595,7 +2633,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         var num = el('div', 'num', String(Number(ds.slice(8))));
         if (ds === data.today) {
           // drawn on the week row, above the grid, so no shape gets clipped by the day's edges
-          if (themeNow().todayS === 'box') cell.classList.add('todaybox');
+          var ts = themeNow().todayS;
+          if (ts === 'box') cell.classList.add('todaybox');
+          else if (ts === 'bg') cell.classList.add('todaybg');
           else { row.insertAdjacentHTML('beforeend', todayMark()); row.lastChild.style.left = 'calc(' + ((d + 1) / 7 * 100).toFixed(4) + '% - 39px)'; }
         }
         cell.appendChild(num);
@@ -2668,7 +2708,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   };
   var THEME_BASE = { numF: 'kalam', numC: '#F2D479', boxes: 'on', todayC: '#F6B3CB', todayS: 'ring', wkF: 'classic', wkC: '#EDE6D2',
     evF: 'kalam', evC: '#EDEAE0', alldayC: '#F2D479', holC: '#9CC9E6', headF: 'script', notesC: '#EDE6D2', mealsC: '#F6B3CB',
-    textF: 'kalam', textC: '#EDEAE0', lineC: '#C9B47A', lineS: 'solid', lineW: 'normal' };
+    textF: 'kalam', textC: '#EDEAE0', lineC: '#C9B47A', lineS: 'solid', lineW: 'normal', menuPos: 'bottom' };
   var PRESETS = [
     { id: 'classic', name: 'Classic', v: {} },
     { id: 'pastel', name: 'Pastel', v: { numF: 'caveat', numC: '#F6B3CB', todayC: '#9CC9E6', todayS: 'heart', wkC: '#B49CE0', evF: 'caveat', alldayC: '#F6B3CB', notesC: '#B49CE0', textF: 'caveat', lineC: '#B49CE0', lineS: 'dashed', lineW: 'thin' } },
@@ -2731,6 +2771,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       '.day .num{' + F('numF', 17) + 'color:' + v.numC + ';' + (v.boxes === 'off' ? 'border:none' : 'border-left:' + B + ';border-bottom:' + B) + '}',
       '.day.other .num{color:' + rgba(v.numC, 0.35) + '}',
       '.day.todaybox .num{color:' + (lum(v.todayC) > 0.18 ? '#141414' : '#FFFFFF') + ';background:' + v.todayC + ';border-radius:6px}',
+      '.day.todaybg{background:' + rgba(v.todayC, state.surface && state.surface.lum > 0.18 ? 0.32 : 0.25) + '}',
       '.weekdays div{' + F('wkF', 17) + 'color:' + v.wkC + '}',
       '.day .ev{' + F('evF', 13, true) + 'color:' + v.evC + '}',
       '.day .ev.allday{color:' + v.alldayC + '}',
@@ -2759,6 +2800,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     var st = $('themeStyle');
     if (!st) { st = document.createElement('style'); st.id = 'themeStyle'; document.head.appendChild(st); }
     st.textContent = themeCss(themeVals(t));
+    if (typeof applyMenuPos === 'function') applyMenuPos();
     if (state.lastMonth) renderMonth(state.lastMonth);
     if (typeof renderMeals === 'function') renderMeals();
   }
@@ -2770,7 +2812,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   var TROWS = [
     { label: 'Day numbers', parts: [['numF', 'font'], ['numC', 'color']] },
     { label: 'Number boxes', parts: [['boxes', [['on', 'Show'], ['off', 'Hide']]]] },
-    { label: 'Today', parts: [['todayS', [['ring', '◯ Chalk'], ['circle', '○ Circle'], ['heart', '♡ Heart'], ['star', '☆ Star'], ['box', '■ Box']]], ['todayC', 'color']] },
+    { label: 'Today', parts: [['todayS', [['ring', '◯ Chalk'], ['circle', '○ Circle'], ['heart', '♡ Heart'], ['star', '☆ Star'], ['box', '■ Box'], ['bg', '▧ Background']]], ['todayC', 'color']] },
     { label: 'Weekday names', parts: [['wkF', 'font'], ['wkC', 'color']] },
     { label: 'Events', parts: [['evF', 'font'], ['evC', 'color']] },
     { label: 'All-day events', parts: [['alldayC', 'color']] },
@@ -3020,8 +3062,43 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
           .catch(function (e) { $('setErr').textContent = e.message; });
       });
     });
+    var drawTodaySet = function () {
+      var v = themeVals(state.theme), cbox = $('setTodayC'), mp = savedMenuPos();
+      Array.prototype.forEach.call(document.querySelectorAll('#setTodayS .seg'), function (b) { b.classList.toggle('on', b.dataset.s === v.todayS); });
+      Array.prototype.forEach.call(document.querySelectorAll('#setMenuPos .seg'), function (b) { b.classList.toggle('on', b.dataset.pos === mp); });
+      colorRow(cbox, { extra: [v.todayC] }, function (c) { if (c) saveTodaySet('todayC', c.toUpperCase()); }, !!cbox.__opts);
+      markColor(cbox, null, v.todayC);
+    };
+    var saveTodaySet = function (k, val) {
+      var t = JSON.parse(JSON.stringify(state.theme || { p: 'classic', o: {} }));
+      t.o = t.o || {};
+      var pr = themeVals({ p: t.p, o: {} });
+      if (pr[k] === val) delete t.o[k]; else t.o[k] = val;
+      state.theme = t; applyTheme(t); drawTodaySet();
+      post('/api/theme', t).then(function (r) { state.theme = r; saved('Saved ✓'); })
+        .catch(function (e) { $('setErr').textContent = e.message; });
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('#setTodayS .seg'), function (b) {
+      b.addEventListener('click', function () { saveTodaySet('todayS', b.dataset.s); });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#setMenuPos .seg'), function (b) {
+      b.addEventListener('click', function () {
+        saveMenuPos(b.dataset.pos);
+        applyMenuPos();
+        saveTodaySet('menuPos', b.dataset.pos);
+      });
+    });
+    $('menuBtn').addEventListener('click', function () {
+      setDrawerOpen(!document.body.classList.contains('draweropen'));
+    });
+    $('menuBackdrop').addEventListener('click', function () {
+      setDrawerOpen(false);
+    });
+    ['borderBtn', 'choresBtn', 'acctBtn', 'settingsBtn', 'styleBtn', 'photosBtn', 'addBtn'].forEach(function (id) {
+      $(id).addEventListener('click', function () { if (isMenuDrawer()) setDrawerOpen(false); });
+    });
     var openSettings = function () {
-      $('setErr').textContent = ''; $('setSaved').textContent = ''; $('gPaste').value = ''; holCount();
+      $('setErr').textContent = ''; $('setSaved').textContent = ''; $('gPaste').value = ''; holCount(); drawTodaySet();
       if (!document.body.classList.contains('isadmin')) { $('setmodal').classList.add('open'); return; }   // editors: holidays only
       loadBins();
       api('/api/calendar/status').then(function (c) { calSt = c; drawCal(); }).catch(function (e) { $('setErr').textContent = e.message; });
@@ -3101,13 +3178,68 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     var c = n.indexOf('gi-') === 0 && color && color.toUpperCase() !== '#EDEAE0' ? '--' + color.slice(1).toLowerCase() : '';
     return '/api/clip/' + n + c + '.svg';
   }
+  function savedMenuPos() {
+    try { var v = localStorage.getItem('chalkMenuPos'); if (v === 'left' || v === 'bottom') return v; } catch (e) {}
+    var tv = (typeof PRESETS !== 'undefined' && typeof themeNow === 'function') ? themeNow() : null;
+    return tv && tv.menuPos === 'left' ? 'left' : 'bottom';
+  }
+  function saveMenuPos(pos) {
+    try {
+      if (pos === 'left' || pos === 'bottom') localStorage.setItem('chalkMenuPos', pos);
+      else localStorage.removeItem('chalkMenuPos');
+    } catch (e) {}
+  }
+  function isMenuDrawer() { return savedMenuPos() === 'left'; }
+  function setDrawerOpen(open) {
+    document.body.classList.toggle('draweropen', !!open);
+    var mb = $('menuBtn'); if (mb) mb.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function applyMenuPos() {
+    var left = isMenuDrawer(), cork = document.querySelector('.cork');
+    document.body.classList.toggle('menudrawer', left);
+    if (!left) setDrawerOpen(false);
+    if (cork) {
+      if (left) {
+        cork.classList.remove('floating'); cork.style.transform = '';
+        if (cork.parentNode !== document.body) document.body.appendChild(cork);
+      } else if (!(view.z > 1.001) && cork.parentNode !== $('board')) {
+        cork.classList.remove('floating'); cork.style.transform = '';
+        $('board').appendChild(cork);
+      }
+    }
+    applyBoardPad();
+  }
+  function savedBoardPad() {
+    try { var v = localStorage.getItem('chalkBoardPad'); if (v != null && v !== '') return Math.max(0, Math.min(80, Math.round(+v))); } catch (e) {}
+    if (state.meta && state.meta.boardPad != null) return Math.max(0, Math.min(80, Math.round(+state.meta.boardPad)));
+    return framelessNow() ? 0 : 14;
+  }
+  function saveBoardPad(p) {
+    try {
+      if (p == null) localStorage.removeItem('chalkBoardPad');
+      else localStorage.setItem('chalkBoardPad', String(Math.max(0, Math.min(80, Math.round(+p)))));
+    } catch (e) {}
+  }
+  function applyBoardPad(p) {
+    var pad = p != null ? Math.max(0, Math.min(80, Math.round(+p))) : (state.boardPadDraft != null ? state.boardPadDraft : savedBoardPad());
+    var hasCork = (EDIT || document.body.classList.contains('framed') || isFamily()) && !isMenuDrawer();
+    BOARD_W = 1252 + 2 * pad;
+    BOARD_H = (hasCork ? 692 : 642) + 2 * pad;
+    var brd = $('board');
+    brd.style.padding = pad + 'px';
+    brd.style.width = BOARD_W + 'px';
+    brd.style.height = BOARD_H + 'px';
+    brd.style.background = pad > 0 ? ((state.surface && state.surface.frame) || 'var(--wood)') : (framelessNow() ? 'transparent' : ((state.surface && state.surface.frame) || ''));
+    fit();
+  }
   function drawBorder(b) {
-    var body = $('calbody'), layer = $('borderLayer'), sz = b ? BORDER_SZ[b.size] || 26 : 0, pad = b ? sz + 6 : 0;
+    var body = $('calbody'), layer = $('borderLayer'), on = !!(b && b.items && b.items.length);
+    var sz = on ? (BORDER_SZ[b.size] || 26) : 0, pad = on ? sz + 6 : 0;
     var changed = (state.borderPad || 0) !== pad;
     state.borderPad = pad;
-    body.classList.toggle('bordered', !!b); body.style.setProperty('--bpad', pad + 'px');
+    body.classList.toggle('bordered', on); body.style.setProperty('--bpad', pad + 'px');
     layer.innerHTML = '';
-    if (b) {
+    if (on) {
       var W = body.offsetWidth, H = body.offsetHeight, half = pad / 2, gap = sz * 0.45, k = 0, pts = [];
       var side = function (x0, y0, x1, y1, skipEnd) {   // evenly spaced along one edge, corners included once
         var len = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.round(len / (sz + gap)));
@@ -3165,7 +3297,11 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       .catch(function (e) { if (e.status === 409 && ym === state.ym) loadMeta(ym).then(function () { return loadArt(ym); }); })
       .then(function () { relayoutBusy = false; });
   }
-  function applyBorder() { drawBorder((state.borderDraft !== undefined ? state.borderDraft : state.meta && state.meta.border) || null); }
+  function applyBorder() {
+    applyMenuPos();
+    drawBorder(state.borderDraft !== undefined ? state.borderDraft : (state.meta && state.meta.border));
+  }
+  applyMenuPos();
   function loadMeta(ym) {
     return api('/api/meta?ym=' + ym).then(function (m) { if (ym === state.ym) { state.meta = m || {}; state.metaYm = ym; applyTitle(); applyBorder(); layoutTitlePhotos(); } }).catch(function () {});
   }
@@ -3676,9 +3812,11 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     setRes(Math.min(3, (window.devicePixelRatio || 1) * baseScale() * view.z));
     // Zoomed in, the cork toolbar would scroll away with the board: float it at the bottom of the screen
     var cork = document.querySelector('.cork'), zoomed = view.z > 1.001;
-    if (zoomed && cork.parentNode === $('board')) { document.body.appendChild(cork); cork.classList.add('floating'); }
-    if (!zoomed && cork.parentNode !== $('board')) { cork.classList.remove('floating'); cork.style.transform = ''; $('board').appendChild(cork); }
-    if (zoomed) cork.style.transform = 'translateX(-50%) scale(' + baseScale() + ')';
+    if (!isMenuDrawer()) {
+      if (zoomed && cork.parentNode === $('board')) { document.body.appendChild(cork); cork.classList.add('floating'); }
+      if (!zoomed && cork.parentNode !== $('board')) { cork.classList.remove('floating'); cork.style.transform = ''; $('board').appendChild(cork); }
+      if (zoomed) cork.style.transform = 'translateX(-50%) scale(' + baseScale() + ')';
+    }
     if (selection && selection.length) placeSelBar();
   }
   function zoomAround(newZ, sx, sy, z0, x0, y0) {
@@ -3769,6 +3907,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       var st = titleStyle();
       tt = { hand: !!(state.meta && state.meta.hideTitle), f: st.f, c: st.c, o: st.o, z: st.z };
       $('ttDefault').checked = false;
+      $('setmodal').classList.remove('open');
       $('ttmodal').classList.add('open');
       ttRender();
     });
@@ -3801,10 +3940,17 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         picks.appendChild(b);
       });
       Array.prototype.forEach.call(document.querySelectorAll('#bSize .seg'), function (s) { s.classList.toggle('on', s.dataset.z === bd.size); });
+      var curPad = bd.boardPad != null ? bd.boardPad : savedBoardPad();
+      Array.prototype.forEach.call(document.querySelectorAll('#bPad [data-p]'), function (s) { s.classList.toggle('on', +s.dataset.p === curPad); });
+      $('bPadVal').textContent = curPad + 'px';
       markColor($('bColor'), null, bd.color);
       bGrid();
     }
-    function bChanged() { state.borderDraft = bd.items.length ? JSON.parse(JSON.stringify(bd)) : null; applyBorder(); bRender(); }
+    function bChanged() {
+      state.borderDraft = bd.items.length ? JSON.parse(JSON.stringify({ items: bd.items, color: bd.color, size: bd.size })) : null;
+      state.boardPadDraft = bd.boardPad;
+      applyBorder(); bRender();
+    }
     function bGrid() {
       var q = $('bQuery').value.trim().toLowerCase(), grid = $('bGrid'); grid.innerHTML = '';
       if (!q || !bNames) return;
@@ -3823,11 +3969,11 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         grid.appendChild(b);
       });
     }
-    function bClose() { $('bmodal').classList.remove('open'); state.borderDraft = undefined; applyBorder(); }
+    function bClose() { $('bmodal').classList.remove('open'); state.borderDraft = undefined; state.boardPadDraft = undefined; applyBorder(); }
     $('borderBtn').addEventListener('click', function () {
       if (state.drawing) return;
       var cur = state.meta && state.meta.border;
-      bd = cur ? { items: cur.items.slice(), color: cur.color || '#EDEAE0', size: cur.size || 'm' } : { items: [], color: '#EDEAE0', size: 'm' };
+      bd = cur ? { items: cur.items.slice(), color: cur.color || '#EDEAE0', size: cur.size || 'm', boardPad: savedBoardPad() } : { items: [], color: '#EDEAE0', size: 'm', boardPad: savedBoardPad() };
       var mon = MONTHS[+state.ym.slice(5) - 1];
       $('bTitle').textContent = 'Border for ' + mon;
       $('bYearlyLbl').textContent = 'Every year in ' + mon;
@@ -3848,13 +3994,19 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       if (bNames) go(); else api('/api/clip/list').then(function (l) { bNames = l; go(); }).catch(function (e) { $('bErr').textContent = 'Couldn’t load the pictures: ' + e.message; });
     });
     Array.prototype.forEach.call(document.querySelectorAll('#bSize .seg'), function (s) { s.addEventListener('click', function () { bd.size = s.dataset.z; bChanged(); }); });
+    Array.prototype.forEach.call(document.querySelectorAll('#bPad [data-p]'), function (s) { s.addEventListener('click', function () { bd.boardPad = +s.dataset.p; bChanged(); }); });
+    $('bPadDown').addEventListener('click', function () { var p = bd.boardPad != null ? bd.boardPad : savedBoardPad(); bd.boardPad = Math.max(0, p - 2); bChanged(); });
+    $('bPadUp').addEventListener('click', function () { var p = bd.boardPad != null ? bd.boardPad : savedBoardPad(); bd.boardPad = Math.min(80, p + 2); bChanged(); });
     $('bQuery').addEventListener('input', function () { clearTimeout(bTimer); bTimer = setTimeout(bGrid, 200); });
     $('bCancel').addEventListener('click', bClose);
     $('bNone').addEventListener('click', function () { bd.items = []; bChanged(); });
     $('bForm').addEventListener('submit', function (e) {
       e.preventDefault();
-      post('/api/border', { ym: state.ym, border: bd.items.length ? bd : null, yearly: $('bYearly').checked })
-        .then(function (m) { state.meta = m; bClose(); })
+      var send = bd.items.length ? { items: bd.items, color: bd.color, size: bd.size } : null;
+      saveBoardPad(bd.boardPad);
+      if (state.meta) state.meta.boardPad = bd.boardPad;
+      post('/api/border', { ym: state.ym, border: send, yearly: $('bYearly').checked, boardPad: bd.boardPad })
+        .then(function (m) { m.boardPad = bd.boardPad; state.meta = m; bClose(); })
         .catch(function (err) { $('bErr').textContent = err.message; });
     });
     $('ttForm').addEventListener('submit', function (e) {
@@ -4978,10 +5130,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   $('pairToWall').addEventListener('click', function () { location.href = '/'; });
   // ---- Signing in (people) ----
+  function isLocalClient() { return !!(state.who && state.who.local) || /^(localhost|127\.|\[::1\])/.test(location.hostname); }
   function showSignIn(why) {
     $('pairpad').classList.remove('open');
     $('signWhy').textContent = why || '';
     $('signPk').hidden = !(state.who && state.who.passkeys && window.chalkPasskey && window.chalkPasskey.supported);
+    $('signCode').hidden = isLocalClient();
     $('signpad').classList.add('open');
   }
   $('signPkGo').addEventListener('click', function () {
@@ -4995,6 +5149,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       .then(function () { location.reload(); })
       .catch(function (e) { $('signErr').textContent = e.message; $('signCode').value = ''; }).then(function () { $('signGo').disabled = false; });
   });
+  $('signPw').addEventListener('keydown', function (e) { if (e.key === 'Enter' && isLocalClient()) $('signGo').click(); });
   $('signCode').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('signGo').click(); });
   $('signPair').addEventListener('click', function (e) { e.preventDefault(); $('signpad').classList.remove('open'); location.href = '/?pair'; });
   // 👤 account menu (signed-in people)

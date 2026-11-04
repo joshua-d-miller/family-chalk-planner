@@ -127,7 +127,7 @@ button:disabled{opacity:.5;cursor:default}
       <div><label for="liUser">Username</label><input id="liUser" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
       <div><label for="liPw">Password</label><input id="liPw" type="password" autocomplete="current-password"></div>
     </div>
-    <label for="liCode">Code from your authenticator app</label><input id="liCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7">
+    <div id="liCodeWrap"><label for="liCode">Code from your authenticator app</label><input id="liCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7"></div>
     <div class="actions"><button class="go" id="liGo">Sign in</button><a class="dim" href="/edit">Back to the board</a></div>
     <div class="err" id="liErr"></div>
     <p class="dim" style="font-size:14px;margin-top:14px">Can’t sign in at all? Another admin can send you a new invite link. If there’s no other admin, run <code>deploy/reset-admin.sh</code> on the server: it removes every account and paired screen and prints a new setup code.</p>
@@ -395,8 +395,11 @@ button:disabled{opacity:.5;cursor:default}
   // ---- first run ----
   $('suGo').addEventListener('click', function () {
     if ($('suPw').value !== $('suPw2').value) { $('suErr').textContent = 'The two passwords don’t match'; return; }
-    busy($('suGo'), api('/api/account/setup', { code: $('suCode').value, username: $('suUser').value, name: $('suName').value, password: $('suPw').value }))
-      .then(function (r) { showEnroll(r, function () { refresh().then(function () { offerPasskey(openConsole); }); }); })
+    busy($('suGo'), api('/api/account/setup', { code: $('suCode').value, username: $('suUser').value, name: $('suName').value, password: $('suPw').value, skipTotp: !!who.local }))
+      .then(function (r) {
+        var finish = function () { refresh().then(function () { offerPasskey(openConsole); }); };
+        if (r.done) finish(); else showEnroll(r, finish);
+      })
       .catch(function (e) { $('suErr').textContent = e.message; });
   });
 
@@ -404,13 +407,14 @@ button:disabled{opacity:.5;cursor:default}
   var inviteCode = location.pathname === '/join' ? location.hash.slice(1) : '';
   $('joGo').addEventListener('click', function () {
     if ($('joPw').value !== $('joPw2').value) { $('joErr').textContent = 'The two passwords don’t match'; return; }
-    busy($('joGo'), api('/api/account/join', { invite: inviteCode, password: $('joPw').value }))
+    busy($('joGo'), api('/api/account/join', { invite: inviteCode, password: $('joPw').value, skipTotp: !!who.local }))
       .then(function (r) {
-        showEnroll(r, function (done) {
+        var finish = function (done) {
           refresh().then(function () {
             offerPasskey(function () { location.href = done.role === 'admin' ? '/admin' : '/edit'; }, 'On this tablet or phone, sign in to the board with Face ID, Touch ID or your fingerprint next time: add a passkey now.');
           });
-        });
+        };
+        if (r.done) finish(r); else showEnroll(r, finish);
       })
       .catch(function (e) { $('joErr').textContent = e.message; });
   });
@@ -419,6 +423,7 @@ button:disabled{opacity:.5;cursor:default}
   function showLogin(why) {
     if (why) $('loginWhy').textContent = why;
     $('loginPk').hidden = !pkReady();
+    $('liCodeWrap').hidden = !!who.local;
     $('liErr').textContent = ''; $('liCode').value = '';
     show('vLogin');
   }
@@ -430,6 +435,7 @@ button:disabled{opacity:.5;cursor:default}
       .then(function () { $('liPw').value = ''; refresh().then(openConsole); })
       .catch(function (e) { $('liErr').textContent = e.message; });
   });
+  $('liPw').addEventListener('keydown', function (e) { if (e.key === 'Enter' && who.local) $('liGo').click(); });
   $('liCode').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('liGo').click(); });
   $('logout').addEventListener('click', function () { api('/api/account/logout', {}).then(function () { location.href = '/admin'; }); });
 
@@ -874,11 +880,12 @@ button:disabled{opacity:.5;cursor:default}
   // ---- start ----
   function refresh() { return api('/api/whoami').then(function (w) { who = w; return w; }); }
   refresh().then(function (w) {
+    if (w.local) { $('suGo').textContent = 'Create admin account'; $('joGo').textContent = 'Join the board'; }
     if (inviteCode) {
       document.title = 'Join the board'; $('title').textContent = 'Join the board';
       return api('/api/account/join', { invite: inviteCode, check: true }).then(function (u) {
         $('joinTitle').textContent = 'Welcome, ' + u.name + '!';
-        $('joinText').textContent = 'Your username is ' + u.username + '. Choose a password, then add the board to an authenticator app' + (pkReady() ? ' and this device’s passkey.' : '.');
+        $('joinText').textContent = 'Your username is ' + u.username + (w.local ? '. Choose a password to join the board.' : '. Choose a password, then add the board to an authenticator app' + (pkReady() ? ' and this device’s passkey.' : '.'));
         show('vJoin');
       }).catch(function (e) { $('joinTitle').textContent = 'This link doesn’t work'; $('joinText').textContent = e.message; $('joGo').hidden = true; Array.prototype.forEach.call(document.querySelectorAll('#vJoin .row'), function (r) { r.hidden = true; }); show('vJoin'); });
     }
