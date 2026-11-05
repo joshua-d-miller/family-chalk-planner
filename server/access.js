@@ -348,7 +348,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
     if (req.path === '/admin' || req.path === '/join') res.set('Content-Security-Policy',
       "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'");
     // the board pages: everything comes from the board itself (fonts, pictures, live updates); nothing else may load
-    else if (['/','/edit','/chores','/meals','/jars','/reminders','/timers'].includes(req.path)) res.set('Content-Security-Policy',
+    else if (['/','/edit','/chores','/meals','/jars','/reminders','/timers','/pantry'].includes(req.path)) res.set('Content-Security-Policy',
       "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'");
     else res.set('Content-Security-Policy', "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'");
     if (/^\/api\/(whoami|account|users|devices|security|pair|passkey)/.test(req.path)) res.set('Cache-Control', 'no-store');
@@ -379,7 +379,7 @@ function setup(app, { db, DATA_DIR, ENV, BOARD_TITLE, broadcast }) {
   const FAMILY_POSTS = new Set(['/events', '/events/update', '/events/delete', '/meals', '/jars', '/countdowns', '/evcolor', '/evsize', '/art/relayout', '/holidays',
     '/art', '/art/update', '/art/bulk', '/art/restore', '/art/delete', '/art/undo',
     '/theme', '/meta', '/photos/settings', '/photos/sync', '/photos/immich-albums', '/border', '/chores/check',
-    '/reminders', '/reminders/check', '/right-pages', '/timers']);   // board style, month title, photos (everything but drawing)
+    '/reminders', '/reminders/check', '/right-pages', '/timers', '/pantry']);   // board style, month title, photos (everything but drawing)
   const ADMIN = [/^\/board-settings/, /^\/devices/, /^\/users/, /^\/security/, /^\/google\//, /^\/calendar\/status$/, /^\/trash$/, /^\/notes$/];
   app.use('/api', (req, res, next) => {
     const write = !(req.method === 'GET' || req.method === 'HEAD');

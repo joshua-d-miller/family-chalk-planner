@@ -704,7 +704,7 @@ function trashCfg() {
   return r ? JSON.parse(r.data) : { day: TRASH_DAY, recycle: { mode: 'same' } };
 }
 // Which mini-pages show in the right-hand column (up to 3)
-const RIGHT_PAGES = ['info', 'reminders', 'meals', 'jars', 'chores', 'upnext', 'today', 'photos', 'timers'];
+const RIGHT_PAGES = ['info', 'reminders', 'meals', 'jars', 'chores', 'upnext', 'today', 'photos', 'timers', 'pantry'];
 function cleanRightPages(list, fallbackBottom) {
   if (Array.isArray(list)) {
     const out = [];
@@ -1520,6 +1520,37 @@ app.post('/api/timers', (req, res) => {
   broadcast('timers', v);
   res.json(v);
 });
+
+// Pantry: food inventory organized by location (pantry, fridge, basement, etc.) with purchase/logged date
+const PANTRY_LOCATIONS = ['pantry', 'fridge', 'freezer', 'basement', 'other'];
+function loadPantryRaw() {
+  const row = qKvGet.get('pantry');
+  return row ? (JSON.parse(row.data).items || []) : [];
+}
+function cleanPantryItem(it, i) {
+  const now = nyParts(new Date());
+  const defaultDate = now.dateStr;
+  const id = typeof (it && it.id) === 'string' && /^[a-z0-9_-]{1,32}$/i.test(it.id) ? it.id : `p_${Date.now().toString(36)}_${i}`;
+  const name = String((it && it.name) || '').replace(/[\r\n<>]/g, ' ').trim().slice(0, 80);
+  const loc = PANTRY_LOCATIONS.includes(it && it.loc) ? it.loc : 'pantry';
+  const qty = String((it && it.qty) || '').replace(/[\r\n<>]/g, ' ').trim().slice(0, 30);
+  const date = (it && isDate(it.date)) ? it.date : defaultDate;
+  const notes = String((it && it.notes) || '').replace(/[\r\n<>]/g, ' ').trim().slice(0, 100);
+  return { id, name, loc, qty, date, notes };
+}
+app.get('/api/pantry', (req, res) => {
+  res.json({ items: loadPantryRaw() });
+});
+app.post('/api/pantry', (req, res) => {
+  const list = (req.body || {}).items;
+  if (!Array.isArray(list)) return res.status(400).json({ error: 'bad items list' });
+  const seen = new Set();
+  const items = list.slice(0, 500).map(cleanPantryItem).filter(it => it.name && !seen.has(it.id) && seen.add(it.id));
+  const data = { items, updated: Date.now() };
+  qKvSet.run('pantry', JSON.stringify(data));
+  broadcast('pantry', data);
+  res.json(data);
+});
 app.post('/api/reminders/check', (req, res) => {
   const { id, done, ack } = req.body || {};
   const items = loadRemindersRaw();
@@ -2113,7 +2144,7 @@ const GP_UA = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWe
 const CK = 'database/1/com.apple.photos.cloud/production';
 const CK_HOST = process.env.PHOTO_CK_HOST || 'https://ckdatabasews.icloud.com';   // override only for testing
 const photoState = { list: [], synced: 0, error: null, running: false };
-const PHOTO_CFG_DEFAULT = { frame: true, night: true, from: '21:00', to: '06:00', every: 20, dim: 50 };
+const PHOTO_CFG_DEFAULT = { frame: true, night: true, from: '21:00', to: '06:00', every: 20, dim: 50, showEvents: false, showTemp: false, showReminders: false };
 function photoCfg() {
   const r = qKvGet.get('photoCfg');
   return { ...PHOTO_CFG_DEFAULT, ...(r ? JSON.parse(r.data) : {}) };
@@ -2508,7 +2539,10 @@ app.post('/api/photos/settings', async (req, res) => {
     from: hm(b.from) || cur.from,
     to: hm(b.to) || cur.to,
     every: [10, 20, 30, 60].includes(+b.every) ? +b.every : cur.every,
-    dim: [30, 50, 70, 100].includes(+b.dim) ? +b.dim : cur.dim   // slideshow brightness, %
+    dim: [30, 50, 70, 100].includes(+b.dim) ? +b.dim : cur.dim,   // slideshow brightness, %
+    showEvents: b.showEvents === undefined ? cur.showEvents : !!b.showEvents,   // slideshow extras (translucent cards)
+    showTemp: b.showTemp === undefined ? cur.showTemp : !!b.showTemp,
+    showReminders: b.showReminders === undefined ? cur.showReminders : !!b.showReminders
   };
   const sv = {};
   if (b.immichUrl !== undefined) sv.IMMICH_URL = normalizeImmichUrl(b.immichUrl);
@@ -2558,7 +2592,8 @@ const MANIFESTS = {
   meals: { name: 'Meal Plan', short_name: 'Meals', start_url: '/meals', scope: '/', display: 'standalone', orientation: 'any' },
   jars: { name: 'Reward Jars', short_name: 'Jars', start_url: '/jars', scope: '/', display: 'standalone', orientation: 'any' },
   reminders: { name: 'Reminders', short_name: 'Reminders', start_url: '/reminders', scope: '/', display: 'standalone', orientation: 'any' },
-  timers: { name: 'Timers', short_name: 'Timers', start_url: '/timers', scope: '/', display: 'standalone', orientation: 'any' }
+  timers: { name: 'Timers', short_name: 'Timers', start_url: '/timers', scope: '/', display: 'standalone', orientation: 'any' },
+  pantry: { name: 'Pantry', short_name: 'Pantry', start_url: '/pantry', scope: '/', display: 'standalone', orientation: 'any' }
 };
 for (const [kind, m] of Object.entries(MANIFESTS)) {
   app.get(`/manifest-${kind}.webmanifest`, (req, res) => {
@@ -2670,6 +2705,7 @@ app.get('/meals', sendBoard('meals'));
 app.get('/jars', sendBoard('jars'));
 app.get('/reminders', sendBoard('reminders'));
 app.get('/timers', sendBoard('timers'));
+app.get('/pantry', sendBoard('pantry'));
 // the admin console (sign-in, screens, people, my account) and invite links
 for (const p of ['/admin', '/join']) app.get(p, (req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(PUBLIC, 'admin.html')));
 app.use(express.static(PUBLIC));

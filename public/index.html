@@ -41,8 +41,8 @@ body.family .slate{box-shadow:none}
 body[data-surface=cork] .slate,body[data-surface=cork] .slate .chalk,body[data-surface=wood] .slate,body[data-surface=wood] .slate .chalk{text-shadow:0 1px 2px rgba(20,10,0,.85),0 0 3px rgba(20,10,0,.6)}
 .cal{flex:1;min-width:0;display:flex;flex-direction:column}
 /* Chores, Meals, Jars, Reminders: full-board pages over the board */
-#chores,#mealsPage,#jarsPage,#remindersPage{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;padding:12px 24px 16px;--chz:24px}
-#chores[hidden],#mealsPage[hidden],#jarsPage[hidden],#remindersPage[hidden]{display:none}
+#chores,#mealsPage,#jarsPage,#remindersPage,#pantryPage{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;padding:12px 24px 16px;--chz:24px}
+#chores[hidden],#mealsPage[hidden],#jarsPage[hidden],#remindersPage[hidden],#pantryPage[hidden]{display:none}
 body.choresOn .cal,body.choresOn .notes,body.choresOn #art,body.choresOn #artSvg,body.choresOn #gifLayer,body.choresOn #ptitle,body.choresOn #wx,
 body.subpageOn .cal,body.subpageOn .notes,body.subpageOn #art,body.subpageOn #artSvg,body.subpageOn #gifLayer,body.subpageOn #ptitle,body.subpageOn #wx{visibility:hidden}
 .chhead{display:flex;align-items:center;gap:18px;height:68px;flex:none}
@@ -68,22 +68,23 @@ body.subpageOn .cal,body.subpageOn .notes,body.subpageOn #art,body.subpageOn #ar
 body.display #choresBtn,body:not(.edit) #choresBtn,
 body.display #mealsBtn,body:not(.edit) #mealsBtn,
 body.display #jarsBtn,body:not(.edit) #jarsBtn,
-body.display #remindersBtn,body:not(.edit) #remindersBtn{display:none}
+body.display #remindersBtn,body:not(.edit) #remindersBtn,
+body.display #pantryBtn,body:not(.edit) #pantryBtn{display:none}
 /* /chores, /meals, /jars, /reminders on a phone (or any browser): one easy-to-read page that scrolls */
-body.chorespage,body.mealspage,body.jarspage,body.reminderspage{cursor:auto}
-body.chorespage #stage,body.mealspage #stage,body.jarspage #stage,body.reminderspage #stage{display:none}
-body.chorespage #chores,body.mealspage #mealsPage,body.jarspage #jarsPage,body.reminderspage #remindersPage{position:fixed;inset:0;z-index:5;display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+body.chorespage,body.mealspage,body.jarspage,body.reminderspage,body.pantrypage{cursor:auto}
+body.chorespage #stage,body.mealspage #stage,body.jarspage #stage,body.reminderspage #stage,body.pantrypage #stage{display:none}
+body.chorespage #chores,body.mealspage #mealsPage,body.jarspage #jarsPage,body.reminderspage #remindersPage,body.pantrypage #pantryPage{position:fixed;inset:0;z-index:5;display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
   padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));--chz:22px;color:var(--chalk);text-shadow:0 1px 2px rgba(0,0,0,.35)}
-body.chorespage .chhead,body.mealspage .chhead,body.jarspage .chhead,body.reminderspage .chhead{height:auto;flex-wrap:wrap;gap:10px 12px;max-width:1100px;margin:0 auto}
-body.chorespage #chores .chhead h2,body.mealspage #mealsPage .chhead h2,body.jarspage #jarsPage .chhead h2,body.reminderspage #remindersPage .chhead h2{font-size:42px;flex:1;margin:0}
+body.chorespage .chhead,body.mealspage .chhead,body.jarspage .chhead,body.reminderspage .chhead,body.pantrypage .chhead{height:auto;flex-wrap:wrap;gap:10px 12px;max-width:1100px;margin:0 auto}
+body.chorespage #chores .chhead h2,body.mealspage #mealsPage .chhead h2,body.jarspage #jarsPage .chhead h2,body.reminderspage #remindersPage .chhead h2,body.pantrypage #pantryPage .chhead h2{font-size:42px;flex:1;margin:0}
 body.chorespage .chtabs{order:3;flex:1 1 100%;overflow-x:auto;scrollbar-width:none}
 body.chorespage .chtabs button{height:44px;padding:0 14px;font-size:18px}
-body.chorespage #chBack,body.mealspage #mpBack,body.jarspage #jpBack,body.reminderspage #rpBack{display:none}
-body.chorespage .chcols,body.mealspage .mpcols,body.jarspage .jpcols,body.reminderspage .rpcols{display:grid;grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px 28px;margin:16px auto 0;max-width:1100px}
+body.chorespage #chBack,body.mealspage #mpBack,body.jarspage #jpBack,body.reminderspage #rpBack,body.pantrypage #ppBack{display:none}
+body.chorespage .chcols,body.mealspage .mpcols,body.jarspage .jpcols,body.reminderspage .rpcols,body.pantrypage .ppcols{display:grid;grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px 28px;margin:16px auto 0;max-width:1100px}
 body.chorespage .chcol,body.chorespage .chcol:first-child{overflow:visible;border-left:none;padding:0 0 14px;margin-bottom:14px;border-bottom:1.5px solid rgba(var(--ink),.25)}
 body.chorespage .chitem{padding:9px 2px;min-height:48px}
 body.chorespage .chempty{font-size:20px}
-@media (min-width:700px){ body.chorespage #chores,body.mealspage #mealsPage,body.jarspage #jarsPage,body.reminderspage #remindersPage{--chz:25px} }
+@media (min-width:700px){ body.chorespage #chores,body.mealspage #mealsPage,body.jarspage #jarsPage,body.reminderspage #remindersPage,body.pantrypage #pantryPage{--chz:25px} }
 /* Meal Plan Page, Jars Page, Reminders Page */
 .mpcols{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:12px 18px;margin-top:10px;overflow-y:auto}
 .mpcol{display:flex;flex-direction:column;padding:10px 14px;border:1.5px solid rgba(var(--ink),.25);border-radius:14px;background:rgba(255,255,255,.02);min-height:0}
@@ -208,9 +209,38 @@ body.subpageOn.timersOn #timerChips,body.timerspage #timerChips{display:none}
 .tabtn.go{border-color:var(--green);color:var(--green);background:rgba(169,216,160,.12);min-width:120px}
 /* Slideshow quick button beside the month arrows */
 .nav.slidego[hidden]{display:none}
+.nav.slidego{position:absolute;right:6px;top:13px;z-index:3}
 body.drawing .nav.slidego{display:none}
 /* Change the chores */
 #chedmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:22}
+#chpmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:24}
+#chpmodal.open{display:flex}
+#chpmodal .card{width:min(420px,94vw)}
+/* chores: edit right on the page (pencil → ✓ save / ✕ discard) */
+.chicon{flex:none;width:46px;height:46px;border-radius:50%;border:2px solid rgba(var(--ink),.4);background:transparent;color:var(--chalk);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.chicon[hidden]{display:none}
+.chicon.txt{font:700 17px 'Kalam',cursive,var(--efont);width:auto;min-width:46px;padding:0 12px;border-radius:23px;gap:2px}
+.chicon.ok{border-color:var(--green);color:var(--green);background:rgba(169,216,160,.14)}
+.chicon.no{border-color:#F7A1A1;color:#F7A1A1}
+.chediterr{flex:none;margin:2px 4px 0;text-align:right}
+.chediterr:empty{display:none}
+body.chedit .chcol{border-left-style:dashed;overflow-y:auto}
+.chcol .chrow{display:flex;align-items:center;gap:8px;padding:calc(var(--chz) * .18) 0}
+.chcol .chrow .chbox{opacity:.55}
+.chcol .chrow input[type=text]{flex:1;min-width:0;height:calc(var(--chz) * 1.7);margin:0;padding:0 10px;border-radius:10px;border:1.5px dashed rgba(var(--ink),.35);background:rgba(255,255,255,.04);color:var(--chalk);font:700 var(--chz) 'Kalam',cursive,var(--efont)}
+.chcol .chrow input[type=text]:focus{outline:none;border-style:solid;border-color:var(--yellow)}
+.chcol .chrow .chx{flex:none;border:none;background:transparent;color:#F7A1A1;font:700 calc(var(--chz) * 1.1) 'Kalam',cursive;cursor:pointer;padding:0 6px;opacity:.8}
+.chcol .chadd{display:flex;align-items:center;justify-content:center;width:100%;height:calc(var(--chz) * 1.9);margin-top:6px;border-radius:12px;border:1.5px dashed rgba(var(--ink),.4);background:transparent;color:rgba(var(--ink),.85);font:700 calc(var(--chz) * 1.2) 'Kalam',cursive;cursor:pointer}
+.chcol h3 .chname{flex:1;min-width:0;height:1.5em;padding:0 8px;border-radius:10px;border:1.5px dashed rgba(var(--ink),.35);background:rgba(255,255,255,.04);color:var(--yellow);font:inherit}
+.chcol h3 .chname:focus{outline:none;border-style:solid}
+.chcol h3 .chdelp{border:none;background:transparent;color:#F7A1A1;font:700 .6em 'Kalam',cursive;cursor:pointer;opacity:.8;padding:0 4px}
+.chcol.chnew{display:flex;align-items:flex-start;justify-content:center;border-left-style:dashed}
+.chaddp{width:calc(var(--chz) * 3);height:calc(var(--chz) * 3);border-radius:50%;border:2px dashed rgba(var(--ink),.5);background:transparent;color:var(--chalk);font:700 calc(var(--chz) * 1.8) 'Kalam',cursive;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:4px}
+body.chorespage .chicon{width:44px;height:44px}
+/* the chores header follows the text size (S / M / L) */
+#chores .chhead h2{font-size:calc(var(--chz) * 2.1)}
+#chores .chtabs button{height:calc(var(--chz) * 1.9);font-size:max(14px,calc(var(--chz) * .85));padding:0 calc(var(--chz) * .7)}
+#chores .chtabs button small{font-size:max(11px,calc(var(--chz) * .6))}
 #chedmodal.open{display:flex}
 #chedmodal .card{width:min(640px,96vw);max-height:94vh;overflow-y:auto}
 .chedp,.chedc{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-bottom:1px dashed rgba(var(--ink),.2)}
@@ -369,6 +399,7 @@ body.menudrawer .cork #choresBtn{order:2}
 body.menudrawer .cork #mealsBtn{order:3}
 body.menudrawer .cork #remindersBtn{order:4}
 body.menudrawer .cork #timersBtn{order:4}
+body.menudrawer .cork #pantryBtn{order:4}
 body.menudrawer .cork #jarsBtn{order:5}
 body.menudrawer .cork #musicBtn{order:6}
 body.menudrawer .cork #drawBtn{order:7}
@@ -392,7 +423,7 @@ body.menudrawer .cork #swatches{flex-wrap:wrap;max-width:100%;justify-content:ce
 .pill.add{border-color:var(--yellow);color:var(--yellow)}
 .tools{display:none;align-items:center;gap:2px;background:#161616;border-radius:24px;padding:0 6px;box-shadow:0 2px 4px rgba(0,0,0,.35)}
 body.drawing .tools{display:flex}
-body.drawing #addBtn,body.drawing #photosBtn,body.drawing #styleBtn,body.drawing #settingsBtn,body.drawing #mealsBtn,body.drawing #jarsBtn,body.drawing #remindersBtn{display:none}
+body.drawing #addBtn,body.drawing #photosBtn,body.drawing #styleBtn,body.drawing #settingsBtn,body.drawing #mealsBtn,body.drawing #jarsBtn,body.drawing #remindersBtn,body.drawing #timersBtn,body.drawing #pantryBtn{display:none}
 body.display #photosBtn{display:none}
 .tool:disabled{opacity:.3;cursor:default}
 .tool.medium{width:auto;padding:0 10px;border-radius:22px;font-family:'Kalam',cursive;font-size:15px;font-weight:700;gap:5px}
@@ -501,11 +532,47 @@ body.display{touch-action:manipulation}
 #slides .clock b small{font-size:30px;margin-left:8px;font-weight:700;letter-spacing:1px}
 #slides .dim{position:absolute;inset:0;background:#000;opacity:.5;pointer-events:none;transition:opacity 1s;z-index:1}
 #slides .clock{z-index:2}
+/* today's events / temperature / reminders over the slideshow: translucent cards, on the side away from the clock */
+#slides .sinfo{position:absolute;bottom:30px;left:40px;z-index:2;max-width:min(46vw,560px);text-align:left;color:#F4F1E8;font-family:'Kalam',cursive;padding:12px 24px 12px;border-radius:24px;background:rgba(10,10,10,.42);-webkit-backdrop-filter:blur(12px) brightness(.75);backdrop-filter:blur(12px) brightness(.75);box-shadow:0 4px 24px rgba(0,0,0,.35);text-shadow:0 1px 2px rgba(0,0,0,.85),0 0 12px rgba(0,0,0,.5);pointer-events:none}
+#slides .sinfo.right{left:auto;right:40px;text-align:right}
+#slides .sinfo:empty{display:none}
+#slides .sinfo .sec + .sec{margin-top:10px;padding-top:10px;border-top:1px solid rgba(244,241,232,.22)}
+#slides .sinfo h4{margin:0 0 2px;font:700 18px 'Kalam',cursive;letter-spacing:1px;text-transform:uppercase;opacity:.75}
+#slides .sinfo .temp b{display:block;font-size:64px;line-height:1;font-weight:700}
+#slides .sinfo .temp span{font-size:28px}
+#slides .sinfo ul{list-style:none;margin:0;padding:0}
+#slides .sinfo li{font-size:28px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#slides .sinfo li small{font-size:.75em;opacity:.8;margin-right:8px}
+#slides .sinfo.right li small{margin-right:0;margin-left:8px}
 #slides .tapx{display:none;position:absolute;top:20px;left:50%;transform:translateX(-50%);font:16px 'Kalam',cursive;color:rgba(var(--ink),.7);background:rgba(0,0,0,.4);padding:4px 14px;border-radius:14px}
 body.edit #slides .tapx{display:block}
-#pmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
-#pmodal.open{display:flex}
+#pmodal,#ppmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
+#pmodal.open,#ppmodal.open{display:flex}
 #pmodal .card{width:min(520px,94vw);max-height:94vh;overflow-y:auto}
+#ppmodal .card{width:min(440px,94vw);max-height:94vh;overflow-y:auto}
+/* Pantry page styles */
+.ppcols{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 18px;margin-top:10px;overflow-y:auto}
+.ppcol{display:flex;flex-direction:column;padding:10px 14px;border:1.5px solid rgba(var(--ink),.25);border-radius:14px;background:rgba(255,255,255,.02);min-height:0}
+.ppcol h3{margin:0 0 8px;font-family:'Dancing Script',cursive;font-size:32px;line-height:1;color:var(--yellow);display:flex;align-items:center;justify-content:space-between}
+.ppcol h3 small{font:700 15px 'Kalam',cursive;color:rgba(var(--ink),.6)}
+.pplist{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.ppitem{display:flex;align-items:baseline;gap:8px;padding:6px 4px;border-bottom:1px dashed rgba(var(--ink),.2);font:700 18px/1.2 'Kalam',cursive;color:var(--chalk)}
+.ppitem .pn{flex:1;min-width:0;word-break:break-word}
+.ppitem .pq{font-size:15px;color:var(--yellow);padding:1px 6px;border-radius:10px;background:rgba(242,212,121,.15);white-space:nowrap}
+.ppitem .pd{font-size:13px;opacity:.7;color:var(--chalk);white-space:nowrap}
+.ppitem .px{border:none;background:transparent;color:#F7A1A1;font:700 18px 'Kalam',cursive;cursor:pointer;padding:0 4px;opacity:.7}
+.ppitem .px:hover{opacity:1}
+.ppquick{display:flex;gap:6px;margin-top:8px}
+.ppquick input{height:34px;padding:0 8px;border-radius:8px;border:1.5px dashed rgba(var(--ink),.35);background:rgba(255,255,255,.04);color:var(--chalk);font:700 15px 'Kalam',cursive}
+.ppquick input.pn{flex:1;min-width:0}
+.ppquick input.pq{width:65px}
+.ppquick button{height:34px;padding:0 10px;border-radius:8px;border:1.5px solid var(--green);background:rgba(169,216,160,.15);color:var(--green);font:700 16px 'Kalam',cursive;cursor:pointer}
+.pantrymini{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px;overflow:hidden}
+.pantrymini li{display:flex;align-items:baseline;gap:8px;font:700 18px/1.2 'Kalam',cursive;color:var(--chalk)}
+.pantrymini li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pantrymini li .q{font-size:14px;color:var(--yellow)}
+.pantrymini li .l{font-size:13px;opacity:.65}
+.pantrymini li.none{color:rgba(var(--ink),.55);font-size:16px}
 #thmodal{position:fixed;inset:0;background:rgba(0,0,0,.2);display:none;align-items:center;justify-content:flex-end;padding-right:14px;z-index:20}
 #thmodal.open{display:flex}
 #thmodal .card{width:min(470px,60vw);max-height:94vh;overflow-y:auto;padding:18px 20px}
@@ -829,6 +896,10 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         <h2 class="mh">Today</h2>
         <ul class="upnext" id="todayMpList"></ul>
       </div>
+      <div class="mpsec grow" id="mpPantry" data-mp="pantry" hidden>
+        <h2 class="mh" id="mpPantryHead" style="cursor:pointer">Pantry &amp; Fridge</h2>
+        <ul class="pantrymini" id="pantryMpList"></ul>
+      </div>
     </div>
     <div id="ptitle" aria-hidden="true"></div>
     <canvas id="art" width="2504" height="1284"></canvas>
@@ -840,9 +911,14 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <div class="chhead">
         <h2>Chores</h2>
         <div class="chtabs" id="chTabs"></div>
-        <button type="button" class="chlink" id="chEdit" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg>Change the list</button>
         <button type="button" class="chlink" id="chBack"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Calendar</button>
+        <button type="button" class="chicon txt" id="chSize" aria-label="Text size" title="Text size"></button>
+        <button type="button" class="chicon" id="chAddP" aria-label="Add a family member" title="Add a family member" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></button>
+        <button type="button" class="chicon" id="chEdit" aria-label="Edit chores" title="Edit chores" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg></button>
+        <button type="button" class="chicon ok" id="chSave" aria-label="Save changes" title="Save" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></button>
+        <button type="button" class="chicon no" id="chCancel" aria-label="Discard changes" title="Discard changes" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
       </div>
+      <div class="err chediterr" id="chEditErr"></div>
       <div class="chcols" id="chCols"></div>
     </div>
     <div id="mealsPage" hidden>
@@ -891,6 +967,15 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       </form>
       <div class="tmgrid" id="tmGrid"></div>
     </div>
+    <div id="pantryPage" hidden>
+      <div class="chhead">
+        <h2>Pantry</h2>
+        <div style="flex:1"></div>
+        <button type="button" class="chlink" id="ppAddBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add food item</button>
+        <button type="button" class="chlink" id="ppBack"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Calendar</button>
+      </div>
+      <div class="ppcols" id="ppCols"></div>
+    </div>
     <div id="offline" aria-live="polite"><span></span><b id="offlineTxt">Offline</b></div>
     <div id="selGrip" aria-label="Drag to resize"></div>
     <div id="selbar">
@@ -923,6 +1008,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <button class="pill" id="mealsBtn" aria-label="Meal Plan"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>Meals</button>
     <button class="pill" id="remindersBtn" aria-label="Reminders"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Reminders</button>
     <button class="pill" id="timersBtn" aria-label="Timers"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6M12 2v3"/></svg>Timers</button>
+    <button class="pill" id="pantryBtn" aria-label="Pantry"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h18v18H3z"/><path d="M12 3v18M3 9h18M3 15h18"/></svg>Pantry</button>
     <button class="pill" id="jarsBtn" aria-label="Reward Jars"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="3" rx="1"/><path d="M7 5v2c-1.5 1-2 2.5-2 4.5v7.5a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-7.5c0-2-.5-3.5-2-4.5V5"/></svg>Jars</button>
     <a class="pill" id="musicBtn" href="https://music.youtube.com/" aria-label="YouTube Music"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Music</a>
     <button class="pill" id="acctBtn" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
@@ -953,6 +1039,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   <div class="sl"></div>
   <div class="sl"></div>
   <div class="clock" id="sClock"><b id="sTime"></b><span id="sDate"></span></div>
+  <div class="sinfo" id="sInfo"></div>
   <div class="dim" id="sDim"></div>
   <div class="tapx">Tap to close the slideshow</div>
 </div>
@@ -1003,6 +1090,10 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <select id="pDim"><option value="30">Dim (30%)</option><option value="50">Medium (50%)</option><option value="70">Bright (70%)</option><option value="100">Full</option></select>
     <label for="pEvery">New photo every</label>
     <select id="pEvery"><option value="10">10 seconds</option><option value="20">20 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option></select>
+    <div class="sublbl" style="margin-top:14px">Also show on the slideshow</div>
+    <label class="check"><input type="checkbox" id="pShowEvents"> Today’s events</label>
+    <label class="check"><input type="checkbox" id="pShowTemp"> Today’s temperature</label>
+    <label class="check"><input type="checkbox" id="pShowRem"> Today’s reminders</label>
     <div class="opts" style="margin-top:16px">
       <button type="button" class="seg" id="pPreview"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4l15 8-15 8z"/></svg>Preview slideshow</button>
       <button type="button" class="seg" id="pSync"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Check album now</button>
@@ -1084,6 +1175,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <button type="button" class="seg" data-mp="today">Today</button>
       <button type="button" class="seg" data-mp="photos">Photos</button>
       <button type="button" class="seg" data-mp="timers">Timers</button>
+      <button type="button" class="seg" data-mp="pantry">Pantry</button>
     </div>
     <div class="sublbl notadmin" style="margin-top:20px">The calendar and trash day settings are for admins: sign in to the admin console (/admin), then come back here.</div>
     <div class="adminonly">
@@ -1324,6 +1416,53 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   </div>
 </div>
 
+<div id="ppmodal" role="dialog" aria-modal="true" aria-labelledby="ppTitle">
+  <form class="card" id="ppForm" autocomplete="off">
+    <h3 id="ppTitle">Add food item</h3>
+    <label for="ppName">Item name</label>
+    <input type="text" id="ppName" maxlength="80" placeholder="e.g. Pasta, Canned tomatoes, Milk" required>
+    <div class="row">
+      <div>
+        <label for="ppLoc">Location</label>
+        <select id="ppLoc">
+          <option value="pantry">Pantry</option>
+          <option value="fridge">Fridge</option>
+          <option value="freezer">Freezer</option>
+          <option value="basement">Basement</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label for="ppQty">Quantity / Size</label>
+        <input type="text" id="ppQty" maxlength="30" placeholder="e.g. 2 boxes, 1 gallon">
+      </div>
+    </div>
+    <label for="ppDate">Date purchased / entered</label>
+    <input type="date" id="ppDate">
+    <label for="ppNotes">Notes / Expiration</label>
+    <input type="text" id="ppNotes" maxlength="100" placeholder="e.g. Bottom shelf, use by Nov 20">
+    <div class="err" id="ppErr"></div>
+    <div class="actions">
+      <button type="button" class="btn" id="ppCancel">Cancel</button>
+      <button type="submit" class="btn go" id="ppSave">Save</button>
+    </div>
+  </form>
+</div>
+
+<div id="chpmodal" role="dialog" aria-modal="true" aria-labelledby="chpTitle">
+  <form class="card" id="chpForm" autocomplete="off">
+    <h3 id="chpTitle">Add a family member</h3>
+    <label for="chpName">Name</label>
+    <input type="text" id="chpName" maxlength="20" placeholder="Name">
+    <label class="check"><input type="checkbox" id="chpKid"> Kid (can have a tablet that shows just their chores)</label>
+    <div class="err" id="chpErr"></div>
+    <div class="actions">
+      <button type="button" class="btn" id="chpCancel">Cancel</button>
+      <button type="submit" class="btn go">Add</button>
+    </div>
+  </form>
+</div>
+
 <div id="chedmodal" role="dialog" aria-modal="true" aria-labelledby="chedTitle">
   <div class="card">
     <h3 id="chedTitle">Change the chores</h3>
@@ -1508,16 +1647,18 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   var JARS_PAGE = PATH_CLEAN === '/jars';
   var REMINDERS_PAGE = PATH_CLEAN === '/reminders';
   var TIMERS_PAGE = PATH_CLEAN === '/timers';
-  var SUB_PAGE = CHORES_PAGE || MEALS_PAGE || JARS_PAGE || REMINDERS_PAGE || TIMERS_PAGE;
+  var PANTRY_PAGE = PATH_CLEAN === '/pantry';
+  var SUB_PAGE = CHORES_PAGE || MEALS_PAGE || JARS_PAGE || REMINDERS_PAGE || TIMERS_PAGE || PANTRY_PAGE;
   // Test switches for display glitches on kiosk browsers: add ?noart, ?plain and/or ?csszoom to the address
   var Q = new URLSearchParams(location.search);
   var FLAG = { noart: Q.has('noart'), plain: Q.has('plain'), csszoom: Q.has('csszoom') && !EDIT };
-  document.body.className = EDIT ? 'edit' : CHORES_PAGE ? 'display chorespage' : MEALS_PAGE ? 'display mealspage' : JARS_PAGE ? 'display jarspage' : REMINDERS_PAGE ? 'display reminderspage' : TIMERS_PAGE ? 'display timerspage' : 'display';
+  document.body.className = EDIT ? 'edit' : CHORES_PAGE ? 'display chorespage' : MEALS_PAGE ? 'display mealspage' : JARS_PAGE ? 'display jarspage' : REMINDERS_PAGE ? 'display reminderspage' : TIMERS_PAGE ? 'display timerspage' : PANTRY_PAGE ? 'display pantrypage' : 'display';
   if (CHORES_PAGE) document.body.appendChild(document.getElementById('chores'));
   if (MEALS_PAGE) document.body.appendChild(document.getElementById('mealsPage'));
   if (JARS_PAGE) document.body.appendChild(document.getElementById('jarsPage'));
   if (REMINDERS_PAGE) document.body.appendChild(document.getElementById('remindersPage'));
   if (TIMERS_PAGE) document.body.appendChild(document.getElementById('timersPage'));
+  if (PANTRY_PAGE) document.body.appendChild(document.getElementById('pantryPage'));
 
   var CHALK = ['#EDEAE0', '#F6B3CB', '#F2D479', '#9CC9E6', '#A9D8A0', '#E8A35C', '#B49CE0'];
   // Posca paint-marker colors: bright, opaque, flat
@@ -2285,7 +2426,13 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   // ---- Chores: a page of their own (swipe left from the calendar, or 🧹 Chores) ----
   var ch = { data: null, tab: 'day', on: false, at: 0 };
   var CH_TABS = [['day', 'Today'], ['week', 'This week'], ['month', 'This month']];
-  function loadChores() { return api('/api/chores').then(function (d) { ch.data = d; if (ch.on) renderChores(); renderChoresMp(); }).catch(function () {}); }
+  // text size on this page: S / M / L, remembered on this device (default M, smaller than it used to be)
+  var CH_SIZES = [['s', 'S', 0.58], ['m', 'M', 0.78], ['l', 'L', 1]];
+  function chSizeDef() {
+    var k = null; try { k = localStorage.getItem('chalkChoresSize'); } catch (e) {}
+    return CH_SIZES.filter(function (s) { return s[0] === k; })[0] || CH_SIZES[1];
+  }
+  function loadChores() { return api('/api/chores').then(function (d) { ch.data = d; if (ch.on && !ch.edit) renderChores(); renderChoresMp(); }).catch(function () {}); }
   function renderChoresMp() {
     var ul = $('choresMpList'); if (!ul) return;
     ul.innerHTML = '';
@@ -2326,13 +2473,19 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   function renderChores() {
     var d = ch.data, cols = $('chCols'), tabs = $('chTabs');
-    $('chEdit').hidden = state.role !== 'editor';
+    var isEd = state.role === 'editor';
+    $('chEdit').hidden = !isEd || !!ch.edit;
+    $('chSave').hidden = $('chCancel').hidden = !ch.edit;
+    $('chAddP').hidden = !ch.edit || ch.edit.people.length >= 8;
+    $('chSize').textContent = 'Aa ' + chSizeDef()[1];
+    document.body.classList.toggle('chedit', !!ch.edit);
     tabs.innerHTML = ''; cols.innerHTML = '';
     var names = {}, order = {};
     if (d) d.people.forEach(function (p, i) { names[p.id] = p.name; order[p.id] = i; });
     $('chores').querySelector('.chhead h2').textContent = d && d.mine && names[d.mine] ? names[d.mine] + '’s chores' : 'Chores';
+    if (ch.edit) { renderChoresEdit(); return; }
     if (!d || !d.chores.length) {
-      cols.appendChild(el('div', 'chempty', state.role === 'editor' ? 'No chores yet — tap “✎ Change the list” to add them (or start from an example).' : 'No chores yet. Add them from a phone or tablet: the board’s address followed by /chores'));
+      cols.appendChild(el('div', 'chempty', state.role === 'editor' ? 'No chores yet — tap the ✎ pencil in the corner to add them (or start from an example).' : 'No chores yet. Add them from a phone or tablet: the board’s address followed by /chores'));
       return;
     }
     var have = CH_TABS.filter(function (t) { return chEntries(d, t[0]).length; });
@@ -2378,15 +2531,17 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     fitChores(gl.length);
   }
   function fitChores(n) {   // big text (bigger still with only a column or two); smaller only when a column would overflow
-    if (CHORES_PAGE) return;   // the page scrolls instead
-    var box = $('chores'), size = n <= 1 ? 40 : n === 2 ? 34 : n === 3 ? 28 : 26;
+    var scale = chSizeDef()[2], box = $('chores');
+    if (CHORES_PAGE) { box.style.setProperty('--chz', Math.round((window.innerWidth >= 700 ? 25 : 22) * scale) + 'px'); return; }   // the page scrolls instead
+    var size = Math.round((n <= 1 ? 40 : n === 2 ? 34 : n === 3 ? 28 : 26) * scale);
     box.style.setProperty('--chz', size + 'px');
     var over = function () { return Array.prototype.some.call(document.querySelectorAll('#chCols .chcol'), function (c) { return c.scrollHeight > c.clientHeight + 1; }); };
-    while (size > 14 && over()) { size -= 1; box.style.setProperty('--chz', size + 'px'); }
+    while (size > 12 && over()) { size -= 1; box.style.setProperty('--chz', size + 'px'); }
   }
   state.subpage = null;
   function showSubpage(which) {
     if (state.subpage === which) which = null;
+    if (which !== 'chores' && ch.edit) { ch.edit = null; document.body.classList.remove('chedit'); $('chEditErr').textContent = ''; }   // leaving the page drops an unsaved edit
     state.subpage = which || null;
     ch.on = which === 'chores';
     ch.at = Date.now();
@@ -2395,19 +2550,23 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     if ($('jarsPage')) $('jarsPage').hidden = which !== 'jars';
     if ($('remindersPage')) $('remindersPage').hidden = which !== 'reminders';
     if ($('timersPage')) $('timersPage').hidden = which !== 'timers';
+    if ($('pantryPage')) $('pantryPage').hidden = which !== 'pantry';
     document.body.classList.toggle('choresOn', which === 'chores');
     document.body.classList.toggle('timersOn', which === 'timers');
+    document.body.classList.toggle('pantryOn', which === 'pantry');
     document.body.classList.toggle('subpageOn', !!which);
     if ($('choresBtn')) $('choresBtn').classList.toggle('on', which === 'chores');
     if ($('mealsBtn')) $('mealsBtn').classList.toggle('on', which === 'meals');
     if ($('jarsBtn')) $('jarsBtn').classList.toggle('on', which === 'jars');
     if ($('remindersBtn')) $('remindersBtn').classList.toggle('on', which === 'reminders');
     if ($('timersBtn')) $('timersBtn').classList.toggle('on', which === 'timers');
+    if ($('pantryBtn')) $('pantryBtn').classList.toggle('on', which === 'pantry');
     if (which === 'chores') { if (ch.data) renderChores(); loadChores(); }
     if (which === 'meals') { renderMealsPage(); loadMeals(); }
     if (which === 'jars') { renderJarsPage(); loadJars(); }
     if (which === 'reminders') { renderRemindersPage(); loadReminders(); }
     if (which === 'timers' && typeof renderTimersPage === 'function') { renderTimersPage(); loadTimers(); }
+    if (which === 'pantry' && typeof renderPantryPage === 'function') { renderPantryPage(); loadPantry(); }
   }
   function showChores(on) { showSubpage(on ? 'chores' : null); }
   $('chBack').addEventListener('click', function () { showSubpage(null); });
@@ -2415,12 +2574,15 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   if ($('jpBack')) $('jpBack').addEventListener('click', function () { showSubpage(null); });
   if ($('rpBack')) $('rpBack').addEventListener('click', function () { showSubpage(null); });
   if ($('tpBack')) $('tpBack').addEventListener('click', function () { showSubpage(null); });
+  if ($('ppBack')) $('ppBack').addEventListener('click', function () { showSubpage(null); });
   if ($('choresBtn')) $('choresBtn').addEventListener('click', function () { showSubpage('chores'); });
   if ($('mealsBtn')) $('mealsBtn').addEventListener('click', function () { showSubpage('meals'); });
   if ($('jarsBtn')) $('jarsBtn').addEventListener('click', function () { showSubpage('jars'); });
   if ($('remindersBtn')) $('remindersBtn').addEventListener('click', function () { showSubpage('reminders'); });
   if ($('timersBtn')) $('timersBtn').addEventListener('click', function () { showSubpage('timers'); });
+  if ($('pantryBtn')) $('pantryBtn').addEventListener('click', function () { showSubpage('pantry'); });
   if ($('mpTimersHead')) $('mpTimersHead').addEventListener('click', function () { if (EDIT) showSubpage('timers'); });
+  if ($('mpPantryHead')) $('mpPantryHead').addEventListener('click', function () { if (EDIT) showSubpage('pantry'); });
   if ($('mpChoresHead')) $('mpChoresHead').addEventListener('click', function () { showSubpage('chores'); });
   // swipe left on the board for chores, right to go back (not while drawing, zoomed in, or in a popup)
   (function () {
@@ -2558,7 +2720,130 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     post('/api/chores/save', { example: true }).then(function (v) { chedSaved(v); chedOpen(); })
       .catch(function (e) { $('chedErr').textContent = e.message; });
   });
-  $('chEdit').addEventListener('click', chedOpen);
+  $('chEdit').addEventListener('click', chEditStart);
+  $('chSave').addEventListener('click', chEditSave);
+  $('chCancel').addEventListener('click', chEditCancel);
+
+  // ---- Edit the chores right on the page: pencil → type in the rows → ✓ save / ✕ discard ----
+  function chEditStart() {
+    var d = ch.data || { people: [], chores: [] };
+    ch.edit = {
+      people: d.people.map(function (p) { return { id: p.id, name: p.name, kid: !!p.kid }; }),
+      chores: d.chores.map(function (c) { return { id: c.id, title: c.title, who: c.who.slice(), every: c.every, times: c.times || 1, each: !!c.each }; })
+    };
+    ch.focusId = null; ch.at = Date.now(); $('chEditErr').textContent = '';
+    renderChores();
+  }
+  function chEditCancel() { ch.edit = null; $('chEditErr').textContent = ''; renderChores(); }
+  function chEditSave() {
+    var e = ch.edit; if (!e) return;
+    var err = '';
+    e.people.forEach(function (p) { p.name = String(p.name || '').trim(); if (!p.name) err = err || 'Every family member needs a name.'; });
+    var chores = e.chores.filter(function (c) { c.title = String(c.title || '').trim(); return c.title; });   // blank new rows just go
+    if (err) { $('chEditErr').textContent = err; return; }
+    $('chSave').disabled = true;
+    post('/api/chores/save', { people: e.people, chores: chores.map(function (c) { return { id: c.id, title: c.title, who: c.who, every: c.every, times: c.times, each: c.each && c.who.length > 1 }; }) })
+      .then(function (v) { ch.edit = null; $('chEditErr').textContent = ''; chedSaved(v); })
+      .catch(function (er) { $('chEditErr').textContent = er.message; })
+      .then(function () { $('chSave').disabled = false; });
+  }
+  function chEditDelPerson(p) {
+    var e = ch.edit, uses = e.chores.filter(function (c) { return c.who.indexOf(p.id) >= 0; }).length;
+    if (uses && !confirm('Take ' + (p.name || 'them') + ' off the list? Chores that are only theirs go too.')) return;
+    e.people = e.people.filter(function (x) { return x.id !== p.id; });
+    e.chores.forEach(function (c) { c.who = c.who.filter(function (id) { return id !== p.id; }); });
+    e.chores = e.chores.filter(function (c) { return c.who.length; });
+    renderChores();
+  }
+  function renderChoresEdit() {
+    var e = ch.edit, cols = $('chCols'), tabs = $('chTabs'), order = {}, names = {};
+    e.people.forEach(function (p, i) { order[p.id] = i; names[p.id] = p; });
+    $('chores').querySelector('.chhead h2').textContent = 'Chores';
+    CH_TABS.forEach(function (t) {
+      var n = e.chores.filter(function (c) { return c.every === t[0]; }).length;
+      var b = el('button', ch.tab === t[0] ? 'on' : ''); b.type = 'button';
+      b.appendChild(document.createTextNode(t[1])); if (n) b.appendChild(el('small', null, String(n)));
+      b.addEventListener('click', function () { ch.tab = t[0]; renderChores(); });
+      tabs.appendChild(b);
+    });
+    var groups = {};
+    e.chores.forEach(function (c) {
+      if (c.every !== ch.tab) return;
+      var who = c.who.slice().sort(function (a, b) { return order[a] - order[b]; }), k = who.join(',');
+      (groups[k] = groups[k] || { who: who, list: [] }).list.push(c);
+    });
+    e.people.forEach(function (p) { if (!groups[p.id]) groups[p.id] = { who: [p.id], list: [] }; });   // everyone gets a column to add to
+    var gl = Object.keys(groups).map(function (k) { return groups[k]; }).filter(function (g) { return g.who.every(function (id) { return names[id]; }); })
+      .sort(function (a, b) { return order[a.who[0]] - order[b.who[0]] || a.who.length - b.who.length; });
+    gl.forEach(function (g) {
+      var col = el('div', 'chcol'), h = el('h3');
+      if (g.who.length === 1) {
+        var p = names[g.who[0]], nm = document.createElement('input');
+        nm.type = 'text'; nm.className = 'chname'; nm.maxLength = 20; nm.value = p.name; nm.placeholder = 'Name'; nm.setAttribute('aria-label', 'Name');
+        nm.addEventListener('input', function () { p.name = nm.value; });
+        h.appendChild(nm);
+        var dp = el('button', 'chdelp', '✕'); dp.type = 'button'; dp.title = 'Remove ' + (p.name || 'this person'); dp.setAttribute('aria-label', 'Remove ' + (p.name || 'this person'));
+        dp.addEventListener('click', function () { chEditDelPerson(p); });
+        h.appendChild(dp);
+      } else h.textContent = g.who.map(function (id) { return names[id].name || '?'; }).join(' & ');
+      col.appendChild(h);
+      var focusIn = null;
+      g.list.forEach(function (c) {
+        var row = el('div', 'chrow'), t = document.createElement('input');
+        row.appendChild(el('span', 'chbox'));
+        t.type = 'text'; t.maxLength = 60; t.value = c.title; t.placeholder = 'What needs doing'; t.setAttribute('aria-label', 'Chore');
+        t.addEventListener('input', function () { c.title = t.value; });
+        t.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); addRow(); } });
+        row.appendChild(t);
+        var x = el('button', 'chx', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Delete chore');
+        x.addEventListener('click', function () { e.chores = e.chores.filter(function (z) { return z !== c; }); renderChores(); });
+        row.appendChild(x);
+        col.appendChild(row);
+        if (ch.focusId === c.id) focusIn = t;
+      });
+      function addRow() {
+        var c = { id: chedId('c'), title: '', who: g.who.slice(), every: ch.tab, times: 1, each: false };
+        e.chores.push(c); ch.focusId = c.id; renderChores();
+      }
+      var add = el('button', 'chadd', '+'); add.type = 'button'; add.setAttribute('aria-label', 'Add a chore'); add.addEventListener('click', addRow);
+      col.appendChild(add);
+      cols.appendChild(col);
+      if (focusIn) { ch.focusId = null; setTimeout(function () { focusIn.focus(); }, 0); }
+    });
+    if (!e.people.length) {
+      var empty = el('div', 'chempty', 'Add the first family member with the person+ button in the top corner to get started.');
+      cols.appendChild(empty);
+      var ex = el('button', 'chlink', 'Start with an example list'); ex.type = 'button'; ex.style.margin = '0 0 14px 4px';
+      ex.addEventListener('click', function () {
+        post('/api/chores/save', { example: true }).then(function (v) { ch.edit = null; chedSaved(v); chEditStart(); })
+          .catch(function (er) { $('chEditErr').textContent = er.message; });
+      });
+      cols.appendChild(ex);
+    }
+    $('chores').style.setProperty('--chz', Math.round((CHORES_PAGE ? (window.innerWidth >= 700 ? 25 : 22) : 24) * chSizeDef()[2]) + 'px');
+  }
+  // the family-member + now lives in the header (shown while editing)
+  $('chAddP').addEventListener('click', function () {
+    if (!ch.edit) return;
+    $('chpName').value = ''; $('chpKid').checked = false; $('chpErr').textContent = ''; $('chpmodal').classList.add('open');
+    setTimeout(function () { $('chpName').focus(); }, 0);
+  });
+  $('chSize').addEventListener('click', function () {
+    var cur = chSizeDef(), next = CH_SIZES[(CH_SIZES.indexOf(cur) + 1) % CH_SIZES.length];
+    try { localStorage.setItem('chalkChoresSize', next[0]); } catch (e) {}
+    renderChores();
+  });
+  $('chpCancel').addEventListener('click', function () { $('chpmodal').classList.remove('open'); });
+  $('chpForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var name = $('chpName').value.trim();
+    if (!name) { $('chpErr').textContent = 'Type a name.'; return; }
+    if (!ch.edit) { $('chpmodal').classList.remove('open'); return; }
+    if (ch.edit.people.length >= 8) { $('chpErr').textContent = 'That’s the most family members (8).'; return; }
+    ch.edit.people.push({ id: chedId('p'), name: name, kid: $('chpKid').checked });
+    $('chpmodal').classList.remove('open');
+    renderChores();
+  });
 
   // ---- Meal plan (assigned to a day of the week + full Meal Plan page) ----
   var MEAL_DAYS = [
@@ -2861,6 +3146,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       b.title = n + ' active reminder' + (n === 1 ? '' : 's') + ' — tap to view';
     });
     if (typeof renderRemindersPage === 'function') renderRemindersPage();
+    if (typeof renderSlideInfo === 'function' && typeof ph !== 'undefined' && ph.slideOn) renderSlideInfo();
     if ($('remAlertModal') && $('remAlertModal').classList.contains('open')) renderRemAlertList();
   }
   function checkReminderTimePopups() {
@@ -3279,6 +3565,177 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   });
   if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) window.speechSynthesis.onvoiceschanged = function () {};   // loads the voice list early
   loadTimers();
+
+  // ---- Pantry: inventory of food in the house (pantry, fridge, freezer, basement) ----
+  var pantry = { items: [] };
+  var PANTRY_LOC_LABELS = { pantry: 'Pantry', fridge: 'Fridge', freezer: 'Freezer', basement: 'Basement', other: 'Other' };
+  var PANTRY_LOC_KEYS = ['pantry', 'fridge', 'freezer', 'basement'];
+
+  function loadLocalPantry() {
+    try { return JSON.parse(localStorage.getItem('chalkPantryItems') || '[]') || []; } catch (e) { return []; }
+  }
+  function saveLocalPantry(items) {
+    try { localStorage.setItem('chalkPantryItems', JSON.stringify(items)); } catch (e) {}
+  }
+  function normalizePantry(d) {
+    var list = (d && Array.isArray(d.items)) ? d.items : [];
+    return list.map(function (it, idx) {
+      return {
+        id: it.id || ('p_' + Date.now().toString(36) + '_' + idx),
+        name: String(it.name || '').trim(),
+        loc: PANTRY_LOC_LABELS[it.loc] ? it.loc : 'pantry',
+        qty: String(it.qty || '').trim(),
+        date: it.date || todayStr(),
+        notes: String(it.notes || '').trim()
+      };
+    }).filter(function (it) { return it.name; });
+  }
+  function loadPantry() {
+    return api('/api/pantry').then(function (d) {
+      var srvItems = normalizePantry(d);
+      var locItems = loadLocalPantry();
+      if (!srvItems.length && locItems.length) {
+        return savePantryList(locItems);
+      }
+      pantry.items = srvItems;
+      saveLocalPantry(srvItems);
+      renderPantryPage();
+      renderPantryMini();
+    }).catch(function () {
+      pantry.items = loadLocalPantry();
+      renderPantryPage();
+      renderPantryMini();
+    });
+  }
+  function savePantryList(items) {
+    pantry.items = items;
+    saveLocalPantry(items);
+    renderPantryPage();
+    renderPantryMini();
+    return post('/api/pantry', { items: items }).catch(function (e) {
+      // LocalStorage already updated so user doesn't lose anything
+    });
+  }
+  function renderPantryMini() {
+    var ul = $('pantryMpList'); if (!ul) return;
+    ul.innerHTML = '';
+    if (!pantry.items.length) {
+      ul.appendChild(el('li', 'none', EDIT ? 'Pantry empty · tap to log food' : 'Pantry is empty'));
+      return;
+    }
+    pantry.items.slice(0, 7).forEach(function (it) {
+      var li = el('li');
+      li.appendChild(el('span', 'n', it.name));
+      if (it.qty) li.appendChild(el('span', 'q', it.qty));
+      li.appendChild(el('span', 'l', PANTRY_LOC_LABELS[it.loc] || ''));
+      li.addEventListener('click', function () { if (EDIT || PANTRY_PAGE) showSubpage('pantry'); });
+      ul.appendChild(li);
+    });
+  }
+  function renderPantryPage() {
+    var cols = $('ppCols'); if (!cols) return;
+    cols.innerHTML = '';
+    var items = pantry.items || [];
+    PANTRY_LOC_KEYS.forEach(function (locKey) {
+      var col = el('div', 'ppcol');
+      var list = items.filter(function (it) { return (it.loc || 'pantry') === locKey; });
+      var h = el('h3', null, PANTRY_LOC_LABELS[locKey] || locKey);
+      h.appendChild(el('small', null, list.length + (list.length === 1 ? ' item' : ' items')));
+      col.appendChild(h);
+
+      var plist = el('div', 'pplist');
+      if (!list.length) {
+        plist.appendChild(el('div', 'sublbl', 'Nothing logged yet'));
+      } else {
+        list.forEach(function (it) {
+          var row = el('div', 'ppitem');
+          row.appendChild(el('span', 'pn', it.name));
+          if (it.qty) row.appendChild(el('span', 'pq', it.qty));
+          if (it.date) row.appendChild(el('span', 'pd', it.date.slice(5))); // MM-DD
+          if (EDIT || PANTRY_PAGE) {
+            var x = el('button', 'px', '×');
+            x.type = 'button';
+            x.title = 'Remove item';
+            x.setAttribute('aria-label', 'Remove ' + it.name);
+            x.addEventListener('click', function () {
+              var next = pantry.items.filter(function (x) { return x.id !== it.id; });
+              savePantryList(next);
+            });
+            row.appendChild(x);
+          }
+          plist.appendChild(row);
+        });
+      }
+      col.appendChild(plist);
+
+      if (EDIT || PANTRY_PAGE) {
+        var quick = el('form', 'ppquick');
+        quick.autocomplete = 'off';
+        var inName = el('input', 'pn');
+        inName.type = 'text';
+        inName.placeholder = '+ Add food';
+        inName.required = true;
+        var inQty = el('input', 'pq');
+        inQty.type = 'text';
+        inQty.placeholder = 'Qty';
+        var btn = el('button', null, '+');
+        btn.type = 'submit';
+        quick.appendChild(inName);
+        quick.appendChild(inQty);
+        quick.appendChild(btn);
+        quick.addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          var name = inName.value.trim();
+          if (!name) return;
+          var qty = inQty.value.trim();
+          var newItem = {
+            id: 'p_' + Date.now().toString(36) + '_' + Math.floor(Math.random() * 1e4).toString(36),
+            name: name,
+            loc: locKey,
+            qty: qty,
+            date: todayStr(),
+            notes: ''
+          };
+          var next = [newItem].concat(pantry.items);
+          savePantryList(next);
+          inName.value = '';
+          inQty.value = '';
+        });
+        col.appendChild(quick);
+      }
+      cols.appendChild(col);
+    });
+  }
+
+  function openPantryModal() {
+    $('ppName').value = '';
+    $('ppQty').value = '';
+    $('ppNotes').value = '';
+    $('ppLoc').value = 'pantry';
+    $('ppDate').value = todayStr(); // Always default date to today
+    $('ppErr').textContent = '';
+    $('ppmodal').classList.add('open');
+    setTimeout(function () { $('ppName').focus(); }, 0);
+  }
+  if ($('ppAddBtn')) $('ppAddBtn').addEventListener('click', openPantryModal);
+  if ($('ppCancel')) $('ppCancel').addEventListener('click', function () { $('ppmodal').classList.remove('open'); });
+  if ($('ppForm')) $('ppForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var name = $('ppName').value.trim();
+    if (!name) { $('ppErr').textContent = 'Please enter an item name'; return; }
+    var newItem = {
+      id: 'p_' + Date.now().toString(36) + '_' + Math.floor(Math.random() * 1e4).toString(36),
+      name: name,
+      loc: $('ppLoc').value || 'pantry',
+      qty: $('ppQty').value.trim(),
+      date: $('ppDate').value || todayStr(),
+      notes: $('ppNotes').value.trim()
+    };
+    var next = [newItem].concat(pantry.items);
+    savePantryList(next);
+    $('ppmodal').classList.remove('open');
+  });
+  loadPantry();
   // ---- Right Column Mini-Pages (up to 3 configurable in Settings) ----
   state.notesPages = ['info', 'meals', 'jars'];
   function renderRightCol() {
@@ -3318,6 +3775,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     if (pages.indexOf('chores') >= 0) renderChoresMp();
     if (pages.indexOf('reminders') >= 0) renderReminders();
     if (pages.indexOf('timers') >= 0 && typeof renderTimersMini === 'function') renderTimersMini();
+    if (pages.indexOf('pantry') >= 0 && typeof renderPantryMini === 'function') renderPantryMini();
     setTimeout(fitMeals, 0);
   }
   function loadMpUpnext(ul, todayOnly) {
@@ -3441,7 +3899,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     if (h < 30) return [];
     var sides = [
       { l: x0 + 6, r: x0 + prev.offsetLeft - 14, tilt: [-5, 3] },
-      { l: x0 + next.offsetLeft + next.offsetWidth + 14, r: x0 + row.offsetWidth - 6, tilt: [4, -3] }
+      { l: x0 + next.offsetLeft + next.offsetWidth + 14, r: x0 + row.offsetWidth - 6 - ($('slideGo') && !$('slideGo').hidden ? 54 : 0), tilt: [4, -3] }
     ];
     var arts = (state.strokes || []).filter(function (it) { return !it._gone && !it.e; }).map(itemBox);
     var out = [];
@@ -3457,6 +3915,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   function titlePhotosOn() { var sd = tpSide(); return sd ? sd.mode === 'photos' : !!ph.cfg.frame; }
   function syncSideBtn() {
+    var g = $('slideGo'); if (g) g.hidden = !(ph.list.length || (ph.info && ph.info.enabled));   // shown whenever a photo source is set up
     var b = $('sideBtn'); if (!b) return;
     b.hidden = !EDIT || !ph.list.length;   // only with an album to show
     b.classList.toggle('on', titlePhotosOn()); b.setAttribute('aria-pressed', String(titlePhotosOn()));
@@ -3469,6 +3928,13 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     state.meta = Object.assign({}, state.meta, { side: next }); applyPhotos();   // shows at once
     post('/api/meta', { ym: state.ym, side: next }).then(function (m) { state.meta = m; applyPhotos(); })
       .catch(function (e) { status(e.message); loadMeta(state.ym); });
+  });
+  // The ▶ button beside the month: start the photo slideshow now. Tap the photos to go back.
+  $('slideGo').addEventListener('click', function () {
+    if (state.drawing) return;
+    if (!ph.list.length) { status(ph.info && ph.info.error ? 'Photos: ' + ph.info.error : 'No photos yet. Open 📷 Photos and tap “Check album now”.'); loadPhotos(); return; }
+    if (onWall()) { ph.manual = true; ph.peekUntil = 0; } else ph.preview = true;   // on the iPad it's a preview that a tap closes
+    ph.resumedAt = Date.now(); ph.slideOn = false; checkSlides();
   });
   function layoutTitlePhotos() {
     var layer = $('ptitle'); if (!layer) return;
@@ -3492,12 +3958,24 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   function applyPhotos() {
     tp.bag = []; tp.key = '';
+    if (ph.slideOn) refreshSlideInfo();   // settings just changed while the slideshow is up
     if (typeof renderBottom === 'function' && state.notesBottom !== undefined) renderBottom();
     layoutTitlePhotos();
     checkSlides();
   }
+  // The slideshow extras are also remembered on this device, so they stick even if the board server hasn't been restarted with the newest code
+  function phExtrasLocal(cfg, save) {
+    var K = ['showEvents', 'showTemp', 'showReminders'], loc = {};
+    try { loc = JSON.parse(localStorage.getItem('chalkSlideExtras') || '{}') || {}; } catch (e) {}
+    if (save) { K.forEach(function (k) { loc[k] = !!cfg[k]; }); try { localStorage.setItem('chalkSlideExtras', JSON.stringify(loc)); } catch (e) {} return cfg; }
+    K.forEach(function (k) { if (cfg[k] === undefined) cfg[k] = !!loc[k]; });   // only an old server leaves them out
+    return cfg;
+  }
+  var phServerKnows = false;   // true once the server has shown it stores these settings
   function loadPhotos() {
-    return api('/api/photos').then(function (d) { ph.list = d.photos || []; ph.cfg = d.cfg || {}; ph.info = d; applyPhotos(); }).catch(function () {});
+    return api('/api/photos').then(function (d) {
+      ph.list = d.photos || []; ph.cfg = phExtrasLocal(d.cfg || {}); ph.info = d; applyPhotos();
+    }).catch(function () {});
   }
   function hm(s) { var m = /^(\d\d):(\d\d)$/.exec(s || ''); return m ? +m[1] * 60 + +m[2] : null; }
   function nightNow() {
@@ -3587,6 +4065,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   function placeClock(corner) {
     var c = $('sClock'), left = corner[1] === 'l', top = corner[0] === 't';
+    $('sInfo').classList.toggle('right', left);   // cards go on the side away from the clock
     c.className = 'clock' + (left ? ' left' : '');
     c.style.left = left ? '40px' : 'auto'; c.style.right = left ? 'auto' : '40px';
     c.style.top = top ? '30px' : 'auto'; c.style.bottom = top ? 'auto' : '30px';
@@ -3620,11 +4099,50 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     });
     setTimeout(reveal, 8000);   // don't wait forever on a slow photo
   }
+  // ---- Slideshow extras: today's events, temperature and reminders on translucent cards ----
+  function slideCard(title, node) {   // one section inside the single box
+    var d = el('div', 'sec'); d.appendChild(el('h4', null, title)); d.appendChild(node); return d;
+  }
+  function renderSlideInfo() {
+    var box = $('sInfo'); if (!box) return;
+    var c = ph.cfg || {}; box.innerHTML = '';
+    if (!ph.slideOn && !ph.preview) return;
+    if (c.showTemp && state.weather && state.weather.now) {
+      var w = state.weather, t = el('div', 'temp');
+      t.appendChild(el('b', null, w.now.temp + '°'));
+      t.appendChild(el('span', null, 'High ' + w.today.hi + '° · Low ' + w.today.lo + '°'));
+      box.appendChild(slideCard('Today’s weather', t));
+    }
+    if (c.showEvents) {
+      var evs = (ph.todayEvents || []), ul = el('ul');
+      if (!evs.length) ul.appendChild(el('li', null, 'Nothing planned today'));
+      evs.slice(0, 5).forEach(function (e) {
+        var li = el('li'); if (e.time) li.appendChild(el('small', null, e.time)); li.appendChild(document.createTextNode(e.title)); ul.appendChild(li);
+      });
+      box.appendChild(slideCard('Today’s events', ul));
+    }
+    if (c.showReminders) {
+      var rs = ((state.reminders && state.reminders.items) || []).filter(isReminderVisibleOnBoard), rl = el('ul');
+      if (!rs.length) rl.appendChild(el('li', null, 'No reminders today'));
+      rs.slice(0, 4).forEach(function (r) {
+        var li = el('li'); if (r.mode === 'time' && r.time) li.appendChild(el('small', null, fmtTime12(r.time))); li.appendChild(document.createTextNode(r.title)); rl.appendChild(li);
+      });
+      box.appendChild(slideCard('Today’s reminders', rl));
+    }
+  }
+  function refreshSlideInfo() {
+    if (!(ph.cfg && ph.cfg.showEvents)) { renderSlideInfo(); return; }
+    api('/api/upnext').then(function (u) {
+      ph.todayEvents = (u.events || []).filter(function (e) { return e.date === u.today; });
+    }).catch(function () {}).then(renderSlideInfo);
+  }
+  setInterval(function () { if (ph.slideOn) refreshSlideInfo(); }, 60 * 1000);
   function setSlides(on) {
     if (on === ph.slideOn) return;
     ph.slideOn = on;
     clearInterval(ph.slideTimer);
     $('slides').classList.toggle('on', on);
+    renderSlideInfo(); if (on) refreshSlideInfo();
     if (on) { ph.bag = []; bags = { p: [], l: [], any: [] }; slideShow(); ph.slideTimer = setInterval(slideShow, (ph.cfg.every || 20) * 1000); }
     else setTimeout(function () { if (!ph.slideOn) document.querySelectorAll('#slides .sl').forEach(function (s) { s.classList.remove('on'); }); }, 2600);
   }
@@ -3734,6 +4252,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       var c = ph.cfg, im = (ph.info && ph.info.immich) || {};
       $('pFrame').checked = !!c.frame; $('pNight').checked = !!c.night;
       $('pFrom').value = c.from || '21:00'; $('pTo').value = c.to || '06:00'; $('pEvery').value = String(c.every || 20); $('pDim').value = String(c.dim || 50);
+      $('pShowEvents').checked = !!c.showEvents; $('pShowTemp').checked = !!c.showTemp; $('pShowRem').checked = !!c.showReminders;
       if ($('pImmichUrl')) $('pImmichUrl').value = im.url || '';
       if ($('pImmichKey')) {
         $('pImmichKey').value = '';
@@ -3789,7 +4308,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     $('pCancel').addEventListener('click', function () { $('pmodal').classList.remove('open'); });
     $('pPreview').addEventListener('click', function () {
       if (!ph.list.length) { $('pErr').textContent = 'No photos in the album yet.'; return; }
-      $('pmodal').classList.remove('open'); ph.preview = true; ph.cfg.every = +$('pEvery').value; ph.cfg.dim = +$('pDim').value; ph.slideOn = false; checkSlides();
+      $('pmodal').classList.remove('open'); ph.preview = true; ph.cfg.every = +$('pEvery').value; ph.cfg.dim = +$('pDim').value; ph.cfg.showEvents = $('pShowEvents').checked; ph.cfg.showTemp = $('pShowTemp').checked; ph.cfg.showReminders = $('pShowRem').checked; ph.slideOn = false; checkSlides();
     });
     $('pSync').addEventListener('click', function () {
       $('pSync').disabled = true; $('pInfo').textContent = 'Checking the album…';
@@ -3806,14 +4325,18 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         from: $('pFrom').value,
         to: $('pTo').value,
         every: +$('pEvery').value,
-        dim: +$('pDim').value
+        dim: +$('pDim').value,
+        showEvents: $('pShowEvents').checked,
+        showTemp: $('pShowTemp').checked,
+        showReminders: $('pShowRem').checked
       };
       if ($('pImmichUrl')) payload.immichUrl = $('pImmichUrl').value.trim();
       if ($('pImmichKey') && $('pImmichKey').value.trim()) payload.immichKey = $('pImmichKey').value.trim();
       if ($('pImmichAlbum')) payload.immichAlbum = $('pImmichAlbum').value;
       post('/api/photos/settings', payload)
         .then(function (c) {
-          ph.cfg = c;
+          phServerKnows = c.showEvents !== undefined;   // an updated server echoes the new settings back
+          ph.cfg = phExtrasLocal(Object.assign({}, c, { showEvents: payload.showEvents, showTemp: payload.showTemp, showReminders: payload.showReminders }), true);
           if (JSON.stringify(sideDraft) === sideStart) return;
           if (sideDraft.mode === 'photos' && sideDraft.pick === 'chosen' && !sideDraft.ids.length) sideDraft.pick = 'random';
           return post('/api/meta', { ym: state.ym, side: sideDraft }).then(function (m) { state.meta = m; });
@@ -3880,7 +4403,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       renderRightCol();
       renderBottom();
       if (x.weather) {
-        var w = x.weather;
+        var w = x.weather; state.weather = w;
+        if (typeof renderSlideInfo === 'function' && ph.slideOn) renderSlideInfo();   // the temperature arrived after the slideshow started
         $('wNowIcon').innerHTML = icon(w.now.kind, '#F2D479');
         $('wNow').textContent = w.now.temp + '° · ' + w.today.hi + '/' + w.today.lo;
         $('wTomIcon').innerHTML = icon(w.tomorrow.kind, '#9CC9E6');
@@ -6074,8 +6598,16 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       if (EDIT && !(isFamily() && !state.drawing && !document.querySelector('.open'))) $('updbar').classList.add('on');   // never interrupt your drawing
       else setTimeout(function () { location.reload(); }, 1000 + Math.random() * 3000);   // the wall just updates itself
     });
-    ['stroke', 'undo', 'remove', 'restore', 'update', 'clear', 'meta', 'meals', 'reminders', 'timers', 'calendar'].forEach(function (t) { es.addEventListener(t, seen); });
+    ['stroke', 'undo', 'remove', 'restore', 'update', 'clear', 'meta', 'meals', 'reminders', 'timers', 'pantry', 'calendar'].forEach(function (t) { es.addEventListener(t, seen); });
     es.addEventListener('timers', function (m) { if (typeof applyTimers === 'function') applyTimers(JSON.parse(m.data)); });
+    es.addEventListener('pantry', function (m) {
+      if (typeof normalizePantry === 'function') {
+        pantry.items = normalizePantry(JSON.parse(m.data));
+        saveLocalPantry(pantry.items);
+        if (typeof renderPantryPage === 'function') renderPantryPage();
+        if (typeof renderPantryMini === 'function') renderPantryMini();
+      }
+    });
     es.addEventListener('stroke', function (m) {
       var d = JSON.parse(m.data);
       if (d.ym !== state.ym || d.from === CLIENT) return;
@@ -6606,6 +7138,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       else if (JARS_PAGE) showSubpage('jars');
       else if (REMINDERS_PAGE) showSubpage('reminders');
       else if (TIMERS_PAGE) showSubpage('timers');
+      else if (PANTRY_PAGE) showSubpage('pantry');
       return w;
     }
     if (!EDIT) {
@@ -6652,235 +7185,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       loadMeals();   // catches anything missed while the live connection was down
       loadJars();
       loadReminders();
-
-  // ---- Timers: several named countdowns shared by every screen; each says its name out loud when it ends ----
-  var tm = { items: [], skew: 0, seen: {}, ringing: [], dismissed: {}, tick: null, sayTimer: null, ctx: null, loaded: false };
-  var TM_PRESETS = [1, 2, 5, 10, 15, 20, 30, 45, 60];
-  var TM_RING_WINDOW = 10 * 60 * 1000;   // ended while nobody was looking? still ring if it was in the last 10 minutes
-  function tmNow() { return Date.now() + tm.skew; }
-  function tmLeft(t) { return t.state === 'running' ? Math.max(0, t.endsAt - tmNow()) : t.state === 'paused' ? (t.left || 0) : 0; }
-  function tmDone(t) { return t.state === 'done' || (t.state === 'running' && t.endsAt <= tmNow()); }
-  function tmKey(t) { return t.id + '|' + (t.endsAt || t.doneAt || 0); }
-  function tmFmt(ms) {
-    var s = Math.ceil(ms / 1000), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
-    return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(ss).padStart(2, '0');
-  }
-  function tmSpoken(t) {   // "Pizza timer is over" (not "Pizza timer timer is over")
-    var n = String(t.name || 'Timer').trim().replace(/\s+timer$/i, '');
-    return (n && !/^timer$/i.test(n) ? n + ' timer' : 'Your timer') + ' is over';
-  }
-  // Sound: a short chime, then the name spoken out loud (browsers only allow both after someone has tapped the screen once)
-  function tmAudioCtx() {
-    var AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return null;
-    if (!tm.ctx) { try { tm.ctx = new AC(); } catch (e) { return null; } }
-    if (tm.ctx.state === 'suspended') tm.ctx.resume().catch(function () {});
-    return tm.ctx;
-  }
-  document.addEventListener('pointerdown', function () { tmAudioCtx(); }, { once: true, capture: true });
-  function tmChime() {
-    var ctx = tmAudioCtx(); if (!ctx) return;
-    [0, 0.28, 0.56].forEach(function (at, i) {
-      var o = ctx.createOscillator(), g = ctx.createGain(), t0 = ctx.currentTime + at;
-      o.type = 'sine'; o.frequency.value = i === 2 ? 1175 : 880;
-      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.25);
-      o.connect(g); g.connect(ctx.destination); o.start(t0); o.stop(t0 + 0.27);
-    });
-  }
-  function tmSay(text) {
-    if (!('speechSynthesis' in window)) return;
-    try {
-      var u = new SpeechSynthesisUtterance(text);
-      var voices = window.speechSynthesis.getVoices() || [];
-      var v = voices.filter(function (x) { return /^en(-|_|$)/i.test(x.lang) && x.localService; })[0] || voices.filter(function (x) { return /^en/i.test(x.lang); })[0];
-      if (v) u.voice = v;
-      u.lang = (v && v.lang) || 'en-US'; u.rate = 0.95; u.pitch = 1; u.volume = 1;
-      window.speechSynthesis.speak(u);
-    } catch (e) { /* no voice on this device */ }
-  }
-  function tmAnnounce() {   // chime + "<name> timer is over" for everything still ringing
-    var list = tmRingingItems(); if (!list.length) return;
-    tmChime();
-    setTimeout(function () {
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-      list.forEach(function (t) { tmSay(tmSpoken(t)); });
-    }, 900);
-  }
-  function tmRingingItems() {
-    return tm.ringing.map(function (k) { return tm.items.filter(function (t) { return tmKey(t) === k && tmDone(t); })[0]; }).filter(Boolean);
-  }
-  function tmUpdateRinging(fresh) {
-    tm.ringing = tm.ringing.filter(function (k) { return !tm.dismissed[k] && tm.items.some(function (t) { return tmKey(t) === k && tmDone(t); }); });
-    var list = tmRingingItems(), box = $('timerAlert');
-    if (!list.length) {
-      box.classList.remove('open');
-      clearInterval(tm.sayTimer); tm.sayTimer = null;
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-      return;
-    }
-    var t = list[0];
-    $('taName').textContent = t.name;
-    $('taMore').textContent = list.length > 1 ? 'Also done: ' + list.slice(1).map(function (x) { return x.name; }).join(', ') : '';
-    box.classList.add('open');
-    if (fresh) {
-      tmAnnounce();
-      clearInterval(tm.sayTimer); var reps = 0;
-      tm.sayTimer = setInterval(function () { if (++reps > 5 || !tmRingingItems().length) { clearInterval(tm.sayTimer); tm.sayTimer = null; return; } tmAnnounce(); }, 20000);   // say it again a few times until someone taps OK
-    }
-  }
-  function tmCheck() {   // notice timers that just reached zero
-    var fresh = false;
-    tm.items.forEach(function (t) {
-      var k = tmKey(t);
-      if (!tmDone(t) || tm.seen[k]) return;
-      tm.seen[k] = true;
-      var endedAt = t.state === 'done' ? (t.doneAt || 0) : t.endsAt;
-      if (tm.dismissed[k] || tmNow() - endedAt > TM_RING_WINDOW) return;
-      tm.ringing.push(k); fresh = true;
-    });
-    tmUpdateRinging(fresh);
-  }
-  function tmTick() {
-    tmCheck();
-    Array.prototype.forEach.call(document.querySelectorAll('[data-tm]'), function (node) {
-      var t = tm.items.filter(function (x) { return x.id === node.dataset.tm; })[0]; if (!t) return;
-      var left = tmLeft(t), done = tmDone(t), txt = done ? 'Done!' : tmFmt(left);
-      var tEl = node.querySelector('.tmtime, b, .t'); if (tEl && tEl.textContent !== txt) tEl.textContent = txt;
-      node.classList.toggle('done', done); node.classList.toggle('paused', t.state === 'paused');
-      var fg = node.querySelector('.fg');
-      if (fg) { var c = +fg.dataset.c; fg.style.strokeDashoffset = String(done ? 0 : c * (1 - left / Math.max(1, t.duration))); }
-    });
-    var busy = tm.items.some(function (t) { return t.state === 'running' && !tmDone(t); });
-    if (!busy && tm.tick) { clearInterval(tm.tick); tm.tick = null; }
-    if (busy && !tm.tick) tm.tick = setInterval(tmTick, 250);
-  }
-  function applyTimers(v) {
-    if (!v) return;
-    if (typeof v.now === 'number') tm.skew = v.now - Date.now();
-    var first = !tm.loaded; tm.loaded = true;
-    tm.items = Array.isArray(v.items) ? v.items : [];
-    if (first) tm.items.forEach(function (t) {   // timers that ended long before this screen opened don't ring
-      if (tmDone(t) && tmNow() - (t.state === 'done' ? (t.doneAt || 0) : t.endsAt) > TM_RING_WINDOW) tm.seen[tmKey(t)] = true;
-    });
-    renderTimersPage(); renderTimersMini(); renderTimerChips();
-    tmTick();
-  }
-  function loadTimers() { return api('/api/timers').then(applyTimers).catch(function () {}); }
-  function saveTimers(items) {
-    applyTimers({ items: items });   // show it at once
-    return post('/api/timers', { items: items }).then(applyTimers).catch(function (e) {
-      if ($('tmErr')) $('tmErr').textContent = e.message;
-      throw e;
-    });
-  }
-  function tmEdit(id, fn) {
-    var items = tm.items.map(function (t) { return Object.assign({}, t); });
-    var t = items.filter(function (x) { return x.id === id; })[0]; if (!t) return Promise.resolve();
-    fn(t, items);
-    return saveTimers(items.filter(function (x) { return !x._gone; }));
-  }
-  function tmStart(name, ms) {
-    if (!(ms >= 1000)) { $('tmErr').textContent = 'Pick how long first.'; return; }
-    $('tmErr').textContent = '';
-    var items = tm.items.slice();
-    if (items.length >= 20) { $('tmErr').textContent = 'That’s a lot of timers! Remove one first.'; return; }
-    var nm = String(name || '').trim() || (ms % 60000 === 0 ? ms / 60000 + ' minute' : tmFmt(ms));
-    items.push({ id: 't' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36), name: nm, duration: ms, state: 'running', endsAt: tmNow() + ms });
-    saveTimers(items).catch(function () {});
-    $('tmName').value = ''; $('tmMin').value = ''; $('tmSec').value = '';
-  }
-  function tmPause(t) { t.left = tmLeft(t); t.state = 'paused'; delete t.endsAt; }
-  function tmResume(t) { t.endsAt = tmNow() + (t.left || t.duration); t.state = 'running'; delete t.left; }
-  function tmRestart(t) { t.endsAt = tmNow() + t.duration; t.state = 'running'; delete t.left; delete t.doneAt; }
-  function tmAddMinute(t) {
-    if (tmDone(t)) { t.endsAt = tmNow() + 60000; t.state = 'running'; delete t.doneAt; }
-    else if (t.state === 'paused') t.left = (t.left || 0) + 60000;
-    else t.endsAt += 60000;
-    t.duration = Math.max(t.duration, tmLeft(t));
-  }
-  function tmDismiss(t) {   // OK on the alert: the timer is finished and goes away (on every screen)
-    var k = tmKey(t); tm.dismissed[k] = true;
-    tmEdit(t.id, function (x) { x._gone = true; }).catch(function () { tmUpdateRinging(false); });   // a view-only wall can still silence itself
-    tmUpdateRinging(false);
-  }
-  function renderTimersPage() {
-    var grid = $('tmGrid'); if (!grid) return;
-    var pre = $('tmPresets');
-    if (pre && !pre.children.length) TM_PRESETS.forEach(function (m) {
-      var b = el('button', null, m === 60 ? '1 hour' : m + ' min'); b.type = 'button';
-      b.addEventListener('click', function () { tmStart($('tmName').value, m * 60000); });
-      pre.appendChild(b);
-    });
-    grid.innerHTML = '';
-    if (!tm.items.length) { grid.appendChild(el('div', 'tmempty', 'No timers running. Type a name, pick a time, and tap Start.')); return; }
-    var R = 74, C = 2 * Math.PI * R;
-    tm.items.forEach(function (t) {
-      var card = el('div', 'tmcard'); card.dataset.tm = t.id;
-      card.appendChild(el('div', 'tmn', t.name));
-      var ring = el('div', 'tmring');
-      ring.innerHTML = '<svg viewBox="0 0 170 170" aria-hidden="true"><circle class="bg" cx="85" cy="85" r="' + R + '"/><circle class="fg" cx="85" cy="85" r="' + R + '" stroke-dasharray="' + C.toFixed(1) + '" data-c="' + C.toFixed(1) + '"/></svg>';
-      ring.appendChild(el('div', 'tmtime', ''));
-      card.appendChild(ring);
-      var acts = el('div', 'tmacts');
-      var btn = function (label, cls, fn) { var b = el('button', cls, label); b.type = 'button'; b.addEventListener('click', fn); acts.appendChild(b); };
-      if (tmDone(t)) {
-        btn('OK', 'go', function () { tmDismiss(t); });
-        btn('Restart', null, function () { tm.dismissed[tmKey(t)] = true; tmEdit(t.id, tmRestart).catch(function () {}); });
-      } else if (t.state === 'paused') {
-        btn('Resume', 'go', function () { tmEdit(t.id, tmResume).catch(function () {}); });
-        btn('Reset', null, function () { tmEdit(t.id, function (x) { x.state = 'paused'; x.left = x.duration; delete x.endsAt; }).catch(function () {}); });
-      } else {
-        btn('Pause', null, function () { tmEdit(t.id, tmPause).catch(function () {}); });
-        btn('Restart', null, function () { tmEdit(t.id, tmRestart).catch(function () {}); });
-      }
-      btn('+1 min', null, function () { tm.dismissed[tmKey(t)] = true; tmEdit(t.id, tmAddMinute).catch(function () {}); });
-      card.appendChild(acts);
-      var del = el('button', 'tmdel', '×'); del.type = 'button'; del.setAttribute('aria-label', 'Remove ' + t.name + ' timer');
-      del.addEventListener('click', function () { tm.dismissed[tmKey(t)] = true; tmEdit(t.id, function (x) { x._gone = true; }).catch(function () {}); });
-      card.appendChild(del);
-      grid.appendChild(card);
-    });
-  }
-  function renderTimersMini() {
-    var ul = $('timersMpList'); if (!ul) return;
-    ul.innerHTML = '';
-    if (!tm.items.length) { ul.appendChild(el('li', 'none', EDIT ? 'No timers. Tap “Timers” to start one.' : 'No timers running')); return; }
-    tm.items.slice(0, 6).forEach(function (t) {
-      var li = el('li'); li.dataset.tm = t.id;
-      li.appendChild(el('span', 'n', t.name)); li.appendChild(el('span', 't', ''));
-      ul.appendChild(li);
-    });
-  }
-  function renderTimerChips() {
-    var box = $('timerChips'); if (!box) return;
-    box.innerHTML = '';
-    var mini = (state.notesPages || []).indexOf('timers') >= 0 && !state.subpage && !SUB_PAGE;
-    if (mini) return;   // the right column already shows them
-    tm.items.forEach(function (t) {
-      var c = el('button', 'tmchip'); c.type = 'button'; c.dataset.tm = t.id;
-      c.appendChild(document.createTextNode('⏱ ' + t.name + ' '));
-      c.appendChild(el('b', null, ''));
-      c.addEventListener('click', function () {
-        if (tmDone(t)) tmDismiss(t);
-        else if (EDIT) showSubpage('timers');
-      });
-      box.appendChild(c);
-    });
-  }
-  if ($('tmAdd')) $('tmAdd').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var m = Math.max(0, parseInt($('tmMin').value, 10) || 0), s = Math.max(0, Math.min(59, parseInt($('tmSec').value, 10) || 0));
-    tmStart($('tmName').value, (m * 60 + s) * 1000);
-  });
-  $('taOk').addEventListener('click', function () { var t = tmRingingItems()[0]; if (t) tmDismiss(t); });
-  $('taPlus').addEventListener('click', function () {
-    var t = tmRingingItems()[0]; if (!t) return;
-    tm.dismissed[tmKey(t)] = true;
-    tmEdit(t.id, tmAddMinute).catch(function () {});
-    tmUpdateRinging(false);
-  });
-  if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) window.speechSynthesis.onvoiceschanged = function () {};   // loads the voice list early
-  loadTimers();      api('/api/month?ym=' + state.ym).then(function (d) { health.calendar = true; renderMonth(d); }).catch(function () { health.calendar = false; });
+      api('/api/month?ym=' + state.ym).then(function (d) { health.calendar = true; renderMonth(d); }).catch(function () { health.calendar = false; });
     }).catch(function () {});
   }, 2 * 60 * 1000);
   setInterval(loadExtras, 10 * 60 * 1000);
