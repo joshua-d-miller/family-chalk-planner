@@ -851,6 +851,126 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 #sThumb{width:100%;height:150px;display:block;margin-top:12px;border:1.5px dashed rgba(201,180,122,.4);border-radius:8px}
 .btn.del{margin-right:auto;border-color:#F7A1A1;color:#F7A1A1}
 .btn.go{background:var(--yellow);border-color:var(--yellow);color:#141414}
+
+/* Floating Navigation Wheel Button & Radial Wheel Popup */
+#wheelBtn {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 2px solid rgba(var(--ink), .5);
+  background: #181918;
+  color: var(--yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 18;
+  box-shadow: 0 4px 14px rgba(0,0,0,.6);
+  padding: 0;
+  transition: transform .18s ease, background .15s;
+}
+#wheelBtn:hover { transform: scale(1.06); background: #222; }
+#wheelBtn:active { transform: scale(.95); }
+body.drawing #wheelBtn, body:not(.edit) #wheelBtn { display: none; }
+body.subpageOn #wheelBtn { z-index: 22; }
+
+#navWheelOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 21;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#navWheelOverlay.open { display: flex; }
+#navWheelContainer {
+  position: relative;
+  width: 380px;
+  height: 380px;
+  max-width: 95vw;
+  max-height: 95vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wheel-center-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(var(--ink), .6);
+  background: #121312;
+  color: var(--chalk);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  box-shadow: 0 4px 16px rgba(0,0,0,.8);
+  font-family: 'Kalam', cursive;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0;
+  transition: transform .15s, background .15s;
+}
+.wheel-center-btn:hover { transform: scale(1.08); background: #222; }
+.wheel-center-btn svg { margin-bottom: 2px; }
+
+.wheel-item {
+  position: absolute;
+  width: 76px;
+  height: 76px;
+  margin: -38px 0 0 -38px;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  border: 2px solid rgba(var(--ink), .5);
+  background: #191a19;
+  color: var(--chalk);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,.65);
+  font-family: 'Kalam', cursive;
+  font-size: 13px;
+  font-weight: 700;
+  transition: transform .18s ease, background .15s, border-color .15s;
+}
+.wheel-item:hover {
+  transform: scale(1.12);
+  background: #252625;
+  border-color: var(--chalk);
+}
+.wheel-item.slideshow-item {
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+.wheel-item.slideshow-item:hover {
+  background: rgba(242, 212, 121, 0.15);
+}
+.wheel-item span {
+  font-size: 12px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+
+/* Clean up side drawer & bottom bar: subpages accessed via navigation wheel; board/photo settings in settings modal */
+.cork #choresBtn, .cork #mealsBtn, .cork #remindersBtn, .cork #timersBtn,
+.cork #pantryBtn, .cork #jarsBtn, .cork #musicBtn,
+.cork #borderBtn, .cork #styleBtn, .cork #photosBtn, .cork #sideBtn {
+  display: none !important;
+}
+
 </style>
 </head>
 <body class="display">
@@ -866,7 +986,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         <h1 id="monthName">&nbsp;</h1>
         <button class="nav" id="next" aria-label="Next month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
         <button class="nav viewtoggle" id="calViewToggle" type="button" aria-label="Toggle week view" title="Toggle week view"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="10" y1="10" x2="10" y2="22"/></svg></button>
-        <button class="nav slidego" id="slideGo" type="button" aria-label="Start photo slideshow" title="Photo slideshow" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M10 9.2v5.6l4.6-2.8z" fill="currentColor"/></svg></button>
+        <button class="nav slidego" id="slideGo" type="button" aria-label="Start photo slideshow" title="Photo slideshow" style="display:none!important;" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M10 9.2v5.6l4.6-2.8z" fill="currentColor"/></svg></button>
       </div>
       <div class="calbody" id="calbody">
         <div class="weekdays"><div>SUNDAY</div><div>MONDAY</div><div>TUESDAY</div><div>WEDNESDAY</div><div>THURSDAY</div><div>FRIDAY</div><div>SATURDAY</div></div>
@@ -1054,6 +1174,63 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 </div>
 </div>
 
+
+<button type="button" id="wheelBtn" aria-label="Navigation Wheel" title="Pages & Navigation">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>
+  </svg>
+</button>
+
+<div id="navWheelOverlay" role="dialog" aria-modal="true" aria-label="Navigation Wheel">
+  <div id="navWheelContainer">
+    <button type="button" class="wheel-center-btn" id="wheelClose" aria-label="Close navigation">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      <span>Close</span>
+    </button>
+    <!-- 8 radial items positioned at 45 degree intervals (radius ~135px) -->
+    <!-- Item 0 (0 deg, top): Chores (x=0, y=-135) -->
+    <button type="button" class="wheel-item" data-action="chores" style="transform: translate(0px, -135px);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span>Chores</span>
+    </button>
+    <!-- Item 1 (45 deg, top-right): Meals (x=95, y=-95) -->
+    <button type="button" class="wheel-item" data-action="meals" style="transform: translate(95px, -95px);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+      <span>Meals</span>
+    </button>
+    <!-- Item 2 (90 deg, right): Reminders (x=135, y=0) -->
+    <button type="button" class="wheel-item" data-action="reminders" style="transform: translate(135px, 0px);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span>Reminders</span>
+    </button>
+    <!-- Item 3 (135 deg, bottom-right): Timers (x=95, y=95) -->
+    <button type="button" class="wheel-item" data-action="timers" style="transform: translate(95px, 95px);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6M12 2v3"/></svg>
+      <span>Timers</span>
+    </button>
+    <!-- Item 4 (180 deg, bottom): Pantry (x=0, y=135) -->
+    <button type="button" class="wheel-item" data-action="pantry" style="transform: translate(0px, 135px);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h18v18H3z"/><path d="M12 3v18M3 9h18M3 15h18"/></svg>
+      <span>Pantry</span>
+    </button>
+    <!-- Item 5 (225 deg, bottom-left): Jars (x=-95, y=95) -->
+    <button type="button" class="wheel-item" data-action="jars" style="transform: translate(-95px, 95px);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="3" rx="1"/><path d="M7 5v2c-1.5 1-2 2.5-2 4.5v7.5a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3v-7.5c0-2-.5-3.5-2-4.5V5"/></svg>
+      <span>Jars</span>
+    </button>
+    <!-- Item 6 (270 deg, left): Music (x=-135, y=0) -->
+    <a class="wheel-item" data-action="music" href="https://music.youtube.com/" target="_blank" rel="noopener" style="transform: translate(-135px, 0px);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      <span>Music</span>
+    </a>
+    <!-- Item 7 (315 deg, top-left): Slideshow (x=-95, y=-95) -->
+    <button type="button" class="wheel-item slideshow-item" data-action="slideshow" style="transform: translate(-95px, -95px);" title="Start photo slideshow">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M10 9.2v5.6l4.6-2.8z" fill="currentColor"/></svg>
+      <span>Slideshow</span>
+    </button>
+  </div>
+</div>
+
 <div id="timerChips" aria-live="polite"></div>
 <div id="timerAlert" role="alertdialog" aria-modal="true" aria-labelledby="taName">
   <div class="tacard">
@@ -1181,6 +1358,9 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       <button type="button" class="seg" id="zIn" aria-label="Zoom in">+</button>
       <button type="button" class="seg" id="zFit" disabled>Fit</button>
       <button type="button" class="seg" id="titleBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg>Month title</button>
+      <button type="button" class="seg" id="setBoardStyleBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 0 0 0 20 2 2 0 0 0 2-2v-.5a1.5 1.5 0 0 1 1.5-1.5H17a5 5 0 0 0 5-5c0-6.1-4.5-11-10-11z"/><circle cx="7.5" cy="10.5" r="1" fill="currentColor"/><circle cx="12" cy="7.5" r="1" fill="currentColor"/><circle cx="16.5" cy="10.5" r="1" fill="currentColor"/></svg>Board style</button>
+      <button type="button" class="seg" id="setBorderBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>Border</button>
+      <button type="button" class="seg" id="setPhotosBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Photos &amp; slides</button>
     </div>
     <div class="sublbl" style="margin-top:20px">Menu bar</div>
     <div class="opts" id="setMenuPos">
@@ -4451,7 +4631,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     return api('/api/extras').then(function (x) {
       setWeatherMotion(x.weather && x.weather.now && x.weather.now.kind);
       state.trashDay = x.trashDay; state.bins = x.bins || null;
-      $('trash').closest('.info').style.display = x.trash ? '' : 'none';   // trash day is optional
+      var isTrashAlert = x.trash && (x.trash.days === 1 || x.trash.days === 0); // only alert day before (or pickup day)
+      $('trash').closest('.info').style.display = isTrashAlert ? '' : 'none';
       if (x.trash) {
         $('trashLbl').textContent = x.trash.title || 'Trash & recycling';
         $('trash').textContent = x.trash.label;
@@ -4494,7 +4675,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     return ev.allDay || ev.holiday ? t : t + ' @ ' + ev.time;
   }
   // Which bins go out on a date (mirrors the server's schedule rules)
+  // Only alert on garbage the day before (pickup tomorrow or today)
   function binsFor(ds) {
+    if (state.today) {
+      var tom = addDays(state.today, 1);
+      if (ds !== tom && ds !== state.today) return [];
+    }
     var b = state.bins;
     if (!b) return state.trashDay != null && new Date(ds + 'T12:00:00Z').getUTCDay() === state.trashDay ? ['trash'] : [];
     var dn = function (x) { return Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5; };
@@ -4511,23 +4697,19 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     var g = data.grid, events = data.events;
     state.today = data.today; state.time24 = !!g.time24;
     if (!state.weekDate) state.weekDate = state.today || (g.y + '-' + String(g.m).padStart(2, '0') + '-01');
-    if ((g.weekStart || 0) !== state.weekStart) {   // weeks start on Sunday or Monday (admin console → Board)
-      state.weekStart = g.weekStart || 0;
-      var WD = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-      Array.prototype.forEach.call(document.querySelectorAll('.weekdays div'), function (d, i) { d.textContent = WD[(i + state.weekStart) % 7]; });
-    }
+    state.weekStart = g.weekStart || 0;
     syncCalViewToggleBtn();
     if (state.calView === 'week') {
       renderWeekView(data);
       return;
     }
+    updateWeekdaysHeader(null);
     var grid = $('grid');
     grid.classList.remove('weekview');
     var h1 = $('monthName');
     h1.textContent = '';
     var mn = el('span', 'mn', MONTHS[g.m - 1]); mn.setAttribute('data-text', MONTHS[g.m - 1]);
     h1.appendChild(mn);
-    if (g.y !== Number(data.today.slice(0, 4))) { var sm = el('small', null, String(g.y)); h1.appendChild(sm); }
     applyTitle();
 
     var grid = $('grid');
@@ -4631,53 +4813,86 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     setTimeout(function () { if (typeof layoutTitlePhotos === 'function') layoutTitlePhotos(); }, 0);
   }
 
-  function getWeekRange(dateStr, weekStart) {
-    var p = dateStr.split('-').map(Number);
-    var dow = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
-    var diff = (dow - (weekStart || 0) + 7) % 7;
-    var start = addDays(dateStr, -diff);
+  function updateWeekdaysHeader(dayNames) {
+    var WD = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    var divs = document.querySelectorAll('.weekdays div');
+    if (!divs.length) return;
+    Array.prototype.forEach.call(divs, function (d, i) {
+      if (dayNames && dayNames[i]) {
+        d.textContent = dayNames[i];
+      } else {
+        d.textContent = WD[(i + (state.weekStart || 0)) % 7];
+      }
+    });
+  }
+
+  function getWeekDays(startDateStr) {
+    var start = startDateStr || state.today || '2026-11-05';
     var days = [];
     for (var i = 0; i < 7; i++) days.push(addDays(start, i));
-    return { start: start, end: days[6], days: days };
+    return days;
   }
 
   function renderWeekView(data) {
-    var events = (data && data.events) || (state.lastMonth && state.lastMonth.events) || [];
-    var curDate = state.weekDate || state.today || (data && data.today) || '2026-11-04';
-    var wRange = getWeekRange(curDate, state.weekStart || 0);
+    var curDate = state.weekDate || state.today || (data && data.today) || '2026-11-05';
+    var days = getWeekDays(curDate);
+    var pM = curDate.split('-').map(Number);
+    var monthIdx = pM[1] - 1;
 
-    // Update title to show week date span
+    // Title at the top remains the standard month (without year or day range)
     var h1 = $('monthName');
     h1.textContent = '';
-    var pS = wRange.start.split('-').map(Number), pE = wRange.end.split('-').map(Number);
-    var titleTxt = (pS[1] === pE[1])
-      ? MONTHS[pS[1] - 1].slice(0, 3) + ' ' + pS[2] + ' – ' + pE[2] + ', ' + pS[0]
-      : MONTHS[pS[1] - 1].slice(0, 3) + ' ' + pS[2] + ' – ' + MONTHS[pE[1] - 1].slice(0, 3) + ' ' + pE[2] + ', ' + pE[0];
-    var mn = el('span', 'mn', titleTxt);
-    mn.setAttribute('data-text', titleTxt);
+    var mn = el('span', 'mn', MONTHS[monthIdx]);
+    mn.setAttribute('data-text', MONTHS[monthIdx]);
     h1.appendChild(mn);
     applyTitle();
+
+    var WD = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    var headerDayNames = days.map(function (ds) {
+      var p = ds.split('-').map(Number);
+      var dow = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
+      return WD[dow];
+    });
+    updateWeekdaysHeader(headerDayNames);
 
     var grid = $('grid');
     grid.innerHTML = '';
     grid.classList.add('weekview');
     grid.style.gridTemplateRows = '1fr';
 
-    var WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    // Collect all loaded events from both lastMonth and otherMonth if crossing months
+    var allEvents = [];
+    if (state.lastMonth && state.lastMonth.events) allEvents = allEvents.concat(state.lastMonth.events);
+    if (data && data.events) {
+      data.events.forEach(function (e) {
+        if (!allEvents.some(function (x) { return x.id && x.id === e.id; })) allEvents.push(e);
+      });
+    }
 
-    wRange.days.forEach(function (ds, idx) {
+    // Ensure events for adjacent month are fetched if week crosses into another month
+    var startYm = days[0].slice(0, 7), endYm = days[6].slice(0, 7);
+    if (startYm !== endYm) {
+      var otherYm = (state.ym === startYm) ? endYm : startYm;
+      if (!state.otherMonth || state.otherMonth.ym !== otherYm) {
+        api('/api/month?ym=' + otherYm).then(function (otherData) {
+          state.otherMonth = otherData;
+          if (state.calView === 'week') renderWeekView(state.lastMonth);
+        }).catch(function () {});
+      } else if (state.otherMonth && state.otherMonth.events) {
+        allEvents = allEvents.concat(state.otherMonth.events);
+      }
+    }
+
+    days.forEach(function (ds) {
       var p = ds.split('-').map(Number);
-      var dow = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
       var isToday = ds === state.today;
 
       var col = el('div', 'weekcol' + (isToday ? ' todaycol' : ''));
       col.dataset.date = ds;
 
-      // Header: Day name + day number at top
+      // Header: day number at top
       var head = el('div', 'weekcol-head');
-      var dayNameEl = el('span', 'weekcol-dayname', WD[dow]);
       var numEl = el('span', 'weekcol-num', String(p[2]));
-      head.appendChild(dayNameEl);
       head.appendChild(numEl);
       col.appendChild(head);
 
@@ -4695,8 +4910,17 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 
       // Chronological events list for this day
       var list = el('div', 'weekcol-list');
-      var dayEvs = events.filter(function (e) {
+      var dayEvs = allEvents.filter(function (e) {
         return e.start <= ds && e.end >= ds;
+      });
+
+      // Deduplicate events by title + start + time
+      var seenKeys = {};
+      dayEvs = dayEvs.filter(function (e) {
+        var k = (e.id || '') + '|' + (e.title || '') + '|' + (e.start || '') + '|' + (e.time || '');
+        if (seenKeys[k]) return false;
+        seenKeys[k] = true;
+        return true;
       });
 
       // Sort events: allDay / holiday first, then by time / sort
@@ -6877,7 +7101,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   $('prev').addEventListener('click', function () {
     state.lastTouch = Date.now();
     if (state.calView === 'week') {
-      var curWk = state.weekDate || state.today || (state.lastMonth && state.lastMonth.today) || '2026-11-04';
+      var curWk = state.weekDate || state.today || (state.lastMonth && state.lastMonth.today) || '2026-11-05';
       var prevWk = addDays(curWk, -7);
       state.weekDate = prevWk;
       var newYm = prevWk.slice(0, 7);
@@ -6893,7 +7117,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   $('next').addEventListener('click', function () {
     state.lastTouch = Date.now();
     if (state.calView === 'week') {
-      var curWk = state.weekDate || state.today || (state.lastMonth && state.lastMonth.today) || '2026-11-04';
+      var curWk = state.weekDate || state.today || (state.lastMonth && state.lastMonth.today) || '2026-11-05';
       var nextWk = addDays(curWk, 7);
       state.weekDate = nextWk;
       var newYm = nextWk.slice(0, 7);
@@ -7333,6 +7557,66 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   $('signCode').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('signGo').click(); });
   $('signPair').addEventListener('click', function (e) { e.preventDefault(); $('signpad').classList.remove('open'); location.href = '/?pair'; });
   // 👤 account menu (signed-in people)
+  
+  // ---- Navigation Wheel & Settings Shortcuts ----
+  function initNavWheel() {
+    var wheelBtn = $('wheelBtn');
+    var overlay = $('navWheelOverlay');
+    var closeBtn = $('wheelClose');
+    if (!wheelBtn || !overlay) return;
+
+    var setWheelOpen = function (open) {
+      overlay.classList.toggle('open', !!open);
+    };
+
+    wheelBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setWheelOpen(!overlay.classList.contains('open'));
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', function () { setWheelOpen(false); });
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) setWheelOpen(false);
+    });
+
+    Array.prototype.forEach.call(overlay.querySelectorAll('.wheel-item'), function (item) {
+      item.addEventListener('click', function (e) {
+        var act = item.dataset.action;
+        if (!act) return;
+        setWheelOpen(false);
+        if (act === 'slideshow') {
+          if (!ph.list.length) {
+            status(ph.info && ph.info.error ? 'Photos: ' + ph.info.error : 'No photos yet. Open Photos settings to check the album.');
+            loadPhotos();
+            return;
+          }
+          if (onWall()) { ph.manual = true; ph.peekUntil = 0; } else ph.preview = true;
+          ph.resumedAt = Date.now(); ph.slideOn = false; checkSlides();
+        } else if (act === 'music') {
+          // let normal anchor navigation / target="_blank" handle music
+        } else {
+          showSubpage(act);
+        }
+      });
+    });
+
+    // Settings modal shortcuts for Board Style, Border, and Photos
+    var setBrd = $('setBorderBtn'), setTh = $('setBoardStyleBtn'), setPho = $('setPhotosBtn');
+    if (setBrd) setBrd.addEventListener('click', function () {
+      $('setmodal').classList.remove('open');
+      if ($('borderBtn')) $('borderBtn').click();
+    });
+    if (setTh) setTh.addEventListener('click', function () {
+      $('setmodal').classList.remove('open');
+      if ($('styleBtn')) $('styleBtn').click();
+    });
+    if (setPho) setPho.addEventListener('click', function () {
+      $('setmodal').classList.remove('open');
+      if ($('photosBtn')) $('photosBtn').click();
+    });
+  }
+  initNavWheel();
+
   $('acctBtn').addEventListener('click', function () {
     var w = state.who || {};
     $('acctName').textContent = w.user ? w.user.name : '';
