@@ -207,10 +207,31 @@ body.subpageOn.timersOn #timerChips,body.timerspage #timerChips{display:none}
 .taacts{display:flex;gap:12px;justify-content:center;margin-top:20px}
 .tabtn{height:52px;padding:0 24px;border-radius:26px;border:2px solid rgba(var(--ink),.45);background:transparent;color:var(--chalk);font:700 21px 'Kalam',cursive;cursor:pointer}
 .tabtn.go{border-color:var(--green);color:var(--green);background:rgba(169,216,160,.12);min-width:120px}
-/* Slideshow quick button beside the month arrows */
+/* Slideshow quick button beside the month arrows & week/month view toggle */
 .nav.slidego[hidden]{display:none}
 .nav.slidego{position:absolute;right:6px;top:13px;z-index:3}
 body.drawing .nav.slidego{display:none}
+.nav.viewtoggle{position:absolute;right:56px;top:13px;z-index:3}
+body.drawing .nav.viewtoggle{display:none}
+/* Week View styles */
+#grid.weekview{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:1fr;min-height:0;height:100%}
+.weekcol{position:relative;display:flex;flex-direction:column;min-height:0;height:100%;border-right:1.5px solid var(--gold);border-bottom:1.5px solid var(--gold);padding:6px 6px;color:var(--chalk);box-sizing:border-box;background:transparent}
+.weekcol.todaycol{background:rgba(246,179,203,.07)}
+.weekcol-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid rgba(201,180,122,.35);padding-bottom:5px;margin-bottom:6px;flex:none}
+.weekcol-dayname{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:14px;letter-spacing:1px;color:#EDE6D2;text-transform:uppercase}
+.weekcol-num{display:flex;align-items:center;justify-content:center;width:28px;height:24px;border-radius:4px;font-weight:700;font-size:18px;color:var(--yellow);line-height:1}
+.weekcol.todaycol .weekcol-num{background:var(--pink);color:#1c130b;font-weight:800}
+.weekcol-bins{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--green);margin-bottom:5px;flex:none}
+.weekcol-list{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:5px;padding-right:2px}
+.weekcol-list::-webkit-scrollbar{width:4px}
+.weekcol-list::-webkit-scrollbar-thumb{background:rgba(201,180,122,.3);border-radius:2px}
+.weekev{display:flex;flex-direction:column;padding:4px 6px;border-radius:6px;background:rgba(255,255,255,.05);border-left:3px solid var(--yellow);font-family:inherit;font-size:12px;line-height:1.2;cursor:pointer;word-break:break-word;flex:none}
+.weekev.allday{border-left-color:var(--pink);background:rgba(246,179,203,.1)}
+.weekev.multiday{border-left-color:var(--blue);background:rgba(156,201,230,.1)}
+.weekev.holiday{border-left-color:#9CC9E6;font-style:italic}
+.weekev-time{font-size:11px;font-weight:700;color:var(--yellow);margin-bottom:1px;white-space:nowrap}
+.weekev.allday .weekev-time{color:var(--pink)}
+.weekev-title{color:var(--chalk);font-weight:600}
 /* Change the chores */
 #chedmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:22}
 #chpmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:24}
@@ -532,6 +553,9 @@ body.display{touch-action:manipulation}
 #slides .clock b small{font-size:30px;margin-left:8px;font-weight:700;letter-spacing:1px}
 #slides .dim{position:absolute;inset:0;background:#000;opacity:.5;pointer-events:none;transition:opacity 1s;z-index:1}
 #slides .clock{z-index:2}
+#slides .clock.sidepanel{position:static;text-align:left;transform:none!important;margin-bottom:14px;padding:0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;border-radius:0}
+#slides .clock.sidepanel b{font-size:72px}
+#slides .clock.sidepanel span{font-size:24px}
 /* today's events / temperature / reminders over the slideshow: translucent cards, on the side away from the clock */
 #slides .sinfo{position:absolute;bottom:30px;left:40px;z-index:2;max-width:min(46vw,560px);text-align:left;color:#F4F1E8;font-family:'Kalam',cursive;padding:12px 24px 12px;border-radius:24px;background:rgba(10,10,10,.42);-webkit-backdrop-filter:blur(12px) brightness(.75);backdrop-filter:blur(12px) brightness(.75);box-shadow:0 4px 24px rgba(0,0,0,.35);text-shadow:0 1px 2px rgba(0,0,0,.85),0 0 12px rgba(0,0,0,.5);pointer-events:none}
 #slides .sinfo.right{left:auto;right:40px;text-align:right}
@@ -544,6 +568,14 @@ body.display{touch-action:manipulation}
 #slides .sinfo li{font-size:28px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #slides .sinfo li small{font-size:.75em;opacity:.8;margin-right:8px}
 #slides .sinfo.right li small{margin-right:0;margin-left:8px}
+
+/* Left sidebar panel mode: entire overlay docks on the left, reserving part of screen away from photos */
+#slides .slide-sidebar{display:none}
+#slides.sidepanel-on .slide-sidebar{display:flex;position:absolute;left:0;top:0;bottom:0;width:380px;z-index:10;flex-direction:column;padding:32px 26px 30px;background:rgba(12,12,12,.75);-webkit-backdrop-filter:blur(24px) brightness(.75);backdrop-filter:blur(24px) brightness(.75);border-right:1.5px solid rgba(255,255,255,.12);box-shadow:4px 0 30px rgba(0,0,0,.6);overflow-y:auto;pointer-events:none}
+#slides.sidepanel-on .sinfo{position:static;max-width:none;padding:0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;text-align:left;border-radius:0}
+#slides.sidepanel-on .sinfo li{font-size:22px}
+#slides.sidepanel-on .sinfo .temp b{font-size:52px}
+#slides.sidepanel-on .sinfo .temp span{font-size:22px}
 #slides .tapx{display:none;position:absolute;top:20px;left:50%;transform:translateX(-50%);font:16px 'Kalam',cursive;color:rgba(var(--ink),.7);background:rgba(0,0,0,.4);padding:4px 14px;border-radius:14px}
 body.edit #slides .tapx{display:block}
 #pmodal,#ppmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
@@ -833,6 +865,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         <button class="nav" id="prev" aria-label="Previous month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
         <h1 id="monthName">&nbsp;</h1>
         <button class="nav" id="next" aria-label="Next month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+        <button class="nav viewtoggle" id="calViewToggle" type="button" aria-label="Toggle week view" title="Toggle week view"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="10" y1="10" x2="10" y2="22"/></svg></button>
         <button class="nav slidego" id="slideGo" type="button" aria-label="Start photo slideshow" title="Photo slideshow" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M10 9.2v5.6l4.6-2.8z" fill="currentColor"/></svg></button>
       </div>
       <div class="calbody" id="calbody">
@@ -1038,6 +1071,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 <div id="slides" aria-hidden="true">
   <div class="sl"></div>
   <div class="sl"></div>
+  <div class="slide-sidebar" id="slideSidebar"></div>
   <div class="clock" id="sClock"><b id="sTime"></b><span id="sDate"></span></div>
   <div class="sinfo" id="sInfo"></div>
   <div class="dim" id="sDim"></div>
@@ -1094,6 +1128,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     <label class="check"><input type="checkbox" id="pShowEvents"> Today’s events</label>
     <label class="check"><input type="checkbox" id="pShowTemp"> Today’s temperature</label>
     <label class="check"><input type="checkbox" id="pShowRem"> Today’s reminders</label>
+    <label class="check"><input type="checkbox" id="pSidePanel"> Show overlay on left side (reserve space beside photos)</label>
     <div class="opts" style="margin-top:16px">
       <button type="button" class="seg" id="pPreview"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4l15 8-15 8z"/></svg>Preview slideshow</button>
       <button type="button" class="seg" id="pSync"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Check album now</button>
@@ -1707,7 +1742,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   var SLATE_W = 1252, SLATE_H = 642, GRID_H = 526;
   var CLIENT = Math.random().toString(36).slice(2);
 
-  var state = { weekStart: 0, ym: null, todayYm: null, today: null, strokes: [], color: 0, size: 1, tool: 'pen', medium: 'chalk', colorIdx: { chalk: 0, posca: 0 }, drawing: false, tFont: 3, tSize: 1, tColor: 0, lastTouch: Date.now() };
+  var state = { weekStart: 0, ym: null, todayYm: null, today: null, strokes: [], color: 0, size: 1, tool: 'pen', medium: 'chalk', colorIdx: { chalk: 0, posca: 0 }, drawing: false, tFont: 3, tSize: 1, tColor: 0, lastTouch: Date.now(), calView: (function(){ try { return localStorage.getItem('chalkCalView') || 'month'; } catch(e){ return 'month'; } })(), weekDate: null };
 
   var $ = function (id) { return document.getElementById(id); };
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -3899,7 +3934,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     if (h < 30) return [];
     var sides = [
       { l: x0 + 6, r: x0 + prev.offsetLeft - 14, tilt: [-5, 3] },
-      { l: x0 + next.offsetLeft + next.offsetWidth + 14, r: x0 + row.offsetWidth - 6 - ($('slideGo') && !$('slideGo').hidden ? 54 : 0), tilt: [4, -3] }
+      { l: x0 + next.offsetLeft + next.offsetWidth + 14, r: x0 + row.offsetWidth - 6 - ($('slideGo') && !$('slideGo').hidden ? 104 : 54), tilt: [4, -3] }
     ];
     var arts = (state.strokes || []).filter(function (it) { return !it._gone && !it.e; }).map(itemBox);
     var out = [];
@@ -3965,7 +4000,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   }
   // The slideshow extras are also remembered on this device, so they stick even if the board server hasn't been restarted with the newest code
   function phExtrasLocal(cfg, save) {
-    var K = ['showEvents', 'showTemp', 'showReminders'], loc = {};
+    var K = ['showEvents', 'showTemp', 'showReminders', 'sidePanel'], loc = {};
     try { loc = JSON.parse(localStorage.getItem('chalkSlideExtras') || '{}') || {}; } catch (e) {}
     if (save) { K.forEach(function (k) { loc[k] = !!cfg[k]; }); try { localStorage.setItem('chalkSlideExtras', JSON.stringify(loc)); } catch (e) {} return cfg; }
     K.forEach(function (k) { if (cfg[k] === undefined) cfg[k] = !!loc[k]; });   // only an old server leaves them out
@@ -4063,8 +4098,18 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     corners.sort(function (a, b) { return a.score - b.score; });
     return corners[0].c;
   }
+  function isSlideSidePanel() {
+    return !!(ph.cfg && ph.cfg.sidePanel);
+  }
   function placeClock(corner) {
-    var c = $('sClock'), left = corner[1] === 'l', top = corner[0] === 't';
+    var c = $('sClock'), side = isSlideSidePanel();
+    if (side) {
+      c.className = 'clock sidepanel';
+      c.style.left = 'auto'; c.style.right = 'auto'; c.style.top = 'auto'; c.style.bottom = 'auto';
+      c.style.transform = 'none';
+      return;
+    }
+    var left = corner[1] === 'l', top = corner[0] === 't';
     $('sInfo').classList.toggle('right', left);   // cards go on the side away from the clock
     c.className = 'clock' + (left ? ' left' : '');
     c.style.left = left ? '40px' : 'auto'; c.style.right = left ? 'auto' : '40px';
@@ -4073,7 +4118,11 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     c.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';   // drift so nothing sits still all night
   }
   function slideShow() {
-    var W = window.innerWidth, H = window.innerHeight, tiles = planSlide(W, H);
+    var fullW = window.innerWidth, H = window.innerHeight;
+    var side = isSlideSidePanel();
+    var panelW = side ? Math.min(380, Math.round(fullW * 0.3)) : 0;
+    var W = fullW - panelW;
+    var tiles = planSlide(W, H);
     if (!tiles) return;
     var sl = document.querySelectorAll('#slides .sl'), next = sl[1 - ph.slideCur], cur = sl[ph.slideCur];
     next.classList.remove('on'); next.innerHTML = '';
@@ -4087,7 +4136,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     };
     tiles.forEach(function (t) {
       var box = el('div', 'tile'), fg = el('img', 'fg');
-      box.style.cssText = 'left:' + t.x + 'px;top:' + t.y + 'px;width:' + t.w + 'px;height:' + t.h + 'px';
+      var tileX = t.x + panelW; // Shift photos to the right of the panel
+      box.style.cssText = 'left:' + tileX + 'px;top:' + t.y + 'px;width:' + t.w + 'px;height:' + t.h + 'px';
       fg.alt = '';
       if (t.whole) {   // people too spread out to crop: show it whole on a blurred copy of itself
         var bg = el('img', 'bg'); bg.alt = ''; bg.src = phSrc(t.p); box.appendChild(bg);
@@ -4141,7 +4191,18 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     if (on === ph.slideOn) return;
     ph.slideOn = on;
     clearInterval(ph.slideTimer);
+    var side = isSlideSidePanel();
     $('slides').classList.toggle('on', on);
+    $('slides').classList.toggle('sidepanel-on', on && side);
+    var sb = $('slideSidebar'), cl = $('sClock'), si = $('sInfo');
+    if (on && side) {
+      if (sb && cl && cl.parentElement !== sb) sb.appendChild(cl);
+      if (sb && si && si.parentElement !== sb) sb.appendChild(si);
+    } else {
+      var slBox = $('slides');
+      if (slBox && cl && cl.parentElement === sb) slBox.appendChild(cl);
+      if (slBox && si && si.parentElement === sb) slBox.appendChild(si);
+    }
     renderSlideInfo(); if (on) refreshSlideInfo();
     if (on) { ph.bag = []; bags = { p: [], l: [], any: [] }; slideShow(); ph.slideTimer = setInterval(slideShow, (ph.cfg.every || 20) * 1000); }
     else setTimeout(function () { if (!ph.slideOn) document.querySelectorAll('#slides .sl').forEach(function (s) { s.classList.remove('on'); }); }, 2600);
@@ -4252,7 +4313,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       var c = ph.cfg, im = (ph.info && ph.info.immich) || {};
       $('pFrame').checked = !!c.frame; $('pNight').checked = !!c.night;
       $('pFrom').value = c.from || '21:00'; $('pTo').value = c.to || '06:00'; $('pEvery').value = String(c.every || 20); $('pDim').value = String(c.dim || 50);
-      $('pShowEvents').checked = !!c.showEvents; $('pShowTemp').checked = !!c.showTemp; $('pShowRem').checked = !!c.showReminders;
+      $('pShowEvents').checked = !!c.showEvents; $('pShowTemp').checked = !!c.showTemp; $('pShowRem').checked = !!c.showReminders; $('pSidePanel').checked = !!c.sidePanel;
       if ($('pImmichUrl')) $('pImmichUrl').value = im.url || '';
       if ($('pImmichKey')) {
         $('pImmichKey').value = '';
@@ -4308,7 +4369,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     $('pCancel').addEventListener('click', function () { $('pmodal').classList.remove('open'); });
     $('pPreview').addEventListener('click', function () {
       if (!ph.list.length) { $('pErr').textContent = 'No photos in the album yet.'; return; }
-      $('pmodal').classList.remove('open'); ph.preview = true; ph.cfg.every = +$('pEvery').value; ph.cfg.dim = +$('pDim').value; ph.cfg.showEvents = $('pShowEvents').checked; ph.cfg.showTemp = $('pShowTemp').checked; ph.cfg.showReminders = $('pShowRem').checked; ph.slideOn = false; checkSlides();
+      $('pmodal').classList.remove('open'); ph.preview = true; ph.cfg.every = +$('pEvery').value; ph.cfg.dim = +$('pDim').value; ph.cfg.showEvents = $('pShowEvents').checked; ph.cfg.showTemp = $('pShowTemp').checked; ph.cfg.showReminders = $('pShowRem').checked; ph.cfg.sidePanel = $('pSidePanel').checked; ph.slideOn = false; checkSlides();
     });
     $('pSync').addEventListener('click', function () {
       $('pSync').disabled = true; $('pInfo').textContent = 'Checking the album…';
@@ -4328,7 +4389,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
         dim: +$('pDim').value,
         showEvents: $('pShowEvents').checked,
         showTemp: $('pShowTemp').checked,
-        showReminders: $('pShowRem').checked
+        showReminders: $('pShowRem').checked,
+        sidePanel: $('pSidePanel').checked
       };
       if ($('pImmichUrl')) payload.immichUrl = $('pImmichUrl').value.trim();
       if ($('pImmichKey') && $('pImmichKey').value.trim()) payload.immichKey = $('pImmichKey').value.trim();
@@ -4336,7 +4398,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       post('/api/photos/settings', payload)
         .then(function (c) {
           phServerKnows = c.showEvents !== undefined;   // an updated server echoes the new settings back
-          ph.cfg = phExtrasLocal(Object.assign({}, c, { showEvents: payload.showEvents, showTemp: payload.showTemp, showReminders: payload.showReminders }), true);
+          ph.cfg = phExtrasLocal(Object.assign({}, c, { showEvents: payload.showEvents, showTemp: payload.showTemp, showReminders: payload.showReminders, sidePanel: payload.sidePanel }), true);
           if (JSON.stringify(sideDraft) === sideStart) return;
           if (sideDraft.mode === 'photos' && sideDraft.pick === 'chosen' && !sideDraft.ids.length) sideDraft.pick = 'random';
           return post('/api/meta', { ym: state.ym, side: sideDraft }).then(function (m) { state.meta = m; });
@@ -4448,11 +4510,19 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     if (seasonNow() !== state.season) setSurface(state.surface.id);   // "change with the season": a new month may mean a new pattern
     var g = data.grid, events = data.events;
     state.today = data.today; state.time24 = !!g.time24;
+    if (!state.weekDate) state.weekDate = state.today || (g.y + '-' + String(g.m).padStart(2, '0') + '-01');
     if ((g.weekStart || 0) !== state.weekStart) {   // weeks start on Sunday or Monday (admin console → Board)
       state.weekStart = g.weekStart || 0;
       var WD = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
       Array.prototype.forEach.call(document.querySelectorAll('.weekdays div'), function (d, i) { d.textContent = WD[(i + state.weekStart) % 7]; });
     }
+    syncCalViewToggleBtn();
+    if (state.calView === 'week') {
+      renderWeekView(data);
+      return;
+    }
+    var grid = $('grid');
+    grid.classList.remove('weekview');
     var h1 = $('monthName');
     h1.textContent = '';
     var mn = el('span', 'mn', MONTHS[g.m - 1]); mn.setAttribute('data-text', MONTHS[g.m - 1]);
@@ -4559,6 +4629,132 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     }
     fitDays();
     setTimeout(function () { if (typeof layoutTitlePhotos === 'function') layoutTitlePhotos(); }, 0);
+  }
+
+  function getWeekRange(dateStr, weekStart) {
+    var p = dateStr.split('-').map(Number);
+    var dow = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
+    var diff = (dow - (weekStart || 0) + 7) % 7;
+    var start = addDays(dateStr, -diff);
+    var days = [];
+    for (var i = 0; i < 7; i++) days.push(addDays(start, i));
+    return { start: start, end: days[6], days: days };
+  }
+
+  function renderWeekView(data) {
+    var events = (data && data.events) || (state.lastMonth && state.lastMonth.events) || [];
+    var curDate = state.weekDate || state.today || (data && data.today) || '2026-11-04';
+    var wRange = getWeekRange(curDate, state.weekStart || 0);
+
+    // Update title to show week date span
+    var h1 = $('monthName');
+    h1.textContent = '';
+    var pS = wRange.start.split('-').map(Number), pE = wRange.end.split('-').map(Number);
+    var titleTxt = (pS[1] === pE[1])
+      ? MONTHS[pS[1] - 1].slice(0, 3) + ' ' + pS[2] + ' – ' + pE[2] + ', ' + pS[0]
+      : MONTHS[pS[1] - 1].slice(0, 3) + ' ' + pS[2] + ' – ' + MONTHS[pE[1] - 1].slice(0, 3) + ' ' + pE[2] + ', ' + pE[0];
+    var mn = el('span', 'mn', titleTxt);
+    mn.setAttribute('data-text', titleTxt);
+    h1.appendChild(mn);
+    applyTitle();
+
+    var grid = $('grid');
+    grid.innerHTML = '';
+    grid.classList.add('weekview');
+    grid.style.gridTemplateRows = '1fr';
+
+    var WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    wRange.days.forEach(function (ds, idx) {
+      var p = ds.split('-').map(Number);
+      var dow = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
+      var isToday = ds === state.today;
+
+      var col = el('div', 'weekcol' + (isToday ? ' todaycol' : ''));
+      col.dataset.date = ds;
+
+      // Header: Day name + day number at top
+      var head = el('div', 'weekcol-head');
+      var dayNameEl = el('span', 'weekcol-dayname', WD[dow]);
+      var numEl = el('span', 'weekcol-num', String(p[2]));
+      head.appendChild(dayNameEl);
+      head.appendChild(numEl);
+      col.appendChild(head);
+
+      // Trash / Recycling bins indicator
+      var bins = binsFor(ds);
+      if (bins.length) {
+        var binsEl = el('div', 'weekcol-bins');
+        var same = state.bins && state.bins.recycle && state.bins.recycle.mode === 'same';
+        binsEl.innerHTML = bins.indexOf('trash') >= 0
+          ? '<svg width="12" height="14" viewBox="0 0 40 44" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11h26M15 11V6h10v5M10 11l2 27h16l2-27"/></svg>'
+          : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L6.5 10"/><path d="M10 4.5l2-1.8 2 1.8"/><path d="M12 2.7l3.5 6.3"/><path d="M17.5 13l3.3 3.3a1.8 1.8 0 0 1-1.3 3H14"/><path d="M16 17l-2 2.3 2 2.3"/></svg>';
+        binsEl.appendChild(document.createTextNode(bins.length === 2 && !same ? 'Trash + recycling' : bins[0] === 'trash' ? 'Trash' : 'Recycling'));
+        col.appendChild(binsEl);
+      }
+
+      // Chronological events list for this day
+      var list = el('div', 'weekcol-list');
+      var dayEvs = events.filter(function (e) {
+        return e.start <= ds && e.end >= ds;
+      });
+
+      // Sort events: allDay / holiday first, then by time / sort
+      dayEvs.sort(function (a, b) {
+        var aAll = !!(a.allDay || a.holiday), bAll = !!(b.allDay || b.holiday);
+        if (aAll !== bAll) return aAll ? -1 : 1;
+        return (a.sort || a.time || '').localeCompare(b.sort || b.time || '');
+      });
+
+      if (dayEvs.length) {
+        dayEvs.forEach(function (ev) {
+          var isMulti = ev.start !== ev.end;
+          var evClass = 'weekev' + (ev.holiday ? ' holiday' : ev.allDay ? ' allday' : isMulti ? ' multiday' : '');
+          var evItem = el('div', evClass);
+          evItem.__ev = ev;
+
+          // Time pill / indicator
+          var timeTxt = ev.holiday ? 'Holiday' : ev.allDay ? 'All Day' : ev.time ? ev.time : '';
+          if (timeTxt) {
+            var timeEl = el('span', 'weekev-time', timeTxt);
+            evItem.appendChild(timeEl);
+          }
+
+          var titleText = ev.holiday ? ((ev.icon ? ev.icon + ' ' : '') + ev.title) : ev.title;
+          var titleEl = el('span', 'weekev-title', titleText);
+          var ec = ev.color || ev.calColor;
+          if (ec) {
+            var colr = readable(ec);
+            evItem.style.borderLeftColor = colr;
+            titleEl.style.color = colr;
+          }
+          evItem.appendChild(titleEl);
+          list.appendChild(evItem);
+        });
+      } else {
+        var emptyEl = el('div', 'chalk', '—');
+        emptyEl.style.opacity = '0.3';
+        emptyEl.style.textAlign = 'center';
+        emptyEl.style.marginTop = '12px';
+        list.appendChild(emptyEl);
+      }
+
+      col.appendChild(list);
+      grid.appendChild(col);
+    });
+
+    setTimeout(function () { if (typeof layoutTitlePhotos === 'function') layoutTitlePhotos(); }, 0);
+  }
+
+  function syncCalViewToggleBtn() {
+    var btn = $('calViewToggle');
+    if (!btn) return;
+    var isWeek = state.calView === 'week';
+    btn.setAttribute('aria-label', isWeek ? 'Switch to month view' : 'Switch to week view');
+    btn.title = isWeek ? 'Month view' : 'Week view';
+    btn.innerHTML = isWeek
+      ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="16" x2="21" y2="16"/><line x1="9" y1="10" x2="9" y2="22"/><line x1="15" y1="10" x2="15" y2="22"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="10" y1="10" x2="10" y2="22"/></svg>';
   }
   // Events may wrap onto a second line; a day that would overflow goes back to one line each
   function fitDays() {
@@ -6678,8 +6874,49 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   connect();
 
   // ---- Controls -----------------------------------------------------------------
-  $('prev').addEventListener('click', function () { state.lastTouch = Date.now(); loadMonth(shiftYm(state.ym, -1)); });
-  $('next').addEventListener('click', function () { state.lastTouch = Date.now(); loadMonth(shiftYm(state.ym, 1)); });
+  $('prev').addEventListener('click', function () {
+    state.lastTouch = Date.now();
+    if (state.calView === 'week') {
+      var curWk = state.weekDate || state.today || (state.lastMonth && state.lastMonth.today) || '2026-11-04';
+      var prevWk = addDays(curWk, -7);
+      state.weekDate = prevWk;
+      var newYm = prevWk.slice(0, 7);
+      if (newYm !== state.ym) {
+        loadMonth(newYm);
+      } else if (state.lastMonth) {
+        renderWeekView(state.lastMonth);
+      }
+    } else {
+      loadMonth(shiftYm(state.ym, -1));
+    }
+  });
+  $('next').addEventListener('click', function () {
+    state.lastTouch = Date.now();
+    if (state.calView === 'week') {
+      var curWk = state.weekDate || state.today || (state.lastMonth && state.lastMonth.today) || '2026-11-04';
+      var nextWk = addDays(curWk, 7);
+      state.weekDate = nextWk;
+      var newYm = nextWk.slice(0, 7);
+      if (newYm !== state.ym) {
+        loadMonth(newYm);
+      } else if (state.lastMonth) {
+        renderWeekView(state.lastMonth);
+      }
+    } else {
+      loadMonth(shiftYm(state.ym, 1));
+    }
+  });
+
+  var vToggleBtn = $('calViewToggle');
+  if (vToggleBtn) {
+    vToggleBtn.addEventListener('click', function () {
+      state.lastTouch = Date.now();
+      state.calView = state.calView === 'week' ? 'month' : 'week';
+      try { localStorage.setItem('chalkCalView', state.calView); } catch (e) {}
+      syncCalViewToggleBtn();
+      if (state.lastMonth) renderMonth(state.lastMonth);
+    });
+  }
 
   if (EDIT) {
     function buildSwatches() {
@@ -6835,12 +7072,12 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       gridTap(e);
     });
     function gridTap(e) {
-      var evEl = e.target.closest('.ev, .bar');
+      var evEl = e.target.closest('.ev, .bar, .weekev');
       if (evEl && evEl.__ev && evEl.__ev.holiday) return openHolidays(evEl.__ev.title);
       if (evEl && evEl.__ev) return openEdit(evEl.__ev);
       var moreEl = e.target.closest('.more');
       if (moreEl) return openDay(moreEl.__day);
-      var cell = e.target.closest('.day');
+      var cell = e.target.closest('.day, .weekcol');
       if (!cell) return;
       // a day with events: see them all (and add from there); an empty day: straight to Add
       var d = cell.dataset.date, any = (state.lastMonth ? state.lastMonth.events : []).some(function (x) { return x.start <= d && x.end >= d; });

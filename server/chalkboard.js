@@ -2144,7 +2144,7 @@ const GP_UA = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWe
 const CK = 'database/1/com.apple.photos.cloud/production';
 const CK_HOST = process.env.PHOTO_CK_HOST || 'https://ckdatabasews.icloud.com';   // override only for testing
 const photoState = { list: [], synced: 0, error: null, running: false };
-const PHOTO_CFG_DEFAULT = { frame: true, night: true, from: '21:00', to: '06:00', every: 20, dim: 50, showEvents: false, showTemp: false, showReminders: false };
+const PHOTO_CFG_DEFAULT = { frame: true, night: true, from: '21:00', to: '06:00', every: 20, dim: 50, showEvents: false, showTemp: false, showReminders: false, sidePanel: false };
 function photoCfg() {
   const r = qKvGet.get('photoCfg');
   return { ...PHOTO_CFG_DEFAULT, ...(r ? JSON.parse(r.data) : {}) };
@@ -2542,7 +2542,8 @@ app.post('/api/photos/settings', async (req, res) => {
     dim: [30, 50, 70, 100].includes(+b.dim) ? +b.dim : cur.dim,   // slideshow brightness, %
     showEvents: b.showEvents === undefined ? cur.showEvents : !!b.showEvents,   // slideshow extras (translucent cards)
     showTemp: b.showTemp === undefined ? cur.showTemp : !!b.showTemp,
-    showReminders: b.showReminders === undefined ? cur.showReminders : !!b.showReminders
+    showReminders: b.showReminders === undefined ? cur.showReminders : !!b.showReminders,
+    sidePanel: b.sidePanel === undefined ? cur.sidePanel : !!b.sidePanel   // left sidebar panel mode (photos don't overlap)
   };
   const sv = {};
   if (b.immichUrl !== undefined) sv.IMMICH_URL = normalizeImmichUrl(b.immichUrl);
