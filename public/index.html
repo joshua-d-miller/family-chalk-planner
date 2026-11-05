@@ -214,18 +214,18 @@ body.drawing .nav.slidego{display:none}
 .nav.viewtoggle{position:absolute;right:56px;top:13px;z-index:3}
 body.drawing .nav.viewtoggle{display:none}
 /* Week View styles */
-#grid.weekview{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:1fr;min-height:0;height:100%}
-.weekcol{position:relative;display:flex;flex-direction:column;min-height:0;height:100%;border-right:1.5px solid var(--gold);border-bottom:1.5px solid var(--gold);padding:6px 6px;color:var(--chalk);box-sizing:border-box;background:transparent}
+#grid.weekview{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:1fr;min-height:0;height:100%;width:100%;box-sizing:border-box}
+.weekcol{position:relative;display:flex;flex-direction:column;min-height:0;height:100%;min-width:0;border-right:1.5px solid var(--gold);border-bottom:1.5px solid var(--gold);padding:6px 5px;color:var(--chalk);box-sizing:border-box;background:transparent}
 .weekcol.todaycol{background:rgba(246,179,203,.07)}
 .weekcol-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid rgba(201,180,122,.35);padding-bottom:5px;margin-bottom:6px;flex:none}
-.weekcol-dayname{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:14px;letter-spacing:1px;color:#EDE6D2;text-transform:uppercase}
+.weekcol-dayname{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:13px;letter-spacing:0.5px;color:#EDE6D2;text-transform:uppercase}
 .weekcol-num{display:flex;align-items:center;justify-content:center;width:28px;height:24px;border-radius:4px;font-weight:700;font-size:18px;color:var(--yellow);line-height:1}
 .weekcol.todaycol .weekcol-num{background:var(--pink);color:#1c130b;font-weight:800}
-.weekcol-bins{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--green);margin-bottom:5px;flex:none}
+.weekcol-bins{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--green);margin-bottom:5px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .weekcol-list{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:5px;padding-right:2px}
 .weekcol-list::-webkit-scrollbar{width:4px}
 .weekcol-list::-webkit-scrollbar-thumb{background:rgba(201,180,122,.3);border-radius:2px}
-.weekev{display:flex;flex-direction:column;padding:4px 6px;border-radius:6px;background:rgba(255,255,255,.05);border-left:3px solid var(--yellow);font-family:inherit;font-size:12px;line-height:1.2;cursor:pointer;word-break:break-word;flex:none}
+.weekev{display:flex;flex-direction:column;padding:4px 5px;border-radius:6px;background:rgba(255,255,255,.05);border-left:3px solid var(--yellow);font-family:inherit;font-size:12px;line-height:1.2;cursor:pointer;word-break:break-word;flex:none}
 .weekev.allday{border-left-color:var(--pink);background:rgba(246,179,203,.1)}
 .weekev.multiday{border-left-color:var(--blue);background:rgba(156,201,230,.1)}
 .weekev.holiday{border-left-color:#9CC9E6;font-style:italic}
@@ -4834,6 +4834,7 @@ body.subpageOn #wheelBtn { z-index: 22; }
   }
 
   function renderWeekView(data) {
+    if (data && data.today) state.today = data.today;
     var curDate = state.weekDate || state.today || (data && data.today) || '2026-11-05';
     var days = getWeekDays(curDate);
     var pM = curDate.split('-').map(Number);
@@ -4848,6 +4849,7 @@ body.subpageOn #wheelBtn { z-index: 22; }
     applyTitle();
 
     var WD = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    var SHORT_WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     var headerDayNames = days.map(function (ds) {
       var p = ds.split('-').map(Number);
       var dow = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
@@ -4858,6 +4860,7 @@ body.subpageOn #wheelBtn { z-index: 22; }
     var grid = $('grid');
     grid.innerHTML = '';
     grid.classList.add('weekview');
+    grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
     grid.style.gridTemplateRows = '1fr';
 
     // Collect all loaded events from both lastMonth and otherMonth if crossing months
@@ -4890,9 +4893,12 @@ body.subpageOn #wheelBtn { z-index: 22; }
       var col = el('div', 'weekcol' + (isToday ? ' todaycol' : ''));
       col.dataset.date = ds;
 
-      // Header: day number at top
+      // Header: day name & day number at top
+      var dow = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
       var head = el('div', 'weekcol-head');
+      var dayNameEl = el('span', 'weekcol-dayname', SHORT_WD[dow]);
       var numEl = el('span', 'weekcol-num', String(p[2]));
+      head.appendChild(dayNameEl);
       head.appendChild(numEl);
       col.appendChild(head);
 
@@ -7136,6 +7142,9 @@ body.subpageOn #wheelBtn { z-index: 22; }
     vToggleBtn.addEventListener('click', function () {
       state.lastTouch = Date.now();
       state.calView = state.calView === 'week' ? 'month' : 'week';
+      if (state.calView === 'week') {
+        state.weekDate = state.today || (state.lastMonth && state.lastMonth.today);
+      }
       try { localStorage.setItem('chalkCalView', state.calView); } catch (e) {}
       syncCalViewToggleBtn();
       if (state.lastMonth) renderMonth(state.lastMonth);
