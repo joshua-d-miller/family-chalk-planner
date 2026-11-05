@@ -4706,13 +4706,13 @@ body.subpageOn #wheelBtn { z-index: 22; }
     updateWeekdaysHeader(null);
     var grid = $('grid');
     grid.classList.remove('weekview');
+    grid.style.gridTemplateColumns = '';
     var h1 = $('monthName');
     h1.textContent = '';
     var mn = el('span', 'mn', MONTHS[g.m - 1]); mn.setAttribute('data-text', MONTHS[g.m - 1]);
     h1.appendChild(mn);
     applyTitle();
 
-    var grid = $('grid');
     grid.innerHTML = '';
     grid.style.gridTemplateRows = 'repeat(' + g.weeks + ', minmax(0, 1fr))';
     var cellH = (GRID_H - 2 * (state.borderPad || 0)) / g.weeks;
