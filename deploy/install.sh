@@ -90,7 +90,7 @@ write_unit() {
 if [ "$UNIT_ONLY" = yes ]; then write_unit; say "Service updated to run from $APP_DIR"; exit 0; fi
 
 # ---- packages and Node.js 22 ----
-node_ok() { command -v node >/dev/null && node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=5)?0:1)'; }
+node_ok() { command -v node >/dev/null && node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=18)?0:1)'; }
 if [ "${SKIP_PACKAGES:-}" != 1 ]; then
   export DEBIAN_FRONTEND=noninteractive
   say "Installing packages (curl, git, ca-certificates)"
@@ -104,7 +104,7 @@ if [ "${SKIP_PACKAGES:-}" != 1 ]; then
     rm -f /tmp/nodesource_setup.sh
   fi
 fi
-node_ok || die "Node.js 22.5 or newer is required (found: $(node -v 2>/dev/null || echo none))"
+node_ok || die "Node.js 22.18 or newer is required (found: $(node -v 2>/dev/null || echo none))"
 
 say "Installing dependencies"
 OWNER="$(stat -c %U "$APP_DIR")"

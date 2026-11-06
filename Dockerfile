@@ -17,6 +17,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund --loglevel=error && npm cache clean --force
 
 COPY server ./server
+COPY shared ./shared
 COPY public ./public
 COPY face ./face
 COPY deploy/setup-face.sh deploy/docker-entrypoint.sh ./deploy/

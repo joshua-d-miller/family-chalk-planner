@@ -5,7 +5,8 @@ board that a non-technical family can live with every day: calm to look at, easy
 home network, and fully working without the internet once set up.
 
 ## Run it locally
-You need Node.js 22 (it uses the built-in `node:sqlite`).
+You need Node.js 22.18 or newer: it uses the built-in `node:sqlite`, and runs the server's TypeScript files
+directly (Node strips the types, so the server has no build step).
 
 ```bash
 git clone https://github.com/joshua-d-miller/family-chalk-planner.git
@@ -14,6 +15,7 @@ npm ci
 npm test                      # starts real servers with mock calendars/albums on localhost
 npx playwright install chromium   # once, for the browser tests
 npm run test:e2e              # the board in a real browser: tablet, wall, family screen, kid's tablet, phone
+npm run typecheck && npm run lint && npm run format:check   # TypeScript, ESLint, Prettier
 PORT=3002 DATA_DIR=./data node server/chalkboard.js
 ```
 
@@ -29,7 +31,8 @@ read once, on a fresh data folder's first start — handy for tests and scripts.
    the server does (`node --test test/<file>.test.js` runs one file), and a browser test in `test/e2e/`
    for anything you can see or tap (`npx playwright test chores` runs one file). Browser tests describe what
    the board does, not how it's built, so they keep working when the code underneath changes.
-2. CI must pass: `npm ci`, `node --check server/chalkboard.js`, `npm test`, `npm run test:e2e`,
+2. CI must pass: `npm ci`, `node --check server/chalkboard.js`, `npm run typecheck`, `npm run lint`,
+   `npm run format:check` (`npm run format` fixes it), `npm test`, `npm run test:e2e`,
    `npm audit --omit=dev --audit-level=high`, ShellCheck on `deploy/*.sh`, and `test/deploy-scripts.sh`
    (runs the real install and update scripts as root with systemd stubbed out: `sudo env "PATH=$PATH" bash test/deploy-scripts.sh`).
 3. Open a pull request with what changed and how you tested it (screenshots for anything visible).

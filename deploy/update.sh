@@ -59,7 +59,22 @@ if [ "$old" = "$new" ] || as_owner git merge-base --is-ancestor "$new" "$old"; t
   exit 0
 fi
 say "Changes:"; as_owner git log --oneline "$old..$new" | sed 's/^/    /'
+# the Node.js version the new code needs (package.json "engines"), e.g. 22.18 to run TypeScript directly
+need_node="$(as_owner git show "$new:package.json" 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const m=/(\d+)\.(\d+)/.exec((JSON.parse(s).engines||{}).node||"");console.log(m?m[1]+"."+m[2]:"")}catch{console.log("")}})' || true)"
+node_at_least() { node -e 'const [a,b]=process.versions.node.split(".").map(Number),[x,y]=process.argv[1].split(".").map(Number);process.exit(a>x||(a===x&&b>=y)?0:1)' "$1"; }
+from_nodesource() { ls /etc/apt/sources.list.d/nodesource* >/dev/null 2>&1; }
+if [ -n "$need_node" ] && ! node_at_least "$need_node"; then
+  if from_nodesource; then say "This version needs Node.js $need_node or newer (you have $(node -v)): it will be updated first"
+  else say "This version needs Node.js $need_node or newer (you have $(node -v))"; fi
+fi
 [ "$CHECK" = yes ] && exit 0
+if [ -n "$need_node" ] && ! node_at_least "$need_node"; then
+  if from_nodesource; then
+    say "Updating Node.js"
+    apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nodejs >/dev/null || true
+  fi
+  node_at_least "$need_node" || die "This version needs Node.js $need_node or newer (found $(node -v)). Update Node.js, then run this again. Nothing was changed."
+fi
 
 changed="$(as_owner git diff --name-only "$old" "$new")"
 as_owner git merge --quiet --ff-only "$new"

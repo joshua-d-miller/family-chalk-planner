@@ -13,6 +13,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node --check server/chalkboard.js
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
       - run: npm test
       - run: npm audit --omit=dev --audit-level=high
       - name: ShellCheck

@@ -1426,8 +1426,8 @@ const DEFAULT_JARS = [];   // jars are optional; add them from the tablet
 function getJars() { const r = qKvGet.get('jars'); return r ? JSON.parse(r.data) : DEFAULT_JARS; }
 app.get('/api/jars', (req, res) => res.json(getJars()));
 
-// Chores: the family's checklist (server/chores.js)
-const chores = require('./chores').setup({
+// Chores: the family's checklist (server/chores.ts)
+const chores = require('./chores.ts').setup({
   app, broadcast, weekStart: WEEK_START,
   kvGet: k => { const r = qKvGet.get(k); return r ? JSON.parse(r.data) : null; },
   kvSet: (k, v) => qKvSet.run(k, JSON.stringify(v)),

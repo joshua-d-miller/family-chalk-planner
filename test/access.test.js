@@ -204,7 +204,7 @@ test('chores: everyone sees them; family screens and grown-ups check any; a kidâ
 });
 
 test('chores reset by themselves: each day, each week (from the boardâ€™s week start) and each month', () => {
-  const { periods } = require('../server/chores');
+  const { periods } = require('../server/chores.ts');
   assert.deepEqual(periods('2026-10-28', 0), { day: '2026-10-28', week: '2026-10-25', month: '2026-10' }, 'Wednesday; weeks from Sunday');
   assert.deepEqual(periods('2026-10-28', 1).week, '2026-10-26', 'weeks from Monday');
   assert.equal(periods('2026-11-01', 0).week, '2026-11-01', 'a Sunday starts its own week');

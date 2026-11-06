@@ -38,7 +38,7 @@ git clone https://github.com/joshua-d-miller/family-chalk-planner.git /opt/famil
 sudo bash /opt/family-chalk-planner/deploy/install.sh
 ```
 
-The installer adds Node.js 22 if it's missing, a locked-down service user, a systemd service that runs straight from that folder, and the optional face finder for photo framing.
+The installer adds Node.js 22 (22.18 or newer) if it's missing, a locked-down service user, a systemd service that runs straight from that folder, and the optional face finder for photo framing.
 
 Either way, open `http://<server>:3002/admin`, enter the setup code to create the admin account, then use **⚙️ Board** in the console for your calendar (iCloud/CalDAV with "Find my calendars", or [Google](docs/google-calendar.md)), weather town and photo album. No files to edit. Pair the wall display and invite people from the same console.
 

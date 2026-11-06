@@ -1,0 +1,27 @@
+{
+  // Type-checking only: Node runs the server's .ts files directly (it strips the types), so nothing is built.
+  // The React screens will get their own config under web/.
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["es2023"],
+    // "preserve" while old CommonJS .js files and new .ts modules live side by side; once everything is
+    // converted, package.json gets "type": "module" and this goes back to "nodenext".
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    // old .js files are allowed but not checked until they're converted
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": ["server/**/*", "shared/**/*"]
+}

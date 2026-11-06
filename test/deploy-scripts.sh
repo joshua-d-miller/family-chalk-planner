@@ -70,4 +70,14 @@ if bash "$W/app/deploy/update.sh" > "$W/out" 2>&1; then fail "a failed update re
 [ "$(git -C "$W/app" rev-parse HEAD)" = "$old" ] || fail "a failed update goes back to the previous version"
 grep -q "stopped at deploy/update.sh line" "$W/out" || fail "a failed update says where it stopped"
 pass "failed update is undone and explained"
+
+# 5. the new version needs a newer Node.js than this server has (and it didn't come from NodeSource):
+#    nothing changes, and it says why
+board conf; old="$(git -C "$W/app" rev-parse HEAD)"
+( cd "$W/seed" && node -e 'const f="package.json",p=JSON.parse(require("fs").readFileSync(f));p.engines={node:">=99.0"};require("fs").writeFileSync(f,JSON.stringify(p,null,2))' \
+  && "${G[@]}" commit -qam "needs node 99" && git push -q "$W/origin.git" main )
+if bash "$W/app/deploy/update.sh" > "$W/out" 2>&1; then fail "an update needing a newer Node.js reports failure"; fi
+[ "$(git -C "$W/app" rev-parse HEAD)" = "$old" ] || fail "an update needing a newer Node.js leaves the code as it was"
+grep -q "needs Node.js 99.0 or newer" "$W/out" || fail "an update needing a newer Node.js says so"
+pass "update needing a newer Node.js stops before changing anything"
 echo "deploy scripts: all passed"
