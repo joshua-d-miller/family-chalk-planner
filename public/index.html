@@ -4887,90 +4887,97 @@ body.subpageOn #wheelBtn { z-index: 22; }
     }
 
     days.forEach(function (ds) {
-      var p = ds.split('-').map(Number);
-      var isToday = ds === state.today;
+      try {
+        var p = ds.split('-').map(Number);
+        var isToday = ds === state.today;
 
-      var col = el('div', 'weekcol' + (isToday ? ' todaycol' : ''));
-      col.dataset.date = ds;
+        var col = el('div', 'weekcol' + (isToday ? ' todaycol' : ''));
+        col.dataset.date = ds;
 
-      // Header: day name & day number at top
-      var dow = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
-      var head = el('div', 'weekcol-head');
-      var dayNameEl = el('span', 'weekcol-dayname', SHORT_WD[dow]);
-      var numEl = el('span', 'weekcol-num', String(p[2]));
-      head.appendChild(dayNameEl);
-      head.appendChild(numEl);
-      col.appendChild(head);
+        // Header: day name & day number at top
+        var dow = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
+        var head = el('div', 'weekcol-head');
+        var dayNameEl = el('span', 'weekcol-dayname', SHORT_WD[dow]);
+        var numEl = el('span', 'weekcol-num', String(p[2]));
+        head.appendChild(dayNameEl);
+        head.appendChild(numEl);
+        col.appendChild(head);
 
-      // Trash / Recycling bins indicator
-      var bins = binsFor(ds);
-      if (bins.length) {
-        var binsEl = el('div', 'weekcol-bins');
-        var same = state.bins && state.bins.recycle && state.bins.recycle.mode === 'same';
-        binsEl.innerHTML = bins.indexOf('trash') >= 0
-          ? '<svg width="12" height="14" viewBox="0 0 40 44" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11h26M15 11V6h10v5M10 11l2 27h16l2-27"/></svg>'
-          : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L6.5 10"/><path d="M10 4.5l2-1.8 2 1.8"/><path d="M12 2.7l3.5 6.3"/><path d="M17.5 13l3.3 3.3a1.8 1.8 0 0 1-1.3 3H14"/><path d="M16 17l-2 2.3 2 2.3"/></svg>';
-        binsEl.appendChild(document.createTextNode(bins.length === 2 && !same ? 'Trash + recycling' : bins[0] === 'trash' ? 'Trash' : 'Recycling'));
-        col.appendChild(binsEl);
-      }
+        // Trash / Recycling bins indicator
+        var bins = binsFor(ds);
+        if (bins && bins.length) {
+          var binsEl = el('div', 'weekcol-bins');
+          var same = state.bins && state.bins.recycle && state.bins.recycle.mode === 'same';
+          binsEl.innerHTML = bins.indexOf('trash') >= 0
+            ? '<svg width="12" height="14" viewBox="0 0 40 44" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11h26M15 11V6h10v5M10 11l2 27h16l2-27"/></svg>'
+            : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L6.5 10"/><path d="M10 4.5l2-1.8 2 1.8"/><path d="M12 2.7l3.5 6.3"/><path d="M17.5 13l3.3 3.3a1.8 1.8 0 0 1-1.3 3H14"/><path d="M16 17l-2 2.3 2 2.3"/></svg>';
+          binsEl.appendChild(document.createTextNode(bins.length === 2 && !same ? 'Trash + recycling' : bins[0] === 'trash' ? 'Trash' : 'Recycling'));
+          col.appendChild(binsEl);
+        }
 
-      // Chronological events list for this day
-      var list = el('div', 'weekcol-list');
-      var dayEvs = allEvents.filter(function (e) {
-        return e.start <= ds && e.end >= ds;
-      });
-
-      // Deduplicate events by title + start + time
-      var seenKeys = {};
-      dayEvs = dayEvs.filter(function (e) {
-        var k = (e.id || '') + '|' + (e.title || '') + '|' + (e.start || '') + '|' + (e.time || '');
-        if (seenKeys[k]) return false;
-        seenKeys[k] = true;
-        return true;
-      });
-
-      // Sort events: allDay / holiday first, then by time / sort
-      dayEvs.sort(function (a, b) {
-        var aAll = !!(a.allDay || a.holiday), bAll = !!(b.allDay || b.holiday);
-        if (aAll !== bAll) return aAll ? -1 : 1;
-        return (a.sort || a.time || '').localeCompare(b.sort || b.time || '');
-      });
-
-      if (dayEvs.length) {
-        dayEvs.forEach(function (ev) {
-          var isMulti = ev.start !== ev.end;
-          var evClass = 'weekev' + (ev.holiday ? ' holiday' : ev.allDay ? ' allday' : isMulti ? ' multiday' : '');
-          var evItem = el('div', evClass);
-          evItem.__ev = ev;
-
-          // Time pill / indicator
-          var timeTxt = ev.holiday ? 'Holiday' : ev.allDay ? 'All Day' : ev.time ? ev.time : '';
-          if (timeTxt) {
-            var timeEl = el('span', 'weekev-time', timeTxt);
-            evItem.appendChild(timeEl);
-          }
-
-          var titleText = ev.holiday ? ((ev.icon ? ev.icon + ' ' : '') + ev.title) : ev.title;
-          var titleEl = el('span', 'weekev-title', titleText);
-          var ec = ev.color || ev.calColor;
-          if (ec) {
-            var colr = readable(ec);
-            evItem.style.borderLeftColor = colr;
-            titleEl.style.color = colr;
-          }
-          evItem.appendChild(titleEl);
-          list.appendChild(evItem);
+        // Chronological events list for this day
+        var list = el('div', 'weekcol-list');
+        var dayEvs = allEvents.filter(function (e) {
+          return e.start <= ds && e.end >= ds;
         });
-      } else {
-        var emptyEl = el('div', 'chalk', '—');
-        emptyEl.style.opacity = '0.3';
-        emptyEl.style.textAlign = 'center';
-        emptyEl.style.marginTop = '12px';
-        list.appendChild(emptyEl);
-      }
 
-      col.appendChild(list);
-      grid.appendChild(col);
+        // Deduplicate events by title + start + time
+        var seenKeys = {};
+        dayEvs = dayEvs.filter(function (e) {
+          var k = (e.id || '') + '|' + (e.title || '') + '|' + (e.start || '') + '|' + (e.time || '');
+          if (seenKeys[k]) return false;
+          seenKeys[k] = true;
+          return true;
+        });
+
+        // Sort events: allDay / holiday first, then by time / sort
+        dayEvs.sort(function (a, b) {
+          var aAll = !!(a.allDay || a.holiday), bAll = !!(b.allDay || b.holiday);
+          if (aAll !== bAll) return aAll ? -1 : 1;
+          var aSort = a.sort != null ? a.sort : (a.time || '');
+          var bSort = b.sort != null ? b.sort : (b.time || '');
+          if (typeof aSort === 'number' && typeof bSort === 'number') return aSort - bSort;
+          return String(aSort).localeCompare(String(bSort));
+        });
+
+        if (dayEvs.length) {
+          dayEvs.forEach(function (ev) {
+            var isMulti = ev.start !== ev.end;
+            var evClass = 'weekev' + (ev.holiday ? ' holiday' : ev.allDay ? ' allday' : isMulti ? ' multiday' : '');
+            var evItem = el('div', evClass);
+            evItem.__ev = ev;
+
+            // Time pill / indicator
+            var timeTxt = ev.holiday ? 'Holiday' : ev.allDay ? 'All Day' : ev.time ? ev.time : '';
+            if (timeTxt) {
+              var timeEl = el('span', 'weekev-time', timeTxt);
+              evItem.appendChild(timeEl);
+            }
+
+            var titleText = ev.holiday ? ((ev.icon ? ev.icon + ' ' : '') + ev.title) : ev.title;
+            var titleEl = el('span', 'weekev-title', titleText);
+            var ec = ev.color || ev.calColor;
+            if (ec) {
+              var colr = readable(ec);
+              evItem.style.borderLeftColor = colr;
+              titleEl.style.color = colr;
+            }
+            evItem.appendChild(titleEl);
+            list.appendChild(evItem);
+          });
+        } else {
+          var emptyEl = el('div', 'chalk', '—');
+          emptyEl.style.opacity = '0.3';
+          emptyEl.style.textAlign = 'center';
+          emptyEl.style.marginTop = '12px';
+          list.appendChild(emptyEl);
+        }
+
+        col.appendChild(list);
+        grid.appendChild(col);
+      } catch (colErr) {
+        console.error('Error rendering week column for ' + ds, colErr);
+      }
     });
 
     setTimeout(function () { if (typeof layoutTitlePhotos === 'function') layoutTitlePhotos(); }, 0);
