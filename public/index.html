@@ -5066,7 +5066,7 @@ body.subpageOn #wheelBtn { z-index: 22; }
     var B = { thin: '1px', normal: '1.5px', bold: '2.5px' }[v.lineW] + ' ' + v.lineS + ' ' + v.lineC;
     return [
       '#grid{border-top:' + B + ';border-left:' + B + '}',
-      '.day{border-right:' + B + ';border-bottom:' + B + '}',
+      '.day,.weekcol{border-right:' + B + ';border-bottom:' + B + '}',
       '.notes{border-left:' + B + '}',
       '.rule{background:' + rgba(v.lineC, 0.6) + '}',
       '.day .num{' + F('numF', 17) + 'color:' + v.numC + ';' + (v.boxes === 'off' ? 'border:none' : 'border-left:' + B + ';border-bottom:' + B) + '}',
