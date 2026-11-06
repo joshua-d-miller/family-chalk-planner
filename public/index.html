@@ -308,7 +308,8 @@ body.display.artsvg #art{display:none}
 body.display.artsvg #artSvg{display:block}
 body.plain .titlerow h1 .mn::before{display:none}
 body.plain .chalk{text-shadow:none}
-.titlerow h1 .mn{position:relative;display:inline-block;isolation:isolate}
+.titlerow h1 .mn{position:relative;display:inline-block;isolation:isolate;transition:opacity .22s ease,transform .22s ease;opacity:1;transform:scale(1)}
+.titlerow h1 .mn.mn-fade{opacity:0;transform:scale(0.96)}
 .titlerow h1 .mn::before{content:attr(data-text);position:absolute;left:0;top:0;z-index:-1;color:var(--tout,#F3A35E);-webkit-text-stroke:var(--toutw,4.5px) var(--tout,#F3A35E);pointer-events:none}
 .titlerow h1.noout .mn::before{display:none}
 #rcmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
@@ -4707,11 +4708,7 @@ body.subpageOn #wheelBtn { z-index: 22; }
     var grid = $('grid');
     grid.classList.remove('weekview');
     grid.style.gridTemplateColumns = '';
-    var h1 = $('monthName');
-    h1.textContent = '';
-    var mn = el('span', 'mn', MONTHS[g.m - 1]); mn.setAttribute('data-text', MONTHS[g.m - 1]);
-    h1.appendChild(mn);
-    applyTitle();
+    setMonthTitle(MONTHS[g.m - 1]);
 
     grid.innerHTML = '';
     grid.style.gridTemplateRows = 'repeat(' + g.weeks + ', minmax(0, 1fr))';
@@ -4841,12 +4838,7 @@ body.subpageOn #wheelBtn { z-index: 22; }
     var monthIdx = pM[1] - 1;
 
     // Title at the top remains the standard month (without year or day range)
-    var h1 = $('monthName');
-    h1.textContent = '';
-    var mn = el('span', 'mn', MONTHS[monthIdx]);
-    mn.setAttribute('data-text', MONTHS[monthIdx]);
-    h1.appendChild(mn);
-    applyTitle();
+    setMonthTitle(MONTHS[monthIdx]);
 
     var WD = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
     var SHORT_WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -5525,6 +5517,27 @@ body.subpageOn #wheelBtn { z-index: 22; }
     h1.classList.toggle('hand', hand);
     if (mn) styleTitle(mn, h1, titleStyle(), 520);
   }
+  function setMonthTitle(text) {
+    var h1 = $('monthName'), mn = h1.querySelector('.mn');
+    if (!mn) {
+      h1.textContent = '';
+      mn = el('span', 'mn');
+      h1.appendChild(mn);
+    }
+    if (mn.getAttribute('data-text') !== text || mn.textContent !== text) {
+      mn.classList.add('mn-fade');
+      setTimeout(function () {
+        mn.textContent = text;
+        mn.setAttribute('data-text', text);
+        applyTitle();
+        requestAnimationFrame(function () {
+          mn.classList.remove('mn-fade');
+        });
+      }, 120);
+    } else {
+      applyTitle();
+    }
+  }
   // ---- Holiday border: up to 8 pictures repeated around the calendar (wall, tablet and family screens) ----
   var BORDER_SZ = { s: 20, m: 26, l: 34 };
   function borderSrc(n, color) {
@@ -5669,7 +5682,11 @@ body.subpageOn #wheelBtn { z-index: 22; }
     return api('/api/meta?ym=' + ym).then(function (m) { if (ym === state.ym) { state.meta = m || {}; state.metaYm = ym; applyTitle(); applyBorder(); layoutTitlePhotos(); } }).catch(function () {});
   }
   function loadMonth(ym) {
-    if (ym !== state.ym) { state.shownPad = undefined; state.metaYm = null; resetHistory(); state.meta = {}; applyTitle(); applyBorder(); setTimeout(layoutTitlePhotos, 0); }
+    if (ym !== state.ym) {
+      state.shownPad = undefined;
+      state.metaYm = null;
+      resetHistory();
+    }
     state.ym = ym;
     status('');
     var metaReady = loadMeta(ym);
