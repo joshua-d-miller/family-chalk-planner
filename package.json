@@ -7,7 +7,8 @@
   "main": "server/chalkboard.js",
   "scripts": {
     "start": "node server/chalkboard.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "test:e2e": "playwright test"
   },
   "engines": {
     "node": ">=22.5"
@@ -28,5 +29,8 @@
     "express": "5.3.0",
     "ical.js": "2.2.1",
     "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.0"
   }
 }

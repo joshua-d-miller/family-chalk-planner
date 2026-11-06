@@ -21,6 +21,26 @@ jobs:
         run: sudo env "PATH=$PATH" bash test/deploy-scripts.sh
       - name: Python syntax
         run: python3 -m py_compile face/facefocus.py
+  browser:
+    # the board as each screen sees it (tablet, wall, family screen, kid's tablet, phone)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
   docker:
     runs-on: ubuntu-latest
     steps:

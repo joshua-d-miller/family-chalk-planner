@@ -12,6 +12,8 @@ git clone https://github.com/joshua-d-miller/family-chalk-planner.git
 cd family-chalk-planner
 npm ci
 npm test                      # starts real servers with mock calendars/albums on localhost
+npx playwright install chromium   # once, for the browser tests
+npm run test:e2e              # the board in a real browser: tablet, wall, family screen, kid's tablet, phone
 PORT=3002 DATA_DIR=./data node server/chalkboard.js
 ```
 
@@ -24,8 +26,10 @@ read once, on a fresh data folder's first start — handy for tests and scripts.
 
 ## Making a change
 1. Branch from `main`, keep the change focused, and add or update a test in `test/` for anything
-   the server does (`node --test test/<file>.test.js` runs one file).
-2. CI must pass: `npm ci`, `node --check server/chalkboard.js`, `npm test`,
+   the server does (`node --test test/<file>.test.js` runs one file), and a browser test in `test/e2e/`
+   for anything you can see or tap (`npx playwright test chores` runs one file). Browser tests describe what
+   the board does, not how it's built, so they keep working when the code underneath changes.
+2. CI must pass: `npm ci`, `node --check server/chalkboard.js`, `npm test`, `npm run test:e2e`,
    `npm audit --omit=dev --audit-level=high`, ShellCheck on `deploy/*.sh`, and `test/deploy-scripts.sh`
    (runs the real install and update scripts as root with systemd stubbed out: `sudo env "PATH=$PATH" bash test/deploy-scripts.sh`).
 3. Open a pull request with what changed and how you tested it (screenshots for anything visible).
