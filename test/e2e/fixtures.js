@@ -40,6 +40,8 @@ async function startBoard(workerIndex) {
   const adm = await makeAdmin(url, data);
   const admin = client(url, adm.cookie);
   await admin.post('/api/photos/sync', {});
+  // no overnight slideshow over the tests (it has its own test, with a night-time clock)
+  await admin.post('/api/photos/settings', { night: false });
   // an editor, like a parent's own tablet: invited, password + authenticator code
   const H = { 'Content-Type': 'application/json', 'X-Chalk': '1' };
   const inv = await (await admin.post('/api/users/invite', { username: 'parent', name: 'Parent', role: 'editor' })).json();
@@ -78,7 +80,7 @@ const test = base.test.extend({
       const phone = kind.startsWith('phone');
       const ctx = await browser.newContext({
         ...(phone ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true } : { viewport: { width: 1180, height: 820 } }),
-        hasTouch: true, userAgent: ANDROID_UA, ...opts.context
+        hasTouch: true, userAgent: ANDROID_UA, timezoneId: 'America/New_York', ...opts.context
       });
       opened.push(ctx);
       if (kind === 'tablet' || kind === 'phone') await ctx.addCookies(toCookies(board.editorCookie, board.url));
@@ -88,6 +90,7 @@ const test = base.test.extend({
       page.errors = [];
       page.on('pageerror', e => page.errors.push(e.message));
       page.on('dialog', d => d.accept());   // "Are you sure?" -> yes
+      if (opts.time) await page.clock.setFixedTime(opts.time);   // the screen's clock (the board's own "today" comes from the server)
       const path = opts.path || (kind === 'tablet' || kind === 'admin' || kind === 'family' ? '/edit' : kind.startsWith('phone') ? '/chores' : '/');
       await page.goto(board.url + path);
       await page.waitForFunction(() => document.fonts && document.fonts.status === 'loaded');

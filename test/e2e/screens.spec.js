@@ -18,6 +18,19 @@ test('the wall: no buttons, a tapped day shows its events, and it can’t change
   expect(wall.errors).toEqual([]);
 });
 
+test('the wall: the overnight slideshow comes on at night', async ({ as, board }) => {
+  await board.admin.post('/api/photos/settings', { night: true, from: '21:00', to: '06:00' });
+  try {
+    const now = new Date(), ny = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const at = new Date(now.getTime() + ((23 - ny.getHours()) * 60 - ny.getMinutes()) * 60e3);   // 11 PM in New York, today
+    const wall = await as('wall', { time: at });
+    await expect(wall.locator('#sTime')).toBeVisible({ timeout: 15_000 });
+    await expect(wall.locator('#sTime')).toContainText('11:');
+  } finally {
+    await board.admin.post('/api/photos/settings', { night: false });
+  }
+});
+
 test('the wall: the slideshow shows the clock and photos', async ({ as }) => {
   const wall = await as('wall', { path: '/?slides' });
   await expect(wall.locator('#sTime')).toBeVisible({ timeout: 10_000 });
