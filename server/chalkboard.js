@@ -116,70 +116,12 @@ const qUpdate = db.prepare('UPDATE strokes SET data = ? WHERE id = ? AND month =
 const qArtCount = db.prepare('SELECT COUNT(*) AS n FROM strokes WHERE month = ?');
 
 // ---------------------------------------------------------------------------
-// Date helpers (everything shown in TIMEZONE)
+// Date helpers (everything shown in TIMEZONE): server/dates.ts
 // ---------------------------------------------------------------------------
-function nyParts(date) {
-  const f = new Intl.DateTimeFormat('en-US', {
-    timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', hourCycle: 'h23', weekday: 'short'
-  });
-  const p = {};
-  for (const x of f.formatToParts(date)) p[x.type] = x.value;
-  return {
-    y: +p.year, m: +p.month, d: +p.day, h: +p.hour, mi: +p.minute,
-    dateStr: `${p.year}-${p.month}-${p.day}`
-  };
-}
-
-// Local New York wall-clock time -> real instant
-function nyToDate(y, m, d, h, mi) {
-  let guess = Date.UTC(y, m - 1, d, h, mi);
-  for (let i = 0; i < 2; i++) {
-    const p = nyParts(new Date(guess));
-    const asUtc = Date.UTC(p.y, p.m - 1, p.d, p.h, p.mi);
-    guess += Date.UTC(y, m - 1, d, h, mi) - asUtc;
-  }
-  return new Date(guess);
-}
-
-function addDays(dateStr, n) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const t = new Date(Date.UTC(y, m - 1, d + n));
-  return t.toISOString().slice(0, 10);
-}
-
-function fmtTime(h, mi) {
-  if (TIME_24) return `${h}:${String(mi).padStart(2, '0')}`;
-  const ap = h < 12 ? 'am' : 'pm';
-  const hh = h % 12 === 0 ? 12 : h % 12;
-  return mi ? `${hh}:${String(mi).padStart(2, '0')}${ap}` : `${hh}${ap}`;
-}
-
-function icsUtc(date) {
-  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-}
-
-function icsEscape(s) {
-  return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
-}
-
-function xmlUnescape(s) {
-  return s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
-    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'").replace(/&#13;/g, '\r').replace(/&amp;/g, '&');
-}
-
-// Grid for a month: starts on the Sunday on/before the 1st, 5 or 6 weeks.
-function monthGrid(ym) {
-  const [y, m] = ym.split('-').map(Number);
-  const first = new Date(Date.UTC(y, m - 1, 1));
-  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const lead = (first.getUTCDay() - WEEK_START + 7) % 7;
-  const weeks = Math.ceil((lead + daysInMonth) / 7);
-  const start = addDays(`${y}-${String(m).padStart(2, '0')}-01`, -lead);
-  const end = addDays(start, weeks * 7); // exclusive
-  return { y, m, weeks, start, end, daysInMonth, weekStart: WEEK_START, time24: TIME_24, south: LAT !== null && LAT < 0 };
-}
+const dates = require('./dates.ts');
+const clock = dates.makeClock({ timeZone: TZ, time24: TIME_24, weekStart: WEEK_START, southern: LAT !== null && LAT < 0 });
+const nyParts = clock.zoned, nyToDate = clock.fromZoned, fmtTime = clock.fmtTime, monthGrid = clock.monthGrid;
+const { addDays, icsUtc, icsEscape, xmlUnescape, pad2 } = dates;
 
 // ---------------------------------------------------------------------------
 // Calendar over CalDAV (iCloud, Nextcloud, Fastmail... or Google with OAuth)
@@ -830,123 +772,14 @@ app.get('/api/upnext', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// US holidays (computed here, shown on the board only - never written to iCloud)
+// Holidays (server/holidays.ts): worked out here, shown on the board only, any can be hidden
 // ---------------------------------------------------------------------------
-const pad2 = n => String(n).padStart(2, '0');
-const ymd = (y, m, d) => `${y}-${pad2(m)}-${pad2(d)}`;
-function nthDow(y, m, dow, n) {   // n-th weekday of a month (n = -1: last)
-  if (n > 0) { const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(); return ymd(y, m, 1 + ((dow - first + 7) % 7) + (n - 1) * 7); }
-  const lastDay = new Date(Date.UTC(y, m, 0)), back = (lastDay.getUTCDay() - dow + 7) % 7;
-  return ymd(y, m, lastDay.getUTCDate() - back);
-}
-function easter(y) {   // anonymous Gregorian algorithm
-  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25),
-    g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4,
-    l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451), mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1;
-  return ymd(y, mo, da);
-}
-// big: also counted down to in the Notes column
-function holidaysOfYear(y) {
-  const ea = easter(y);
-  if (HOLIDAYS === 'gb') return [
-    [ymd(y, 1, 1), '🎉', "New Year's Day", true],
-    [ymd(y, 2, 14), '❤️', "Valentine's Day", true],
-    [ymd(y, 3, 17), '☘️', "St Patrick's Day"],
-    [addDays(ea, -21), '💐', 'Mothering Sunday', true],
-    [nthDow(y, 3, 0, -1), '⏰', 'Clocks go forward'],
-    [addDays(ea, -2), '✝️', 'Good Friday'],
-    [ea, '🐣', 'Easter', true],
-    [addDays(ea, 1), '🐣', 'Easter Monday'],
-    [nthDow(y, 5, 1, 1), '🌼', 'Early May bank holiday'],
-    [nthDow(y, 5, 1, -1), '🌳', 'Spring bank holiday'],
-    [nthDow(y, 6, 0, 3), '👔', "Father's Day", true],
-    [nthDow(y, 8, 1, -1), '☀️', 'Summer bank holiday'],
-    [nthDow(y, 10, 0, -1), '⏰', 'Clocks go back'],
-    [ymd(y, 10, 31), '🎃', 'Halloween', true],
-    [ymd(y, 11, 5), '🎆', 'Bonfire Night', true],
-    [nthDow(y, 11, 0, 2), '🌺', 'Remembrance Sunday'],
-    [ymd(y, 12, 24), '🎄', 'Christmas Eve'],
-    [ymd(y, 12, 25), '🎄', 'Christmas Day', true],
-    [ymd(y, 12, 26), '🎁', 'Boxing Day'],
-    [ymd(y, 12, 31), '🥳', "New Year's Eve"]
-  ].map(([date, icon, title, big]) => ({ date, icon, title, big: !!big }));
-  if (HOLIDAYS === 'ca') return [
-    [ymd(y, 1, 1), '🎉', "New Year's Day", true],
-    [nthDow(y, 2, 1, 3), '👪', 'Family Day'],
-    [ymd(y, 2, 14), '❤️', "Valentine's Day", true],
-    [nthDow(y, 3, 0, 2), '⏰', 'Clocks spring forward'],
-    [ymd(y, 3, 17), '☘️', "St. Patrick's Day"],
-    [addDays(ea, -2), '✝️', 'Good Friday'],
-    [ea, '🐣', 'Easter', true],
-    [nthDow(y, 5, 0, 2), '💐', "Mother's Day", true],
-    [addDays(ymd(y, 5, 25), -(((new Date(Date.UTC(y, 4, 25)).getUTCDay() + 6) % 7) || 7)), '👑', 'Victoria Day'],
-    [nthDow(y, 6, 0, 3), '👔', "Father's Day", true],
-    [ymd(y, 7, 1), '🇨🇦', 'Canada Day', true],
-    [nthDow(y, 8, 1, 1), '☀️', 'Civic Holiday'],
-    [nthDow(y, 9, 1, 1), '🛠️', 'Labour Day'],
-    [ymd(y, 9, 30), '🧡', 'National Day for Truth and Reconciliation'],
-    [nthDow(y, 10, 1, 2), '🦃', 'Thanksgiving', true],
-    [ymd(y, 10, 31), '🎃', 'Halloween', true],
-    [nthDow(y, 11, 0, 1), '⏰', 'Clocks fall back'],
-    [ymd(y, 11, 11), '🌺', 'Remembrance Day'],
-    [ymd(y, 12, 24), '🎄', 'Christmas Eve'],
-    [ymd(y, 12, 25), '🎄', 'Christmas', true],
-    [ymd(y, 12, 26), '🎁', 'Boxing Day'],
-    [ymd(y, 12, 31), '🥳', "New Year's Eve"]
-  ].map(([date, icon, title, big]) => ({ date, icon, title, big: !!big }));
-  return [
-    [ymd(y, 1, 1), '🎉', "New Year's Day", true],
-    [nthDow(y, 1, 1, 3), '🕊️', 'Martin Luther King Jr. Day'],
-    [ymd(y, 2, 14), '❤️', "Valentine's Day", true],
-    [nthDow(y, 2, 1, 3), '🇺🇸', "Presidents' Day"],
-    [nthDow(y, 3, 0, 2), '⏰', 'Clocks spring forward'],
-    [ymd(y, 3, 17), '☘️', "St. Patrick's Day", true],
-    [easter(y), '🐣', 'Easter', true],
-    [ymd(y, 4, 22), '🌎', 'Earth Day'],
-    [nthDow(y, 5, 0, 2), '💐', "Mother's Day", true],
-    [nthDow(y, 5, 1, -1), '🇺🇸', 'Memorial Day'],
-    [nthDow(y, 6, 0, 3), '👔', "Father's Day", true],
-    [ymd(y, 6, 19), '✊', 'Juneteenth'],
-    [ymd(y, 7, 4), '🎆', 'Independence Day', true],
-    [nthDow(y, 9, 1, 1), '🛠️', 'Labor Day'],
-    [nthDow(y, 10, 1, 2), '🌎', "Indigenous Peoples' Day"],
-    [ymd(y, 10, 31), '🎃', 'Halloween', true],
-    [nthDow(y, 11, 0, 1), '⏰', 'Clocks fall back'],
-    [ymd(y, 11, 11), '🇺🇸', 'Veterans Day'],
-    [nthDow(y, 11, 4, 4), '🦃', 'Thanksgiving', true],
-    [ymd(y, 12, 24), '🎄', 'Christmas Eve'],
-    [ymd(y, 12, 25), '🎄', 'Christmas', true],
-    [ymd(y, 12, 31), '🥳', "New Year's Eve"]
-  ].map(([date, icon, title, big]) => ({ date, icon, title, big: !!big }));
-}
-// Holidays the family turned off (by name, every year): kv 'holidaysOff' = ["Indigenous Peoples' Day", …]
-function holidaysOff() { const r = qKvGet.get('holidaysOff'); return new Set(r ? JSON.parse(r.data) : []); }
-function holidaysBetween(from, to) {
-  const out = [], off = holidaysOff();
-  for (let y = +from.slice(0, 4); y <= +to.slice(0, 4); y++) {
-    for (const h of holidaysOfYear(y)) {
-      if (h.date >= from && h.date <= to && !off.has(h.title)) out.push({ title: h.title, icon: h.icon, holiday: true, allDay: true, start: h.date, end: h.date, time: null, sort: -1 });
-    }
-  }
-  return out;
-}
-
-// The holiday list (this year's dates) with which ones are hidden; hide or show them from the board
-app.get('/api/holidays', (req, res) => {
-  const off = holidaysOff(), y = +nyParts(new Date()).dateStr.slice(0, 4);
-  res.json({ country: HOLIDAYS, holidays: HOLIDAYS === 'none' ? [] : holidaysOfYear(y).map(h => ({ title: h.title, icon: h.icon, date: h.date, off: off.has(h.title) })) });
+const holidays = require('./holidays.ts').setup({
+  app, country: HOLIDAYS, broadcast, today: clock.today,
+  kvGet: k => { const r = qKvGet.get(k); return r ? JSON.parse(r.data) : null; },
+  kvSet: (k, v) => qKvSet.run(k, JSON.stringify(v))
 });
-app.post('/api/holidays', (req, res) => {
-  const want = (req.body || {}).off;
-  if (!Array.isArray(want)) return res.status(400).json({ error: 'bad list' });
-  const known = new Set(holidaysOfYear(2026).map(h => h.title));
-  // keep names from another country's list (if the board's country changes back, they stay hidden)
-  const keep = [...holidaysOff()].filter(t => !known.has(t));
-  const off = [...new Set(want.filter(t => typeof t === 'string' && known.has(t)))].concat(keep);
-  qKvSet.run('holidaysOff', JSON.stringify(off));
-  broadcast('calendar', { ym: 'any' });
-  res.json({ ok: true, off });
-});
+const holidaysBetween = holidays.between, holidaysOfYear = holidays.ofYear;
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
