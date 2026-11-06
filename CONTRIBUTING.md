@@ -42,13 +42,13 @@ read once, on a fresh data folder's first start — handy for tests and scripts.
 
 ## How the code is laid out
 - `server/chalkboard.js`: the board's server (calendar, art, meals, jars, photos, settings).
-- `server/access.js`: who may do what — screens, people, sign-in, passkeys, the Security tab.
+- `server/access/`: who may do what — screens, people, sign-in, passkeys, the Security tab.
 - `public/index.html`: the board (wall, tablet editor, family screens); `public/admin.html`: the console.
 - `deploy/`: install, update (with rollback), reset-admin, systemd unit.
 - `docs/`: install, user guide, Google Calendar, photos.
 
 ## Ground rules
-- **Security first.** Every `/api` route is covered by the rank check in `server/access.js`; new
+- **Security first.** Every `/api` route is covered by the rank check in `server/access/access.ts`; new
   write routes are editor-only unless there's a reason. Never fetch a URL a user typed without the
   private-network guard used by "Add from link". Secrets never go in the repo or the log.
 - **Works offline.** Anything shown on the wall is served by the board itself (fonts, clipart, GIFs).
