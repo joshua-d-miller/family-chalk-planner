@@ -7407,7 +7407,16 @@ body.subpageOn #wheelBtn { z-index: 22; }
     markColor(box, null, c);
   }
   function openDay(date) {
-    var evs = (state.lastMonth ? state.lastMonth.events : []).filter(function (e) { return e.start <= date && e.end >= date; });
+    var allEvs = (state.lastMonth ? state.lastMonth.events : [])
+      .concat((state.otherMonth && state.otherMonth.events) || []);
+    var seen = {};
+    var evs = allEvs.filter(function (e) {
+      if (e.start > date || e.end < date) return false;
+      var k = (e.id || '') + '|' + (e.title || '') + '|' + (e.start || '') + '|' + (e.time || '');
+      if (seen[k]) return false;
+      seen[k] = true;
+      return true;
+    });
     var p = date.split('-').map(Number);
     $('dTitle').textContent = new Date(p[0], p[1] - 1, p[2]).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     var list = $('dList'); list.innerHTML = '';
@@ -7692,7 +7701,9 @@ body.subpageOn #wheelBtn { z-index: 22; }
 
   // ---- Start, and keep fresh -----------------------------------------------------
   api('/api/today').then(function (t) {
+    state.today = t.today;
     state.todayYm = t.ym;
+    if (!state.weekDate) state.weekDate = t.today;
     status('Loading calendar…');
     loadMonth(t.ym);
     // Weather never holds up the calendar; redraw once trash day is known.
