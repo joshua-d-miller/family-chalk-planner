@@ -127,3 +127,7 @@ export function makeClock({ timeZone, time24, weekStart, southern }: ClockOption
   return { zoned, fromZoned, today, fmtTime, monthGrid, timeZone, weekStart };
 }
 export type Clock = ReturnType<typeof makeClock>;
+
+// What screens send: a month 'YYYY-MM' or a day 'YYYY-MM-DD'
+export const isYm = (s: unknown): s is string => typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
+export const isDate = (s: unknown): s is string => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);

@@ -553,94 +553,14 @@ async function changeEvent(ref, scope, change) {
 }
 
 // ---------------------------------------------------------------------------
-// Weather (Open-Meteo, no account) and trash day
+// Weather and trash day (top of the Notes column): server/extras.ts, set up below
 // ---------------------------------------------------------------------------
-let weatherCache = null;
-let weatherAt = 0;
-
-function weatherKind(code) {
-  if (code === 0) return 'sun';
-  if (code <= 2) return 'partly';
-  if (code === 3) return 'cloud';
-  if (code === 45 || code === 48) return 'fog';
-  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
-  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'snow';
-  if (code >= 95) return 'storm';
-  return 'cloud';
-}
-
-async function weather() {
-  if (LAT === null || LON === null) return null;
-  if (weatherCache && Date.now() - weatherAt < 10 * 60 * 1000) return weatherCache;   // fresh enough to catch rain starting
-  const url = `${ENV.WEATHER_URL || 'https://api.open-meteo.com'}/v1/forecast`
-    + `?latitude=${LAT}&longitude=${LON}`
-    + '&current=temperature_2m,weather_code'
-    + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
-    + `&temperature_unit=${TEMP_UNIT}&timezone=${encodeURIComponent(TZ)}&forecast_days=2`;
-  const j = await (await fetch(url, { signal: AbortSignal.timeout(8000) })).json();
-  const d = j.daily;
-  weatherCache = {
-    now: { temp: Math.round(j.current.temperature_2m), kind: weatherKind(j.current.weather_code) },
-    today: { hi: Math.round(d.temperature_2m_max[0]), lo: Math.round(d.temperature_2m_min[0]), rain: d.precipitation_probability_max[0] },
-    tomorrow: { hi: Math.round(d.temperature_2m_max[1]), lo: Math.round(d.temperature_2m_min[1]), rain: d.precipitation_probability_max[1], kind: weatherKind(d.weather_code[1]) }
-  };
-  weatherAt = Date.now();
-  return weatherCache;
-}
-
-// Trash & recycling: set from the tablet (⚙ Settings); TRASH_DAY in .env is only the starting value.
-//   { day: 0-6 | null, recycle: { mode: 'same' | 'day' | 'biweekly' | 'off', day: 0-6, anchor: 'YYYY-MM-DD' } }
-// 'biweekly' = every other week on recycle.day, counting from anchor (a known pickup date).
-const DOW = ['Sun', 'Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat'];
-function trashCfg() {
-  const r = qKvGet.get('trash');
-  return r ? JSON.parse(r.data) : { day: TRASH_DAY, recycle: { mode: 'same' } };
-}
-// Which part of the bottom of the Notes column shows: the reward jars, or "Up next" events
-function notesCfg() { const r = qKvGet.get('notes'); return r ? JSON.parse(r.data) : { bottom: 'jars' }; }
-function cleanTrash(b) {
-  const d = v => (Number.isInteger(+v) && +v >= 0 && +v <= 6 && v !== '' && v !== null ? +v : null);
-  const r = (b && b.recycle) || {};
-  const mode = ['same', 'day', 'biweekly', 'off'].includes(r.mode) ? r.mode : 'same';
-  const out = { day: d(b && b.day), recycle: { mode } };
-  if (mode === 'day' || mode === 'biweekly') out.recycle.day = d(r.day) ?? out.day ?? 0;
-  if (mode === 'biweekly') out.recycle.anchor = isDate(r.anchor) ? r.anchor : nyParts(new Date()).dateStr;
-  return out;
-}
-const dayNum = ds => Date.UTC(+ds.slice(0, 4), +ds.slice(5, 7) - 1, +ds.slice(8, 10)) / 864e5;
-function binsOn(cfg, ds) {   // what goes out on this date
-  const dow = new Date(dayNum(ds) * 864e5).getUTCDay(), r = cfg.recycle || { mode: 'same' }, out = [];
-  if (cfg.day === dow) out.push('trash');
-  if ((r.mode === 'same' && cfg.day === dow) || (r.mode === 'day' && r.day === dow) ||
-      (r.mode === 'biweekly' && r.day === dow && (((dayNum(ds) - dayNum(r.anchor)) / 7) % 2 + 2) % 2 === 0)) out.push('recycle');
-  return out;
-}
-function trash() {
-  const cfg = trashCfg(), r = cfg.recycle || { mode: 'same' };
-  if (cfg.day === null && (r.mode === 'same' || r.mode === 'off')) return null;
-  const today = nyParts(new Date()).dateStr;
-  const next = kind => { for (let i = 0; i < 21; i++) { const ds = addDays(today, i); if (binsOn(cfg, ds).includes(kind)) return { i, ds }; } return null; };
-  const when = (n, dayIdx) => (n.i === 0 ? 'today' : n.i === 1 ? 'tomorrow' : `${DOW[dayIdx]} · in ${n.i} days`);
-  const t = cfg.day === null ? null : next('trash'), rc = r.mode === 'off' ? null : next('recycle');
-  const dow = n => new Date(dayNum(n.ds) * 864e5).getUTCDay();
-  if (t && (r.mode === 'same' || (rc && rc.ds === t.ds))) {   // both go out together next time
-    return { title: r.mode === 'off' ? 'Trash' : 'Trash & recycling', days: t.i, label: t.i === 0 ? 'Pickup today' : t.i === 1 ? 'Tomorrow - cans out tonight' : when(t, dow(t)),
-      sub: null, cfg };
-  }
-  if (t && !rc) return { title: 'Trash', days: t.i, label: t.i === 0 ? 'Pickup today' : t.i === 1 ? 'Tomorrow - cans out tonight' : when(t, dow(t)), sub: null, cfg };
-  if (!t && rc) return { title: 'Recycling', days: rc.i, label: rc.i === 0 ? 'Pickup today' : rc.i === 1 ? 'Tomorrow - bin out tonight' : when(rc, dow(rc)), sub: null, cfg };
-  return { title: 'Trash', days: t.i, label: t.i === 0 ? 'Pickup today' : t.i === 1 ? 'Tomorrow - cans out tonight' : when(t, dow(t)), sub: `♻️ Recycling ${when(rc, dow(rc))}`, cfg };   // different days: trash big, recycling below
-}
-
 
 // ---------------------------------------------------------------------------
 // Live updates (Server-Sent Events)
 // ---------------------------------------------------------------------------
-const clients = new Set();
-function broadcast(type, data) {
-  const msg = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
-  for (const res of clients) res.write(msg);
-}
+const live = require('./live.ts').createLive();
+const broadcast = live.broadcast;
 
 // ---------------------------------------------------------------------------
 // HTTP
@@ -664,50 +584,11 @@ if (process.argv.includes('--reset-admin')) {   // deploy/reset-admin.sh
 // ---------------------------------------------------------------------------
 // Nightly snapshot of the database (consistent copy while running) for restic
 // ---------------------------------------------------------------------------
-const BACKUP_DIR = ENV.BACKUP_DIR || path.join(DATA_DIR, 'backup');
-const KEEP_SNAPSHOTS = 14;
-// The encryption key for passwords saved in the console (data/secret.key) goes into the backup folder
-// right away and whenever it changes, so a backup always has the key that matches it.
-const KEY_FILE = path.join(DATA_DIR, 'secret.key'), KEY_BACKUP = path.join(BACKUP_DIR, 'secret.key');
-function backupKey() {
-  try {
-    if (!fs.existsSync(KEY_FILE)) return;
-    const k = fs.readFileSync(KEY_FILE);
-    if (fs.existsSync(KEY_BACKUP) && fs.readFileSync(KEY_BACKUP).equals(k)) return;
-    fs.mkdirSync(BACKUP_DIR, { recursive: true });
-    // a different key already there is never thrown away: it may be the one an older database needs
-    if (fs.existsSync(KEY_BACKUP)) fs.renameSync(KEY_BACKUP, path.join(BACKUP_DIR, `secret.key.replaced-${nyParts(new Date()).dateStr}-${Date.now() % 1e6}`));
-    fs.writeFileSync(KEY_BACKUP, k, { mode: 0o600 }); fs.chmodSync(KEY_BACKUP, 0o600);
-    console.log(`Chalkboard: encryption key copied to ${KEY_BACKUP}`);
-  } catch (e) { console.error('Chalkboard: couldn’t copy the encryption key to the backup folder:', e.message); }
-}
-function keyInfo() {
-  if (ENV.SECRET_KEY) return { source: 'env', note: 'SECRET_KEY (set outside the board) — keep it with your server notes' };
-  const has = fs.existsSync(KEY_FILE);
-  let backedUp = false; try { backedUp = has && fs.readFileSync(KEY_BACKUP).equals(fs.readFileSync(KEY_FILE)); } catch {}
-  return { source: 'file', path: KEY_FILE, exists: has, backup: KEY_BACKUP, backedUp };
-}
-backupKey();
-function snapshotDb() {
-  try {
-    fs.mkdirSync(BACKUP_DIR, { recursive: true });
-    const file = path.join(BACKUP_DIR, `chalkboard-${nyParts(new Date()).dateStr}.db`);
-    if (fs.existsSync(file)) return;
-    db.exec(`VACUUM INTO '${file.replace(/'/g, "''")}'`);
-    fs.chmodSync(file, 0o600);
-    backupKey();
-    const old = fs.readdirSync(BACKUP_DIR).filter(f => /^chalkboard-\d{4}-\d{2}-\d{2}\.db$/.test(f)).sort().reverse().slice(KEEP_SNAPSHOTS);
-    for (const f of old) fs.unlinkSync(path.join(BACKUP_DIR, f));
-    console.log(`Chalkboard: snapshot ${path.basename(file)}`);
-  } catch (e) {
-    console.error('Chalkboard: snapshot failed:', e.message);
-  }
-}
-snapshotDb();
-setInterval(snapshotDb, 10 * 60 * 1000); // makes one per day, shortly after midnight
+const BACKUP_DIR = ENV.BACKUP_DIR || path.join(DATA_DIR, 'backup');   // snapshots, the key, and uploads (media/)
+const backup = require('./backup.ts').setup({ db, dataDir: DATA_DIR, backupDir: BACKUP_DIR, secretFromEnv: !!ENV.SECRET_KEY, today: clock.today });
+const keyInfo = backup.keyInfo;
 
-const isYm = s => /^\d{4}-(0[1-9]|1[0-2])$/.test(s || '');
-const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+const { isYm, isDate } = dates;
 
 app.get('/api/today', (req, res) => {
   const t = nyParts(new Date());
@@ -732,24 +613,11 @@ app.get('/api/month', async (req, res) => {
   }
 });
 
-app.get('/api/extras', async (req, res) => {
-  let w = null;
-  try { w = await weather(); } catch (e) { /* board still works without weather */ }
-  const cfg = trashCfg();
-  res.json({ weather: w, trash: trash(), trashDay: cfg.day, bins: cfg, notes: notesCfg() });
-});
-app.post('/api/trash', (req, res) => {
-  const cfg = cleanTrash(req.body || {});
-  qKvSet.run('trash', JSON.stringify(cfg));
-  broadcast('extras', {});
-  res.json(trash() || { cfg });
-});
-app.post('/api/notes', (req, res) => {
-  const b = (req.body || {}).bottom;
-  const cfg = { bottom: ['jars', 'upnext', 'today', 'photos', 'none'].includes(b) ? b : 'jars' };
-  qKvSet.run('notes', JSON.stringify(cfg));
-  broadcast('extras', {});
-  res.json(cfg);
+require('./extras.ts').setup({
+  app, broadcast, today: clock.today, trashDay: TRASH_DAY,
+  kvGet: k => { const r = qKvGet.get(k); return r ? JSON.parse(r.data) : null; },
+  kvSet: (k, v) => qKvSet.run(k, JSON.stringify(v)),
+  weather: { lat: LAT, lon: LON, unit: TEMP_UNIT, timeZone: TZ, base: ENV.WEATHER_URL || 'https://api.open-meteo.com' }
 });
 
 // "Up next": the next events from today on (two weeks ahead), for the bottom of the Notes column
@@ -1683,24 +1551,7 @@ app.post('/api/stamps/delete', (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/stream', (req, res) => {
-  res.set({
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    Connection: 'keep-alive',
-    'X-Accel-Buffering': 'no'
-  });
-  res.flushHeaders();
-  res.write('retry: 3000\n\n');
-  res.write(`event: hello\ndata: ${JSON.stringify({ v: boardVersion() })}\n\n`);   // pages compare this with their own
-  clients.add(res);
-  const ck = req.get('cookie') || '';
-  const ping = setInterval(() => {   // visible to pages, so they can tell they're still connected
-    if (!access.stillAllowed(ck)) { clients.delete(res); res.end(); return; }   // removed screen / ended sign-in: no more updates
-    res.write('event: ping\ndata: {}\n\n');
-  }, 25000);
-  req.on('close', () => { clearInterval(ping); clients.delete(res); });
-});
+live.serve(app, { version: () => boardVersion(), stillAllowed: ck => access.stillAllowed(ck) });
 
 // ---------------------------------------------------------------------------
 // Photos: a shared album feeds the photos beside the month name and the
