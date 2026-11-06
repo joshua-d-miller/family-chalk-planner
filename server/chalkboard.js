@@ -14,14 +14,14 @@ const crypto = require('crypto');
 const { DatabaseSync } = require('node:sqlite');
 const ICAL = require('ical.js');
 
-// ---- Settings: the environment (.env), overridden by what the admin console saved (server/settings.js) ----
+// ---- Settings: the environment (.env), overridden by what the admin console saved (server/settings.ts) ----
 const ENV = process.env;
 const num = (v, d) => (v === undefined || v === '' || !Number.isFinite(+v) ? d : +v);
 const APP_DIR = path.join(__dirname, '..');
 const DATA_DIR = ENV.DATA_DIR || path.join(APP_DIR, 'data');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const db = new DatabaseSync(path.join(DATA_DIR, 'chalkboard.db'));
-const boardSettings = require('./settings').setup({ db, DATA_DIR, importEnv: !['--setting', '--reset-admin'].some(a => process.argv.includes(a)) });   // puts the console's values into ENV
+const boardSettings = require('./settings.ts').setup({ db, DATA_DIR, importEnv: !['--setting', '--reset-admin'].some(a => process.argv.includes(a)) });   // puts the console's values into ENV
 // Command line, for the server's owner (deploy/setting.sh):  --setting get KEY  |  --setting set KEY VALUE
 if (process.argv[2] === '--setting') {
   const [, , , op, k, v] = process.argv;
@@ -2147,7 +2147,7 @@ function sendBoard(kind) {
   };
 }
 const APP_VERSION = 'v' + require('../package.json').version;
-// ---- Admin console → ⚙️ Board: settings that used to need .env (server/settings.js) ----
+// ---- Admin console → ⚙️ Board: settings that used to need .env (server/settings.ts) ----
 // Saving restarts the board (a few seconds) so everything picks the new values up; screens reconnect.
 function restartSoon(why) {
   setTimeout(() => { console.log(`Chalk Planner: restarting to apply ${why}`); process.exit(3); }, 400);   // the service manager starts it again
