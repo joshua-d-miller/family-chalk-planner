@@ -1,19 +1,29 @@
-// Lint the TypeScript server (and later the React screens). Old .js files are left alone until converted.
-const js = require('@eslint/js');
-const tseslint = require('typescript-eslint');
-const globals = require('globals');
+// Lint the TypeScript server and tests (and later the React screens). public/ is the current browser code,
+// replaced by the React screens.
+import js from '@eslint/js';
+import tseslint from 'typescript-eslint';
+import globals from 'globals';
 
-module.exports = tseslint.config(
-  { ignores: ['node_modules/', 'public/', 'data/', 'test-results/', 'playwright-report/', '**/*.js'] },
+export default tseslint.config(
+  { ignores: ['node_modules/', 'public/', 'data/', 'test-results/', 'playwright-report/'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['**/*.ts'],
+    files: ['**/*.ts', '**/*.js'],
     languageOptions: { globals: globals.node },
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       eqeqeq: ['error', 'smart'],
       'prefer-const': 'error'
+    }
+  },
+  // the tests talk to the server over HTTP and read loosely shaped JSON back
+  {
+    files: ['test/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-expressions': ['error', { allowShortCircuit: true, allowTernary: true }],
+      'no-empty': ['error', { allowEmptyCatch: true }]
     }
   }
 );

@@ -1,5 +1,5 @@
 // The board itself: this month on the tablet, moving between months, the strip of buttons.
-const { test, expect, thisMonth } = require('./fixtures');
+import { test, expect, thisMonth } from './fixtures.ts';
 
 test('the tablet opens on this month, with weather, countdowns and no errors', async ({ as }) => {
   const page = await as('tablet');
@@ -22,9 +22,13 @@ test('every button in the strip fits on an iPad', async ({ as }) => {
   const page = await as('tablet');
   const off = await page.evaluate(() => {
     const strip = document.querySelector('.cork').getBoundingClientRect();
-    return [...document.querySelectorAll('.cork > *')].filter(e => e.offsetWidth).filter(e => {
-      const r = e.getBoundingClientRect(); return r.left < strip.left - 1 || r.right > strip.right + 1;
-    }).map(e => e.id || e.className);
+    return [...document.querySelectorAll('.cork > *')]
+      .filter(e => (e as HTMLElement).offsetWidth)
+      .filter(e => {
+        const r = e.getBoundingClientRect();
+        return r.left < strip.left - 1 || r.right > strip.right + 1;
+      })
+      .map(e => e.id || e.className);
   });
   expect(off).toEqual([]);
 });

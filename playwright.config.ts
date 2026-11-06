@@ -2,9 +2,9 @@
 // They describe what the board does, not how it's built, so the React version has to pass them too.
 //   npx playwright install chromium   (once)
 //   npm run test:e2e
-const { defineConfig } = require('@playwright/test');
+import { defineConfig } from '@playwright/test';
 
-module.exports = defineConfig({
+export default defineConfig({
   testDir: 'test/e2e',
   // one board per worker; tests share it, so keep them in order
   workers: 1,
@@ -14,7 +14,7 @@ module.exports = defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
-    viewport: { width: 1180, height: 820 },   // an iPad in landscape
+    viewport: { width: 1180, height: 820 }, // an iPad in landscape
     hasTouch: true,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure'

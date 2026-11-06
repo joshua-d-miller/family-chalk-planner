@@ -69,7 +69,7 @@ Details: **[docs/docker.md](docs/docker.md)** and **[docs/install.md](docs/insta
 ```bash
 npm ci
 npm test                                   # starts the server against a fake calendar and photo album
-node test/mock-caldav.js 5232 &            # fake calendar for local work
+node test/mock-caldav.ts 5232 &            # fake calendar for local work
 DATA_DIR=./data npm start                  # setup code: see the log or data/setup-code.txt
 ```
 Then open `http://localhost:3002/admin`, create the admin, and point ⚙️ Board → Calendar at `http://127.0.0.1:5232/` (any username and password).

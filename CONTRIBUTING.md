@@ -21,14 +21,14 @@ PORT=3002 DATA_DIR=./data node server/chalkboard.js
 
 Open `http://localhost:3002/admin`, create the admin with the setup code from the log
 (or `data/setup-code.txt`), then pair a browser tab as a screen or sign in at `/edit`.
-For a calendar without real accounts, use the tests' mock CalDAV server: `node test/mock-caldav.js 5232 &`,
+For a calendar without real accounts, use the tests' mock CalDAV server: `node test/mock-caldav.ts 5232 &`,
 then in the console → ⚙️ Board → Calendar enter `http://127.0.0.1:5232/`, any username and password, and
 **Find my calendars**. (Settings live in the database; environment variables with the same names are
 read once, on a fresh data folder's first start — handy for tests and scripts.)
 
 ## Making a change
 1. Branch from `main`, keep the change focused, and add or update a test in `test/` for anything
-   the server does (`node --test test/<file>.test.js` runs one file), and a browser test in `test/e2e/`
+   the server does (`node --test test/<file>.test.ts` runs one file), and a browser test in `test/e2e/`
    for anything you can see or tap (`npx playwright test chores` runs one file). Browser tests describe what
    the board does, not how it's built, so they keep working when the code underneath changes.
 2. CI must pass: `npm ci`, `node --check server/chalkboard.js`, `npm run typecheck`, `npm run lint`,
@@ -41,8 +41,15 @@ read once, on a fresh data folder's first start — handy for tests and scripts.
 4. Add a line to the top section of `CHANGELOG.md` in plain words a family member would understand.
 
 ## How the code is laid out
-- `server/chalkboard.js`: the board's server (calendar, art, meals, jars, photos, settings).
-- `server/access/`: who may do what — screens, people, sign-in, passkeys, the Security tab.
+The server is TypeScript that Node runs directly (no build step); `npm run typecheck` checks it.
+- `server/main.ts`: puts the server together (`server/chalkboard.js` just starts it, so every install
+  keeps the same address). `config.ts` reads the settings, `db.ts` opens the database.
+- One module per feature, each registering its own routes: `calendar/` (CalDAV, Google, calendar links),
+  `access/` (who may do what — screens, people, sign-in, passkeys, the Security tab), `month.ts`, `art.ts`,
+  `chores.ts`, `meals.ts`, `jars.ts`, `theme.ts`, `holidays.ts`, `extras.ts` (weather, trash, notes),
+  `clipart.ts`, `media.ts` (uploads, links, GIFs), `photos/`, `backup.ts`, `pages.ts`, `settings.ts` and
+  `settings-routes.ts` (the console's ⚙️ Board), `live.ts` (live updates).
+- `shared/`: types used by both the server and the screens.
 - `public/index.html`: the board (wall, tablet editor, family screens); `public/admin.html`: the console.
 - `deploy/`: install, update (with rollback), reset-admin, systemd unit.
 - `docs/`: install, user guide, Google Calendar, photos.

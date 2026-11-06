@@ -1,5 +1,5 @@
 // The other kinds of screen: the wall (view only), a family touch screen, and a new screen being paired.
-const { test, expect, thisMonth } = require('./fixtures');
+import { test, expect, thisMonth } from './fixtures.ts';
 
 test('the wall: no buttons, a tapped day shows its events, and it can’t change anything', async ({ as, board }) => {
   const { date } = thisMonth();
@@ -13,7 +13,15 @@ test('the wall: no buttons, a tapped day shows its events, and it can’t change
   await expect(wall.locator('#dList')).toContainText('Wall test event');
   await wall.locator('#dmodal').click({ position: { x: 5, y: 5 } });
   await expect(wall.locator('#dmodal')).not.toHaveClass(/open/);
-  const status = await wall.evaluate(d => fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' }, body: JSON.stringify({ title: 'nope', date: d, allDay: true }) }).then(r => r.status), date);
+  const status = await wall.evaluate(
+    d =>
+      fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+        body: JSON.stringify({ title: 'nope', date: d, allDay: true })
+      }).then(r => r.status),
+    date
+  );
   expect([401, 403]).toContain(status);
   expect(wall.errors).toEqual([]);
 });
@@ -21,8 +29,9 @@ test('the wall: no buttons, a tapped day shows its events, and it can’t change
 test('the wall: the overnight slideshow comes on at night', async ({ as, board }) => {
   await board.admin.post('/api/photos/settings', { night: true, from: '21:00', to: '06:00' });
   try {
-    const now = new Date(), ny = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    const at = new Date(now.getTime() + ((23 - ny.getHours()) * 60 - ny.getMinutes()) * 60e3);   // 11 PM in New York, today
+    const now = new Date(),
+      ny = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const at = new Date(now.getTime() + ((23 - ny.getHours()) * 60 - ny.getMinutes()) * 60e3); // 11 PM in New York, today
     const wall = await as('wall', { time: at });
     await expect(wall.locator('#sTime')).toBeVisible({ timeout: 15_000 });
     await expect(wall.locator('#sTime')).toContainText('11:');
@@ -37,7 +46,7 @@ test('the wall: the slideshow shows the clock and photos', async ({ as }) => {
   await expect(wall.locator('#sTime')).toHaveText(/\d{1,2}:\d{2}/);
 });
 
-test('a family screen edits on the board but has no settings, account or freehand drawing', async ({ as, board }) => {
+test('a family screen edits on the board but has no settings, account or freehand drawing', async ({ as }) => {
   const fam = await as('family');
   await expect(fam.locator('body')).toHaveClass(/family/);
   await expect(fam.locator('#drawLabel')).toHaveText('Decorate');

@@ -4,15 +4,16 @@
   "description": "A chalkboard-style family wall calendar: CalDAV events, chalk art, photos, meal plan and reward jars, edited from a tablet.",
   "license": "AGPL-3.0-or-later",
   "private": true,
-  "main": "server/chalkboard.js",
+  "type": "module",
+  "main": "server/main.ts",
   "scripts": {
     "start": "node server/chalkboard.js",
-    "test": "node --test test/*.test.js",
+    "test": "node --test test/*.test.ts",
     "test:e2e": "playwright test",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json",
     "lint": "eslint .",
-    "format": "prettier --write --no-error-on-unmatched-pattern \"server/**/*.ts\" \"shared/**/*.ts\" \"test/**/*.ts\"",
-    "format:check": "prettier --check --no-error-on-unmatched-pattern \"server/**/*.ts\" \"shared/**/*.ts\" \"test/**/*.ts\""
+    "format": "prettier --write --no-error-on-unmatched-pattern \"server/**/*.ts\" \"shared/**/*.ts\" \"test/**/*.ts\" \"*.config.ts\"",
+    "format:check": "prettier --check --no-error-on-unmatched-pattern \"server/**/*.ts\" \"shared/**/*.ts\" \"test/**/*.ts\" \"*.config.ts\""
   },
   "engines": {
     "node": ">=22.18"

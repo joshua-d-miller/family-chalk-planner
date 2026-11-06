@@ -14,7 +14,12 @@ export function registerSettingsRoutes(
     keyInfo,
     audit
   }: {
-    settings: { view: () => Record<string, unknown>; save: (v: unknown) => { errors?: unknown; changed: string[] } };
+    settings: {
+      view: () => Record<string, unknown>;
+      save: (
+        v: Record<string, unknown> | null | undefined
+      ) => { errors: Record<string, string> } | { changed: string[] };
+    };
     env: NodeJS.ProcessEnv;
     version: string;
     problems: () => Record<string, string>; // what's wrong (calendar, fonts), shown at the top
@@ -45,7 +50,7 @@ export function registerSettingsRoutes(
 
   app.post('/api/board-settings', (req, res) => {
     const r = settings.save((req.body || {}).values);
-    if (r.errors) return res.status(400).json({ error: 'Some settings need fixing', errors: r.errors });
+    if ('errors' in r) return res.status(400).json({ error: 'Some settings need fixing', errors: r.errors });
     if (!r.changed.length) return res.json({ ok: true, restarting: false });
     audit(req, 'settings.changed', { target: 'board settings', detail: r.changed.join(', ') }); // names only, never values
     res.json({ ok: true, restarting: true, changed: r.changed });

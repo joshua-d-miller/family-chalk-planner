@@ -1,10 +1,13 @@
 // Chores (tablet, phone, kid's tablet, wall), reward jars and the meal plan.
-const { test, expect } = require('./fixtures');
+import { test, expect } from './fixtures.ts';
 
 const names = { dad: 'Josh', mom: 'Tarin', kid1: 'Theo', kid2: 'Nora' };
 async function exampleChores(board) {
   const v = await (await board.admin.post('/api/chores/save', { example: true })).json();
-  await board.admin.post('/api/chores/save', { people: v.people.map(p => ({ ...p, name: names[p.id] })), chores: v.chores });
+  await board.admin.post('/api/chores/save', {
+    people: v.people.map(p => ({ ...p, name: names[p.id] })),
+    chores: v.chores
+  });
 }
 const doneOf = async (board, title) => {
   const c = (await (await board.admin.api('/api/chores')).json()).chores.find(x => x.title === title);
@@ -24,8 +27,11 @@ test('chores on the tablet: open from the strip, tick one off, swipe back to the
   await expect(page.locator('.chitem', { hasText: 'Fold laundry' })).toContainText('0 of 3');
   // swipe right: back to the calendar
   const b = await page.locator('#chores').boundingBox();
-  await page.mouse.move(b.x + 300, b.y + 400); await page.mouse.down();
-  await page.mouse.move(b.x + 500, b.y + 405, { steps: 6 }); await page.mouse.move(b.x + 700, b.y + 410, { steps: 6 }); await page.mouse.up();
+  await page.mouse.move(b.x + 300, b.y + 400);
+  await page.mouse.down();
+  await page.mouse.move(b.x + 500, b.y + 405, { steps: 6 });
+  await page.mouse.move(b.x + 700, b.y + 410, { steps: 6 });
+  await page.mouse.up();
   await expect(page.locator('#chores')).toBeHidden();
 });
 
@@ -72,16 +78,31 @@ test("a kid's tablet shows only their chores, and they can only tick their own",
   await expect.poll(async () => (await doneOf(board, 'Put dirty clothes in hampers')).kid1).toBe(1);
   expect((await doneOf(board, 'Put dirty clothes in hampers')).kid2).toBe(0);
   // someone else's chore, straight to the server: refused
-  const dad = (await (await board.admin.api('/api/chores')).json()).chores.find(c => c.who.length === 1 && c.who[0] === 'dad');
-  expect(await kid.evaluate(id => fetch('/api/chores/check', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' }, body: JSON.stringify({ id }) }).then(r => r.status), dad.id)).toBe(403);
+  const dad = (await (await board.admin.api('/api/chores')).json()).chores.find(
+    c => c.who.length === 1 && c.who[0] === 'dad'
+  );
+  expect(
+    await kid.evaluate(
+      id =>
+        fetch('/api/chores/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify({ id })
+        }).then(r => r.status),
+      dad.id
+    )
+  ).toBe(403);
 });
 
 test('the wall shows chores when swiped to, but can’t tick them', async ({ as, board }) => {
   await exampleChores(board);
   const wall = await as('wall');
   const b = await wall.locator('#slate').boundingBox();
-  await wall.mouse.move(b.x + 800, b.y + 300); await wall.mouse.down();
-  await wall.mouse.move(b.x + 600, b.y + 305, { steps: 6 }); await wall.mouse.move(b.x + 400, b.y + 310, { steps: 6 }); await wall.mouse.up();
+  await wall.mouse.move(b.x + 800, b.y + 300);
+  await wall.mouse.down();
+  await wall.mouse.move(b.x + 600, b.y + 305, { steps: 6 });
+  await wall.mouse.move(b.x + 400, b.y + 310, { steps: 6 });
+  await wall.mouse.up();
   await expect(wall.locator('#chores')).toBeVisible();
   await expect(wall.locator('.chitem.can')).toHaveCount(0);
 });
@@ -92,12 +113,15 @@ test('reward jars: add a jar, add pieces, take one out', async ({ as, board }) =
   await page.locator('.jaradd').click();
   await expect(page.locator('#jmodal')).toHaveClass(/open/);
   await page.locator('#jName').fill('Nora');
-  await page.locator('#jPlus').click(); await page.locator('#jPlus').click();
+  await page.locator('#jPlus').click();
+  await page.locator('#jPlus').click();
   await expect(page.locator('#jNum')).toHaveText('2');
   await page.locator('#jMinus').click();
   await expect(page.locator('#jNum')).toHaveText('1');
   await page.locator('#jClose').click();
-  await expect.poll(async () => (await (await board.admin.api('/api/jars')).json())[0]).toMatchObject({ name: 'Nora', count: 1 });
+  await expect
+    .poll(async () => (await (await board.admin.api('/api/jars')).json())[0])
+    .toMatchObject({ name: 'Nora', count: 1 });
 });
 
 test('meal plan: tap it, add meals, they show in the Notes column', async ({ as, board }) => {

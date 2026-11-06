@@ -1,5 +1,5 @@
 // Events on the tablet: add one, see it on its day, tap the day for the list, change it, delete it.
-const { test, expect, thisMonth } = require('./fixtures');
+import { test, expect, thisMonth } from './fixtures.ts';
 
 const day = (page, date) => page.locator(`#grid [data-date="${date}"]`);
 
@@ -40,7 +40,10 @@ test('an all-day event, larger on the board', async ({ as }) => {
   await page.locator('#evTitle').fill('Grandma visits');
   await page.locator('#evDate').fill(date);
   await page.locator('#evAllDay').check();
-  await page.locator('#evSize button, #evSize .seg').filter({ hasText: /^Large$/ }).click();
+  await page
+    .locator('#evSize button, #evSize .seg')
+    .filter({ hasText: /^Large$/ })
+    .click();
   await page.locator('#evSave').click();
   const ev = day(page, date).locator('.ev', { hasText: 'Grandma visits' });
   await expect(ev).toHaveClass(/allday/);
