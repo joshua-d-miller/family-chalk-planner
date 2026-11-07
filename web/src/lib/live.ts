@@ -19,6 +19,27 @@ function connect() {
     emit('hello', {}); // after a reconnect: everything may have changed meanwhile
   });
   source.onmessage = null;
+  source.onopen = () => setOnline(true);
+  source.onerror = () => setOnline(false); // EventSource keeps trying by itself
+}
+// whether the live connection is up (the board shows "Offline" when it isn't)
+let online = true;
+const onlineSubs = new Set<(v: boolean) => void>();
+function setOnline(v: boolean) {
+  if (v === online) return;
+  online = v;
+  for (const f of onlineSubs) f(v);
+}
+export function useOnline() {
+  const [v, setV] = useState(online);
+  useEffect(() => {
+    connect();
+    onlineSubs.add(setV);
+    return () => {
+      onlineSubs.delete(setV);
+    };
+  }, []);
+  return v;
 }
 function emit(event: string, data: unknown) {
   for (const h of handlers.get(event) || []) h(data);

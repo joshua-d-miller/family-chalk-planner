@@ -97,7 +97,7 @@ test('reward jars: pieces go in from a family screen', async ({ as, board }) => 
 
 test('chores (new screen): a phone ticks one off; a kid’s tablet sees only theirs', async ({ as, board }) => {
   await board.admin.post('/api/chores/save', { example: true });
-  const phone = await as('phone', { path: '/next/chores' });
+  const phone = await as('phone', { path: '/chores' });
   await expect(phone.locator('#chores h2')).toHaveText('Chores');
   await phone.locator('.chitem', { hasText: 'Quick living room pickup' }).click();
   await expect(phone.locator('.chitem', { hasText: 'Quick living room pickup' })).toHaveClass(/done/);
@@ -105,7 +105,7 @@ test('chores (new screen): a phone ticks one off; a kid’s tablet sees only the
   // and back, for the other tests
   await phone.locator('.chitem', { hasText: 'Quick living room pickup' }).click();
   await expect(phone.locator('.chitem', { hasText: 'Quick living room pickup' })).not.toHaveClass(/done/);
-  const kid = await as('kid:kid1', { path: '/next/chores' });
+  const kid = await as('kid:kid1', { path: '/chores' });
   await expect(kid.locator('#chores h2')).toHaveText('Kid 1’s chores');
   await expect(kid.locator('#chCols .chcol h3').first()).toContainText('Just me');
   await expect(kid.locator('.chitem', { hasText: 'Wipe kitchen counters' })).toHaveCount(0);
@@ -113,7 +113,7 @@ test('chores (new screen): a phone ticks one off; a kid’s tablet sees only the
 
 test('changing the chores (new screen): add one for the kids, each their own', async ({ as, board }) => {
   await board.admin.post('/api/chores/save', { example: true });
-  const page = await as('tablet', { path: '/next/chores' });
+  const page = await as('tablet', { path: '/chores' });
   await page.locator('#chEdit').click();
   await expect(page.locator('#chedmodal')).toBeVisible();
   await page.getByRole('radio', { name: 'Every week' }).click();
@@ -149,7 +149,7 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
   as,
   board
 }) => {
-  const page = await as('tablet', { path: '/next/settings' });
+  const page = await as('tablet', { path: '/settings' });
   await expect(page.locator('h2')).toHaveText('Settings');
   const hol = page.locator('.hols .seg', { hasText: 'Thanksgiving' });
   await hol.click();
@@ -182,7 +182,7 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
 });
 
 test('settings for an admin: the calendar and trash day', async ({ as, board }) => {
-  const page = await as('admin', { path: '/next/settings' });
+  const page = await as('admin', { path: '/settings' });
   await expect(page.locator('section', { hasText: 'Calendar' })).toContainText('Showing “Family”');
   await page.getByLabel('Trash pickup').selectOption('4');
   await expect.poll(async () => (await (await board.admin.api('/api/extras')).json()).bins.day).toBe(4);
@@ -204,7 +204,7 @@ test('the board (new screen, wall): the month, its events and art, sharp on a 4K
     { viewport: { width: 1920, height: 1080 } },
     { viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 2 }
   ]) {
-    const wall = await as('wall', { path: '/next/board', context: size });
+    const wall = await as('wall', { path: '/', context: size });
     await expect(wall.locator(`#grid [data-date="${date}"]`)).toContainText('Piano recital');
     await expect(wall.locator('.artSvg .lines g')).toHaveCount(1);
     const box = await wall.locator('#board').boundingBox();
@@ -221,7 +221,7 @@ test('the board (new screen, wall): the month, its events and art, sharp on a 4K
     expect(wall.errors).toEqual([]);
   }
   // live: a change shows up without reloading
-  const wall = await as('wall', { path: '/next/board' });
+  const wall = await as('wall', { path: '/' });
   hrefs.push(await added('Book fair'));
   await expect(wall.locator(`#grid [data-date="${date}"]`)).toContainText('Book fair');
   // tidy up: today stays free for the other tests
@@ -232,7 +232,7 @@ test('the board (new screen, wall): the month, its events and art, sharp on a 4K
 
 test('the board (new screen): the style, the month’s title and border, the jars, all live', async ({ as, board }) => {
   const { ym } = thisMonth();
-  const wall = await as('wall', { path: '/next/board' });
+  const wall = await as('wall', { path: '/' });
   await expect(wall.locator('#monthName .mn')).toBeVisible();
   // the family picks a style: today's mark and the lines change on the wall without reloading
   await board.admin.post('/api/theme', { p: 'pastel', o: {} });
@@ -268,7 +268,7 @@ test('the board (new screen, wall): a tap shows the day, the photo frame, the sl
   // no reminders left from other tests popping up over the board
   for (const r of (await (await board.admin.api('/api/reminders')).json()).items)
     await board.admin.post('/api/reminders/item/delete', { id: r.id });
-  const wall = await as('wall', { path: '/next/board' });
+  const wall = await as('wall', { path: '/' });
   // tap a day: everything on it, big; any tap closes it
   const href = (await (await board.admin.post('/api/events', { title: 'Dentist', date, allDay: true })).json())
     .href as string;
@@ -312,7 +312,7 @@ test('the board (new screen, wall): a tap shows the day, the photo frame, the sl
 
 test('the board (new screen, wall): the slideshow with today’s extras, in the side panel', async ({ as, board }) => {
   await board.admin.post('/api/photos/settings', { showTemp: true, showEvents: true, sidePanel: true });
-  const wall = await as('wall', { path: '/next/board?slides' });
+  const wall = await as('wall', { path: '/?slides' });
   await expect(wall.locator('#slides')).toHaveClass(/sidepanel-on/);
   await expect(wall.locator('#slides .slide-sidebar .sinfo')).toContainText('Today’s weather');
   await expect(wall.locator('#slides .slide-sidebar .sinfo')).toContainText('Today’s events');
@@ -323,7 +323,7 @@ test('the board (new screen, wall): the slideshow with today’s extras, in the 
 
 test('the board (new screen, tablet): add an event, change it, delete it', async ({ as, board }) => {
   const { date, ym } = thisMonth();
-  const t = await as('tablet', { path: '/next/edit' });
+  const t = await as('tablet', { path: '/edit' });
   await t.locator('#addBtn').click();
   await t.locator('#evTitle').fill('Field trip');
   await t.locator('#evDate').fill(date);
@@ -361,7 +361,7 @@ test('the board (new screen, tablet): add an event, change it, delete it', async
 
 test('the board (new screen, tablet): the month’s title, its border and the board style', async ({ as, board }) => {
   const { ym } = thisMonth();
-  const t = await as('tablet', { path: '/next/edit' });
+  const t = await as('tablet', { path: '/edit' });
   await t.locator('#titleBtn').click();
   await t.locator('#titleSheet .fontpick .seg').nth(3).click(); // Pacifico, shown on the board at once
   await expect
@@ -399,7 +399,7 @@ test('the board (new screen, tablet): draw, undo and redo, erase, write, select,
 }) => {
   const { ym } = thisMonth();
   await board.admin.post('/api/art/clear', { ym });
-  const t = await as('tablet', { path: '/next/edit' });
+  const t = await as('tablet', { path: '/edit' });
   const artOf = async () =>
     (await (await board.admin.api(`/api/art?ym=${ym}`)).json()) as { k?: string; s?: string; z?: number }[];
   await t.locator('#drawBtn').click();
@@ -449,4 +449,39 @@ test('the board (new screen, tablet): draw, undo and redo, erase, write, select,
   await expect(t.locator('#addBtn')).toBeVisible();
   expect(t.errors).toEqual([]);
   await board.admin.post('/api/art/clear', { ym });
+});
+
+test('the board (new screen): a border moves the art on the calendar with the days (saved once)', async ({
+  as,
+  board
+}) => {
+  const { ym } = thisMonth();
+  await board.admin.post('/api/art/clear', { ym });
+  // a line in the middle of the calendar, and one on the Notes column (stays put)
+  await board.admin.post('/api/art', { ym, stroke: { c: '#F6B3CB', w: 6, p: [100, 120, 140, 160] } });
+  await board.admin.post('/api/art', { ym, stroke: { c: '#F6B3CB', w: 6, p: [1150, 300, 1180, 330] } });
+  await board.admin.post('/api/border', { ym, border: { items: ['gi-pumpkin'], color: '#E8A35C', size: 'm' } });
+  const t = await as('tablet', { path: '/edit' });
+  await expect.poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).artPad).toBe(32);
+  const art = await (await board.admin.api(`/api/art?ym=${ym}`)).json();
+  const near = art.find((x: { p: number[] }) => x.p[0] < 600);
+  const far = art.find((x: { p: number[] }) => x.p[0] > 1000);
+  expect(near.p[0]).toBeGreaterThan(100); // moved in, away from the border
+  expect(far.p).toEqual([1150, 300, 1180, 330]);
+  expect(t.errors).toEqual([]);
+  await board.admin.post('/api/border', { ym, border: null });
+  await board.admin.post('/api/art/clear', { ym });
+  if (!(await board.admin.api('/api/today')).ok) console.log(board.log().slice(-3000));
+});
+
+test('the board (new screen, tablet): zoom in to draw, back to fit; the Notes open their pages', async ({ as }) => {
+  const t = await as('tablet', { path: '/edit' });
+  const w0 = (await t.locator('#board').boundingBox())!.width;
+  await t.getByRole('button', { name: 'Zoom in' }).click();
+  await expect.poll(async () => (await t.locator('#board').boundingBox())!.width).toBeGreaterThan(w0 * 1.2);
+  await t.getByRole('button', { name: 'Fit' }).click();
+  await expect.poll(async () => Math.round((await t.locator('#board').boundingBox())!.width)).toBe(Math.round(w0));
+  await t.locator('.nslot-meals').click();
+  await expect(t).toHaveURL(/\/meals$/);
+  expect(t.errors).toEqual([]);
 });

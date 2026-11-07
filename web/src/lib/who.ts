@@ -10,6 +10,7 @@ export interface Who {
   passkeys: boolean;
   homeSignin: boolean;
   openView: boolean;
+  firstRun?: boolean; // no admin yet: the admin console sets the board up
 }
 export const RANK = { view: 1, family: 2, editor: 3, admin: 4 };
 

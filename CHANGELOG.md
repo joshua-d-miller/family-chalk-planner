@@ -4,6 +4,27 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## Unreleased — the board rebuilt (next release)
+- **New screens everywhere:** the wall, the tablet, family screens, chores and every page are rebuilt
+  (React + TypeScript). They look and work the same, and they're sharp on a 4K wall. The board as it
+  was is kept at **/classic** (and /classic/edit) for a while, in case something's missing.
+- **Pages of their own**, from the ☰ menu: meal plan, reminders, timers, pantry, reward jars, chores
+  and ⚙️ Settings. ☆ keeps up to 4 of them on the tablet's strip.
+- **From Colby Way's board:** reminders (they pop up when their time comes), timers shared by every
+  screen, a pantry list, several Google calendars at once, Immich photos and "on this day", a
+  slideshow with today's weather, events and reminders (on a card, or in a panel beside the photos),
+  choosing what's in the right-hand column, a filled-in square for today, and a frame around the
+  board.
+- **Tablet:** pinch to zoom (or − / + / Fit); the drawing tools, stamps, GIFs and "Find more" as
+  before; jars are added and changed on the jars page.
+- **Updates:** ⚙️ Board in the admin console has **Update now**, and updates can run by themselves
+  overnight. The database is backed up first, and an update that doesn't come up healthy is undone,
+  database included.
+- **Home sign-in** (optional): at home, on the board's own Wi-Fi, signing in on a tablet needs only the
+  password.
+- **Emoji** show on every screen: screens without emoji of their own get the board's.
+- Fixed: a phone on /chores could get the night slideshow over the chores.
+
 ## 0.12.2 — hide holidays you don't want
 - **Holidays:** tap a holiday on the calendar (tablet or family screen) for the list of the board's
   holidays. Tap one to hide it from the calendar and the countdowns, every year; tap again to bring it back.

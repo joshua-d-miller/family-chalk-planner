@@ -77,3 +77,23 @@
   min-height: 1.4em;
   margin-bottom: 10px;
 }
+.jname {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+.jgoal {
+  align-items: center;
+  gap: 12px;
+}
+.jgoal b {
+  font-size: 22px;
+  min-width: 40px;
+  text-align: center;
+}
+.jaradd {
+  margin: 8px 0 12px;
+}

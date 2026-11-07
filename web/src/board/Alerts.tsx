@@ -140,7 +140,15 @@ export function DayView({
               key={i}
               className={(e.holiday ? 'holiday' : e.allDay ? 'allday' : '') + (e.readOnly ? ' ro' : '')}
               style={c ? { color: readable(c, CARD) } : undefined}
-              onClick={onEvent && !e.readOnly ? () => onEvent(e) : undefined}
+              onClick={
+                !onEvent
+                  ? undefined
+                  : e.holiday
+                    ? () => (location.href = new URL('settings#holidays', document.baseURI).href) // hide it every year
+                    : !e.readOnly
+                      ? () => onEvent(e)
+                      : undefined
+              }
             >
               {evText(e)}
               {e.cal ? ' · ' + e.cal : ''}

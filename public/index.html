@@ -1103,8 +1103,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 <script>
 (function () {
   'use strict';
-  var EDIT = location.pathname.replace(/\/+$/, '') === '/edit';
-  var CHORES_PAGE = location.pathname.replace(/\/+$/, '') === '/chores';   // the chores on their own (phones)
+  var EDIT = /\/edit$/.test(location.pathname.replace(/\/+$/, ''));   // /edit, or /classic/edit
+  var CHORES_PAGE = /\/chores$/.test(location.pathname.replace(/\/+$/, ''));   // the chores on their own (phones)
   // Test switches for display glitches on kiosk browsers: add ?noart, ?plain and/or ?csszoom to the address
   var Q = new URLSearchParams(location.search);
   var FLAG = { noart: Q.has('noart'), plain: Q.has('plain'), csszoom: Q.has('csszoom') && !EDIT };

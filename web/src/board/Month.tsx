@@ -274,7 +274,11 @@ export function Month({
         )}
         <NavBtn dir="next" onClick={nav?.next} />
       </div>
-      <div className={'calbody' + (border ? ' bordered' : '')} style={{ '--bpad': pad + 'px' } as CSSProperties}>
+      <div
+        className={'calbody' + (border ? ' bordered' : '')}
+        id="calbody"
+        style={{ '--bpad': pad + 'px' } as CSSProperties}
+      >
         <div className="weekdays">
           {Array.from({ length: 7 }, (_, i) => (
             <div key={i}>{WEEKDAYS[(i + ws) % 7]}</div>
@@ -336,7 +340,7 @@ function BorderLayer({ border: b }: { border: Border }) {
   side(W - half, H - half, half, H - half);
   side(half, H - half, half, half);
   return (
-    <div className="borderLayer" aria-hidden="true">
+    <div className="borderLayer" id="borderLayer" aria-hidden="true">
       {pts.map((p, i) => (
         <img
           key={i}

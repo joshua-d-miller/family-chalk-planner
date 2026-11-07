@@ -21,6 +21,8 @@ export const TEXT_SIZES: [number, string][] = [
   [88, 'XL']
 ];
 const ERASE_R = 16;
+// fingers on the screen right now (the board counts them): two or more = pinching, not drawing
+export const touches = new Set<number>();
 const W = 1252;
 const H = 642;
 export const isPosca = (c: string) => !CHALK.includes(c.toUpperCase());
@@ -69,7 +71,7 @@ export function DrawLayer({
   setSelection: (ids: number[]) => void;
   onText: (item: ArtItem | null, at: [number, number]) => void;
   onRecolor: () => void;
-  onSaveStamp: () => void;
+  onSaveStamp?: () => void; // not on a family screen
   placing: boolean; // a stamp is waiting for a tap
   onPlace: (at: [number, number]) => void;
   onHide: (ids: number[]) => void; // what the eraser is rubbing out, hidden until it's saved
@@ -99,6 +101,7 @@ export function DrawLayer({
     if (dragRef.current) return;
     if (e.pointerType === 'pen') lastPen.current = Date.now();
     else if (e.pointerType === 'touch' && Date.now() - lastPen.current < 1500) return; // a palm resting while the Pencil draws
+    if (e.pointerType === 'touch' && touches.size > 1) return;
     e.preventDefault();
     (e.target as Element).setPointerCapture?.(e.pointerId);
     const pt = toBoard(e);
@@ -144,6 +147,10 @@ export function DrawLayer({
     const d = dragRef.current;
     if (!d) return;
     if (e.pointerType === 'pen') lastPen.current = Date.now();
+    if (e.pointerType === 'touch' && touches.size > 1) {
+      go(null); // a second finger: it's a pinch, not a line
+      return;
+    }
     e.preventDefault();
     const evs = (e.nativeEvent.getCoalescedEvents?.() || []) as PointerEvent[];
     const pt = toBoard(e);
@@ -295,9 +302,11 @@ export function DrawLayer({
               top: selBox.y1 - 62 > 4 ? selBox.y1 - 62 : Math.min(H - 54, selBox.y2 + 14)
             }}
           >
-            <button type="button" className="star" onClick={onSaveStamp}>
-              ★ Save as stamp
-            </button>
+            {onSaveStamp && (
+              <button type="button" className="star" onClick={onSaveStamp}>
+                ★ Save as stamp
+              </button>
+            )}
             <button type="button" onClick={onRecolor}>
               🎨 Color
             </button>

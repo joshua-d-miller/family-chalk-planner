@@ -306,3 +306,7 @@
 .thumb .gifLayer img {
   position: absolute;
 }
+.cgrid.icons svg {
+  width: 100%;
+  height: 100%;
+}

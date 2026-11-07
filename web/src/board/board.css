@@ -528,3 +528,87 @@ body.boardpage {
 .slate .nslot-meals {
   flex: 1 1 0;
 }
+/* weather that moves */
+.slate .wx {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1252px;
+  height: 642px;
+  pointer-events: none;
+  z-index: 4;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 1.5s;
+}
+.slate .wx.on {
+  opacity: 1;
+}
+.slate .wx .rain {
+  position: absolute;
+  top: -40px;
+  width: 1.4px;
+  height: 26px;
+  background: linear-gradient(rgba(156, 201, 230, 0), rgba(156, 201, 230, 0.55));
+  animation: wxrain linear infinite;
+}
+.slate .wx .rain.far {
+  /* the wall is seen from across the room */
+  width: 2.2px;
+  height: 30px;
+  background: linear-gradient(rgba(170, 210, 236, 0), rgba(170, 210, 236, 0.8));
+}
+@keyframes wxrain {
+  to {
+    transform: translate(-60px, 720px);
+  }
+}
+.slate .wx .snow {
+  position: absolute;
+  top: -20px;
+  border-radius: 50%;
+  background: rgba(var(--ink), 0.85);
+  animation: wxsnow linear infinite;
+}
+@keyframes wxsnow {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(14px, 170px);
+  }
+  50% {
+    transform: translate(-8px, 340px);
+  }
+  75% {
+    transform: translate(12px, 510px);
+  }
+  100% {
+    transform: translate(0, 690px);
+  }
+}
+.slate .wx .flash {
+  position: absolute;
+  inset: 0;
+  animation: wxflash 9s infinite;
+}
+@keyframes wxflash {
+  0%,
+  61%,
+  63%,
+  66%,
+  100% {
+    background: rgba(220, 230, 255, 0);
+  }
+  62% {
+    background: rgba(220, 230, 255, 0.16);
+  }
+  65% {
+    background: rgba(220, 230, 255, 0.1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slate .wx {
+    display: none;
+  }
+}

@@ -45,7 +45,7 @@ const fontsMissing = () =>
   FONTS.filter(([, pkg, files]) => files.some(f => !installed(`${pkg}/${f}`))).map(([name]) => name);
 
 // Installable app: the wall opens full-screen at "/", the iPad opens "/edit"
-type Kind = 'wall' | 'edit' | 'chores' | 'meals' | 'reminders' | 'timers' | 'pantry' | 'jars';
+type Kind = 'wall' | 'edit' | 'chores' | 'meals' | 'reminders' | 'timers' | 'pantry' | 'jars' | 'settings';
 const app = (name: string, path: string) => ({
   name,
   short_name: name,
@@ -54,14 +54,15 @@ const app = (name: string, path: string) => ({
   display: 'standalone',
   orientation: 'any'
 });
-// the new screens (React): their own pages now, and next/... for the ones still on the current board
-export const APP_PAGES = ['meals', 'reminders', 'timers', 'pantry', 'jars'];
+// the screens (React). The board as it was before them stays at classic/ for a while, just in case.
+export const APP_PAGES = ['meals', 'reminders', 'timers', 'pantry', 'jars', 'settings'];
 const manifests = (title: string): Record<Kind, Record<string, string>> => ({
   meals: app('Meal plan', 'meals'),
   reminders: app('Reminders', 'reminders'),
   timers: app('Timers', 'timers'),
   pantry: app('Pantry', 'pantry'),
   jars: app('Reward jars', 'jars'),
+  settings: app('Settings', 'settings'),
   wall: {
     name: title,
     short_name: 'Chalk Planner',
@@ -250,19 +251,25 @@ export function setup({
   // Call last: the pages, then any file in public/
   function serve() {
     for (const p of APP_PAGES) app.get('/' + p, sendApp(p as Kind));
+    // the addresses the new screens had while they were being built
     app.get('/next/:page', (req, res, next) => {
       const page = req.params.page;
       if (!/^[a-z-]{1,20}$/.test(page)) return next();
-      sendApp(page === 'board' ? 'wall' : page in manifests(title) ? (page as Kind) : 'edit')(req, res, next);
+      const q = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+      res.redirect(301, (page === 'board' ? '/' : '/' + page) + q);
     });
     // the screens' scripts and styles: names change with every build, so they're kept for good
     app.use(
       '/assets',
       express.static(path.join(appDir, 'assets'), { immutable: true, maxAge: '365d', fallthrough: false })
     );
-    app.get('/', sendBoard('wall'));
-    app.get('/edit', sendBoard('edit'));
-    app.get('/chores', sendBoard('chores')); // the chores page on a phone (same page, chores mode)
+    app.get('/', sendApp('wall'));
+    app.get('/edit', sendApp('edit'));
+    app.get('/chores', sendApp('chores'));
+    // the board as it was (one page, not React), kept for a while in case something's missing
+    app.get('/classic', sendBoard('wall'));
+    app.get('/classic/edit', sendBoard('edit'));
+    app.get('/classic/chores', sendBoard('chores'));
     // the admin console (sign-in, screens, people, my account) and invite links
     for (const p of ['/admin', '/join'])
       app.get(p, (_req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(publicDir, 'admin.html')));

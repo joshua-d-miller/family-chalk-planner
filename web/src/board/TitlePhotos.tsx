@@ -97,7 +97,7 @@ export function TitlePhotos({ pool, art, layoutKey }: { pool: Photo[]; art: ArtI
   }, [want, pool]);
 
   return (
-    <div className="ptitle" ref={ref} aria-hidden="true">
+    <div className="ptitle" id="ptitle" ref={ref} aria-hidden="true">
       {want.map((sp, i) => (
         <Polaroid key={`${sp.x},${sp.y}`} spot={sp} photo={shown[i] || null} />
       ))}

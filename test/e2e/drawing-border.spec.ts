@@ -100,9 +100,9 @@ test('the border popup: pick a ready-made set, see it, cancel puts it back', asy
   await page.reload();
   await page.waitForTimeout(1200);
   await page.locator('#borderBtn').click();
-  await expect(page.locator('#bmodal')).toHaveClass(/open/);
-  await page.locator('#bPresets .seg', { hasText: 'Halloween' }).click();
+  await expect(page.locator('#borderSheet')).toBeVisible();
+  await page.locator('#borderSheet .seg', { hasText: 'Halloween' }).click();
   await expect(page.locator('#borderLayer img').first()).toBeVisible(); // shown while picking
-  await page.locator('#bmodal .btn', { hasText: 'Cancel' }).click();
+  await page.locator('#borderSheet').getByRole('button', { name: 'Cancel' }).click();
   await expect(page.locator('#borderLayer img')).toHaveCount(0);
 });

@@ -187,3 +187,101 @@
   background: rgba(0, 0, 0, 0.15);
   justify-content: flex-end;
 }
+.offline {
+  position: fixed;
+  right: 14px;
+  bottom: 12px;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 16px;
+  background: rgba(22, 22, 22, 0.85);
+  color: #f2d479;
+  font:
+    700 15px 'Kalam',
+    cursive;
+}
+.offline span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e8a35c;
+}
+.ppick {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.ppick button {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #111;
+  cursor: pointer;
+}
+.ppick button.on {
+  border-color: var(--yellow);
+}
+.ppick img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ppick b {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--yellow);
+  color: #141414;
+  line-height: 24px;
+}
+.sheet a {
+  color: var(--yellow);
+}
+#board.edit .slate .nslot.opens {
+  cursor: pointer;
+  border-radius: 8px;
+}
+#board.edit .slate .nslot.opens:active {
+  background: rgba(242, 212, 121, 0.08);
+}
+.zoom {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 30;
+  display: flex;
+  gap: 6px;
+}
+.zoom button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(237, 234, 224, 0.5);
+  background: rgba(22, 22, 22, 0.85);
+  color: #edeae0;
+  font:
+    700 22px 'Kalam',
+    cursive;
+  cursor: pointer;
+}
+.zoom button.fit {
+  font-size: 15px;
+}
+.zoom button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+#board.edit {
+  touch-action: none;
+}

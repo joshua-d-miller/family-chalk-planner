@@ -37,9 +37,9 @@ export function Settings({ who }: { who: Who | null }) {
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
   return (
-    <section className="section scard">
+    <section className="section scard" id={id}>
       <h3>{title}</h3>
       {children}
     </section>
@@ -276,7 +276,7 @@ function Holidays() {
     sv.run(post('api/holidays', { off }));
   };
   return (
-    <Card title="Holidays">
+    <Card title="Holidays" id="holidays">
       <p className="dim small">Tap one to hide it from the board, or to bring it back.</p>
       <div className="segs hols">
         {h.data.holidays.map(x => (

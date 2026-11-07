@@ -9,6 +9,7 @@ import { Art } from '../Art.tsx';
 import type { ArtItem } from '../Art.tsx';
 import { clipLabel, clipSrc, searchClip } from '../clip.ts';
 import { unionBox } from '../geom.ts';
+import { FindPane } from './Find.tsx';
 
 export type Stamp = { name: string; items: ArtItem[] };
 const SIZES: [string, string][] = [
@@ -83,7 +84,7 @@ export function Library({
   onClose: () => void;
   bg: number;
 }) {
-  const [pane, setPane] = useState<'clip' | 'emoji' | 'gif' | 'mine'>('clip');
+  const [pane, setPane] = useState<'clip' | 'emoji' | 'find' | 'gif' | 'mine'>('clip');
   const [k, setK] = useState('1');
   const pick = (s: Stamp) => onPick(s, +k);
   return (
@@ -96,6 +97,7 @@ export function Library({
           options={[
             ['clip', 'Clipart'],
             ['emoji', 'Emoji'],
+            ['find', 'Find more'],
             ['gif', 'GIFs'],
             ['mine', 'My stamps']
           ]}
@@ -105,6 +107,7 @@ export function Library({
       <div className="lscroll">
         {pane === 'clip' && <ClipPane pick={pick} />}
         {pane === 'emoji' && <EmojiPane pick={pick} />}
+        {pane === 'find' && <FindPane pick={pick} />}
         {pane === 'gif' && <GifPane pick={pick} />}
         {pane === 'mine' && <MinePane pick={pick} bg={bg} />}
       </div>

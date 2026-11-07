@@ -98,7 +98,7 @@ export function SignIn({ who, why, onDone }: { who: Who | null; why?: string; on
         </form>
         <p className="dim small">
           A wall or shared touch screen?{' '}
-          <a href="./?pair" style={{ color: 'var(--yellow)' }}>
+          <a href="./?pair" id="toPair" style={{ color: 'var(--yellow)' }}>
             Pair it
           </a>{' '}
           instead.

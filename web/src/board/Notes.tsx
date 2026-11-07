@@ -61,7 +61,7 @@ function Info({ x }: { x: Extras }) {
             <Wx kind={w.now.kind} color="#F2D479" />
             <div>
               <div className="lbl">Today</div>
-              <div className="val" style={{ color: 'var(--yellow)' }}>
+              <div className="val" id="wNow" style={{ color: 'var(--yellow)' }}>
                 {w.now.temp}° · {w.today.hi}/{w.today.lo}
               </div>
             </div>
@@ -307,7 +307,16 @@ function TimersPage() {
   );
 }
 
-export function Notes({ time24 }: { time24: boolean }) {
+// on a tablet, a page opens its own screen to change it
+const OPENS: Record<string, string> = {
+  meals: 'meals',
+  jars: 'jars',
+  reminders: 'reminders',
+  timers: 'timers',
+  pantry: 'pantry',
+  chores: 'chores'
+};
+export function Notes({ time24, edit = false }: { time24: boolean; edit?: boolean }) {
   const x = useLive<Extras>('api/extras', ['extras']).data;
   const pages = x?.notes?.pages || ['info', 'meals', 'jars'];
   return (
@@ -315,7 +324,12 @@ export function Notes({ time24 }: { time24: boolean }) {
       <h2 className="chalk">Notes</h2>
       {x &&
         pages.map((p, i) => (
-          <div key={p} className={'nslot nslot-' + p}>
+          <div
+            key={p}
+            className={'nslot nslot-' + p + (edit && OPENS[p] ? ' opens' : '')}
+            role={edit && OPENS[p] ? 'link' : undefined}
+            onClick={edit && OPENS[p] ? () => (location.href = new URL(OPENS[p], document.baseURI).href) : undefined}
+          >
             {i > 0 && <div className="rule" />}
             {p === 'info' && <Info x={x} />}
             {p === 'meals' && <MealsPage />}

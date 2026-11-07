@@ -9,10 +9,9 @@ test('the wall: no buttons, a tapped day shows its events, and it can’t change
   await expect(wall.locator('#addBtn')).toBeHidden();
   await expect(wall.locator('#drawBtn')).toBeHidden();
   await wall.locator(`#grid [data-date="${date}"]`).click({ position: { x: 10, y: 60 } });
-  await expect(wall.locator('#dmodal')).toHaveClass(/open/);
-  await expect(wall.locator('#dList')).toContainText('Wall test event');
-  await wall.locator('#dmodal').click({ position: { x: 5, y: 5 } });
-  await expect(wall.locator('#dmodal')).not.toHaveClass(/open/);
+  await expect(wall.locator('#dayView')).toContainText('Wall test event');
+  await wall.mouse.click(5, 5);
+  await expect(wall.locator('#dayView')).toHaveCount(0);
   const status = await wall.evaluate(
     d =>
       fetch('/api/events', {
@@ -49,9 +48,8 @@ test('the wall: the slideshow shows the clock and photos', async ({ as }) => {
 test('a family screen edits on the board but has no settings, account or freehand drawing', async ({ as }) => {
   const fam = await as('family');
   await expect(fam.locator('body')).toHaveClass(/family/);
-  await expect(fam.locator('#drawLabel')).toHaveText('Decorate');
-  await expect(fam.locator('#settingsBtn')).toBeHidden();
-  await expect(fam.locator('#acctBtn')).toBeHidden();
+  await expect(fam.locator('#drawBtn')).toContainText('Decorate');
+  await expect(fam.locator('#titleBtn')).toHaveCount(0);
   await fam.locator('#drawBtn').click();
   await expect(fam.locator('#chalkBtn')).toBeHidden();
   await expect(fam.locator('#poscaBtn')).toBeHidden();
@@ -71,11 +69,11 @@ test('a new screen shows a pairing code; once approved it becomes the wall', asy
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   const page = await ctx.newPage();
   await page.goto(board.url + '/');
-  await expect(page.locator('#pairpad')).toHaveClass(/open/);
+  await expect(page.locator('#pairpad')).toBeVisible();
   await expect(page.locator('#pairCode')).toHaveText(/^[A-Z0-9]{4}-[A-Z0-9]{4}$/);
   const code = await page.locator('#pairCode').innerText();
   expect((await board.admin.post('/api/devices/approve', { code, name: 'Test wall', role: 'view' })).status).toBe(200);
-  await expect(page.locator('#pairpad')).not.toHaveClass(/open/, { timeout: 10_000 });
+  await expect(page.locator('#pairpad')).toHaveCount(0, { timeout: 10_000 });
   await expect(page.locator('body')).toHaveClass(/display/);
   await ctx.close();
 });

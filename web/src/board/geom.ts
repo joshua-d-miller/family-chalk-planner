@@ -114,3 +114,29 @@ export const isClosedLine = (s: ArtItem) =>
   !!s.p &&
   s.p.length >= 8 &&
   Math.hypot(s.p[0] - s.p[s.p.length - 2], s.p[1] - s.p[s.p.length - 1]) <= Math.max(2.5, (s.w || 4) * 0.8);
+
+// The calendar's box on the slate (the days, weekday names and any border), in board pixels
+export const CAL = { x: 18, y: 8 + 70, w: 1252 - 18 - 14 - 14 - 214, h: 642 - 8 - 10 - 70 };
+export const BORDER_PAD = { s: 26, m: 32, l: 40 }; // a border's picture size + 6
+
+// Art sits on the days, so it moves with them: with a border the calendar is a little smaller, and
+// anything drawn on it (centered inside it) moves and shrinks the same way. Things beside the calendar
+// (the title, Notes) stay put.
+export function relayout(items: ArtItem[], p0: number, p1: number): ArtItem[] {
+  if (p0 === p1) return items;
+  const R = CAL;
+  const a = { x: R.x + p0, y: R.y + p0, w: R.w - 2 * p0, h: R.h - 2 * p0 };
+  const b = { x: R.x + p1, y: R.y + p1, w: R.w - 2 * p1, h: R.h - 2 * p1 };
+  const sx = b.w / a.w;
+  const sy = b.h / a.h;
+  const k = Math.min(sx, sy);
+  return items.map(it => {
+    const bx = itemBox(it);
+    const cx = (bx.x1 + bx.x2) / 2;
+    const cy = (bx.y1 + bx.y2) / 2;
+    if (cx < R.x || cx > R.x + R.w || cy < R.y || cy > R.y + R.h) return it;
+    const o = xform(it, b.x + (cx - a.x) * sx - cx, b.y + (cy - a.y) * sy - cy, k, cx, cy);
+    o.id = it.id;
+    return o;
+  });
+}

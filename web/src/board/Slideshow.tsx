@@ -338,7 +338,7 @@ export function Slideshow({
             }
       }
     >
-      <b>
+      <b id="sTime">
         {clock.time}
         {clock.ampm && <small>{clock.ampm}</small>}
       </b>

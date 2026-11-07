@@ -326,3 +326,11 @@
   font-size: 0.75em;
   color: var(--dim);
 }
+.pcode {
+  font:
+    700 54px 'Kalam',
+    cursive;
+  letter-spacing: 4px;
+  color: var(--yellow);
+  text-align: center;
+}

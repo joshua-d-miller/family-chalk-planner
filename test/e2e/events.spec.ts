@@ -8,22 +8,22 @@ test('add, open from the day list, change and delete an event', async ({ as }) =
   const { date } = thisMonth();
   // an empty day goes straight to Add; this one may have events, so use the button
   await page.locator('#addBtn').click();
-  await expect(page.locator('#modal')).toHaveClass(/open/);
+  await expect(page.locator('#evSheet')).toBeVisible();
   await page.locator('#evTitle').fill('Dentist for Nora');
   await page.locator('#evDate').fill(date);
   await page.locator('#evTime').fill('15:30');
   await page.locator('#evSave').click();
-  await expect(page.locator('#modal')).not.toHaveClass(/open/);
+  await expect(page.locator('#evSheet')).toHaveCount(0);
   await expect(day(page, date)).toContainText('Dentist for Nora');
 
   // tap the day: its events, with Add at the bottom; tap the event to change it
   // (the bottom corner of the day, clear of its events)
   const box = await day(page, date).boundingBox();
   await day(page, date).click({ position: { x: 6, y: box!.height - 5 } });
-  await expect(page.locator('#dmodal')).toHaveClass(/open/);
-  await page.locator('#dList button', { hasText: 'Dentist for Nora' }).click();
-  await expect(page.locator('#modal')).toHaveClass(/open/);
-  await expect(page.locator('#mTitle')).toHaveText('Change this event');
+  await expect(page.locator('#dayView')).toBeVisible();
+  await page.locator('#dayView .daylist button', { hasText: 'Dentist for Nora' }).click();
+  await expect(page.locator('#evSheet')).toBeVisible();
+  await expect(page.locator('#evSheet h3')).toHaveText('Change this event');
   await page.locator('#evTitle').fill('Dentist for Nora and Theo');
   await page.locator('#evSave').click();
   await expect(day(page, date)).toContainText('Dentist for Nora and Theo');
@@ -42,10 +42,7 @@ test('an all-day event, larger on the board', async ({ as }) => {
   await page.locator('#evTitle').fill('Grandma visits');
   await page.locator('#evDate').fill(date);
   await page.locator('#evAllDay').check();
-  await page
-    .locator('#evSize button, #evSize .seg')
-    .filter({ hasText: /^Large$/ })
-    .click();
+  await page.locator('#evSize').getByRole('radio', { name: 'Large', exact: true }).click();
   await page.locator('#evSave').click();
   const ev = day(page, date).locator('.ev', { hasText: 'Grandma visits' });
   await expect(ev).toHaveClass(/allday/);

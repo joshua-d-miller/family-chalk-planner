@@ -36,7 +36,8 @@ export function Tools({
   canUndo,
   canRedo,
   onClear,
-  onStamps
+  onStamps,
+  family = false
 }: {
   pen: Pen;
   setPen: (p: Pen) => void;
@@ -46,6 +47,7 @@ export function Tools({
   canRedo: boolean;
   onClear: () => void;
   onStamps: () => void;
+  family?: boolean; // a family screen decorates: stamps, writing, moving; no pens, no wiping the month
 }) {
   const tool = (t: Tool) => setPen({ ...pen, tool: t });
   const medium = (m: Medium) => setPen({ ...pen, medium: m, tool: 'pen' });
@@ -53,62 +55,66 @@ export function Tools({
   const cur = pen.color[pen.medium];
   return (
     <div className="tools" id="tools">
-      <span className="swatches">
-        {pal.map(c => (
+      {!family && (
+        <>
+          <span className="swatches">
+            {pal.map(c => (
+              <button
+                type="button"
+                key={c}
+                className={'sw' + (c === cur && pen.tool === 'pen' ? ' on' : '')}
+                aria-label={c}
+                onClick={() => setPen({ ...pen, tool: 'pen', color: { ...pen.color, [pen.medium]: c } })}
+              >
+                <span style={{ background: c }} />
+              </button>
+            ))}
+            <label className="cpick" title="Another color">
+              <input
+                type="color"
+                aria-label="Another color"
+                value={cur}
+                onChange={e => {
+                  const c = e.target.value.toUpperCase();
+                  const m: Medium = isPosca(c) ? 'posca' : 'chalk';
+                  setPen({ ...pen, tool: 'pen', medium: m, color: { ...pen.color, [m]: c } });
+                }}
+              />
+            </label>
+          </span>
           <button
             type="button"
-            key={c}
-            className={'sw' + (c === cur && pen.tool === 'pen' ? ' on' : '')}
-            aria-label={c}
-            onClick={() => setPen({ ...pen, tool: 'pen', color: { ...pen.color, [pen.medium]: c } })}
+            className="tool"
+            id="sizeBtn"
+            aria-label={`Line size ${pen.size + 1} of 3`}
+            onClick={() => setPen({ ...pen, size: (pen.size + 1) % SIZES.length })}
           >
-            <span style={{ background: c }} />
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r={[2.5, 4, 6.5][pen.size]} fill={cur} />
+            </svg>
           </button>
-        ))}
-        <label className="cpick" title="Another color">
-          <input
-            type="color"
-            aria-label="Another color"
-            value={cur}
-            onChange={e => {
-              const c = e.target.value.toUpperCase();
-              const m: Medium = isPosca(c) ? 'posca' : 'chalk';
-              setPen({ ...pen, tool: 'pen', medium: m, color: { ...pen.color, [m]: c } });
-            }}
-          />
-        </label>
-      </span>
-      <button
-        type="button"
-        className="tool"
-        id="sizeBtn"
-        aria-label={`Line size ${pen.size + 1} of 3`}
-        onClick={() => setPen({ ...pen, size: (pen.size + 1) % SIZES.length })}
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r={[2.5, 4, 6.5][pen.size]} fill={cur} />
-        </svg>
-      </button>
-      <button
-        type="button"
-        className={'tool medium' + (pen.tool === 'pen' && pen.medium === 'chalk' ? ' on' : '')}
-        id="chalkBtn"
-        aria-label="Chalk"
-        onClick={() => medium('chalk')}
-      >
-        <Ic d="M4 15l9-9 4 4-9 9H4z" />
-        Chalk
-      </button>
-      <button
-        type="button"
-        className={'tool medium' + (pen.tool === 'pen' && pen.medium === 'posca' ? ' on' : '')}
-        id="poscaBtn"
-        aria-label="Posca paint marker"
-        onClick={() => medium('posca')}
-      >
-        <Ic d="M14.5 4.5l5 5L10 19l-5 1 1-5zM12 7l5 5" />
-        Posca
-      </button>
+          <button
+            type="button"
+            className={'tool medium' + (pen.tool === 'pen' && pen.medium === 'chalk' ? ' on' : '')}
+            id="chalkBtn"
+            aria-label="Chalk"
+            onClick={() => medium('chalk')}
+          >
+            <Ic d="M4 15l9-9 4 4-9 9H4z" />
+            Chalk
+          </button>
+          <button
+            type="button"
+            className={'tool medium' + (pen.tool === 'pen' && pen.medium === 'posca' ? ' on' : '')}
+            id="poscaBtn"
+            aria-label="Posca paint marker"
+            onClick={() => medium('posca')}
+          >
+            <Ic d="M14.5 4.5l5 5L10 19l-5 1 1-5zM12 7l5 5" />
+            Posca
+          </button>
+        </>
+      )}
       <button
         type="button"
         className={'tool' + (pen.tool === 'text' ? ' on' : '')}
@@ -146,9 +152,11 @@ export function Tools({
       <button type="button" className="tool" id="redoBtn" aria-label="Redo" disabled={!canRedo} onClick={onRedo}>
         <Ic d="M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3" />
       </button>
-      <button type="button" className="tool" id="clearBtn" aria-label="Wipe this month’s art" onClick={onClear}>
-        <Ic d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
-      </button>
+      {!family && (
+        <button type="button" className="tool" id="clearBtn" aria-label="Wipe this month’s art" onClick={onClear}>
+          <Ic d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+        </button>
+      )}
     </div>
   );
 }

@@ -10,59 +10,52 @@ async function monthWithHoliday(page) {
   return page.locator('#grid .ev.holiday').first();
 }
 
-test('tap a holiday to hide it every year, then bring it back from Settings', async ({ as, board }) => {
+test('tap a holiday: the day list sends it to Settings to hide it every year, and back', async ({ as, board }) => {
   const page = await as('tablet');
   const hol = await monthWithHoliday(page);
   const name = (await hol.innerText()).replace(/^\S+\s/, '').trim(); // without its icon
   await hol.click();
-  await expect(page.locator('#hmodal')).toHaveClass(/open/);
-  await expect(page.locator('#modal')).not.toHaveClass(/open/); // not "Add event"
-  const row = page.locator('.hrow.mark');
-  await expect(row).toContainText(name);
-  await row.click();
-  await expect(row).toHaveClass(/off/);
-  await page.locator('#hClose').click();
-  await expect(page.locator('#grid .ev.holiday', { hasText: name })).toHaveCount(0);
+  await expect(page.locator('#dayView')).toBeVisible();
+  await expect(page.locator('#evSheet')).toHaveCount(0); // not "Add event"
+  await page.locator('#dayView .daylist button.holiday').first().click();
+  await expect(page).toHaveURL(/\/settings#holidays$/);
+  const seg = page.locator('#holidays .seg', { hasText: name });
+  await seg.click();
+  await expect(seg).toHaveAttribute('aria-pressed', 'false');
   expect((await (await board.admin.api('/api/holidays')).json()).holidays.find(h => h.title === name).off).toBe(true);
-
-  // back again from ⚙️ Settings (editors have it too)
-  await page.locator('#settingsBtn').click();
-  await expect(page.locator('#setHolN')).toHaveText('1 hidden');
-  await page.locator('#setHol').click();
-  await page.locator('.hrow', { hasText: name }).click();
-  await page.locator('#hClose').click();
-  await expect(page.locator('#setHolN')).toHaveText('All shown');
-  await page.locator('#setClose').click();
-  await expect(page.locator('#grid .ev.holiday', { hasText: name })).toHaveCount(1);
+  await seg.click();
+  await expect(seg).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('an editor sees Holidays in Settings but not the admin settings', async ({ as }) => {
-  const page = await as('tablet');
-  await page.locator('#settingsBtn').click();
-  await expect(page.locator('#setHol')).toBeVisible();
-  await expect(page.locator('#tDay')).toBeHidden(); // trash day: admins only
-  await expect(page.locator('#nBottom')).toBeHidden(); // Notes column: admins only
+  const page = await as('tablet', { path: '/settings' });
+  await expect(page.locator('#holidays')).toBeVisible();
+  await expect(page.getByLabel('Trash pickup')).toHaveCount(0); // trash day: admins only
 });
 
-test('photos beside the month name, and the Title photos switch', async ({ as }) => {
+test('photos beside the month name, and room to draw instead', async ({ as, board }) => {
   const page = await as('tablet');
   await expect(page.locator('#ptitle .tp').first()).toBeVisible();
   const n = await page.locator('#ptitle .tp').count();
   expect(n).toBeGreaterThan(0);
   // frames sit above the calendar, not over it
   const ok = await page.evaluate(() => {
-    const cal = document.getElementById('calbody').getBoundingClientRect();
+    const cal = document.getElementById('calbody')!.getBoundingClientRect();
     return [...document.querySelectorAll('#ptitle .tp')].every(f => {
       const r = f.getBoundingClientRect();
       return r.height > 20 && r.bottom <= cal.top + 6;
     });
   });
   expect(ok).toBe(true);
-  await page.locator('#sideBtn').click();
+  await page.locator('#photosBtn').click();
+  await page.locator('#photosSheet').getByRole('radio', { name: 'Room to draw' }).click();
+  await page.locator('#photosSheet').getByRole('button', { name: 'Save' }).click();
   await expect(page.locator('#ptitle .tp')).toHaveCount(0);
-  await expect(page.locator('#sideBtn')).not.toHaveClass(/on/);
-  await page.locator('#sideBtn').click();
+  await page.locator('#photosBtn').click();
+  await page.locator('#photosSheet').getByRole('radio', { name: 'Random photos' }).click();
+  await page.locator('#photosSheet').getByRole('button', { name: 'Save' }).click();
   await expect(page.locator('#ptitle .tp')).toHaveCount(n);
+  void board;
 });
 
 test('the month title fits above the calendar, even extra large', async ({ as, board }) => {

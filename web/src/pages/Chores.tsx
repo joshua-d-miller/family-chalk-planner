@@ -48,6 +48,47 @@ export function Chores({ who }: { who: Who | null }) {
     document.body.classList.add('chorespage');
     return () => document.body.classList.remove('chorespage');
   }, []);
+  // opened by a swipe on the board: a swipe (or 📅 Calendar) goes back, and the wall goes back by itself
+  const back = useMemo(() => {
+    try {
+      return sessionStorage.getItem('chalkFromBoard');
+    } catch {
+      return null;
+    }
+  }, []);
+  const goBack = () => {
+    try {
+      sessionStorage.removeItem('chalkFromBoard');
+    } catch {
+      /* fine */
+    }
+    location.href = new URL(back || './', document.baseURI).href;
+  };
+  useEffect(() => {
+    if (!back) return;
+    let x0: number | null = null;
+    let y0 = 0;
+    let idle = setTimeout(goBack, 2 * 60 * 1000);
+    const down = (e: PointerEvent) => {
+      x0 = e.clientX;
+      y0 = e.clientY;
+      clearTimeout(idle);
+      idle = setTimeout(goBack, 2 * 60 * 1000);
+    };
+    const up = (e: PointerEvent) => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0;
+      x0 = null;
+      if (Math.abs(dx) > 120 && Math.abs(e.clientY - y0) < Math.abs(dx) / 2) goBack();
+    };
+    addEventListener('pointerdown', down);
+    addEventListener('pointerup', up);
+    return () => {
+      clearTimeout(idle);
+      removeEventListener('pointerdown', down);
+      removeEventListener('pointerup', up);
+    };
+  }, [back]);
 
   const names = useMemo(() => Object.fromEntries((d?.people || []).map((p: Person) => [p.id, p.name])), [d]);
   const order = useMemo(() => Object.fromEntries((d?.people || []).map((p: Person, i: number) => [p.id, i])), [d]);
@@ -101,11 +142,18 @@ export function Chores({ who }: { who: Who | null }) {
       title={title}
       who={who}
       tools={
-        editor && (
-          <Btn id="chEdit" onClick={() => setEditing(true)}>
-            ✎ Change the list
-          </Btn>
-        )
+        <>
+          {editor && (
+            <Btn id="chEdit" onClick={() => setEditing(true)}>
+              ✎ Change the list
+            </Btn>
+          )}
+          {back && (
+            <Btn id="chBack" onClick={goBack}>
+              📅 Calendar
+            </Btn>
+          )}
+        </>
       }
     >
       {d && have.length > 0 && (

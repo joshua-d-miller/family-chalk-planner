@@ -1,6 +1,6 @@
 // The month's name above the calendar, in the month's own style (font, color, outline, size), or left
 // empty for a hand-lettered one. Shrinks a wide or tall font so it never runs into the arrows or off the top.
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { fontCss } from './Art.tsx';
 import { readable } from './color.ts';
@@ -30,6 +30,14 @@ export function Title({
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [fit, setFit] = useState({ z: style.z, dy: 0 });
+  // measured again once the board's fonts have arrived (before that, the letters are a stand-in font)
+  const [fonts, setFonts] = useState(0);
+  useEffect(() => {
+    const again = () => setFonts(n => n + 1);
+    document.fonts?.addEventListener?.('loadingdone', again);
+    document.fonts?.ready.then(again);
+    return () => document.fonts?.removeEventListener?.('loadingdone', again);
+  }, []);
   useLayoutEffect(() => {
     const mn = ref.current;
     let z = style.z;
@@ -56,6 +64,7 @@ export function Title({
     let top0 = 0;
     for (let n: HTMLElement | null = mn; n && !n.classList.contains('slate'); n = n.offsetParent as HTMLElement | null)
       top0 += n.offsetTop;
+    top0 -= parseFloat(mn.style.top) || 0; // without the nudge already applied
     const lineH = mn.offsetHeight;
     const base = top0 + (lineH - (g.fa + g.fd)) / 2 + g.fa;
     const t = base - g.a;
@@ -64,7 +73,7 @@ export function Title({
     if (t < TOP) dy = Math.min(TOP - t, BOTTOM - b);
     else if (b > BOTTOM) dy = Math.max(BOTTOM - b, TOP - t);
     setFit(f => (f.z === z && f.dy === Math.round(dy) ? f : { z, dy: Math.round(dy) }));
-  }, [text, style.f, style.z, style.o]);
+  }, [text, style.f, style.z, style.o, fonts]);
 
   const outline = style.o ? readable(style.o, bg, 1.5) : null;
   return (
@@ -79,7 +88,7 @@ export function Title({
         ref={ref}
         className="mn"
         data-text={text}
-        style={{ font: fontCss(style.f, fit.z), color: readable(style.c, bg, 3), top: fit.dy }}
+        style={{ font: fontCss(style.f, fit.z), lineHeight: 1.2, color: readable(style.c, bg, 3), top: fit.dy }}
       >
         {text}
       </span>

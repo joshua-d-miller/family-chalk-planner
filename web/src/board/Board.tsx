@@ -3,7 +3,7 @@
 // any size; the surface texture is painted at the screen's real resolution (4K included).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent } from 'react';
-import { useLive } from '../lib/live.ts';
+import { useLive, useOnline } from '../lib/live.ts';
 import { paintSurface, seasonOf, surfaceOf } from '../lib/surface.ts';
 import type { Who } from '../lib/who.ts';
 import { Art } from './Art.tsx';
@@ -17,21 +17,26 @@ import { TitlePhotos, titlePool } from './TitlePhotos.tsx';
 import type { Side } from './TitlePhotos.tsx';
 import { DayView, ReminderAlert, TimerDone } from './Alerts.tsx';
 import { Notes } from './Notes.tsx';
+import { WeatherMotion } from './Weather.tsx';
 import { Slideshow, useSlides } from './Slideshow.tsx';
 import { EventEditor } from './EventEditor.tsx';
 import { BorderEditor } from './editors/BorderEditor.tsx';
 import { StyleEditor } from './editors/StyleEditor.tsx';
 import { TitleEditor } from './editors/TitleEditor.tsx';
+import { PhotosEditor } from './editors/PhotosEditor.tsx';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
 import { Strip } from './Strip.tsx';
-import { DrawLayer, firstPen, isPosca, recolor } from './draw/Draw.tsx';
+import { DrawLayer, firstPen, isPosca, recolor, touches } from './draw/Draw.tsx';
 import type { Pen } from './draw/Draw.tsx';
 import { Library } from './draw/Library.tsx';
 import type { Stamp } from './draw/Library.tsx';
 import { RecolorSheet, SaveStampSheet, TextSheet, Tools } from './draw/Tools.tsx';
 import { useArt } from './draw/useArt.ts';
-import { unionBox, xform } from './geom.ts';
+import { BORDER_PAD, relayout, unionBox, xform } from './geom.ts';
+import { post } from '../lib/api.ts';
+import { CLIENT } from './draw/useArt.ts';
+import { RANK } from '../lib/who.ts';
 import type { ArtItem as Item } from './Art.tsx';
 import { themeCss, themeVals } from './theme.ts';
 import type { Theme } from './theme.ts';
@@ -85,9 +90,13 @@ type Editing =
   | { k: 'recolor' }
   | { k: 'library' }
   | { k: 'stamp' }
+  | { k: 'photos' }
   | null;
 
 export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }) {
+  // a family screen (a shared touch screen in the kitchen): decorates and adds events, frameless, with
+  // the wall's photo frame and slideshow; the month's title and the board's look are set from a tablet
+  const family = edit && !who?.user && who?.device?.role === 'family';
   const today = useLive<{ ym: string; time24: boolean }>('api/today', ['calendar']).data;
   const [ym, setYm] = useState<string | null>(null);
   const shown = ym || today?.ym || null;
@@ -101,11 +110,85 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
     'restore',
     'meta'
   ]);
-  const meta = useLive<MonthMeta>(shown ? `api/meta?ym=${shown}` : 'api/today', ['meta']).data;
+  const metaLive = useLive<MonthMeta>(shown ? `api/meta?ym=${shown}` : 'api/today', ['meta']);
+  const meta = metaLive.data;
   const photos = useLive<Photos>('api/photos', ['photos']).data;
-  const pad = meta && 'artPad' in meta ? (meta.boardPad ?? (edit ? EDIT_FRAME : 0)) : edit ? EDIT_FRAME : 0;
+  const pad =
+    meta && 'artPad' in meta ? (meta.boardPad ?? (edit && !family ? EDIT_FRAME : 0)) : edit && !family ? EDIT_FRAME : 0;
   const bh = H + (edit ? CORK : 0);
-  const { scale, res } = useFit(pad, bh);
+  const fit = useFit(pad, bh);
+  // a tablet zooms in to draw: pinch, or the − / + / Fit buttons
+  const [zoom, setZoom] = useState({ z: 1, x: 0, y: 0 });
+  const scale = fit.scale * zoom.z;
+  // the surface and chalk grain are painted for the zoom once it settles (not on every step of a pinch)
+  const [settled, setSettled] = useState(1);
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(zoom.z), 300);
+    return () => clearTimeout(t);
+  }, [zoom.z]);
+  const res = Math.max(1, Math.min(4, Math.round(fit.scale * settled * (devicePixelRatio || 1) * 2) / 2));
+  const zoomTo = (z: number, at?: [number, number]) =>
+    setZoom(cur => {
+      const z1 = Math.max(1, Math.min(4, z));
+      if (z1 === 1) return { z: 1, x: 0, y: 0 };
+      const [mx, my] = at || [0, 0]; // about this point, from the middle of the screen
+      const k = z1 / cur.z;
+      const lim = (v: number, size: number) => Math.max(-size, Math.min(size, v));
+      return {
+        z: z1,
+        x: lim(mx - (mx - cur.x) * k, (fit.scale * z1 * (W + 2 * pad)) / 2),
+        y: lim(my - (my - cur.y) * k, (fit.scale * z1 * (bh + 2 * pad)) / 2)
+      };
+    });
+  const pinch = useRef<{ d: number; z: number; mx: number; my: number; x: number; y: number } | null>(null);
+  const pts = useRef(new Map<number, [number, number]>());
+  const pinchMove = () => {
+    const p = [...pts.current.values()];
+    if (p.length < 2 || !pinch.current) return;
+    const d = Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]);
+    const mx = (p[0][0] + p[1][0]) / 2 - innerWidth / 2;
+    const my = (p[0][1] + p[1][1]) / 2 - innerHeight / 2;
+    const s0 = pinch.current;
+    const z1 = Math.max(1, Math.min(4, (s0.z * d) / s0.d));
+    if (z1 === 1) return setZoom({ z: 1, x: 0, y: 0 });
+    const k = z1 / s0.z;
+    setZoom({ z: z1, x: mx - (s0.mx - s0.x) * k, y: my - (s0.my - s0.y) * k });
+  };
+  const touchHandlers = edit
+    ? {
+        onPointerDownCapture: (e: PointerEvent) => {
+          if (e.pointerType !== 'touch') return;
+          touches.add(e.pointerId);
+          pts.current.set(e.pointerId, [e.clientX, e.clientY]);
+          if (pts.current.size === 2) {
+            const p = [...pts.current.values()];
+            pinch.current = {
+              d: Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]) || 1,
+              z: zoom.z,
+              mx: (p[0][0] + p[1][0]) / 2 - innerWidth / 2,
+              my: (p[0][1] + p[1][1]) / 2 - innerHeight / 2,
+              x: zoom.x,
+              y: zoom.y
+            };
+          }
+        },
+        onPointerMoveCapture: (e: PointerEvent) => {
+          if (e.pointerType !== 'touch' || !pts.current.has(e.pointerId)) return;
+          pts.current.set(e.pointerId, [e.clientX, e.clientY]);
+          if (pinch.current) pinchMove();
+        },
+        onPointerUpCapture: (e: PointerEvent) => {
+          touches.delete(e.pointerId);
+          pts.current.delete(e.pointerId);
+          if (pts.current.size < 2) pinch.current = null;
+        },
+        onPointerCancelCapture: (e: PointerEvent) => {
+          touches.delete(e.pointerId);
+          pts.current.delete(e.pointerId);
+          if (pts.current.size < 2) pinch.current = null;
+        }
+      }
+    : {};
   const extras = useLive<{ bins: Bins }>('api/extras', ['extras']).data;
   const savedTheme = useLive<Theme>('api/theme', ['theme']).data;
   const [themeDraft, setThemeDraft] = useState<Theme | null>(null);
@@ -140,15 +223,46 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   const tv = useMemo(() => themeVals(theme), [theme]);
   const css = useMemo(() => themeCss(tv, sf.lum), [tv, sf.lum]);
   const m = month.data && 'grid' in month.data ? month.data : null;
-  const slides = useSlides(photos, !edit);
+  const slides = useSlides(photos, !edit || family);
   const [day, setDay] = useState<string | null>(null);
   const closeDay = useCallback(() => setDay(null), []);
   // On the wall: tap a day = everything on it; double tap = the photo frame (during a night-time peek,
   // back to the slideshow)
   const lastTap = useRef(0);
   const single = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastDouble = useRef(0);
+  // a swipe across the board (not while drawing) goes to the chores, as on the current board
+  const swipe = useRef<[number, number] | null>(null);
   const tap = (e: PointerEvent) => {
     setTouched(Date.now());
+    const s0 = swipe.current;
+    swipe.current = null;
+    if (s0 && !drawing && !editing && !day && !slides.on) {
+      const dx = e.clientX - s0[0];
+      const dy = e.clientY - s0[1];
+      if (Math.abs(dx) > 120 && Math.abs(dy) < Math.abs(dx) / 2) {
+        try {
+          sessionStorage.setItem('chalkFromBoard', edit ? 'edit' : './');
+        } catch {
+          /* fine: no way back but the menu */
+        }
+        location.href = new URL('chores', document.baseURI).href;
+        return;
+      }
+    }
+    if (family) {
+      // double tap = the photo frame, like the wall; a single tap still edits (after a short wait).
+      // Only taps on the board itself: not the strip, the zoom or a card.
+      if (!(e.target as Element).closest?.('.slate')) return void (lastTap.current = 0);
+      if (drawing || slides.on || slides.justChanged()) return void (lastTap.current = 0);
+      if (e.timeStamp - lastTap.current < 450) {
+        lastTap.current = 0;
+        if (single.current) clearTimeout(single.current);
+        lastDouble.current = Date.now();
+        slides.doubleTap();
+      } else lastTap.current = e.timeStamp;
+      return;
+    }
     if (edit) return;
     if (day) return (setDay(null), void (lastTap.current = 0));
     if (slides.on || slides.justChanged()) return void (lastTap.current = 0);
@@ -179,11 +293,50 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
     setPlacing(null);
   }, [shown, drawing]);
   useEffect(() => {
+    document.body.classList.toggle('drawing', drawing);
+  }, [drawing]);
+  useEffect(() => {
+    const b = document.body.classList;
+    b.toggle('display', !edit);
+    b.toggle('edit', edit);
+    b.toggle('family', family);
+  }, [edit, family]);
+  useEffect(() => {
     if (!note) return;
     const t = setTimeout(() => setNote(''), 3500);
     return () => clearTimeout(t);
   }, [note]);
-  const items = hidden.length ? ed.items.filter(x => !hidden.includes(x.id)) : ed.items;
+  // the art was placed on the layout the month had then (artPad); shown on the layout it has now
+  const realPad = mm?.border ? BORDER_PAD[mm.border.size] || BORDER_PAD.m : 0;
+  const shownPad =
+    borderDraft !== undefined ? (borderDraft ? BORDER_PAD[borderDraft.size] || BORDER_PAD.m : 0) : realPad;
+  const placed = mm?.artPad || 0;
+  const laidOut = useMemo(() => relayout(ed.items, placed, shownPad), [ed.items, placed, shownPad]);
+  // a tablet saves the move once, for everyone (not while a border is still being picked)
+  const moving = useRef('');
+  useEffect(() => {
+    if (!edit || !shown || !mm || borderDraft !== undefined || placed === realPad || (who?.rank || 0) < RANK.family)
+      return;
+    if (!art.data || moving.current === `${shown}:${placed}:${realPad}`) return;
+    moving.current = `${shown}:${placed}:${realPad}`;
+    const moved = relayout(
+      ed.items.filter(x => x.id >= 0),
+      placed,
+      realPad
+    );
+    post('api/art/relayout', { ym: shown, padFrom: placed, padTo: realPad, items: moved, from: CLIENT })
+      .then(() => {
+        // both at once, so the art isn't moved twice on screen
+        art.set(relayout(ed.items, placed, realPad));
+        metaLive.set({ ...mm, artPad: realPad });
+      })
+      .catch(() => {
+        metaLive.reload();
+        art.reload();
+      });
+  }, [edit, shown, mm, borderDraft, placed, realPad, who, art, ed.items, metaLive]);
+  const base = placed === shownPad ? ed.items : laidOut;
+  const items = hidden.length ? base.filter(x => !hidden.includes(x.id)) : base;
   const selItems = ed.items.filter(x => selection.includes(x.id));
   const place = async (at: [number, number]) => {
     if (!placing) return;
@@ -205,12 +358,24 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   const border = borderDraft !== undefined ? borderDraft : mm?.border || null;
   const go = (n: number) => shown && setYm(addMonths(shown, n));
   // a tablet: a day = everything on it (to change or add); an event = change it
+  // a family screen waits a moment first: it might be a double tap
+  const soon = (f: () => void) => {
+    if (!family) return f();
+    if (single.current) clearTimeout(single.current);
+    if (Date.now() - lastDouble.current < 500) return; // the second tap of a double tap
+    single.current = setTimeout(f, 460);
+  };
   const onDay = edit
     ? (ds: string) =>
-        m?.events.some(x => x.start <= ds && x.end >= ds) ? setDay(ds) : setEditing({ k: 'event', ev: null, date: ds })
+        soon(() =>
+          m?.events.some(x => x.start <= ds && x.end >= ds)
+            ? setDay(ds)
+            : setEditing({ k: 'event', ev: null, date: ds })
+        )
     : undefined;
   const onEvent = edit
-    ? (ev: BoardEvent) => (ev.ref && !ev.readOnly ? setEditing({ k: 'event', ev, date: ev.start }) : setDay(ev.start))
+    ? (ev: BoardEvent) =>
+        soon(() => (ev.ref && !ev.readOnly ? setEditing({ k: 'event', ev, date: ev.start }) : setDay(ev.start)))
     : undefined;
   const closeEditor = useCallback(() => setEditing(null), []);
   const saved = useCallback(
@@ -231,20 +396,22 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
       id="stage"
       className={(sf.lum > 0.18 ? 'light' : '') + (pad ? ' framed' : '')}
       style={pad ? undefined : { backgroundImage: bg }}
+      onPointerDown={e => (swipe.current = e.isPrimary ? [e.clientX, e.clientY] : null)}
       onPointerUp={tap}
+      {...touchHandlers}
     >
       <div
         id="board"
         className={edit ? 'edit' : ''}
         style={{
-          transform: `scale(${scale})`,
+          transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${scale})`,
           padding: pad,
           width: W + 2 * pad,
           height: bh + 2 * pad,
           background: pad ? sf.frame || 'var(--wood)' : undefined
         }}
       >
-        <div className="slate" data-surface={sf.id} style={pad ? { backgroundImage: bg } : undefined}>
+        <div className="slate" id="slate" data-surface={sf.id} style={pad ? { backgroundImage: bg } : undefined}>
           <style>{css}</style>
           {m && (
             <Month
@@ -275,7 +442,8 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
               layoutKey={`${monthName}|${JSON.stringify(titleStyle)}|${border?.size || ''}`}
             />
           )}
-          <Notes time24={!!today?.time24} />
+          <Notes time24={!!today?.time24} edit={edit} />
+          <WeatherMotion wall={!edit} />
           <Art items={items} bg={sf.lum} res={res} gifsPlay />
           {edit && drawing && (
             <DrawLayer
@@ -287,7 +455,7 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
               setSelection={setSelection}
               onText={(item, at) => setEditing({ k: 'text', item, at })}
               onRecolor={() => setEditing({ k: 'recolor' })}
-              onSaveStamp={() => setEditing({ k: 'stamp' })}
+              onSaveStamp={family ? undefined : () => setEditing({ k: 'stamp' })}
               placing={!!placing}
               onPlace={place}
               onHide={setHidden}
@@ -305,6 +473,7 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
             tools={
               drawing ? (
                 <Tools
+                  family={family}
                   pen={pen}
                   setPen={setPen}
                   onUndo={ed.undo}
@@ -325,18 +494,34 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
               type="button"
               className={'pill' + (drawing ? ' on' : '')}
               id="drawBtn"
-              onClick={() => setDrawing(d => !d)}
+              onClick={() => {
+                if (family && !drawing) setPen(p => ({ ...p, tool: 'select' }));
+                setDrawing(d => !d);
+              }}
             >
-              ✎ {drawing ? 'Done drawing' : 'Draw'}
+              ✎ {drawing ? (family ? 'Done' : 'Done drawing') : family ? 'Decorate' : 'Draw'}
             </button>
             {m && !drawing && (
               <>
-                <button type="button" className="pill" id="titleBtn" onClick={() => setEditing({ k: 'title' })}>
-                  ✎ Month title
-                </button>
+                {!family && (
+                  <button type="button" className="pill" id="titleBtn" onClick={() => setEditing({ k: 'title' })}>
+                    ✎ Month title
+                  </button>
+                )}
                 <button type="button" className="pill" id="borderBtn" onClick={() => setEditing({ k: 'border' })}>
                   🖼 Border
                 </button>
+                {!!photos?.photos.length && (
+                  <button
+                    type="button"
+                    className="pill"
+                    id="photosBtn"
+                    aria-label="Photos"
+                    onClick={() => setEditing({ k: 'photos' })}
+                  >
+                    📷
+                  </button>
+                )}
                 <button
                   type="button"
                   className="pill"
@@ -361,11 +546,25 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
           </Strip>
         )}
       </div>
-      {!edit && photos && (
+      {(!edit || family) && photos && (
         <Slideshow photos={photos} on={slides.on} time24={!!today?.time24} onTap={slides.tapSlides} />
       )}
       <ReminderAlert time24={!!today?.time24} />
       <TimerDone />
+      <Offline />
+      {edit && !family && (
+        <div className="zoom" aria-label="Zoom">
+          <button type="button" aria-label="Zoom out" onClick={() => zoomTo(zoom.z / 1.25)} disabled={zoom.z <= 1}>
+            −
+          </button>
+          <button type="button" aria-label="Zoom in" onClick={() => zoomTo(zoom.z * 1.25)} disabled={zoom.z >= 4}>
+            +
+          </button>
+          <button type="button" className="fit" onClick={() => setZoom({ z: 1, x: 0, y: 0 })} disabled={zoom.z === 1}>
+            Fit
+          </button>
+        </div>
+      )}
       {day && m && (
         <DayView
           date={day}
@@ -455,7 +654,27 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
           }}
         />
       )}
+      {editing?.k === 'photos' && shown && (
+        <PhotosEditor ym={shown} monthName={monthName} meta={mm} photos={photos} onClose={closeEditor} />
+      )}
       {editing?.k === 'style' && <StyleEditor theme={savedTheme} onPreview={setThemeDraft} onClose={closeEditor} />}
     </div>
   );
+}
+
+// the live connection to the board is down (Wi-Fi, the server restarting): say so, quietly, after a moment
+function Offline() {
+  const on = useOnline();
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (on) return setShow(false);
+    const t = setTimeout(() => setShow(true), 8000);
+    return () => clearTimeout(t);
+  }, [on]);
+  return show ? (
+    <div className="offline" role="status">
+      <span aria-hidden="true" />
+      Offline - showing what it had
+    </div>
+  ) : null;
 }
