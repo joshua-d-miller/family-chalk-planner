@@ -579,7 +579,8 @@ body.display{touch-action:manipulation}
 #slides.sidepanel-on .sinfo .temp span{font-size:22px}
 #slides .tapx{display:none;position:absolute;top:20px;left:50%;transform:translateX(-50%);font:16px 'Kalam',cursive;color:rgba(var(--ink),.7);background:rgba(0,0,0,.4);padding:4px 14px;border-radius:14px}
 body.edit #slides .tapx{display:block}
-#pmodal,#ppmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
+#pmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:75}
+#ppmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
 #pmodal.open,#ppmodal.open{display:flex}
 #pmodal .card{width:min(520px,94vw);max-height:94vh;overflow-y:auto}
 #ppmodal .card{width:min(440px,94vw);max-height:94vh;overflow-y:auto}
@@ -4459,6 +4460,14 @@ body.subpageOn #wheelBtn { z-index: 22; }
         // swipe right to left: go to next photo
         slideNext();
       }
+    } else if (dy < -60 && Math.abs(dy) > Math.abs(dx) * 1.2) {
+      // swipe up from bottom: open photo settings
+      slideSwipeMoved = true;
+      if (typeof openPhotoSettings === 'function') {
+        openPhotoSettings();
+      } else if ($('photosBtn')) {
+        $('photosBtn').click();
+      }
     }
   });
   $('slides').addEventListener('click', function (e) {
@@ -4552,32 +4561,33 @@ body.subpageOn #wheelBtn { z-index: 22; }
         });
       });
     }
-    $('photosBtn').addEventListener('click', function () {
-      if (state.drawing) return;
-      var c = ph.cfg, im = (ph.info && ph.info.immich) || {};
-      $('pFrame').checked = !!c.frame; $('pNight').checked = !!c.night;
-      $('pFrom').value = c.from || '21:00'; $('pTo').value = c.to || '06:00'; $('pEvery').value = String(c.every || 20); $('pDim').value = String(c.dim || 50);
-      $('pShowEvents').checked = !!c.showEvents; $('pShowTemp').checked = !!c.showTemp; $('pShowRem').checked = !!c.showReminders; $('pSidePanel').checked = !!c.sidePanel;
-      if ($('pImmichUrl')) $('pImmichUrl').value = im.url || '';
-      if ($('pImmichKey')) {
-        $('pImmichKey').value = '';
-        $('pImmichKey').placeholder = im.hasKey ? '•••• saved (type to replace)' : 'Paste Immich API key';
-      }
-      populateImmichAlbums(ph.immichAlbums || [], im.album || '');
-      if (im.url && im.hasKey && !ph.immichAlbums) {
-        post('/api/photos/immich-albums', {}).then(function (r) {
-          ph.immichAlbums = r.albums || [];
-          populateImmichAlbums(ph.immichAlbums, $('pImmichAlbum').value || im.album || '');
-        }).catch(function () {});
-      }
-      $('pInfo').textContent = pInfo(); $('pErr').textContent = ''; pTimes();
-      var sd = tpSide();
-      sideDraft = sd ? JSON.parse(JSON.stringify(sd)) : { mode: c.frame ? 'photos' : 'art', pick: 'random', ids: [] };
-      sideDraft.ids = sideDraft.ids || []; sideStart = JSON.stringify(sideDraft);
-      $('pMonthLbl').textContent = 'Beside the month name in ' + MONTHS[+state.ym.slice(5) - 1];
-      drawSide();
-      $('pmodal').classList.add('open');
-    });
+  var openPhotoSettings = function () {
+    if (state.drawing) return;
+    var c = ph.cfg, im = (ph.info && ph.info.immich) || {};
+    $('pFrame').checked = !!c.frame; $('pNight').checked = !!c.night;
+    $('pFrom').value = c.from || '21:00'; $('pTo').value = c.to || '06:00'; $('pEvery').value = String(c.every || 20); $('pDim').value = String(c.dim || 50);
+    $('pShowEvents').checked = !!c.showEvents; $('pShowTemp').checked = !!c.showTemp; $('pShowRem').checked = !!c.showReminders; $('pSidePanel').checked = !!c.sidePanel;
+    if ($('pImmichUrl')) $('pImmichUrl').value = im.url || '';
+    if ($('pImmichKey')) {
+      $('pImmichKey').value = '';
+      $('pImmichKey').placeholder = im.hasKey ? '•••• saved (type to replace)' : 'Paste Immich API key';
+    }
+    populateImmichAlbums(ph.immichAlbums || [], im.album || '');
+    if (im.url && im.hasKey && !ph.immichAlbums) {
+      post('/api/photos/immich-albums', {}).then(function (r) {
+        ph.immichAlbums = r.albums || [];
+        populateImmichAlbums(ph.immichAlbums, $('pImmichAlbum').value || im.album || '');
+      }).catch(function () {});
+    }
+    $('pInfo').textContent = pInfo(); $('pErr').textContent = ''; pTimes();
+    var sd = tpSide();
+    sideDraft = sd ? JSON.parse(JSON.stringify(sd)) : { mode: c.frame ? 'photos' : 'art', pick: 'random', ids: [] };
+    sideDraft.ids = sideDraft.ids || []; sideStart = JSON.stringify(sideDraft);
+    $('pMonthLbl').textContent = 'Beside the month name in ' + MONTHS[+state.ym.slice(5) - 1];
+    drawSide();
+    $('pmodal').classList.add('open');
+  };
+  $('photosBtn').addEventListener('click', openPhotoSettings);
     // This month: random photos, photos she picks (up to 8, in order), or art
     var sideDraft = null, sideStart = '';
     var drawSide = function () {
