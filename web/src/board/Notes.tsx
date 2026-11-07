@@ -159,16 +159,50 @@ function Info({ x }: { x: Extras }) {
 // Each page the right-hand column can show.                                 //
 function MealsPage() {
   const m = useLive<Meals>('api/meals', ['meals']);
+  const items = (m.data?.items || []).slice(0, 20);
+  const box = useRef<HTMLDivElement>(null);
+  // Shrink the list a little until it fits the space it has; if it still can't, it ends with "+N more"
+  // instead of running into the page below (as the board did before)
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const fit = () => {
+      const ul = el.querySelector('ul')!;
+      const more = el.querySelector<HTMLElement>('.more')!;
+      const lis = [...ul.querySelectorAll<HTMLElement>('li:not(.more)')];
+      lis.forEach(li => (li.style.display = ''));
+      more.style.display = 'none';
+      el.style.setProperty('--mealsz', '17px');
+      const room = el.clientHeight - el.querySelector<HTMLElement>('.mh')!.offsetHeight - 6;
+      if (room <= 0 || !lis.length) return;
+      for (let z = 16; ul.scrollHeight > room && z >= 14; z--) el.style.setProperty('--mealsz', z + 'px');
+      if (ul.scrollHeight <= room) return;
+      more.style.display = '';
+      for (let i = lis.length - 1, n = 1; i > 0 && ul.scrollHeight > room; i--, n++) {
+        lis[i].style.display = 'none';
+        more.textContent = `+${n} more`;
+      }
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    document.fonts?.addEventListener('loadingdone', fit);
+    return () => {
+      ro.disconnect();
+      document.fonts?.removeEventListener('loadingdone', fit);
+    };
+  }, [items.map(it => it.id + (it.done ? '1' : '') + it.t + (it.day || '')).join('|')]);
   return (
-    <div className="npage meals">
+    <div className="npage meals" ref={box}>
       <h3 className="mh">Meal Plan</h3>
       <ul>
-        {(m.data?.items || []).slice(0, 7).map(it => (
+        {items.map(it => (
           <li key={it.id} className={it.done ? 'done' : ''}>
             {it.day && <b className="mday">{it.day.slice(0, 1).toUpperCase() + it.day.slice(1)} </b>}
             {it.t}
           </li>
         ))}
+        <li className="more" style={{ display: 'none' }} />
       </ul>
     </div>
   );

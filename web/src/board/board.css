@@ -314,7 +314,7 @@ body.boardpage {
 }
 .slate .meals li,
 .slate .nlist li {
-  font-size: 17px;
+  font-size: var(--mealsz, 17px);
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -527,6 +527,17 @@ body.boardpage {
 }
 .slate .nslot-meals {
   flex: 1 1 0;
+  min-height: 0;
+}
+/* the meal list fits the space it has (see MealsPage) */
+.slate .npage.meals {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.slate .meals li.more {
+  color: rgba(var(--ink), 0.6);
+  font-size: 14px;
 }
 /* weather that moves */
 .slate .wx {
