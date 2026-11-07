@@ -23,6 +23,10 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **Home sign-in** (optional): at home, on the board's own Wi-Fi, signing in on a tablet needs only the
   password.
 - **Emoji** show on every screen: screens without emoji of their own get the board's.
+- **Safer pages:** the new screens run no inline scripts at all, and the browser is told so; the
+  board as it was (/classic) keeps the rules it had.
+- **For contributors:** every code file opens with a header (what it's for, who wrote it, its
+  changelog) and each part is titled and described. See "Comments" in CONTRIBUTING.md.
 - Fixed: a phone on /chores could get the night slideshow over the chores.
 - Fixed: an event added for a time the clocks skip (2:30 on the night they spring forward) was put at
   1:30; it's now at 3:30, as calendar apps do.

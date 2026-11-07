@@ -456,13 +456,13 @@ export function setup(
   // private is cached.                                                      //
   const CSP_CONSOLE =
     "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'";
-  // the board pages: everything comes from the board itself (fonts, pictures, live updates); nothing else may load
+  // the board as it was (/classic): everything comes from the board itself; its scripts are inline
   const CSP_BOARD =
     "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
   // the new screens (React): no inline scripts at all
   const CSP_APP =
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
-  const APP_PATHS = /^\/(meals|reminders|timers|pantry|jars|next\/[a-z-]+)$/;
+  const APP_PATHS = /^\/(|edit|chores|settings|meals|reminders|timers|pantry|jars|next\/[a-z-]+)$/;
   const CSP_OTHER = "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'";
   app.use((req, res, next) => {
     res.set({
@@ -478,7 +478,7 @@ export function setup(
       'Content-Security-Policy',
       p === '/admin' || p === '/join'
         ? CSP_CONSOLE
-        : p === '/' || p === '/edit' || p === '/chores'
+        : /^\/classic(\/(edit|chores))?$/.test(p)
           ? CSP_BOARD
           : APP_PATHS.test(p)
             ? CSP_APP

@@ -306,13 +306,16 @@ test('fonts come from the board itself; board pages allow nothing from elsewhere
   assert.equal((await api('/fonts/kalam/files/kalam-latin-700-normal.woff2')).status, 200);
   assert.equal((await api('/fonts/kalam/files/..%2F..%2Fpackage.json')).status, 404);
   assert.equal((await api('/fonts/express/files/x.woff2')).status, 404);
-  for (const p of ['/', '/edit']) {
+  for (const p of ['/', '/edit', '/chores', '/settings', '/meals', '/classic', '/classic/edit']) {
     const r = await api(p),
       csp = r.headers.get('content-security-policy');
-    assert.match(csp, /default-src 'self'/);
-    assert.match(csp, /object-src 'none'/);
+    assert.match(csp, /default-src 'self'/, p);
+    assert.match(csp, /object-src 'none'/, p);
     assert.doesNotMatch(csp, /googleapis|gstatic/);
     assert.doesNotMatch(await r.text(), /fonts\.googleapis/);
+    // the screens (React) run no inline scripts; only the board as it was needs them
+    if (p.startsWith('/classic')) assert.match(csp, /script-src 'self' 'unsafe-inline'/, p);
+    else assert.match(csp, /script-src 'self';/, p);
   }
 });
 
