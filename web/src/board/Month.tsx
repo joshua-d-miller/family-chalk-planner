@@ -18,6 +18,7 @@ export interface BoardEvent {
   calColor?: string;
   size?: 'l' | 'xl';
   readOnly?: boolean;
+  cal?: string; // which calendar, when there are several
   ref?: { href: string; etag: string | null; rid?: string | null };
 }
 export interface MonthData {

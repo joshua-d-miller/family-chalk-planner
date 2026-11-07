@@ -73,6 +73,10 @@ export function frameFor(p: Photo, bw: number, bh: number) {
         ox: ((cx - ox) / bw) * 100,
         oy: ((cy - oy) / bh) * 100,
         fits: ok && i < 2,
+        rw,
+        rh,
+        x0: ox, // where the shown part starts, in the scaled photo
+        y0: oy,
         zoom: f.none
           ? 1
           : Math.min(
@@ -82,7 +86,7 @@ export function frameFor(p: Photo, bw: number, bh: number) {
       };
     }
   }
-  return { pos: '50% 50%', ox: 50, oy: 50, fits: false, zoom: 1 };
+  return { pos: '50% 50%', ox: 50, oy: 50, fits: false, zoom: 1, rw: bw, rh: bh, x0: 0, y0: 0 };
 }
 
 // a polaroid's photo: zoomed in on the faces, slid to the middle, never past the photo's edges

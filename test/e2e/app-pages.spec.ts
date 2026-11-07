@@ -259,3 +259,61 @@ test('the board (new screen): the style, the month’s title and border, the jar
   await board.admin.post('/api/theme', { p: 'classic', o: {} });
   await expect(wall.locator('.borderLayer')).toHaveCount(0);
 });
+
+test('the board (new screen, wall): a tap shows the day, the photo frame, the slideshow, reminders and timers', async ({
+  as,
+  board
+}) => {
+  const { date } = thisMonth();
+  const wall = await as('wall', { path: '/next/board' });
+  // tap a day: everything on it, big; any tap closes it
+  const href = (await (await board.admin.post('/api/events', { title: 'Dentist', date, allDay: true })).json())
+    .href as string;
+  await expect(wall.locator(`#grid [data-date="${date}"]`)).toContainText('Dentist');
+  const cell = await wall.locator(`#grid [data-date="${date}"]`).boundingBox();
+  await wall.mouse.click(cell!.x + cell!.width / 2, cell!.y + cell!.height - 6);
+  await expect(wall.locator('#dayView')).toContainText('Dentist');
+  await wall.mouse.click(10, 10);
+  await expect(wall.locator('#dayView')).toHaveCount(0);
+  await board.admin.post('/api/events/delete', { ref: { href }, origDate: date });
+  // a double tap: the photo frame; a tap on it goes back to the calendar
+  await wall.waitForTimeout(1000);
+  await wall.mouse.dblclick(cell!.x + 20, cell!.y + 40);
+  await expect(wall.locator('#slides')).toHaveClass(/on/);
+  await expect(wall.locator('#slides .sl.on .tile img.fg').first()).toBeVisible();
+  await expect(wall.locator('#slides .clock b')).toHaveText(/^\d{1,2}:\d\d/);
+  await wall.waitForTimeout(1600);
+  await wall.mouse.click(400, 400);
+  await expect(wall.locator('#slides')).not.toHaveClass(/on/);
+  // a reminder whose time has come pops up; a timer that's done shows a banner
+  const rem = await (
+    await board.admin.post('/api/reminders/item', {
+      reminder: { title: 'Take out the recycling', mode: 'time', time: '00:00', repeat: 'once' }
+    })
+  ).json();
+  await expect(wall.locator('#remAlert')).toContainText('Take out the recycling', { timeout: 15000 });
+  await wall.locator('#remAlert').getByRole('button', { name: 'OK' }).click();
+  await expect(wall.locator('#remAlert')).toHaveCount(0);
+  const tm = await (
+    await board.admin.post('/api/timers/item', {
+      timer: { name: 'Cookies', duration: 60000, state: 'done', doneAt: Date.now() }
+    })
+  ).json();
+  await expect(wall.locator('.timerdone')).toContainText('Cookies is done!');
+  await wall.locator('.timerdone button', { hasText: 'Cookies' }).click({ force: true }); // it pulses, so it's never "stable"
+  await expect(wall.locator('.timerdone button', { hasText: 'Cookies' })).toHaveCount(0);
+  expect(wall.errors).toEqual([]);
+  for (const r of rem.items) await board.admin.post('/api/reminders/item/delete', { id: r.id });
+  for (const t of tm.items) await board.admin.post('/api/timers/item/delete', { id: t.id });
+});
+
+test('the board (new screen, wall): the slideshow with today’s extras, in the side panel', async ({ as, board }) => {
+  await board.admin.post('/api/photos/settings', { showTemp: true, showEvents: true, sidePanel: true });
+  const wall = await as('wall', { path: '/next/board?slides' });
+  await expect(wall.locator('#slides')).toHaveClass(/sidepanel-on/);
+  await expect(wall.locator('#slides .slide-sidebar .sinfo')).toContainText('Today’s weather');
+  await expect(wall.locator('#slides .slide-sidebar .sinfo')).toContainText('Today’s events');
+  await expect(wall.locator('#slides .sl.on .tile').first()).toBeVisible();
+  expect(wall.errors).toEqual([]);
+  await board.admin.post('/api/photos/settings', { showTemp: false, showEvents: false, sidePanel: false });
+});

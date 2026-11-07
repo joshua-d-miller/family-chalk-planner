@@ -1,7 +1,8 @@
 // The board: the month, the art on it, and the right-hand column, on the board's surface. It's laid out
 // at 1252 x 642 board pixels and scaled to fill the screen. Text and art are vector, so they're sharp at
 // any size; the surface texture is painted at the screen's real resolution (4K included).
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { PointerEvent } from 'react';
 import { useLive } from '../lib/live.ts';
 import { paintSurface, seasonOf, surfaceOf } from '../lib/surface.ts';
 import type { Who } from '../lib/who.ts';
@@ -14,7 +15,9 @@ import { DEFAULT_TITLE, Title } from './Title.tsx';
 import type { TitleStyle } from './Title.tsx';
 import { TitlePhotos, titlePool } from './TitlePhotos.tsx';
 import type { Side } from './TitlePhotos.tsx';
+import { DayView, ReminderAlert, TimerDone } from './Alerts.tsx';
 import { Notes } from './Notes.tsx';
+import { Slideshow, useSlides } from './Slideshow.tsx';
 import { themeCss, themeVals } from './theme.ts';
 import type { Theme } from './theme.ts';
 import './board.css';
@@ -91,6 +94,30 @@ export function Board({ who }: { who: Who | null }) {
   const tv = useMemo(() => themeVals(theme), [theme]);
   const css = useMemo(() => themeCss(tv, sf.lum), [tv, sf.lum]);
   const m = month.data && 'grid' in month.data ? month.data : null;
+  const slides = useSlides(photos, true);
+  const [day, setDay] = useState<string | null>(null);
+  const closeDay = useCallback(() => setDay(null), []);
+  // On the wall: tap a day = everything on it; double tap = the photo frame (during a night-time peek,
+  // back to the slideshow)
+  const lastTap = useRef(0);
+  const single = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tap = (e: PointerEvent) => {
+    if (day) return (setDay(null), void (lastTap.current = 0));
+    if (slides.on || slides.justChanged()) return void (lastTap.current = 0);
+    if (single.current) clearTimeout(single.current);
+    if (e.timeStamp - lastTap.current < 450) {
+      lastTap.current = 0;
+      slides.doubleTap();
+      return;
+    }
+    lastTap.current = e.timeStamp;
+    const wk = (e.target as Element).closest?.('.week');
+    if (!wk) return;
+    const r = wk.getBoundingClientRect();
+    const cells = wk.querySelectorAll<HTMLElement>('.day');
+    const ds = cells[Math.floor(((e.clientX - r.left) / r.width) * 7)]?.dataset.date;
+    if (ds) single.current = setTimeout(() => setDay(ds), 460); // wait: it might be a double tap
+  };
   const mm = meta && 'artPad' in meta ? meta : null;
   const items = Array.isArray(art.data) ? art.data : [];
   const titleStyle = mm?.title || mm?.defaultTitle || DEFAULT_TITLE;
@@ -99,7 +126,7 @@ export function Board({ who }: { who: Who | null }) {
   const monthName = m ? MONTHS[m.grid.m - 1] : '';
   return (
     // one continuous surface across the whole screen, so the bands beside the board match it
-    <div id="stage" className={sf.lum > 0.18 ? 'light' : ''} style={{ backgroundImage: bg }}>
+    <div id="stage" className={sf.lum > 0.18 ? 'light' : ''} style={{ backgroundImage: bg }} onPointerUp={tap}>
       <div
         id="board"
         style={{
@@ -141,6 +168,10 @@ export function Board({ who }: { who: Who | null }) {
           <Art items={items} bg={sf.lum} res={res} gifsPlay={false} />
         </div>
       </div>
+      {photos && <Slideshow photos={photos} on={slides.on} time24={!!today?.time24} onTap={slides.tapSlides} />}
+      <ReminderAlert time24={!!today?.time24} />
+      <TimerDone />
+      {day && m && <DayView date={day} events={m.events} onClose={closeDay} />}
     </div>
   );
 }
