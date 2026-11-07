@@ -525,7 +525,7 @@ test('the board (new screen, tablet): draw, undo and redo, erase, write, select,
   await expect.poll(async () => (await artOf()).length).toBe(0);
   // a stamp from the library: an emoji, put up where she taps
   await t.locator('#stampsBtn').click();
-  await t.locator('#libSheet').getByRole('radio', { name: 'Emoji' }).click();
+  await t.locator('#libSheet').getByRole('radio', { name: 'Emoji', exact: true }).click();
   await t.locator('#libSheet').getByRole('button', { name: 'Emoji 🎂' }).click();
   await expect(t.locator('.slate .status')).toContainText('Tap the board');
   await t.mouse.click(...at(800, 300));
