@@ -4,6 +4,13 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.13.1 — upgrading from 0.12
+- **Upgrading a server install from 0.12:** run `sudo bash deploy/update.sh` **twice**. The first run
+  (0.12's updater) brings the new version; the second (the new one) adds the new screens and turns
+  on Update now and the nightly check. Until then the board shows the screens as they were, so nothing
+  goes blank. Docker installs only need the new image.
+- Fixed: the 0.13.0 release didn't publish (its tests ran before the screens were built).
+
 ## 0.13.0 — the board rebuilt
 - **New screens everywhere:** the wall, the tablet, family screens, chores and every page are rebuilt
   (React + TypeScript). They look and work the same, and they're sharp on a 4K wall. The board as it
