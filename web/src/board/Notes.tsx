@@ -1,10 +1,18 @@
 // The right-hand column: up to 3 pages, chosen in ⚙️ Settings (weather, trash and countdowns; the meal
 // plan; reward jars; up next; reminders; chores; timers; the pantry)
-import type { Jar, Meals, RemindersView } from '../../../shared/lists.ts';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import type { ChoresView } from '../../../shared/chores.ts';
+import type { Jar, Meals, PantryItem, RemindersView } from '../../../shared/lists.ts';
+import { entries } from '../pages/Chores.tsx';
+import { JarRow } from '../ui/JarArt.tsx';
+import { readable } from './color.ts';
+import { addDays } from './Month.tsx';
+import { frameFor, photoSrc, shuffleBag } from './photos.ts';
+import type { Photo, Photos } from './photos.ts';
 import { useLive } from '../lib/live.ts';
 import { fmtLeft, left, useTimers } from '../lib/timers.ts';
 import { fmtTime } from '../lib/today.ts';
-import { PIECE } from '../pages/Jars.tsx';
 import { isDone } from '../pages/Reminders.tsx';
 
 const ICONS: Record<string, string> = {
@@ -121,48 +129,143 @@ function MealsPage() {
 }
 function JarsPage() {
   const j = useLive<Jar[]>('api/jars', ['jars']);
-  if (!j.data?.length) return null;
+  if (!j.data) return null;
+  if (!j.data.length) return <UpNext todayOnly />; // no jars: today's events, as the current board does
   return (
     <div className="npage">
-      <h3 className="mh">Jars</h3>
-      {(j.data || []).map(jar => (
-        <div className="njar" key={jar.id}>
-          <span>{jar.name}</span>
-          <span className="emoji">
-            {jar.items
-              .slice(-8)
-              .map(p => PIECE[p])
-              .join('')}
-          </span>
-          <b>
-            {jar.count}/{jar.goal}
-          </b>
-        </div>
-      ))}
+      <h3 className="mh">Reward Jars</h3>
+      <JarRow jars={j.data} />
     </div>
   );
 }
-function UpNext({ time24 }: { time24: boolean }) {
+const DOW3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+// what's coming: the next two weeks under day headings, or just today. Lines that don't fit are left
+// off whole, never cut in half.
+function UpNext({ todayOnly = false }: { todayOnly?: boolean }) {
   const u = useLive<{
     today: string;
-    events: { date: string; title: string; time: string | null; color: string | null }[];
+    events: { date: string; title: string; time: string | null; color?: string | null; calColor?: string | null }[];
   }>('api/upnext', ['calendar']);
-  void time24;
-  return (
-    <div className="npage">
-      <h3 className="mh">Up next</h3>
-      <ul className="nlist">
-        {(u.data?.events || []).slice(0, 6).map((e, i) => (
-          <li key={i} style={{ color: e.color || undefined }}>
-            <b>
-              {e.date === u.data!.today
-                ? 'Today'
-                : new Date(e.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}
-            </b>{' '}
+  const ref = useRef<HTMLUListElement>(null);
+  const d = u.data;
+  const rows: { k: string; cls: string; text: ReactNode; color?: string }[] = [];
+  if (d) {
+    let last = '';
+    for (const e of d.events.filter(e => !todayOnly || e.date === d.today)) {
+      if (!todayOnly && e.date !== last) {
+        const dd = new Date(e.date + 'T12:00:00Z');
+        rows.push({
+          k: 'd' + e.date,
+          cls: 'd',
+          text:
+            e.date === d.today
+              ? 'Today'
+              : e.date === addDays(d.today, 1)
+                ? 'Tomorrow'
+                : `${DOW3[dd.getUTCDay()]} ${dd.getUTCDate()}`
+        });
+      }
+      last = e.date;
+      const c = e.color || e.calColor;
+      rows.push({
+        k: 'e' + rows.length,
+        cls: 'chalk',
+        text: (
+          <>
+            {e.time && <span className="t">{e.time}</span>}
             {e.title}
-            {e.time && <span className="dim"> {e.time}</span>}
+          </>
+        ),
+        color: c ? readable(c, 0.0069) : undefined
+      });
+    }
+  }
+  useLayoutEffect(() => {
+    const ul = ref.current;
+    if (!ul) return;
+    const items = Array.from(ul.children) as HTMLElement[];
+    items.forEach(li => (li.style.display = ''));
+    let i = items.length - 1;
+    for (; i > 0 && ul.scrollHeight > ul.clientHeight + 1; i--) items[i].style.display = 'none';
+    if (items[i]?.classList.contains('d')) items[i].style.display = 'none'; // no day heading left on its own
+  }, [d, todayOnly]);
+  return (
+    <div className="npage grow">
+      <h3 className="mh">{todayOnly ? 'Today' : 'Up Next'}</h3>
+      <ul className="upnext" ref={ref}>
+        {rows.map(r => (
+          <li key={r.k} className={r.cls} style={r.color ? { color: r.color } : undefined}>
+            {r.text}
           </li>
         ))}
+        {d && !rows.length && (
+          <li className="none">{todayOnly ? 'Nothing else planned today' : 'Nothing in the next two weeks'}</li>
+        )}
+      </ul>
+    </div>
+  );
+}
+// a photo from the album, framed, changing every few minutes
+function PhotoPage() {
+  const ph = useLive<Photos>('api/photos', ['photos']).data;
+  const [p, setP] = useState<Photo | null>(null);
+  const next = useRef(shuffleBag<Photo>());
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const list = ph?.photos || [];
+    setP(next.current(list));
+    const t = setInterval(() => setP(next.current(list)), 3 * 60 * 1000);
+    return () => clearInterval(t);
+  }, [ph]);
+  if (!ph?.photos.length) return null;
+  const bw = box.current?.clientWidth || 180;
+  const bh = box.current?.clientHeight || 140;
+  return (
+    <div className="npage grow">
+      <div className="bphoto" ref={box}>
+        {p && <img alt="" src={photoSrc(p)} style={{ objectPosition: frameFor(p, bw, bh).pos }} />}
+      </div>
+    </div>
+  );
+}
+// today's chores still to do, and who they're for
+function ChoresPage() {
+  const v = useLive<ChoresView>('api/chores', ['chores']).data;
+  if (!v) return null;
+  const names = Object.fromEntries(v.people.map(p => [p.id, p.name]));
+  const list = entries(v, 'day');
+  const left = list.filter(e => e.done < e.c.times);
+  return (
+    <div className="npage grow">
+      <h3 className="mh">Chores</h3>
+      <ul className="upnext">
+        {left.map((e, i) => (
+          <li key={i} className="chalk">
+            <span className="t">{e.who.map(id => names[id] || id).join(', ')}</span>
+            {e.c.title}
+          </li>
+        ))}
+        {!left.length && <li className="none">{list.length ? 'All done today! ⭐' : 'No chores today'}</li>}
+      </ul>
+    </div>
+  );
+}
+// the pantry: what's been there longest, first
+function PantryPage() {
+  const v = useLive<{ items: PantryItem[] }>('api/pantry', ['pantry']).data;
+  if (!v) return null;
+  const items = v.items.slice().sort((a, b) => a.date.localeCompare(b.date));
+  return (
+    <div className="npage grow">
+      <h3 className="mh">Pantry</h3>
+      <ul className="upnext">
+        {items.map(it => (
+          <li key={it.id} className="chalk">
+            {it.qty && <span className="t">{it.qty}</span>}
+            {it.name}
+          </li>
+        ))}
+        {!items.length && <li className="none">Nothing in the pantry list</li>}
       </ul>
     </div>
   );
@@ -212,12 +315,16 @@ export function Notes({ time24 }: { time24: boolean }) {
       <h2 className="chalk">Notes</h2>
       {x &&
         pages.map((p, i) => (
-          <div key={p} className="nslot">
+          <div key={p} className={'nslot nslot-' + p}>
             {i > 0 && <div className="rule" />}
             {p === 'info' && <Info x={x} />}
             {p === 'meals' && <MealsPage />}
             {p === 'jars' && <JarsPage />}
-            {p === 'upnext' && <UpNext time24={time24} />}
+            {p === 'upnext' && <UpNext />}
+            {p === 'today' && <UpNext todayOnly />}
+            {p === 'photos' && <PhotoPage />}
+            {p === 'chores' && <ChoresPage />}
+            {p === 'pantry' && <PantryPage />}
             {p === 'reminders' && <RemindersPage time24={time24} />}
             {p === 'timers' && <TimersPage />}
           </div>

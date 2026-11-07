@@ -229,3 +229,33 @@ test('the board (new screen, wall): the month, its events and art, sharp on a 4K
   await board.admin.post('/api/art/delete', { ym, ids: [artId] });
   await expect(wall.locator(`#grid [data-date="${date}"]`)).not.toContainText('Book fair');
 });
+
+test('the board (new screen): the style, the month’s title and border, the jars, all live', async ({ as, board }) => {
+  const { ym } = thisMonth();
+  const wall = await as('wall', { path: '/next/board' });
+  await expect(wall.locator('#monthName .mn')).toBeVisible();
+  // the family picks a style: today's mark and the lines change on the wall without reloading
+  await board.admin.post('/api/theme', { p: 'pastel', o: {} });
+  await expect(wall.locator('.ringAt .ring path')).toHaveAttribute('d', /^M23 38.5/); // the heart
+  // the month's own title and a holiday border
+  await board.admin.post('/api/meta', { ym, title: { f: 3, c: '#9CC9E6', o: null, z: 80 } });
+  await expect
+    .poll(() => wall.locator('#monthName .mn').evaluate(e => getComputedStyle(e).fontFamily))
+    .toContain('Pacifico');
+  await expect(wall.locator('#monthName')).toHaveClass(/noout/);
+  await board.admin.post('/api/border', { ym, border: { items: ['gi-pumpkin'], color: '#E8A35C', size: 'm' } });
+  await expect.poll(() => wall.locator('.borderLayer img').count()).toBeGreaterThan(20);
+  // a jar, drawn
+  const jars = await (await board.admin.api('/api/jars')).json();
+  await board.admin.post('/api/jars', {
+    jars: [{ id: 'j1', name: 'Stars', pieces: ['star'], items: ['star', 'star', 'star'], count: 3, goal: 10 }]
+  });
+  await expect(wall.locator('.jars .jar svg.jarart .pc')).toHaveCount(3);
+  expect(wall.errors).toEqual([]);
+  // put things back
+  await board.admin.post('/api/jars', { jars });
+  await board.admin.post('/api/border', { ym, border: null });
+  await board.admin.post('/api/meta', { ym, title: null });
+  await board.admin.post('/api/theme', { p: 'classic', o: {} });
+  await expect(wall.locator('.borderLayer')).toHaveCount(0);
+});

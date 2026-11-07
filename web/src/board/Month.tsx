@@ -1,6 +1,9 @@
 // The month: its name, the weekdays, and a box per day with its events, multi-day bars, trash day and
 // holidays. Same layout as the board (1252 x 642 board pixels), so art drawn on a day stays on that day.
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { url } from '../lib/api.ts';
+import { hash } from './geom.ts';
+import { TODAY_MARKS } from './theme.ts';
 import { readable } from './color.ts';
 
 export interface BoardEvent {
@@ -87,18 +90,18 @@ const Trash = () => (
     <path d="M7 11h26M15 11V6h10v5M10 11l2 27h16l2-27" />
   </svg>
 );
-const Ring = ({ color }: { color: string }) => (
-  <svg className="ring" viewBox="0 0 46 42" aria-hidden="true">
-    <ellipse
-      cx="23"
-      cy="21"
-      rx="19"
-      ry="16.5"
-      fill="none"
-      stroke={color}
-      strokeWidth="2.4"
-      transform="rotate(-6 23 21)"
-    />
+const Ring = ({ color, shape }: { color: string; shape: string }) => (
+  <svg
+    className="ring"
+    viewBox="0 0 46 42"
+    fill="none"
+    stroke={color}
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d={TODAY_MARKS[shape] || TODAY_MARKS.ring} />
   </svg>
 );
 
@@ -108,18 +111,25 @@ export function Month({
   bg,
   onDay,
   onEvent,
-  title
+  title,
+  today = { shape: 'ring', color: '#F6B3CB' },
+  border = null,
+  nav
 }: {
   data: MonthData;
   bins: Bins | null;
   bg: number;
+  today?: { shape: string; color: string };
+  border?: Border | null;
+  nav?: { prev: () => void; next: () => void };
   onDay?: (date: string) => void;
   onEvent?: (ev: BoardEvent) => void;
   title?: ReactNode;
 }) {
   const g = data.grid;
   const ws = g.weekStart || 0;
-  const cellH = GRID_H / g.weeks;
+  const pad = border ? BORDER_SZ[border.size] + 6 : 0;
+  const cellH = (GRID_H - 2 * pad) / g.weeks;
   const single = data.events.filter(e => e.start === e.end);
   const multi = data.events.filter(e => e.start !== e.end);
   const color = (e: BoardEvent) => (e.color || e.calColor ? readable((e.color || e.calColor)!, bg) : undefined);
@@ -160,10 +170,12 @@ export function Month({
     for (let d = 0; d < 7; d++) {
       const ds = addDays(weekStart, d);
       const inMonth = ds.slice(0, 7) === data.ym;
-      if (ds === data.today)
+      const isToday = ds === data.today;
+      const filled = today.shape === 'box' ? ' todaybox' : today.shape === 'bg' ? ' todaybg' : '';
+      if (isToday && !filled)
         ring = (
           <div className="ringAt" style={{ left: `calc(${(((d + 1) / 7) * 100).toFixed(4)}% - 39px)` }}>
-            <Ring color="var(--pink)" />
+            <Ring color={readable(today.color, bg, 2.2)} shape={today.shape} />
           </div>
         );
       const b = binsFor(ds, bins);
@@ -187,7 +199,7 @@ export function Month({
         <button
           key={ds}
           type="button"
-          className={'day' + (inMonth ? '' : ' other')}
+          className={'day' + (inMonth ? '' : ' other') + (isToday ? filled : '')}
           style={{ gridColumn: d + 1 }}
           data-date={ds}
           aria-label={ds}
@@ -244,6 +256,7 @@ export function Month({
   return (
     <div className="cal">
       <div className="titlerow">
+        <NavBtn dir="prev" onClick={nav?.prev} />
         {title ?? (
           <h1 id="monthName">
             <span className="mn" data-text={MONTHS[g.m - 1]}>
@@ -252,15 +265,91 @@ export function Month({
             {g.y !== Number(data.today.slice(0, 4)) && <small>{g.y}</small>}
           </h1>
         )}
+        <NavBtn dir="next" onClick={nav?.next} />
       </div>
-      <div className="weekdays">
-        {Array.from({ length: 7 }, (_, i) => (
-          <div key={i}>{WEEKDAYS[(i + ws) % 7]}</div>
-        ))}
+      <div className={'calbody' + (border ? ' bordered' : '')} style={{ '--bpad': pad + 'px' } as CSSProperties}>
+        <div className="weekdays">
+          {Array.from({ length: 7 }, (_, i) => (
+            <div key={i}>{WEEKDAYS[(i + ws) % 7]}</div>
+          ))}
+        </div>
+        <div id="grid" style={{ gridTemplateRows: `repeat(${g.weeks}, minmax(0, 1fr))` }}>
+          {weeks}
+        </div>
+        {border && <BorderLayer border={border} />}
       </div>
-      <div id="grid" style={{ gridTemplateRows: `repeat(${g.weeks}, minmax(0, 1fr))` }}>
-        {weeks}
-      </div>
+    </div>
+  );
+}
+
+const NavBtn = ({ dir, onClick }: { dir: 'prev' | 'next'; onClick?: () => void }) => (
+  <button
+    type="button"
+    className="nav"
+    id={dir}
+    aria-label={dir === 'prev' ? 'Previous month' : 'Next month'}
+    onClick={onClick}
+    tabIndex={onClick ? 0 : -1}
+  >
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={dir === 'prev' ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} />
+    </svg>
+  </button>
+);
+
+// A holiday border: up to 8 pictures repeated around the calendar's edge
+export type Border = { items: string[]; color: string; size: 's' | 'm' | 'l' };
+const BORDER_SZ = { s: 20, m: 26, l: 34 };
+const CAL_W = 1252 - 18 - 14 - 14 - 214; // the calendar box in board pixels: the slate less its padding, the gap and the notes
+const CAL_H = GRID_H + 28;
+export const borderSrc = (n: string, color: string) =>
+  url(
+    'api/clip/' +
+      n +
+      (n.startsWith('gi-') && color && color.toUpperCase() !== '#EDEAE0' ? '--' + color.slice(1).toLowerCase() : '') +
+      '.svg'
+  );
+function BorderLayer({ border: b }: { border: Border }) {
+  const sz = BORDER_SZ[b.size] || 26;
+  const half = (sz + 6) / 2;
+  const gap = sz * 0.45;
+  const pts: [number, number][] = [];
+  const side = (x0: number, y0: number, x1: number, y1: number) => {
+    const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / (sz + gap)));
+    for (let i = 0; i < n; i++) pts.push([x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n]);
+  };
+  const W = CAL_W;
+  const H = CAL_H;
+  side(half, half, W - half, half);
+  side(W - half, half, W - half, H - half);
+  side(W - half, H - half, half, H - half);
+  side(half, H - half, half, half);
+  return (
+    <div className="borderLayer" aria-hidden="true">
+      {pts.map((p, i) => (
+        <img
+          key={i}
+          alt=""
+          src={borderSrc(b.items[i % b.items.length], b.color)}
+          style={{
+            width: sz,
+            height: sz,
+            left: +(p[0] - sz / 2).toFixed(1),
+            top: +(p[1] - sz / 2).toFixed(1),
+            transform: `rotate(${Math.round((hash(i + 1, 7) - 0.5) * 24)}deg)`
+          }}
+        />
+      ))}
     </div>
   );
 }

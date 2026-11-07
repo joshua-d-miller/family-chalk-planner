@@ -7,6 +7,7 @@ import { useLive } from '../lib/live.ts';
 import { RANK } from '../lib/who.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn } from '../ui/bits.tsx';
+import { JarArt } from '../ui/JarArt.tsx';
 import { Page } from '../ui/Page.tsx';
 import './lists.css';
 
@@ -38,10 +39,8 @@ export function Jars({ who }: { who: Who | null }) {
             <div className="jarbar" role="progressbar" aria-valuemin={0} aria-valuemax={j.goal} aria-valuenow={j.count}>
               <span style={{ width: `${Math.min(100, (j.count / j.goal) * 100)}%` }} />
             </div>
-            <div className="pieces emoji" aria-label={`${j.count} pieces`}>
-              {j.items.slice(-40).map((p, i) => (
-                <span key={i}>{PIECE[p]}</span>
-              ))}
+            <div className="jarpic" aria-label={`${j.count} pieces`}>
+              <JarArt jar={j} />
             </div>
             {can && (
               <div className="segs">

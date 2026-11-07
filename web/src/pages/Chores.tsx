@@ -24,7 +24,7 @@ interface Entry {
   done: number;
 }
 // what's on the page: shared chores once, "each their own" chores once per person
-function entries(d: ChoresView, every: Every): Entry[] {
+export function entries(d: ChoresView, every: Every): Entry[] {
   const out: Entry[] = [];
   for (const c of d.chores) {
     if (c.every !== every || (d.mine && !c.who.includes(d.mine))) continue;
