@@ -1,0 +1,96 @@
+/* The board's look: chalk on slate, hand-lettered headings. Sizes grow with the screen, so the pages read
+   as well on a phone as on a tablet across the room. */
+:root {
+  color-scheme: dark;
+  --chalk: #edeae0;
+  --dim: rgba(237, 234, 224, 0.62);
+  --faint: rgba(237, 234, 224, 0.28);
+  --pink: #f6b3cb;
+  --yellow: #f2d479;
+  --blue: #9cc9e6;
+  --green: #a9d8a0;
+  --orange: #e8a35c;
+  --purple: #b49ce0;
+  --red: #f7a1a1;
+  --gold: #c9b47a;
+  --line: rgba(201, 180, 122, 0.45);
+  --slate: #161716;
+  --card: rgba(18, 18, 17, 0.92);
+  --wood: #4a3320;
+  --emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Board Emoji';
+  --hand: 'Kalam', var(--emoji), cursive;
+  --script: 'Dancing Script', var(--emoji), cursive;
+  --serif: 'Cormorant Garamond', serif;
+  --tap: 48px;
+  --gap: clamp(10px, 2.4vw, 18px);
+  --text: clamp(19px, 2.2vw + 10px, 24px);
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #121312;
+  color: var(--chalk);
+  font: var(--text) / 1.35 var(--hand);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  min-height: 100dvh;
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+:focus-visible {
+  outline: 3px solid var(--yellow);
+  outline-offset: 2px;
+}
+.chalk {
+  text-shadow: 0 0 1px rgba(237, 234, 224, 0.45);
+}
+.dim {
+  color: var(--dim);
+}
+.err {
+  color: var(--red);
+  min-height: 1.2em;
+}
+.ok {
+  color: var(--green);
+}
+.small {
+  font-size: 0.8em;
+}
+.emoji {
+  font-family: var(--emoji), sans-serif;
+}
+[hidden] {
+  display: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}

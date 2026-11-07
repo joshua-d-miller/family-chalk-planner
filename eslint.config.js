@@ -5,17 +5,22 @@ import tseslint from 'typescript-eslint';
 import globals from 'globals';
 
 export default tseslint.config(
-  { ignores: ['node_modules/', 'public/', 'data/', 'test-results/', 'playwright-report/'] },
+  { ignores: ['node_modules/', 'public/', 'data/', 'test-results/', 'playwright-report/', 'web/dist/'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['**/*.ts', '**/*.js'],
+    files: ['**/*.ts', '**/*.tsx', '**/*.js'],
     languageOptions: { globals: globals.node },
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       eqeqeq: ['error', 'smart'],
       'prefer-const': 'error'
     }
+  },
+  // the screens run in the browser
+  {
+    files: ['web/**/*.{ts,tsx}'],
+    languageOptions: { globals: globals.browser }
   },
   // the tests talk to the server over HTTP and read loosely shaped JSON back
   {

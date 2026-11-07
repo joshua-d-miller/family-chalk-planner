@@ -129,3 +129,14 @@ test('the right-hand column: up to 3 pages; older boards keep what they showed',
   x = await (await wall.api('/api/extras')).json();
   assert.deepEqual(x.notes.pages, ['info', 'meals', 'upnext']);
 });
+
+test('favorites: kept per person and per screen, up to 4', async () => {
+  let f = await (
+    await fam.post('/api/favorites', { items: ['meals', 'timers', 'meals', 'x y', 'pantry', 'jars', 'chores'] })
+  ).json();
+  assert.deepEqual(f.items, ['meals', 'timers', 'pantry', 'jars']);
+  f = await (await ed.api('/api/favorites')).json();
+  assert.deepEqual(f.items, [], 'the admin has their own');
+  assert.deepEqual((await (await fam.api('/api/favorites')).json()).items, ['meals', 'timers', 'pantry', 'jars']);
+  assert.equal((await wall.post('/api/favorites', { items: ['meals'] })).status, 403, 'the wall has no strip');
+});

@@ -1,0 +1,79 @@
+/* list pages: meals, reminders, timers, pantry, jars */
+.daygrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 0 28px;
+}
+.daygrid .section + .section {
+  margin-top: 0;
+}
+@media (min-width: 700px) {
+  .daygrid .section + .section {
+    border-top: none;
+  }
+}
+.section.today h3 {
+  color: var(--yellow);
+}
+.lrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lrow .check {
+  flex: 1;
+}
+.add {
+  background: none;
+  border: 1.5px dashed var(--faint);
+  border-radius: 12px;
+  color: var(--dim);
+  min-height: 48px;
+  width: 100%;
+  font-family: var(--hand);
+  font-size: 0.85em;
+  margin: 4px 0;
+}
+.check:disabled {
+  cursor: default;
+}
+.timer .tleft {
+  font-size: clamp(44px, 8vw, 72px);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  margin: 0 0 10px;
+}
+.timer.done .tleft {
+  color: var(--yellow);
+}
+.timer.paused .tleft {
+  color: var(--dim);
+}
+.check input[type='checkbox'] {
+  width: 28px;
+  height: 28px;
+  margin: 4px 0 0;
+  accent-color: var(--yellow);
+  flex: none;
+}
+.jarbar {
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(237, 234, 224, 0.12);
+  overflow: hidden;
+  margin: 0 0 10px;
+}
+.jarbar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--pink), var(--yellow));
+}
+.pieces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  font-size: 1.1em;
+  min-height: 1.4em;
+  margin-bottom: 10px;
+}

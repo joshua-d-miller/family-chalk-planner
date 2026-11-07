@@ -39,6 +39,7 @@ import * as photos from './photos/photos.ts';
 import * as pages from './pages.ts';
 import { registerSettingsRoutes } from './settings-routes.ts';
 import * as updates from './updates.ts';
+import * as favorites from './favorites.ts';
 
 const ENV = process.env;
 const APP_DIR = path.join(import.meta.dirname, '..');
@@ -119,7 +120,8 @@ const { keyInfo } = backup.setup({
 // today's date: the screens, and the install and update health checks
 app.get('/api/today', (_req, res) => {
   const today = clock.today();
-  res.json({ today, ym: today.slice(0, 7) });
+  // (and how the screens show dates: the first day of the week, 24-hour times)
+  res.json({ today, ym: today.slice(0, 7), weekStart: cfg.weekStart, time24: cfg.time24 });
 });
 
 // Weather, trash day and notes (top of the Notes column)
@@ -202,6 +204,18 @@ chores.setup({
 reminders.setup({ app, db, clock, broadcast });
 timers.setup({ app, db, broadcast });
 pantry.setup({ app, db, today: clock.today, broadcast });
+
+// Favorites on the strip, per person or per screen
+favorites.setup({
+  app,
+  kv,
+  whose: req => {
+    const u = who.userOf(req);
+    if (u) return 'p:' + u.id;
+    const d = who.deviceOf(req);
+    return d ? 's:' + d.id : null;
+  }
+});
 
 // Uploads, pictures from links, the GIF library
 media.setup({

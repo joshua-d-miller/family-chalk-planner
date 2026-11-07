@@ -20,7 +20,11 @@ const FONTS: [string, number[]][] = [
   ['pacifico', [400]],
   ['fredericka-the-great', [400]],
   ['amatic-sc', [700]],
-  ['rock-salt', [400]]
+  ['rock-salt', [400]],
+  // emoji, for screens that have none of their own (some wall tablets): split into small pieces, so a
+  // screen downloads only the emoji it shows. Named 'Board Emoji' so it's only ever a fallback, after
+  // the device's own emoji ('Apple Color Emoji', 'Segoe UI Emoji'...).
+  ['noto-color-emoji', [400]]
 ];
 const installed = (spec: string) => {
   try {
@@ -34,8 +38,23 @@ const fontsMissing = () =>
   FONTS.filter(([pkg, ws]) => ws.some(w => !installed(`@fontsource/${pkg}/${w}.css`))).map(([pkg]) => pkg);
 
 // Installable app: the wall opens full-screen at "/", the iPad opens "/edit"
-type Kind = 'wall' | 'edit' | 'chores';
+type Kind = 'wall' | 'edit' | 'chores' | 'meals' | 'reminders' | 'timers' | 'pantry' | 'jars';
+const app = (name: string, path: string) => ({
+  name,
+  short_name: name,
+  start_url: '/' + path,
+  scope: '/',
+  display: 'standalone',
+  orientation: 'any'
+});
+// the new screens (React): their own pages now, and next/... for the ones still on the current board
+export const APP_PAGES = ['meals', 'reminders', 'timers', 'pantry', 'jars'];
 const manifests = (title: string): Record<Kind, Record<string, string>> => ({
+  meals: app('Meal plan', 'meals'),
+  reminders: app('Reminders', 'reminders'),
+  timers: app('Timers', 'timers'),
+  pantry: app('Pantry', 'pantry'),
+  jars: app('Reward jars', 'jars'),
   wall: {
     name: title,
     short_name: 'Chalk Planner',
@@ -65,7 +84,7 @@ const manifests = (title: string): Record<Kind, Record<string, string>> => ({
 export function setup({
   app,
   publicDir,
-  appDir,
+  appDir: appDir_,
   serverFile,
   title,
   sourceUrl,
@@ -130,7 +149,7 @@ export function setup({
   const fontsGone = fontsMissing();
   if (fontsGone.length)
     console.error(
-      `Chalk Planner: the board's fonts aren't installed (${fontsGone.join(', ')}) - screens fall back to plain fonts. Fix: sudo bash ${appDir}/deploy/update.sh`
+      `Chalk Planner: the board's fonts aren't installed (${fontsGone.join(', ')}) - screens fall back to plain fonts. Fix: sudo bash ${appDir_}/deploy/update.sh`
     );
   let fontsCss: string | null = null;
   app.get('/fonts.css', (_req, res) => {
@@ -141,7 +160,8 @@ export function setup({
             try {
               return fs
                 .readFileSync(require.resolve(`@fontsource/${pkg}/${w}.css`), 'utf8')
-                .replace(/url\(\.\/files\//g, `url(/fonts/${pkg}/files/`);
+                .replace(/url\(\.\/files\//g, `url(/fonts/${pkg}/files/`)
+                .replace(/font-family: ?'Noto Color Emoji'/g, "font-family: 'Board Emoji'");
             } catch {
               return '';
             }
@@ -190,8 +210,46 @@ export function setup({
     };
   }
 
+  // The new screens (web/dist, built by `npm run build`; releases ship it built). Every address in them is
+  // relative to <base>, set here to where the board is served from.
+  const appDir = path.join(appDir_, 'web', 'dist');
+  function sendApp(kind: Kind): RequestHandler {
+    return (_req, res) => {
+      fs.readFile(path.join(appDir, 'index.html'), 'utf8', (err, html) => {
+        if (err)
+          return res
+            .status(503)
+            .type('text')
+            .send('These screens aren’t built yet. On the server, in the board’s folder, run: npm ci && npm run build');
+        res
+          .set('Cache-Control', 'no-cache')
+          .type('html')
+          .send(
+            html
+              .replace(/<base href="[^"]*"\s*\/?>/, '<base href="/">')
+              .replace(/<title>[^<]*<\/title>/, `<title>${safeTitle}</title>`)
+              .replace(
+                '<!--MANIFEST-->',
+                `<link rel="manifest" href="manifest-${kind}.webmanifest">\n<meta name="board-version" content="${boardVersion()}">\n<meta name="app-version" content="${version}">`
+              )
+          );
+      });
+    };
+  }
+
   // Call last: the pages, then any file in public/
   function serve() {
+    for (const p of APP_PAGES) app.get('/' + p, sendApp(p as Kind));
+    app.get('/next/:page', (req, res, next) => {
+      const page = req.params.page;
+      if (!/^[a-z-]{1,20}$/.test(page)) return next();
+      sendApp(page in manifests(title) ? (page as Kind) : 'edit')(req, res, next);
+    });
+    // the screens' scripts and styles: names change with every build, so they're kept for good
+    app.use(
+      '/assets',
+      express.static(path.join(appDir, 'assets'), { immutable: true, maxAge: '365d', fallthrough: false })
+    );
     app.get('/', sendBoard('wall'));
     app.get('/edit', sendBoard('edit'));
     app.get('/chores', sendBoard('chores')); // the chores page on a phone (same page, chores mode)

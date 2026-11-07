@@ -12,7 +12,9 @@ Third-party components (fetched or installed separately, not part of this reposi
 - Noto Animated Emoji (CC BY 4.0, Google), https://googlefonts.github.io/noto-emoji-animation/:
   fetched on first use and cached locally.
 - Google Fonts (SIL Open Font License): Dancing Script, Cormorant Garamond, Kalam, Caveat,
-  Permanent Marker, Pacifico, Fredericka the Great, Amatic SC, Rock Salt.
+  Permanent Marker, Pacifico, Fredericka the Great, Amatic SC, Rock Salt; and Noto Color Emoji (Google),
+  used only where a screen has no emoji of its own. All installed from npm (@fontsource).
+- React (MIT, Meta Platforms) for the screens, built with Vite (MIT).
 - OpenCV (Apache-2.0) and the YuNet face detection model from opencv_zoo (MIT):
   optional face finder, installed by deploy/setup-face.sh.
 - Weather data: Open-Meteo (CC BY 4.0), https://open-meteo.com/.

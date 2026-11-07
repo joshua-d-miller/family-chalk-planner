@@ -1,5 +1,16 @@
 # Family Chalk Planner in a container.  docker compose up -d   (see docs/docker.md)
 # Everything the board keeps (database, settings key, uploads, caches, nightly backups) lives in /data.
+
+# The screens (React) are built here, in a stage of their own: the image itself has no build tools
+FROM node:22-bookworm-slim AS screens
+WORKDIR /build
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund --loglevel=error
+COPY vite.config.ts ./
+COPY web ./web
+COPY shared ./shared
+RUN npm run build
+
 FROM node:22-bookworm-slim
 
 # Optional face finder for photo framing (OpenCV, ~220 MB): docker build --build-arg WITH_FACE=true .
@@ -19,6 +30,7 @@ RUN npm ci --omit=dev --no-audit --no-fund --loglevel=error && npm cache clean -
 COPY server ./server
 COPY shared ./shared
 COPY public ./public
+COPY --from=screens /build/web/dist ./web/dist
 COPY face ./face
 COPY deploy/setup-face.sh deploy/docker-entrypoint.sh ./deploy/
 COPY LICENSE NOTICE README.md CHANGELOG.md ./

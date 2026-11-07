@@ -9,5 +9,5 @@
     "noUnusedParameters": false,
     "lib": ["es2023", "dom"]
   },
-  "include": ["./**/*.ts", "../playwright.config.ts"]
+  "include": ["./**/*.ts", "../playwright.config.ts", "../vite.config.ts"]
 }
