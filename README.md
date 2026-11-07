@@ -16,7 +16,9 @@ A chalkboard-style family wall calendar for a wall-mounted screen, edited from a
 - **Small and private.** It runs on your own network as one Node.js service (or one Docker container) with a SQLite file. No account and no cloud service of its own; screens, fonts and pictures all come from your own server.
 - **Safe for a family.** Screens are paired with a code; people sign in with a passkey or password + authenticator app; an admin console shows every sign-in, screen and change.
 
-![Chores on the board and on a phone: today's chores by person, with ticked-off ones crossed out](docs/images/chores.jpg)
+![The board on a tablet in its wooden frame, with the tools along the bottom: Draw, Month title, Border, photos, style and Add event](docs/images/tablet.jpg)
+
+![Chores on a tablet and on a phone: today's chores by person, with ticked-off ones crossed out](docs/images/chores.jpg)
 
 <p align="center"><img src="docs/images/backgrounds.jpg" alt="The same board on green chalkboard, cork, kraft paper and whiteboard backgrounds" width="49%"> <img src="docs/images/console.jpg" alt="The admin console on a phone: pairing a screen, and board settings" width="49%"></p>
 

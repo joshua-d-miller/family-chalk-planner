@@ -4,7 +4,7 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
-## Unreleased — the board rebuilt (next release)
+## 0.13.0 — the board rebuilt
 - **New screens everywhere:** the wall, the tablet, family screens, chores and every page are rebuilt
   (React + TypeScript). They look and work the same, and they're sharp on a 4K wall. The board as it
   was is kept at **/classic** (and /classic/edit) for a while, in case something's missing.
