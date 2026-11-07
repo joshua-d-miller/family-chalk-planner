@@ -9,22 +9,29 @@ import { ICONS } from './icons.ts';
 
 const require = createRequire(import.meta.url);
 
-// Fonts: bundled from npm (@fontsource, SIL Open Font License) and served by the board itself, so no screen
+// Fonts: bundled from npm (SIL Open Font License) and served by the board itself, so no screen
 // ever calls Google and the board looks right with the internet down.
-const FONTS: [string, number[]][] = [
-  ['kalam', [400, 700]],
-  ['dancing-script', [700]],
-  ['cormorant-garamond', [600]],
-  ['caveat', [600]],
-  ['permanent-marker', [400]],
-  ['pacifico', [400]],
-  ['fredericka-the-great', [400]],
-  ['amatic-sc', [700]],
-  ['rock-salt', [400]],
-  // emoji, for screens that have none of their own (some wall tablets): split into small pieces, so a
-  // screen downloads only the emoji it shows. Named 'Board Emoji' so it's only ever a fallback, after
-  // the device's own emoji ('Apple Color Emoji', 'Segoe UI Emoji'...).
-  ['noto-color-emoji', [400]]
+// [name in the address, its package, the style sheets in it]
+const fontsource = (name: string, weights: number[]): [string, string, string[]] => [
+  name,
+  `@fontsource/${name}`,
+  weights.map(w => `${w}.css`)
+];
+const FONTS: [string, string, string[]][] = [
+  fontsource('kalam', [400, 700]),
+  fontsource('dancing-script', [700]),
+  fontsource('cormorant-garamond', [600]),
+  fontsource('caveat', [600]),
+  fontsource('permanent-marker', [400]),
+  fontsource('pacifico', [400]),
+  fontsource('fredericka-the-great', [400]),
+  fontsource('amatic-sc', [700]),
+  fontsource('rock-salt', [400]),
+  // Noto Color Emoji (in the COLRv1 format the Chrome-based wall tablets show; the fontsource copy only
+  // works in Safari), for screens that have no emoji of their own: split into pieces, so a screen downloads
+  // only the emoji it shows. Named 'Board Emoji', so it's only ever a fallback after the device's own
+  // ('Apple Color Emoji', 'Segoe UI Emoji').
+  ['noto-color-emoji', '@infolektuell/noto-color-emoji', ['index.css']]
 ];
 const installed = (spec: string) => {
   try {
@@ -35,7 +42,7 @@ const installed = (spec: string) => {
   }
 };
 const fontsMissing = () =>
-  FONTS.filter(([pkg, ws]) => ws.some(w => !installed(`@fontsource/${pkg}/${w}.css`))).map(([pkg]) => pkg);
+  FONTS.filter(([, pkg, files]) => files.some(f => !installed(`${pkg}/${f}`))).map(([name]) => name);
 
 // Installable app: the wall opens full-screen at "/", the iPad opens "/edit"
 type Kind = 'wall' | 'edit' | 'chores' | 'meals' | 'reminders' | 'timers' | 'pantry' | 'jars';
@@ -154,14 +161,16 @@ export function setup({
   let fontsCss: string | null = null;
   app.get('/fonts.css', (_req, res) => {
     if (fontsCss === null) {
-      const css = FONTS.map(([pkg, ws]) =>
-        ws
-          .map(w => {
+      // the font files' addresses are relative, so they work wherever the board is served from
+      const css = FONTS.map(([name, pkg, files]) =>
+        files
+          .map(f => {
             try {
               return fs
-                .readFileSync(require.resolve(`@fontsource/${pkg}/${w}.css`), 'utf8')
-                .replace(/url\(\.\/files\//g, `url(/fonts/${pkg}/files/`)
-                .replace(/font-family: ?'Noto Color Emoji'/g, "font-family: 'Board Emoji'");
+                .readFileSync(require.resolve(`${pkg}/${f}`), 'utf8')
+                .replace(/url\(\.\/files\//g, `url(fonts/${name}/files/`)
+                .replace(/font-family: ?'Noto Color Emoji'/g, "font-family: 'Board Emoji'")
+                .replace(/ tech\([^)]*\)/g, ''); // (Chrome before 108 skips a src it can't read)
             } catch {
               return '';
             }
@@ -175,10 +184,11 @@ export function setup({
   });
   app.get('/fonts/:pkg/files/:file', (req, res) => {
     const { pkg, file } = req.params;
-    if (!FONTS.some(([p]) => p === pkg) || !/^[a-z0-9-]+\.woff2?$/.test(file)) return res.sendStatus(404);
+    const font = FONTS.find(([name]) => name === pkg);
+    if (!font || !/^[a-z0-9-]+\.woff2?$/.test(file)) return res.sendStatus(404);
     let dir: string;
     try {
-      dir = path.dirname(require.resolve(`@fontsource/${pkg}/package.json`));
+      dir = path.dirname(require.resolve(`${font[1]}/package.json`));
     } catch {
       return res.sendStatus(404);
     }

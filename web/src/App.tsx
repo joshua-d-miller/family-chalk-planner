@@ -8,6 +8,7 @@ import { Jars } from './pages/Jars.tsx';
 import { Meals } from './pages/Meals.tsx';
 import { Pantry } from './pages/Pantry.tsx';
 import { Reminders } from './pages/Reminders.tsx';
+import { Settings } from './pages/Settings.tsx';
 import { Timers } from './pages/Timers.tsx';
 import { SignIn } from './ui/SignIn.tsx';
 import type { Who } from './lib/who.ts';
@@ -18,7 +19,8 @@ const VIEWS: Record<string, (p: { who: Who | null }) => React.JSX.Element> = {
   reminders: Reminders,
   timers: Timers,
   pantry: Pantry,
-  jars: Jars
+  jars: Jars,
+  settings: Settings
 };
 
 // the slate behind every page, as sharp as the screen (2× or 3× on phones and 4K walls)

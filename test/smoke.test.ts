@@ -232,7 +232,15 @@ test('clipart (Fluent Emoji) is served by the board and can be placed', async ()
 test('fonts come from the board itself; board pages allow nothing from elsewhere', async () => {
   const css = await (await api('/fonts.css')).text();
   assert.match(css, /font-family: 'Kalam'/);
-  assert.match(css, /url\(\/fonts\/kalam\/files\/kalam-latin-700-normal\.woff2\)/);
+  // relative, so they work wherever the board is served from (a Home Assistant sidebar)
+  assert.match(css, /url\(fonts\/kalam\/files\/kalam-latin-700-normal\.woff2\)/);
+  // the emoji: only a fallback, in the format Chrome-based tablets show
+  assert.match(
+    css,
+    /font-family: 'Board Emoji'[\s\S]*url\(fonts\/noto-color-emoji\/files\/0\.woff2\) format\(woff2\);/
+  );
+  assert.doesNotMatch(css, /tech\(/);
+  assert.equal((await api('/fonts/noto-color-emoji/files/0.woff2')).status, 200);
   assert.equal((await api('/fonts/kalam/files/kalam-latin-700-normal.woff2')).status, 200);
   assert.equal((await api('/fonts/kalam/files/..%2F..%2Fpackage.json')).status, 404);
   assert.equal((await api('/fonts/express/files/x.woff2')).status, 404);

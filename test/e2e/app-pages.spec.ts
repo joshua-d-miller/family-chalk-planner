@@ -141,3 +141,39 @@ test('the ☰ menu: every page; ☆ keeps one on the strip; signed out, a phone 
   await expect(out.locator('#signpad')).toBeVisible();
   await expect(out.getByRole('button', { name: 'Sign in' })).toBeVisible();
 });
+
+test('settings (new screen): hide a holiday and bring it back; the slideshow; the right-hand column', async ({
+  as,
+  board
+}) => {
+  const page = await as('tablet', { path: '/next/settings' });
+  await expect(page.locator('h2')).toHaveText('Settings');
+  const hol = page.locator('.hols .seg', { hasText: 'Thanksgiving' });
+  await hol.click();
+  await expect(hol).toHaveAttribute('aria-pressed', 'false');
+  await expect
+    .poll(
+      async () =>
+        (await (await board.admin.api('/api/holidays')).json()).holidays.find(h => h.title === 'Thanksgiving').off
+    )
+    .toBe(true);
+  await hol.click();
+  await expect(hol).toHaveAttribute('aria-pressed', 'true');
+  await page.getByLabel('Show photos overnight on the wall (a slideshow)').check();
+  await page.getByLabel('With the temperature').check();
+  await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.showTemp).toBe(true);
+  await page.getByRole('button', { name: /Reward jars/ }).click();
+  await page.getByRole('button', { name: /Reminders/ }).click();
+  await expect
+    .poll(async () => (await (await board.admin.api('/api/extras')).json()).notes.pages)
+    .toEqual(['info', 'meals', 'reminders']);
+  expect(page.errors).toEqual([]);
+});
+
+test('settings for an admin: the calendar and trash day', async ({ as, board }) => {
+  const page = await as('admin', { path: '/next/settings' });
+  await expect(page.locator('section', { hasText: 'Calendar' })).toContainText('Showing “Family”');
+  await page.getByLabel('Trash pickup').selectOption('4');
+  await expect.poll(async () => (await (await board.admin.api('/api/extras')).json()).bins.day).toBe(4);
+  await page.getByLabel('Trash pickup').selectOption('2');
+});

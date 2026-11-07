@@ -160,7 +160,7 @@ export function setup({ app, country, kvGet, kvSet, broadcast, today }: HolidayD
   app.post('/api/holidays', (req, res) => {
     const want = (req.body || {}).off;
     if (!Array.isArray(want)) return res.status(400).json({ error: 'bad list' });
-    const known = new Set(ofYear(2026).map(h => h.title));
+    const known = new Set(ofYear(+today().slice(0, 4)).map(h => h.title));
     // names from another country's list stay hidden (if the board's country changes back)
     const keep = [...hidden()].filter(t => !known.has(t));
     const off = [...new Set(want.filter((t): t is string => typeof t === 'string' && known.has(t)))].concat(keep);
