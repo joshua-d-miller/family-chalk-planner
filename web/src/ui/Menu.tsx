@@ -23,7 +23,7 @@
                         colby     plan, reminders, timers, pantry, jars and
                         claude    chores.
 
- 0.13.2    2026-11-07   joshua    One Chalkboard entry instead of The board
+ 0.13.2    2026-11-07   joshua    One Home entry instead of The board
                         claude    and Edit the board.
 ===============================================================================
 */
@@ -55,16 +55,16 @@ export function Menu({ who, here, onClose }: { who: Who | null; here: string; on
     <>
       <div className="menuScrim" onClick={onClose} />
       <nav className="menu" aria-label="Menu" id="menuPanel">
-        {/* the chalkboard: the one this screen uses (to change it if it may, else to look at it) */}
+        {/* Home: the board this screen uses (to change it if it may, else to look at it) */}
         <a
           className={'item board' + (onBoard ? ' here' : '')}
           href={rank >= RANK.family ? 'edit' : './'}
           aria-current={onBoard ? 'page' : undefined}
         >
           <span className="ic" aria-hidden="true">
-            🗓️
+            🏠
           </span>
-          <span className="lbl">Chalkboard</span>
+          <span className="lbl">Home</span>
         </a>
         {GROUPS.map(([g, title]) => {
           const items = PAGES.filter(p => p.group === g && mayOpen(p.need, p.id));

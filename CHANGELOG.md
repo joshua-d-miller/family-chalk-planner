@@ -8,7 +8,7 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - Fixed: on the tablet, 📷 (the photos beside the month name) could open a blank page for a month whose
   photos were set by an older board.
 - **The tablet's bar:** every button has an icon and a word (☰ Menu, ✏️ Draw, 🔤 Month title, 🖼️ Border, 📷 Photos,
-  🎨 Style, + Add event). In the ☰ menu, one **Chalkboard** entry takes each screen to its board ("The board" and
+  🎨 Style, + Add event). In the ☰ menu, one **🏠 Home** entry takes each screen to its board ("The board" and
   "Edit the board" are gone), and the headings are hand-lettered in pink like the rest of the board.
 - **A screen that crashes says so** instead of going blank, with Reload and Back to the board, and the
   error shows in the admin console (🛡 Activity) and the server log.

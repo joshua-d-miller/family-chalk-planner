@@ -4,7 +4,7 @@ The wall display only shows the board; everything is edited from a tablet or pho
 
 ## The tablet (editor)
 
-The bottom bar on the tablet has **☰ Menu** (the Chalkboard, every page — Chores, Meal plan, Reminders, Timers, Pantry, Reward jars — and Settings; ☆ keeps up to 4 pages on the bar), **✏️ Draw**, **🔤 Month title**, **🖼️ Border**, **📷 Photos**, **🎨 Style** and **+ Add event**. Zoom with **− / + / Fit** at the top right (or pinch). Everything saved on the tablet shows on the wall within a second or two.
+The bottom bar on the tablet has **☰ Menu** (🏠 Home, every page — Chores, Meal plan, Reminders, Timers, Pantry, Reward jars — and Settings; ☆ keeps up to 4 pages on the bar), **✏️ Draw**, **🔤 Month title**, **🖼️ Border**, **📷 Photos**, **🎨 Style** and **+ Add event**. Zoom with **− / + / Fit** at the top right (or pinch). Everything saved on the tablet shows on the wall within a second or two.
 
 ### More than one calendar
 The admin can add **more calendars from the same account** (kids' activities, work) and **read-only calendar links** (school, a sports team) in the admin console → ⚙️ Board. Each shows in its own color. Events from the extra calendars can be changed like any other; new events go to the main calendar. Events from links are read-only: tapping one shows that day with the calendar's name.
