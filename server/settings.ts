@@ -97,6 +97,8 @@ export const FIELDS: Record<string, Field> = {
   // board sign-in with just a password on the home network, when the board is opened by its IP address
   HOME_SIGNIN: { type: 'enum', values: ['off', 'on'] },
   UPDATE_CHANNEL: { type: 'enum', values: ['release', 'main'] },
+  // install minor and patch releases by themselves, overnight (deploy/update.sh --nightly)
+  AUTO_UPDATE: { type: 'enum', values: ['off', 'on'] },
   SOURCE_URL: { type: 'url' }
 };
 

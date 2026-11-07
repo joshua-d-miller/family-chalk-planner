@@ -385,6 +385,7 @@ export function setup(
     /^\/pair\//,
     /^\/whoami$/,
     /^\/today$/,
+    /^\/health$/,
     /^\/account\/(login|setup|join|enroll)/,
     /^\/passkey\/login\//
   ];
@@ -440,7 +441,8 @@ export function setup(
     /^\/google\//,
     /^\/calendar\/status$/,
     /^\/trash$/,
-    /^\/notes$/
+    /^\/notes$/,
+    /^\/updates/
   ];
   app.use('/api', (req, res, next) => {
     const write = !(req.method === 'GET' || req.method === 'HEAD');

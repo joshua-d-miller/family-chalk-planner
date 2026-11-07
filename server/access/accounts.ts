@@ -195,11 +195,9 @@ export function registerAccounts(ctx: Ctx) {
         refType: u ? 'person' : null,
         refId: u ? u.id : null
       });
-      return res
-        .status(401)
-        .json({
-          error: noCode ? 'That username or password didn’t work' : 'That username, password or code didn’t work'
-        });
+      return res.status(401).json({
+        error: noCode ? 'That username or password didn’t work' : 'That username, password or code didn’t work'
+      });
     }
     if (kind === 'admin' && u.role !== 'admin') return res.status(403).json({ error: 'This account isn’t an admin' });
     if (!noCode) q.uTotpLast(step, u.id);

@@ -1,0 +1,11 @@
+# The nightly update check, some time between 3:00 and 4:00 in the morning (catches up after a power cut).
+[Unit]
+Description=Family Chalk Planner: nightly update check
+
+[Timer]
+OnCalendar=*-*-* 03:00
+RandomizedDelaySec=60min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

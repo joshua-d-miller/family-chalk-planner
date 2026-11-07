@@ -38,6 +38,7 @@ import * as media from './media.ts';
 import * as photos from './photos/photos.ts';
 import * as pages from './pages.ts';
 import { registerSettingsRoutes } from './settings-routes.ts';
+import * as updates from './updates.ts';
 
 const ENV = process.env;
 const APP_DIR = path.join(import.meta.dirname, '..');
@@ -242,6 +243,7 @@ registerSettingsRoutes(app, {
   keyInfo,
   audit: who.audit
 });
+updates.setup({ app, db, dataDir: DATA_DIR, version: VERSION, updater: ENV.UPDATER, audit: who.audit });
 live.serve(app, { version: site.boardVersion, stillAllowed: ck => who.stillAllowed(ck) });
 site.serve(); // last: the pages, then any file in public/
 

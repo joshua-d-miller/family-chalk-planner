@@ -115,6 +115,12 @@ Keep it on your home network. Anyone who can reach the wall address can see the 
 ```
 It installs the newest **release** (a version tag like `v0.4.4`, listed on the GitHub Releases page with its notes), so work in progress on the main branch never reaches your wall. To follow every change on main instead (for people working on the board), choose it in ⚙️ Board → On your network → Updates. The wall and family screens reload themselves; tablets show an "update" banner.
 
+Or, from 0.13: admin console → ⚙️ Board → **Updates** → **Update now**. The board can't update itself (it never runs as root), so the installer adds a small update service that runs `update.sh` when you press the button. Every night it also checks for a newer version, and with **Install updates by themselves** on, it installs small (minor and patch) releases overnight; a new major version waits for you to press Update now.
+
+Every update first copies the database to `BACKUP_DIR/pre-update/` (the last 3 are kept). If the new version doesn't start properly (the health check: the board answers, its database is up to date, it's the new version, the page loads), the board goes back to the version it had **and to that copy of its database**, since a newer version may have changed the database in a way an older one can't read. A board refuses to start on a database from a newer version rather than misread it; if that ever happens after going back by hand, copy the newest `pre-update` file over `data/chalkboard.db` with the service stopped.
+
+With Docker, update by pulling the new image: `docker compose pull && docker compose up -d`.
+
 ## Backups
 Every night the board writes a consistent copy of its database to `BACKUP_DIR` (default `data/backup`) and keeps 14 of them. Uploaded GIFs live in `BACKUP_DIR/media`. Back up that folder with your usual tools (it has everything, settings included). The photo cache and face finder can always be rebuilt, so they don't need backing up.
 

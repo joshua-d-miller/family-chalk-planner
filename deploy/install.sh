@@ -69,7 +69,7 @@ write_unit() {
   {
     echo "# Written by deploy/install.sh. Change with: install.sh --unit-only --port N --data DIR --backup-dir DIR"
     echo "[Service]"
-    printf 'Environment="PORT=%s" "BIND=%s" "DATA_DIR=%s"' "$PORT" "$BIND" "$DATA_DIR"
+    printf 'Environment="PORT=%s" "BIND=%s" "DATA_DIR=%s" "UPDATER=systemd"' "$PORT" "$BIND" "$DATA_DIR"
     [ -n "$BACKUP_DIR" ] && printf ' "BACKUP_DIR=%s"' "$BACKUP_DIR"
     echo
   } > "$CONF"
@@ -85,7 +85,14 @@ write_unit() {
     say "This system can't sandbox services (common in LXC without nesting) - running without it"
     rm -f "$drop/hardening.conf"
   fi
+  # "Update now" in the admin console, and the nightly update check (both run deploy/update.sh as root)
+  local u
+  for u in "$SERVICE-update.service" "$SERVICE-update.path" "$SERVICE-nightly.service" "$SERVICE-nightly.timer"; do
+    sed -e "s#@APP_DIR@#$APP_DIR#g" -e "s#@DATA_DIR@#$DATA_DIR#g" "$APP_DIR/deploy/$u" > "/etc/systemd/system/$u"
+    chmod 644 "/etc/systemd/system/$u"
+  done
   systemctl daemon-reload
+  systemctl enable --quiet --now "$SERVICE-update.path" "$SERVICE-nightly.timer" || say "Couldn't turn on Update now / the nightly check - updates still work with deploy/update.sh"
 }
 if [ "$UNIT_ONLY" = yes ]; then write_unit; say "Service updated to run from $APP_DIR"; exit 0; fi
 
