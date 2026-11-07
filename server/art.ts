@@ -51,6 +51,7 @@ import type { Express } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import { isYm } from './dates.ts';
 import type { Month } from './month.ts';
+import { BOARD_FONTS } from '../shared/fonts.ts';
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const GROUP = /^[a-z0-9]{1,16}$/; // items placed together move together
@@ -106,7 +107,7 @@ export function cleanItem(raw: unknown): ArtItem | null {
       c,
       x: Math.round(Math.min(Math.max(x, 0), 1252)),
       y: Math.round(Math.min(Math.max(y, 0), 642)),
-      f: Math.min(Math.max(Math.trunc(Number(it.f)) || 0, 0), 7),
+      f: Math.min(Math.max(Math.trunc(Number(it.f)) || 0, 0), BOARD_FONTS.length - 1),
       z: Math.min(Math.max(Math.round(Number(it.z)) || 40, 12), 120),
       ...(it.m ? { m: true } : {}),
       ...group

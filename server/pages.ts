@@ -63,6 +63,7 @@ import express from 'express';
 import type { Express, RequestHandler } from 'express';
 import { ICONS } from './icons.ts';
 import { CSP_BOARD } from './access/access.ts';
+import { BOARD_FONTS, CLASSIC_FONT } from '../shared/fonts.ts';
 
 const require = createRequire(import.meta.url);
 
@@ -80,15 +81,12 @@ const fontsource = (name: string, weights: number[]): [string, string, string[]]
   weights.map(w => `${w}.css`)
 ];
 const FONTS: [string, string, string[]][] = [
-  fontsource('kalam', [400, 700]),
+  fontsource('kalam', [400, 700]), // the pages' own writing too
   fontsource('dancing-script', [700]),
-  fontsource('cormorant-garamond', [600]),
-  fontsource('caveat', [600]),
-  fontsource('permanent-marker', [400]),
-  fontsource('pacifico', [400]),
-  fontsource('fredericka-the-great', [400]),
-  fontsource('amatic-sc', [700]),
-  fontsource('rock-salt', [400]),
+  // every font in the pickers (shared/fonts.ts), one weight each
+  ...[...BOARD_FONTS, CLASSIC_FONT]
+    .filter(b => b.pkg !== 'kalam' && b.pkg !== 'dancing-script')
+    .map(b => fontsource(b.pkg, [b.weight])),
   // Noto Color Emoji (in the COLRv1 format the Chrome-based wall tablets show; the fontsource copy only
   // works in Safari), for screens that have no emoji of their own: split into pieces, so a screen downloads
   // only the emoji it shows. Named 'Board Emoji', so it's only ever a fallback after the device's own

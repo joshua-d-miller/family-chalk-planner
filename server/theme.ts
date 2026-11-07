@@ -27,12 +27,13 @@
 
 import type { Express } from 'express';
 import type { Kv } from './kv.ts';
+import { BOARD_FONTS, CLASSIC_FONT } from '../shared/fonts.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------------- //
 // | What a style may hold | //
 // ------------------------- //
-const FONTS = ['kalam', 'caveat', 'marker', 'pacifico', 'chalk', 'tall', 'scratchy', 'script', 'classic'];
+const FONTS = [...BOARD_FONTS.map(b => b.id), CLASSIC_FONT.id];
 // each tweak: a color, a font, or one of a few choices
 const TWEAKS: Record<string, 'color' | 'font' | string[]> = {
   numF: 'font',

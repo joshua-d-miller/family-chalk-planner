@@ -47,6 +47,7 @@ import type { Express } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import { isYm } from './dates.ts';
 import type { Kv } from './kv.ts';
+import { BOARD_FONTS } from '../shared/fonts.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //
@@ -94,7 +95,7 @@ function cleanTitle(t: unknown): TitleStyle | null {
   if (!t || typeof t !== 'object') return null;
   const v = t as Record<string, unknown>;
   return {
-    f: Math.min(Math.max(Math.trunc(Number(v.f)) || 0, 0), 7),
+    f: Math.min(Math.max(Math.trunc(Number(v.f)) || 0, 0), BOARD_FONTS.length - 1),
     c: hex(v.c) || '#F6B3CB',
     o: hex(v.o),
     z: [56, 68, 80, 90].includes(Number(v.z)) ? Number(v.z) : 68
