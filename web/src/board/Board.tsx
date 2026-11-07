@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   0.13.2
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -50,8 +50,11 @@
                                   ... and 2 more (the board rebuilt in React
                                   and TypeScript)
 
- 0.13.2    2026-11-07   joshua    Every button on the bar has an icon and a
+ 0.14.0    2026-11-07   joshua    Every button on the bar has an icon and a
                         claude    word.
+
+                                  Fits above the tab bar; + Add event on its
+                                  own; a swipe to chores in place.
 ===============================================================================
 */
 
@@ -81,6 +84,8 @@ import { PhotosEditor } from './editors/PhotosEditor.tsx';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
 import { Strip } from './Strip.tsx';
+import { navigate } from '../lib/nav.ts';
+import { useShell } from '../ui/Shell.tsx';
 import { DrawLayer, firstPen, isPosca, recolor, touches } from './draw/Draw.tsx';
 import type { Pen } from './draw/Draw.tsx';
 import { Library } from './draw/Library.tsx';
@@ -123,9 +128,10 @@ export type MonthMeta = {
 // ----------------------------------- //
 // The board is always 1252 by 642, scaled to fit; a tablet adds the cork    //
 // strip and the wooden frame around it.                                     //
-function useFit(pad: number, h: number) {
+function useFit(pad: number, h: number, below = 0) {
+  // below: the tab bar's height on a phone or tablet (the board fits above it)
   const calc = () => {
-    const scale = Math.min(innerWidth / (W + 2 * pad), innerHeight / (h + 2 * pad));
+    const scale = Math.min(innerWidth / (W + 2 * pad), (innerHeight - below) / (h + 2 * pad));
     return { scale, res: Math.max(1, Math.min(4, Math.round(scale * (devicePixelRatio || 1) * 2) / 2)) };
   };
   const [fit, setFit] = useState(calc);
@@ -134,7 +140,7 @@ function useFit(pad: number, h: number) {
     on();
     addEventListener('resize', on);
     return () => removeEventListener('resize', on);
-  }, [pad, h]);
+  }, [pad, h, below]);
   return fit;
 }
 
@@ -190,7 +196,8 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   const pad =
     meta && 'artPad' in meta ? (meta.boardPad ?? (edit && !family ? EDIT_FRAME : 0)) : edit && !family ? EDIT_FRAME : 0;
   const bh = H + (edit ? CORK : 0);
-  const fit = useFit(pad, bh);
+  const shell = useShell();
+  const fit = useFit(pad, bh, shell.navH);
   // ---------------------- //
   // | Zooming in to draw | //
   // ---------------------- //
@@ -331,7 +338,7 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
         } catch {
           /* fine: no way back but the menu */
         }
-        location.href = new URL('chores', document.baseURI).href;
+        navigate('chores');
         return;
       }
     }
@@ -495,7 +502,7 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
     <div
       id="stage"
       className={(sf.lum > 0.18 ? 'light' : '') + (pad ? ' framed' : '')}
-      style={pad ? undefined : { backgroundImage: bg }}
+      style={{ ...(pad ? {} : { backgroundImage: bg }), bottom: shell.navH || undefined }}
       onPointerDown={e => (swipe.current = e.isPrimary ? [e.clientX, e.clientY] : null)}
       onPointerUp={tap}
       {...touchHandlers}
@@ -569,7 +576,21 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
         </div>
         {edit && (
           <Strip
-            who={who}
+            drawing={drawing}
+            add={
+              m && !drawing ? (
+                <button
+                  type="button"
+                  className="pill addev"
+                  id="addBtn"
+                  onClick={() =>
+                    setEditing({ k: 'event', ev: null, date: m.ym === m.today.slice(0, 7) ? m.today : m.ym + '-01' })
+                  }
+                >
+                  + Add event
+                </button>
+              ) : undefined
+            }
             tools={
               drawing ? (
                 <Tools
@@ -633,16 +654,6 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
                     🎨
                   </span>{' '}
                   Style
-                </button>
-                <button
-                  type="button"
-                  className="pill addev"
-                  id="addBtn"
-                  onClick={() =>
-                    setEditing({ k: 'event', ev: null, date: m.ym === m.today.slice(0, 7) ? m.today : m.ym + '-01' })
-                  }
-                >
-                  + Add event
                 </button>
               </>
             )}

@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | App.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -43,13 +43,18 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.14.0    2026-11-07   joshua    Pages switch in place, with the bar at the
+                        claude    bottom around them.
 ===============================================================================
 */
 
 import { useEffect } from 'react';
 import { paintSurface, surfaceOf } from './lib/surface.ts';
 import { kidOf, useWho } from './lib/who.ts';
-import { PAGES, pageHere } from './routes.ts';
+import { PAGES } from './routes.ts';
+import { navigate, useHere } from './lib/nav.ts';
+import { Shell } from './ui/Shell.tsx';
 import { Board } from './board/Board.tsx';
 import { Chores } from './pages/Chores.tsx';
 import { Jars } from './pages/Jars.tsx';
@@ -100,7 +105,7 @@ function useSlate() {
 // ------------------------------------------- //
 export function App() {
   useSlate();
-  const here = pageHere();
+  const here = useHere();
   const who = useWho();
   const def = PAGES.find(p => p.id === here);
   const View = VIEWS[here];
@@ -110,12 +115,15 @@ export function App() {
   if (!View || !def)
     return (
       <div className="page empty">
-        There’s no page here. <a href="./">Back to the board</a>
+        There’s no page here. <a href="./">Back to the calendar</a>
       </div>
     );
   if (!who.data) return null;
   const w = who.data;
-  const go = (to: string) => (location.replace(new URL(to, document.baseURI).href), null);
+  const go = (to: string) => {
+    queueMicrotask(() => navigate(to, { replace: true }));
+    return null;
+  };
   if (here === 'board') {
     // nobody yet: the admin console sets the board up; an unpaired screen shows its pairing code
     if (!w.rank && w.firstRun) return go('admin');
@@ -136,7 +144,11 @@ export function App() {
     return (
       <SignIn who={who.data} why={`Sign in to see the ${def.title.toLowerCase()}.`} onDone={() => location.reload()} />
     );
-  return <View who={who.data} />;
+  return (
+    <Shell who={w} here={here}>
+      <View key={here} who={w} />
+    </Shell>
+  );
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

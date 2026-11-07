@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | app-pages.spec.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-07
 
@@ -32,6 +32,9 @@
 
                                   ... and 4 more (the board rebuilt in React
                                   and TypeScript)
+
+ 0.14.0    2026-11-07   joshua    More and pins on a phone; the cork and its
+                        claude    drawer on a family screen.
 ===============================================================================
 */
 
@@ -164,20 +167,54 @@ test('changing the chores (new screen): add one for the kids, each their own', a
   expect(c).toMatchObject({ every: 'week', who: ['kid1', 'kid2'], each: true });
 });
 
-test('the ☰ menu: every page; ☆ keeps one on the strip; signed out, a phone is asked to sign in', async ({ as }) => {
+test('More (a phone): every page; 📌 pins one to the tab bar; signed out, a phone is asked to sign in', async ({
+  as
+}) => {
   const phone = await as('phone', { path: '/timers' });
-  await phone.locator('#menuBtn').click();
+  await expect(phone.locator('#menuBtn')).toHaveCount(0); // the pages are in the tab bar
+  await phone.locator('#moreBtn').click();
   const menu = phone.locator('#menuPanel');
   await expect(menu.getByRole('link', { name: 'Timers' })).toHaveAttribute('aria-current', 'page');
-  await menu.getByRole('button', { name: 'Keep Meal plan on the strip' }).click();
-  await expect(menu.getByRole('button', { name: 'Take Meal plan off the strip' })).toBeVisible();
+  await menu.getByRole('button', { name: 'Pin Meal plan' }).click();
+  await expect(menu.getByRole('button', { name: 'Unpin Meal plan' })).toBeVisible();
   await menu.getByRole('link', { name: 'Pantry' }).click();
+  await expect(phone).toHaveURL(/\/pantry$/);
+  await expect(menu).toHaveCount(0);
+  // the pinned page is a tab now; going there doesn't load a new page
+  const loads = await phone.evaluate(() => performance.getEntriesByType('navigation').length);
+  await phone.locator('#tabbar a', { hasText: 'Meals' }).click();
+  await expect(phone).toHaveURL(/\/meals$/);
+  await expect(phone.locator('#tabbar a', { hasText: 'Meals' })).toHaveAttribute('aria-current', 'page');
+  expect(await phone.evaluate(() => performance.getEntriesByType('navigation').length)).toBe(loads);
+  await phone.goBack();
   await expect(phone).toHaveURL(/\/pantry$/);
   const fav = await phone.evaluate(async () => (await fetch('api/favorites')).json());
   expect(fav.items).toEqual(['meals']);
   const out = await as('phone-signed-out', { path: '/meals' });
   await expect(out.locator('#signpad')).toBeVisible();
   await expect(out.getByRole('button', { name: 'Sign in' })).toBeVisible();
+});
+
+test('a family screen: the cork on every page, the calendar tools in a drawer', async ({ as }) => {
+  const fam = await as('family');
+  // a reminder or timer from the other tests may pop up first: close it
+  for (let i = 0; i < 3 && (await fam.locator('.scrim').count()); i++) await fam.keyboard.press('Escape');
+  const cork = fam.locator('.cork');
+  await expect(cork.locator('a', { hasText: 'Calendar' })).toHaveAttribute('aria-current', 'page');
+  await expect(fam.locator('#drawBtn')).not.toBeInViewport(); // tucked away until ✏️ Edit the calendar
+  await fam.locator('#editBtn').click();
+  await expect(fam.locator('#drawBtn')).toBeInViewport();
+  await fam.locator('#doneBtn').click();
+  await expect(fam.locator('#drawBtn')).not.toBeInViewport();
+  await fam.locator('#menuBtn').click();
+  await fam.locator('#menuPanel').getByRole('link', { name: 'Meal plan' }).click();
+  await expect(fam).toHaveURL(/\/meals$/);
+  const bar = fam.locator('.corkbar');
+  await expect(bar.locator('a', { hasText: 'Meal plan' })).toHaveAttribute('aria-current', 'page');
+  await expect(bar.locator('.corktools button', { hasText: 'Meal' })).toBeVisible(); // the page's own button
+  await bar.locator('a', { hasText: 'Calendar' }).click();
+  await expect(fam).toHaveURL(/\/edit$/);
+  expect(fam.errors).toEqual([]);
 });
 
 test('settings (new screen): hide a holiday and bring it back; the slideshow; the right-hand column', async ({

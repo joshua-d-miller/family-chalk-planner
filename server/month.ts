@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | month.ts
 ===============================================================================
- Version:   0.13.2
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
  Updated:   2026-11-07
@@ -37,7 +37,7 @@
                                   Immich photos, slideshow extras, a filled-in
                                   today, and the frame's thickness.
 
- 0.13.2    2026-11-07   joshua    A month saved by an older board has its
+ 0.14.0    2026-11-07   joshua    A month saved by an older board has its
                         claude    photo choice completed before the screens
                                   get it.
 ===============================================================================

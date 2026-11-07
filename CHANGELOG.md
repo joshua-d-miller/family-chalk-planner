@@ -4,14 +4,26 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
-## 0.13.2 — the photos button and the tablet's bar
-- Fixed: on the tablet, 📷 (the photos beside the month name) could open a blank page for a month whose
-  photos were set by an older board.
-- **The tablet's bar:** every button has an icon and a word (☰ Menu, ✏️ Draw, 🔤 Month title, 🖼️ Border, 📷 Photos,
-  🎨 Style, + Add event). In the ☰ menu, one **🏠 Home** entry takes each screen to its board ("The board" and
-  "Edit the board" are gone), and the headings are hand-lettered in pink like the rest of the board.
+## 0.14.0 — the bar at the bottom
+- **Pages switch in place:** going between the calendar and the other pages no longer loads a new page.
+  The bar at the bottom stays put and only the middle changes; back, forward and reloading still work.
+- **Family screens (and computers):** the cork is on every page: **☰ Menu**, **📅 Calendar** and up to
+  3 **📌 pinned** pages, with the page you're on ringed in pink. On the calendar, **✏️ Edit the calendar**
+  slides the tools out along the cork (✏️ Draw, 🔤 Month title, 🖼️ Border, 📷 Photos, 🎨 Style) until
+  **✕ Done**; **+ Add event** is always there. On the other pages, the cork ends with that page's own
+  button (+ Meal, ✎ Change the list...).
+- **Phones and tablets:** the pages are in a tab bar like the phone's own apps (Liquid Glass on an iPhone
+  or iPad, Material on Android): 📅 Calendar, your 3 pins and **More** (every page, pinning, the admin
+  console, signing out). The ☰ button at the top is gone, and the cork under the board is just its tools,
+  with their names.
+- **📌 Pin** a page from ☰ Menu or More: pins belong to the person signed in, or to the screen when
+  nobody is (up to 3, as ☆ favorites were up to 4).
+- The ☰ menu's headings are hand-lettered in pink like the rest of the board, and its one **📅 Calendar**
+  entry takes each screen to its own board ("The board" and "Edit the board" are gone).
 - **A screen that crashes says so** instead of going blank, with Reload and Back to the board, and the
   error shows in the admin console (🛡 Activity) and the server log.
+- Fixed: on the tablet, 📷 (the photos beside the month name) could open a blank page for a month whose
+  photos were set by an older board.
 
 ## 0.13.1 — upgrading from 0.12
 - **Upgrading a server install from 0.12:** run `sudo bash deploy/update.sh` **twice**. The first run

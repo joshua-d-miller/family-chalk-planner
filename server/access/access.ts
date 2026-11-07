@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | access.ts
 ===============================================================================
- Version:   0.13.2
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
  Updated:   2026-11-07
@@ -74,7 +74,7 @@
  0.13.1    2026-11-07   joshua    CSP_BOARD shared with pages.ts for that
                         claude    fallback.
 
- 0.13.2    2026-11-07   joshua    Screens report a crash (shown in Activity).
+ 0.14.0    2026-11-07   joshua    Screens report a crash (shown in Activity).
                         claude
 ===============================================================================
 */

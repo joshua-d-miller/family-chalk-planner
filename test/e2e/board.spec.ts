@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Claude
  Updated:   2026-11-06
 
@@ -19,6 +19,9 @@
 
                                   Server and tests are all TypeScript (ES
                                   modules).
+
+ 0.14.0    2026-11-07   joshua    A family screen's cork fits, drawer open or
+                        claude    closed.
 ===============================================================================
 */
 
@@ -54,4 +57,23 @@ test('every button in the strip fits on an iPad', async ({ as }) => {
       .map(e => e.id || e.className);
   });
   expect(off).toEqual([]);
+});
+
+test('a family screen: the pages and the calendar tools both fit on the cork', async ({ as }) => {
+  const page = await as('family', { context: { viewport: { width: 1024, height: 600 } } });
+  const off = (sel: string) =>
+    page.evaluate(sel => {
+      const cork = document.querySelector('.cork')!.getBoundingClientRect();
+      return [...document.querySelectorAll(sel)]
+        .filter(e => (e as HTMLElement).offsetWidth)
+        .filter(e => {
+          const r = e.getBoundingClientRect();
+          return r.left < cork.left - 1 || r.right > cork.right + 1;
+        })
+        .map(e => e.id || e.className);
+    }, sel);
+  expect(await off('.cork .corknav > *, .cork > #addBtn')).toEqual([]);
+  await page.locator('#editBtn').click();
+  await page.waitForTimeout(400);
+  expect(await off('.cork .drawer > *')).toEqual([]);
 });

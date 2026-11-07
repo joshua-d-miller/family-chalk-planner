@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | routes.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-07
 
@@ -21,10 +21,15 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.14.0    2026-11-07   joshua    Where 📅 Calendar goes on each screen.
+                        claude
 ===============================================================================
 */
 
-import { RANK } from './lib/who.ts';
+import { RANK, kidOf } from './lib/who.ts';
+import type { Who } from './lib/who.ts';
+import { pageOf } from './lib/nav.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // -------------- //
@@ -54,17 +59,23 @@ export const PAGES: PageDef[] = [
 ];
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | The Calendar tab | //
+// ------------------- //
+// Where Calendar goes on this screen: the board it may change, the board it //
+// shows, or (a kid's tablet) their own chores.                              //
+export function homeHref(who: Who | null) {
+  if (kidOf(who)) return 'chores';
+  return (who?.rank || 0) >= RANK.family ? 'edit' : './';
+}
+export const isHome = (here: string, who: Who | null) =>
+  kidOf(who) ? here === 'chores' : here === 'board' || here === 'edit';
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------------------ //
 // | Which page this address is | //
 // ------------------------------ //
 // Which page this address is (relative to the board's <base>)               //
-export function pageHere(): string {
-  const base = new URL(document.baseURI).pathname;
-  let p = location.pathname.startsWith(base)
-    ? location.pathname.slice(base.length)
-    : location.pathname.replace(/^\//, '');
-  p = p.replace(/\/+$/, '');
-  return p || 'board';
-}
+export const pageHere = (): string => pageOf();
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

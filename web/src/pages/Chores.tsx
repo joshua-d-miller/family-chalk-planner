@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Chores.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -32,9 +32,14 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.14.0    2026-11-07   joshua    📅 Calendar only on the wall (everywhere else
+                        claude    the bar has it).
 ===============================================================================
 */
 
+import { navigate } from '../lib/nav.ts';
+import { useShell } from '../ui/Shell.tsx';
 import { useEffect, useMemo, useState } from 'react';
 import type { Chore, ChoreProgress, ChoresView, Every, Person } from '../../../shared/chores.ts';
 import { post } from '../lib/api.ts';
@@ -94,6 +99,7 @@ export function Chores({ who }: { who: Who | null }) {
   const [editing, setEditing] = useState(false);
   const [err, setErr] = useState('');
   const editor = (who?.rank || 0) >= RANK.editor;
+  const shell = useShell(); // the wall has no bar: it gets a way back of its own
   useEffect(() => {
     document.body.classList.add('chorespage');
     return () => document.body.classList.remove('chorespage');
@@ -112,7 +118,7 @@ export function Chores({ who }: { who: Who | null }) {
     } catch {
       /* fine */
     }
-    location.href = new URL(back || './', document.baseURI).href;
+    navigate(back || './');
   };
   useEffect(() => {
     if (!back) return;
@@ -202,7 +208,7 @@ export function Chores({ who }: { who: Who | null }) {
               ✎ Change the list
             </Btn>
           )}
-          {back && (
+          {back && shell.kind === 'none' && (
             <Btn id="chBack" onClick={goBack}>
               📅 Calendar
             </Btn>

@@ -2,14 +2,14 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Strip.tsx
 ===============================================================================
- Version:   0.13.2
+ Version:   0.14.0
  Author:    Joshua D. Miller, Claude
  Updated:   2026-11-07
 
  Purpose:
-     The strip under the board on a tablet: ☰ every page, the family's
-     favorites, and the board's own tools (the month's title and border,
-     the style, drawing, adding an event).
+     The cork under the board when it's being changed: on a family
+     screen, the pages (☰ Menu, 📅 Calendar, the pinned ones) and the
+     board's tools in a drawer; on a phone or tablet, just the tools.
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -19,52 +19,84 @@
                         claude    events, the month's title and border, the
                                   board style.
 
- 0.13.2    2026-11-07   joshua    ☰ Menu, with its word.
+ 0.14.0    2026-11-07   joshua    ☰ Menu, with its word.
                         claude
+
+                                  The pages on the cork, and the tools in a
+                                  drawer (✏️ Edit the calendar).
 ===============================================================================
 */
 
 import type { ReactNode } from 'react';
-import { useState } from 'react';
-import { useFavorites } from '../lib/favorites.ts';
-import type { Who } from '../lib/who.ts';
-import { PAGES } from '../routes.ts';
-import { Menu } from '../ui/Menu.tsx';
+import { useEffect, useState } from 'react';
+import { CorkNav, useShell } from '../ui/Shell.tsx';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------- //
 // | The strip | //
 // ------------- //
+// On a family screen (or a computer) the cork starts like on every page: ☰  //
+// Menu, Calendar and the pinned pages, then + Add event and ✏ Edit the      //
+// calendar, which slides the board's tools out along the cork over the      //
+// pages until ✕ Done. On a phone or tablet the pages are in the tab bar, so //
+// the cork is just the tools.                                               //
 export function Strip({
-  who,
+  drawing,
   tools,
+  add,
   children
 }: {
-  who: Who | null;
+  drawing: boolean;
   tools?: ReactNode; // the drawing tools, while drawing
+  add?: ReactNode; // + Add event
   children: ReactNode; // the board's own buttons
 }) {
-  const [menu, setMenu] = useState(false);
-  const fav = useFavorites();
-  const favs = fav.items.map(id => PAGES.find(p => p.id === id)).filter(p => p && (who?.rank || 0) >= p.need);
+  const { kind } = useShell();
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (drawing) setOpen(true);
+  }, [drawing]);
+  if (kind !== 'cork')
+    return (
+      <div className="cork">
+        <span className="gap" />
+        {tools}
+        {children}
+        {add && <span className="groove" aria-hidden="true" />}
+        {add}
+      </div>
+    );
+  const shown = open || drawing;
+  // + Add event stays at the right end either way; the pages and the tools take turns beside it
   return (
-    <div className="cork">
-      <button type="button" className="pill" id="menuBtn" onClick={() => setMenu(true)}>
-        <span className="ic" aria-hidden="true">
-          ☰
-        </span>{' '}
-        Menu
-      </button>
-      {!tools &&
-        favs.map(p => (
-          <a key={p!.id} className="pill fav" href={p!.href} aria-label={p!.title} title={p!.title}>
-            <span aria-hidden="true">{p!.icon}</span>
-          </a>
-        ))}
-      <span className="gap" />
-      {tools}
-      {children}
-      {menu && <Menu who={who} here="edit" onClose={() => setMenu(false)} />}
+    <div className={'cork' + (shown ? ' open' : '')}>
+      <div className="corkarea">
+        <div className="corknav" inert={shown}>
+          <CorkNav />
+          <span className="gap" />
+          <button type="button" className="pill" id="editBtn" aria-expanded={shown} onClick={() => setOpen(true)}>
+            <span className="ic" aria-hidden="true">
+              ✏️
+            </span>{' '}
+            Edit the calendar
+          </button>
+        </div>
+        <div className="drawer" inert={!shown} aria-label="The calendar's tools">
+          {!drawing && (
+            <button type="button" className="pill" id="doneBtn" onClick={() => setOpen(false)}>
+              <span className="ic" aria-hidden="true">
+                ✕
+              </span>{' '}
+              Done
+            </button>
+          )}
+          {!drawing && <span className="groove" aria-hidden="true" />}
+          {tools}
+          {children}
+        </div>
+      </div>
+      {add && <span className="groove" aria-hidden="true" />}
+      {add}
     </div>
   );
 }

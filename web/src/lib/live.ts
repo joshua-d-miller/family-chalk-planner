@@ -105,6 +105,8 @@ export function useOnline() {
 function emit(event: string, data: unknown) {
   for (const h of handlers.get(event) || []) h(data);
 }
+// a change made on this screen that other parts of it show (the pins in the menu and in the bar)
+export const tellThisScreen = (event: string) => emit(event, {});
 const known = new Set<string>(['hello']);
 
 export function subscribe(event: string, h: Handler) {
