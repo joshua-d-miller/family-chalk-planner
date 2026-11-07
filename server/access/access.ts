@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | access.ts
 ===============================================================================
- Version:   0.13.1
+ Version:   0.13.2
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
  Updated:   2026-11-07
@@ -73,6 +73,9 @@
 
  0.13.1    2026-11-07   joshua    CSP_BOARD shared with pages.ts for that
                         claude    fallback.
+
+ 0.13.2    2026-11-07   joshua    Screens report a crash (shown in Activity).
+                        claude
 ===============================================================================
 */
 
@@ -608,7 +611,9 @@ export function setup(
         ? RANK.view
         : FAMILY_POSTS.has(req.path)
           ? RANK.family
-          : RANK.editor;
+          : req.path === '/screen-error'
+            ? RANK.view
+            : RANK.editor;
     const have = rankOf(req);
     if (have >= need) return next();
     if (write && req.path === '/chores/check' && kidOf(req)) return next(); // a kid's tablet: only their own (checked in the route)
@@ -624,6 +629,28 @@ export function setup(
             : 'This screen can’t make changes',
       signin: need === RANK.editor
     });
+  });
+
+  // ------------------------- //
+  // | A screen that crashed | //
+  // ------------------------- //
+  // A screen hit an error it couldn't recover from: it shows a message, and //
+  // the error is kept in Activity (and the server log) so it can be fixed.  //
+  app.post('/api/screen-error', (req, res) => {
+    if (tooMany('screenerr:' + req.ip, 10, 15 * 60e3)) return res.status(429).json({ error: 'Too many reports' });
+    const b = req.body || {};
+    // what the screen sent, without control characters
+    const clip = (v: unknown, n: number) =>
+      String(v || '')
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\u0000-\u001f]/g, ' ')
+        .slice(0, n);
+    const where = clip(b.where, 80) || '?';
+    audit(req, 'screen.error', { target: where, detail: clip(b.message, 300) || 'no details' });
+    console.warn(
+      `Chalk Planner: a screen crashed on ${where}: ${clip(b.message, 300)}\n${String(b.stack || '').slice(0, 2000)}`
+    );
+    res.json({ ok: true });
   });
 
   // ------------- //

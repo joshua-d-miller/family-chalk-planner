@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | month.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.13.2
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
  Updated:   2026-11-07
@@ -36,6 +36,10 @@
 
                                   Immich photos, slideshow extras, a filled-in
                                   today, and the frame's thickness.
+
+ 0.13.2    2026-11-07   joshua    A month saved by an older board has its
+                        claude    photo choice completed before the screens
+                                  get it.
 ===============================================================================
 */
 
@@ -152,6 +156,7 @@ export function setup({
     const pad = kv.get<number>('boardPad');
     if (pad != null) m.boardPad = pad;
     m.artPad = m.artPad || 0; // art from before borders: placed with no border
+    if (m.side) m.side = cleanSide(m.side); // saved by an older board: complete it (ids, pick)
     const every = yearly()[ym.slice(5)];
     if (m.border && 'off' in m.border) delete m.border;
     else if (!m.border && every) {

@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Strip.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.13.2
  Author:    Joshua D. Miller, Claude
  Updated:   2026-11-07
 
@@ -18,6 +18,9 @@
  0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
                         claude    events, the month's title and border, the
                                   board style.
+
+ 0.13.2    2026-11-07   joshua    ☰ Menu, with its word.
+                        claude
 ===============================================================================
 */
 
@@ -46,8 +49,11 @@ export function Strip({
   const favs = fav.items.map(id => PAGES.find(p => p.id === id)).filter(p => p && (who?.rank || 0) >= p.need);
   return (
     <div className="cork">
-      <button type="button" className="pill" id="menuBtn" aria-label="Menu" onClick={() => setMenu(true)}>
-        ☰
+      <button type="button" className="pill" id="menuBtn" onClick={() => setMenu(true)}>
+        <span className="ic" aria-hidden="true">
+          ☰
+        </span>{' '}
+        Menu
       </button>
       {!tools &&
         favs.map(p => (

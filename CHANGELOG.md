@@ -4,6 +4,15 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.13.2 — the photos button and the tablet's bar
+- Fixed: on the tablet, 📷 (the photos beside the month name) could open a blank page for a month whose
+  photos were set by an older board.
+- **The tablet's bar:** every button has an icon and a word (☰ Menu, ✏️ Draw, 🔤 Month title, 🖼️ Border, 📷 Photos,
+  🎨 Style, + Add event). In the ☰ menu, one **Chalkboard** entry takes each screen to its board ("The board" and
+  "Edit the board" are gone), and the headings are hand-lettered in pink like the rest of the board.
+- **A screen that crashes says so** instead of going blank, with Reload and Back to the board, and the
+  error shows in the admin console (🛡 Activity) and the server log.
+
 ## 0.13.1 — upgrading from 0.12
 - **Upgrading a server install from 0.12:** run `sudo bash deploy/update.sh` **twice**. The first run
   (0.12's updater) brings the new version; the second (the new one) adds the new screens and turns
