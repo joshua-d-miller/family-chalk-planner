@@ -6,6 +6,30 @@ export interface ReqLike {
   ip?: string;
 }
 
+// Home-network sign-in (from Colby Way's board): a request from a private address to the board opened by
+// its IP address (http://192.168.1.20:3002), not by a name. Through a reverse proxy, or by name, it isn't.
+export function privateAddress(ip: string | undefined) {
+  const v = String(ip || '')
+    .replace(/^::ffff:/i, '')
+    .toLowerCase();
+  if (v === '::1') return true;
+  const m = /^(\d+)\.(\d+)\.\d+\.\d+$/.exec(v);
+  if (m) {
+    const [a, b] = [+m[1], +m[2]];
+    return (
+      a === 10 || a === 127 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31) || (a === 169 && b === 254)
+    );
+  }
+  return /^(fc|fd|fe80):/.test(v);
+}
+export function openedByIp(host: string | undefined) {
+  const h = String(host || '')
+    .toLowerCase()
+    .replace(/:\d+$/, '')
+    .replace(/^\[|\]$/g, '');
+  return h === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(h) || (h.includes(':') && /^[0-9a-f:.]+$/.test(h));
+}
+
 export function parseCookies(h: string | undefined) {
   const out: Record<string, string> = {};
   for (const part of String(h || '').split(';')) {

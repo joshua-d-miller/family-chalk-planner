@@ -4888,6 +4888,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     $('pairpad').classList.remove('open');
     $('signWhy').textContent = why || '';
     $('signPk').hidden = !(state.who && state.who.passkeys && window.chalkPasskey && window.chalkPasskey.supported);
+    $('signCode').hidden = !!(state.who && state.who.homeSignin);   // home network sign-in: just a password
     $('signpad').classList.add('open');
   }
   $('signPkGo').addEventListener('click', function () {
@@ -4902,6 +4903,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       .catch(function (e) { $('signErr').textContent = e.message; $('signCode').value = ''; }).then(function () { $('signGo').disabled = false; });
   });
   $('signCode').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('signGo').click(); });
+  $('signPw').addEventListener('keydown', function (e) { if (e.key === 'Enter' && $('signCode').hidden) $('signGo').click(); });
   $('signPair').addEventListener('click', function (e) { e.preventDefault(); $('signpad').classList.remove('open'); location.href = '/?pair'; });
   // 👤 account menu (signed-in people)
   $('acctBtn').addEventListener('click', function () {

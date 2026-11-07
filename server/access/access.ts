@@ -24,7 +24,7 @@ import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import type { Express, Request, Response } from 'express';
 import type { Kv } from '../kv.ts';
-import { describe, parseCookies } from './http.ts';
+import { describe, openedByIp, parseCookies, privateAddress } from './http.ts';
 import type { ReqLike } from './http.ts';
 import { fmtCode, normCode, randCode, randomKey, safeEq, sha } from './secrets.ts';
 import { makeStore } from './store.ts';
@@ -101,6 +101,10 @@ export function setup(
     console.error('Chalk Planner: PUBLIC_URL is not a valid address - passkeys are off');
   }
   const passkeysHere = (req: Request) => !!rp && `${req.protocol}://${req.get('host')}` === rp.origin;
+  // Board sign-in with just a password, at home (admin console → ⚙️ Board → On your network; off unless
+  // turned on). Never for the admin console, and new accounts still set up an authenticator app.
+  const homeSigninOn = env.HOME_SIGNIN === 'on';
+  const homeSignin = (req: Request) => homeSigninOn && privateAddress(req.ip) && openedByIp(req.get('host'));
 
   const secCfg = (): SecCfg => ({ ...SEC_DEFAULT, ...(kv.get<Partial<SecCfg>>('security') || {}) });
 
@@ -481,7 +485,8 @@ export function setup(
       firstRun: q.uAdmins() === 0,
       passkeys: passkeysHere(req),
       publicUrl: rp ? rp.origin : null,
-      openView
+      openView,
+      homeSignin: homeSignin(req) // the board's sign-in needs no authenticator code here
     });
   });
 
@@ -504,6 +509,7 @@ export function setup(
     myKeys,
     tooMany,
     passkeysHere,
+    homeSignin,
     setupOpen,
     checkSetupCode,
     useSetupCode,
@@ -561,6 +567,7 @@ export type Ctx = {
   myKeys: (req: Request) => string[];
   tooMany: (key: string, max: number, windowMs: number, count?: boolean) => boolean;
   passkeysHere: (req: Request) => boolean;
+  homeSignin: (req: Request) => boolean;
   setupOpen: () => boolean;
   checkSetupCode: (given: unknown) => boolean;
   useSetupCode: () => void;

@@ -309,8 +309,10 @@ button:disabled{opacity:.5;cursor:default}
         <div class="row"><div><input id="bfProxy" data-k="TRUST_PROXY" autocomplete="off" spellcheck="false" placeholder="(any device on your local network)"></div><div style="flex:0 1 auto"><button id="bfProxyUse" hidden></button></div></div>
         <div class="row">
           <div><label for="bfOpen">Unpaired devices</label><select id="bfOpen" data-k="ALLOW_UNPAIRED_VIEW"><option value="">(default: must be paired)</option><option value="false">Must be paired</option><option value="true">May view the board (home network only!)</option></select></div>
+          <div><label for="bfHome">Board sign-in at home</label><select id="bfHome" data-k="HOME_SIGNIN"><option value="">(default: password + code)</option><option value="off">Password + code</option><option value="on">Just a password, when opened by IP address</option></select></div>
           <div><label for="bfUpd">Updates (deploy/update.sh)</label><select id="bfUpd" data-k="UPDATE_CHANNEL"><option value="">(default: releases)</option><option value="release">Releases only</option><option value="main">Every change on main (developers)</option></select></div>
         </div>
+        <p class="dim warnline" id="bfHomeWarn" hidden style="font-size:14px">⚠ With <b>just a password</b>, any device on your network — including smart plugs, TVs and anything on another VLAN that can reach the board — can sign in to the board with a password alone. It only applies when the board is opened by its IP address (like http://192.168.1.20:3002), never through your https:// address, and the admin console still asks for the code.</p>
         <label for="bfSrc">Source code link shown in the app (change it if you run your own copy)</label><input id="bfSrc" data-k="SOURCE_URL" autocomplete="off" spellcheck="false" placeholder="https://github.com/joshua-d-miller/family-chalk-planner">
       </div>
       <div class="card">
@@ -547,7 +549,7 @@ button:disabled{opacity:.5;cursor:default}
       kb.lastChild.style.fontSize = '14px';
       $('bfImported').hidden = !d.imported;
       if (d.imported) $('bfImported').textContent = '✓ Your old .env settings were moved in here (' + d.imported.moved.length + ' settings). The .env file isn’t used any more.';
-      moreAvail = null; drawMore(); drawFeeds();
+      moreAvail = null; drawMore(); drawFeeds(); bfHomeWarn();
     }).catch(function (e) { $('bfErr').textContent = e.message; });
   }
   Array.prototype.forEach.call(document.querySelectorAll('#bfProv button'), function (b) { b.addEventListener('click', function () { bfSetProv(b.dataset.p); }); });
@@ -592,6 +594,8 @@ button:disabled{opacity:.5;cursor:default}
         $('bfImErr').innerHTML = ''; $('bfImErr').appendChild(el('span', 'ok', '✓ Connected. ' + r.albums.length + ' album' + (r.albums.length === 1 ? '' : 's') + ' found.'));
       }).catch(function (e) { $('bfImErr').textContent = e.message; });
   });
+  function bfHomeWarn() { $('bfHomeWarn').hidden = $('bfHome').value !== 'on'; }
+  $('bfHome').addEventListener('change', bfHomeWarn);
   $('bfSave').addEventListener('click', function () {
     var values = {};
     Array.prototype.forEach.call(document.querySelectorAll('#tBoard [data-k]'), function (inp) {

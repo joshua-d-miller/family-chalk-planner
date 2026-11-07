@@ -180,8 +180,10 @@ export function registerAccounts(ctx: Ctx) {
       return res.status(429).json({ error: 'Too many tries - wait 15 minutes' });
     const u = q.uByName(username);
     const pwOk = checkPassword(b.password, u && u.pw_hash);
-    const secret = u && u.totp_ok && pwOk ? unsealPw(b.password, u.totp_secret) : null;
-    const step = u && secret ? totpCheck(secret, b.code, u.totp_last) : -1;
+    // at home, with home sign-in on: the board (not the console) without a code, unless one is typed
+    const noCode = kind === 'edit' && ctx.homeSignin(req) && !String(b.code || '').trim();
+    const secret = u && u.totp_ok && pwOk && !noCode ? unsealPw(b.password, u.totp_secret) : null;
+    const step = noCode ? 0 : u && secret ? totpCheck(secret, b.code, u.totp_last) : -1;
     if (!u || !u.totp_ok || !pwOk || step < 0) {
       tooMany('login:' + req.ip, 20, 15 * 60e3);
       tooMany('user:' + username, 8, 15 * 60e3);
@@ -189,15 +191,19 @@ export function registerAccounts(ctx: Ctx) {
       audit(req, 'signin.failed', {
         actor: null,
         target: username || '(blank)',
-        detail: !u ? 'unknown username' : !pwOk ? 'wrong password' : 'wrong or reused code',
+        detail: !u ? 'unknown username' : !pwOk ? 'wrong password' : noCode ? 'not set up yet' : 'wrong or reused code',
         refType: u ? 'person' : null,
         refId: u ? u.id : null
       });
-      return res.status(401).json({ error: 'That username, password or code didn’t work' });
+      return res
+        .status(401)
+        .json({
+          error: noCode ? 'That username or password didn’t work' : 'That username, password or code didn’t work'
+        });
     }
     if (kind === 'admin' && u.role !== 'admin') return res.status(403).json({ error: 'This account isn’t an admin' });
-    q.uTotpLast(step, u.id);
-    startSession(req, res, u, kind, 'password + code');
+    if (!noCode) q.uTotpLast(step, u.id);
+    startSession(req, res, u, kind, noCode ? 'password (home network)' : 'password + code');
     if (kind === 'admin' && !sessionOf(req, 'edit')) startSession(req, res, u, 'edit'); // the board works too after an admin sign-in
     res.json({ ok: true, role: u.role });
   });

@@ -94,6 +94,8 @@ export const FIELDS: Record<string, Field> = {
   PUBLIC_URL: { type: 'url' },
   TRUST_PROXY: { type: 'proxy' },
   ALLOW_UNPAIRED_VIEW: { type: 'enum', values: ['true', 'false'] },
+  // board sign-in with just a password on the home network, when the board is opened by its IP address
+  HOME_SIGNIN: { type: 'enum', values: ['off', 'on'] },
   UPDATE_CHANNEL: { type: 'enum', values: ['release', 'main'] },
   SOURCE_URL: { type: 'url' }
 };
