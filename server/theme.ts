@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | theme.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-07
 
@@ -22,6 +22,9 @@
 
                                   Immich photos, slideshow extras, a filled-in
                                   today, and the frame's thickness.
+
+ 0.14.0    2026-11-07   joshua    The board style can use any of the fonts.
+                        claude
 ===============================================================================
 */
 

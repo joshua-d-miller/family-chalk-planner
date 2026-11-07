@@ -35,6 +35,8 @@
 
  0.14.0    2026-11-07   joshua    More and pins on a phone; the cork and its
                         claude    drawer on a family screen.
+
+                                  A month title in one of the new fonts.
 ===============================================================================
 */
 
@@ -435,12 +437,23 @@ test('the board (new screen, tablet): the month’s title, its border and the bo
   const { ym } = thisMonth();
   const t = await as('tablet', { path: '/edit' });
   await t.locator('#titleBtn').click();
-  await t.locator('#titleSheet .fontpick .seg').nth(3).click(); // Pacifico, shown on the board at once
+  await t.locator('#titleSheet .fgroups button', { hasText: 'Script' }).click();
+  await t.locator('#titleSheet .fontpick .seg').first().click(); // Pacifico, shown on the board at once
   await expect
     .poll(() => t.locator('#monthName .mn').evaluate(e => getComputedStyle(e).fontFamily))
     .toContain('Pacifico');
   await t.locator('#titleSheet').getByRole('button', { name: 'Save' }).click();
   await expect.poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).title?.f).toBe(3);
+  // a new font (after the first 8): saved as its number, drawn in its own face
+  await t.locator('#titleBtn').click();
+  await t.locator('#titleSheet .fgroups button', { hasText: 'Holidays' }).click();
+  await t.locator('#titleSheet .fontpick .seg[title^="Creepster"]').click();
+  await expect
+    .poll(() => t.locator('#monthName .mn').evaluate(e => getComputedStyle(e).fontFamily))
+    .toContain('Creepster');
+  await t.locator('#titleSheet').getByRole('button', { name: 'Save' }).click();
+  await expect.poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).title?.f).toBe(42);
+  await expect.poll(() => t.evaluate(() => document.fonts.check("400 40px 'Creepster'"))).toBe(true); // served by the board
   await t.locator('#borderBtn').click();
   await t
     .locator('#borderSheet')

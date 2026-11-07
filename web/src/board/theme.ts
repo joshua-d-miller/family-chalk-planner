@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | theme.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -24,6 +24,9 @@
  0.13.0    2026-11-07   joshua    The new board: the family's style, each
                         colby     month's title and holiday border, polaroids,
                         claude    drawn jars.
+
+ 0.14.0    2026-11-07   joshua    The fonts come from shared/fonts.ts.
+                        claude
 ===============================================================================
 */
 

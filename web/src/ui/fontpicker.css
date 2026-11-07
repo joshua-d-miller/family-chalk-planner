@@ -1,0 +1,46 @@
+/* the font picker (FontPicker.tsx) */
+.fontpicker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fontpicker .fgroups {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid rgba(237, 234, 224, 0.15);
+}
+.fontpicker .fgroups::-webkit-scrollbar {
+  display: none;
+}
+.fontpicker .fgroups button {
+  flex: none;
+  position: relative;
+  border: 0;
+  background: none;
+  color: rgba(237, 234, 224, 0.65);
+  font-family: 'Kalam', cursive;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 6px 10px 8px;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+.fontpicker .fgroups button.on {
+  color: var(--pink);
+  border-bottom-color: var(--pink);
+}
+.fontpicker .fgroups .dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--yellow);
+  margin-left: 5px;
+  vertical-align: middle;
+}
+.fontpicker .fontpick {
+  max-height: 34vh;
+  overflow-y: auto;
+}

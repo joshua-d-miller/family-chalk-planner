@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | pages.ts
 ===============================================================================
- Version:   0.13.1
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
  Updated:   2026-11-07
@@ -53,6 +53,9 @@
 
  0.13.1    2026-11-07   joshua    Without built screens, the board, the tablet
                         claude    and chores fall back to the board as it was.
+
+ 0.14.0    2026-11-07   joshua    Serves every font in shared/fonts.ts.
+                        claude
 ===============================================================================
 */
 

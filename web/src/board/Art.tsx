@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Art.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -37,6 +37,9 @@
                                   The new board: drawing on a tablet (chalk,
                                   Posca, writing, eraser, select, stamps,
                                   GIFs).
+
+ 0.14.0    2026-11-07   joshua    The fonts come from shared/fonts.ts.
+                        claude
 ===============================================================================
 */
 

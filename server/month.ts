@@ -40,6 +40,8 @@
  0.14.0    2026-11-07   joshua    A month saved by an older board has its
                         claude    photo choice completed before the screens
                                   get it.
+
+                                  Month titles can use any of the fonts.
 ===============================================================================
 */
 

@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Tools.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -25,13 +25,16 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.14.0    2026-11-07   joshua    The grouped font picker, with every font.
+                        claude
 ===============================================================================
 */
 
 import { useState } from 'react';
 import type { ArtItem } from '../Art.tsx';
 import { fontCss } from '../Art.tsx';
-import { FONT_NAMES } from '../editors/TitleEditor.tsx';
+import { FontPicker } from '../../ui/FontPicker.tsx';
 import { Btn, Segs } from '../../ui/bits.tsx';
 import { CHALK, Colors, customColors, POSCA } from '../../ui/Colors.tsx';
 import { Sheet } from '../../ui/Sheet.tsx';
@@ -234,20 +237,7 @@ export function TextSheet({
       <div className="tpreview" style={{ font: fontCss(f, Math.min(z, 54)), color: c, opacity: s ? 1 : 0.4 }}>
         {s || 'Preview'}
       </div>
-      <div className="fontpick">
-        {FONT_NAMES.map((n, i) => (
-          <button
-            type="button"
-            key={n}
-            className={'seg' + (f === i ? ' on' : '')}
-            aria-pressed={f === i}
-            style={{ font: fontCss(i, i === 6 ? 15 : i === 5 ? 26 : 20) }}
-            onClick={() => setF(i)}
-          >
-            {n}
-          </button>
-        ))}
-      </div>
+      <FontPicker value={f} onChange={setF} keyOf={(_, i) => i} size={20} />
       <Segs
         value={String(z)}
         onChange={v => setZ(+v)}

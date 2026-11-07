@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | art.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
  Updated:   2026-11-06
@@ -44,6 +44,9 @@
  0.13.0    2026-11-06   joshua    Art, stamps, each month's options, board
                         claude    style, meals and jars in their own
                                   TypeScript modules.
+
+ 0.14.0    2026-11-07   joshua    Words on the board can use any of the fonts.
+                        claude
 ===============================================================================
 */
 
