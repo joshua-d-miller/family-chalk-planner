@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | PhotosEditor.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.13.2
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -22,6 +22,9 @@
  0.13.0    2026-11-07   joshua    The new screens take over: /, /edit and
                         colby     /chores are the React board; the old one
                         claude    stays at /classic.
+
+ 0.13.2    2026-11-07   joshua    Opens for a month saved by an older board
+                        claude    (no picked photos).
 ===============================================================================
 */
 
@@ -53,11 +56,18 @@ export function PhotosEditor({
 }) {
   const sd = meta?.side;
   const [d, setD] = useState<Side>(
-    sd ? { ...sd, ids: sd.ids.slice() } : { mode: photos?.cfg.frame ? 'photos' : 'art', pick: 'random', ids: [] }
+    // (a month saved by an older board may be missing some of these)
+    sd
+      ? {
+          mode: sd.mode === 'art' ? 'art' : 'photos',
+          pick: sd.pick === 'chosen' ? 'chosen' : 'random',
+          ids: [...(sd.ids || [])]
+        }
+      : { mode: photos?.cfg?.frame ? 'photos' : 'art', pick: 'random', ids: [] }
   );
   const [err, setErr] = useState('');
   const key = d.mode === 'art' ? 'art' : d.pick;
-  const list = photos?.photos || [];
+  const list = (photos?.photos || []).filter(p => p && p.id);
   async function save() {
     const side = d.pick === 'chosen' && !d.ids.length ? { ...d, pick: 'random' as const } : d;
     try {

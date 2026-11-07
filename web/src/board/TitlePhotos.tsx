@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | TitlePhotos.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.13.2
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -28,6 +28,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.13.2    2026-11-07   joshua    Copes with a month saved by an older board.
+                        claude
 ===============================================================================
 */
 
@@ -47,7 +50,7 @@ type Spot = { x: number; y: number; w: number; h: number; r: number };
 // the polaroids' photos: the month's chosen ones (if any are still in the album), or all of them
 export function titlePool(list: Photo[], side: Side | null | undefined) {
   if (side?.mode === 'photos' && side.pick === 'chosen') {
-    const mine = side.ids.map(id => list.find(p => p.id === id)).filter((p): p is Photo => !!p);
+    const mine = (side.ids || []).map(id => list.find(p => p.id === id)).filter((p): p is Photo => !!p);
     if (mine.length) return mine;
   }
   return list;
