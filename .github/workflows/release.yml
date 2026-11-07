@@ -22,10 +22,11 @@ jobs:
           v="$(node -p 'require("./package.json").version')"
           [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "Tag $GITHUB_REF_NAME but package.json says $v"; exit 1; }
       - run: npm ci
-      - run: npm test
       # The screens, built once here: servers fetch them as the git tag screens-vX.Y.Z (deploy/screens.sh),
-      # with the same access they use for the code, and never build anything themselves.
+      # with the same access they use for the code, and never build anything themselves. Built before
+      # the tests, which load them.
       - run: npm run build
+      - run: npm test
       - name: Publish the built screens (tag screens-${{ github.ref_name }})
         run: |
           d="$(mktemp -d)"; cp -r web/dist/. "$d"; cd "$d"

@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | pages.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.13.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
  Updated:   2026-11-07
@@ -50,6 +50,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.13.1    2026-11-07   joshua    Without built screens, the board, the tablet
+                        claude    and chores fall back to the board as it was.
 ===============================================================================
 */
 
@@ -59,6 +62,7 @@ import { createRequire } from 'node:module';
 import express from 'express';
 import type { Express, RequestHandler } from 'express';
 import { ICONS } from './icons.ts';
+import { CSP_BOARD } from './access/access.ts';
 
 const require = createRequire(import.meta.url);
 
@@ -320,9 +324,23 @@ export function setup({
   // Web/dist, built by `npm run build` (releases ship it built). Every      //
   // address in them is relative to <base>, set here to where the board is   //
   // served from.                                                            //
+  // Not built yet (an upgrade from 0.12 by its own update.sh, which doesn't know about them): the
+  // board, the tablet and chores fall back to the board as it was, so nothing goes blank. Running
+  // deploy/update.sh again fetches them.
+  let warned = false;
   function sendApp(kind: Kind): RequestHandler {
-    return (_req, res) => {
+    return (req, res, next) => {
       fs.readFile(path.join(appDir, 'index.html'), 'utf8', (err, html) => {
+        if (err && (kind === 'wall' || kind === 'edit' || kind === 'chores')) {
+          if (!warned) {
+            warned = true;
+            console.warn(
+              'Chalk Planner: the screens (web/dist) are missing, so the board as it was is shown. Run: sudo bash deploy/update.sh'
+            );
+          }
+          res.set('Content-Security-Policy', CSP_BOARD);
+          return sendBoard(kind)(req, res, next);
+        }
         if (err)
           return res
             .status(503)

@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | access.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.13.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
  Updated:   2026-11-07
@@ -70,6 +70,9 @@
 
                                   ... and 3 more (the board rebuilt in React
                                   and TypeScript)
+
+ 0.13.1    2026-11-07   joshua    CSP_BOARD shared with pages.ts for that
+                        claude    fallback.
 ===============================================================================
 */
 
@@ -88,6 +91,11 @@ import { registerAccounts } from './accounts.ts';
 import { registerPasskeys } from './passkeys.ts';
 import { registerPeople } from './people.ts';
 import { registerSecurity } from './security.ts';
+
+// the board as it was (/classic): everything comes from the board itself; its scripts are inline.
+// Also used by pages.ts when the new screens aren't built and the board falls back to it.
+export const CSP_BOARD =
+  "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
 
 export const DAY = 24 * 3600e3;
 export const PAIR_TTL = 15 * 60e3;
@@ -456,9 +464,6 @@ export function setup(
   // private is cached.                                                      //
   const CSP_CONSOLE =
     "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'";
-  // the board as it was (/classic): everything comes from the board itself; its scripts are inline
-  const CSP_BOARD =
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
   // the new screens (React): no inline scripts at all
   const CSP_APP =
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";

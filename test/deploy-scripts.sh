@@ -3,7 +3,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | deploy-scripts.sh
 ===============================================================================
- Version:   0.13.0
+ Version:   0.13.1
  Author:    Joshua D. Miller, Claude
  Updated:   2026-11-07
 
@@ -38,6 +38,9 @@
 
                                   Releases carry the built screens; servers
                                   fetch them instead of building.
+
+ 0.13.1    2026-11-07   joshua    Tests finishing an upgrade from 0.12.
+                        claude
 ===============================================================================
 HEADER
 
@@ -167,4 +170,13 @@ s="$(mktemp -d)"; ( cd "$s" && echo '<!-- screens for v0.99.0 -->' > index.html 
 bash "$W/app/deploy/update.sh" > "$W/out" 2>&1 || fail "update to a release"
 grep -q 'screens for v0.99.0' "$W/app/web/dist/index.html" && [ "$(cat "$W/app/web/dist/.version")" = v0.99.0 ] || fail "the release's built screens are in place"
 pass "a release brings its built screens"
+
+# 9. an upgrade from 0.12 (whose update.sh knew nothing of the screens or the update services): running
+#    the new update.sh again fetches the screens and turns on Update now / the nightly check
+rm -rf "$W/app/web/dist" /etc/systemd/system/family-chalk-planner-update.path
+touch "$UNIT"
+bash "$W/app/deploy/update.sh" > "$W/out" 2>&1 && grep -q "Already up to date" "$W/out" || fail "finishing an upgrade from 0.12"
+grep -q 'screens for v0.99.0' "$W/app/web/dist/index.html" || fail "finishing an upgrade from 0.12 fetches the screens"
+[ -f /etc/systemd/system/family-chalk-planner-update.path ] || fail "finishing an upgrade from 0.12 turns on Update now"
+pass "a second run finishes an upgrade from 0.12"
 echo "deploy scripts: all passed"

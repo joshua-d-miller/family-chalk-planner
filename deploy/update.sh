@@ -3,7 +3,7 @@
 ===============================================================================
  Family Chalk Planner | Deploy | update.sh
 ===============================================================================
- Version:   0.13.0
+ Version:   0.13.1
  Author:    Joshua D. Miller, Claude
  Created:   2026-10-11
  Updated:   2026-11-07
@@ -83,6 +83,10 @@
 
                                   Daylight saving and time zone tests; the
                                   newest libraries and CI actions.
+
+ 0.13.1    2026-11-07   joshua    A second run finishes an upgrade from 0.12:
+                        claude    the screens, Update now and the nightly
+                                  check.
 ===============================================================================
 HEADER
 
@@ -209,6 +213,16 @@ if [ "$old" = "$new" ] || as_owner git merge-base --is-ancestor "$new" "$old"; t
     say "Some of the board's packages (fonts and others) are missing - installing them"
     install_deps; deps_ok || die "packages still incomplete after npm ci - see the messages above"
     systemctl restart "$SERVICE"; say "Installed and restarted."
+  fi
+  # finishing an upgrade from 0.12, whose update.sh brought the new code but not the screens or the
+  # Update now / nightly services (the board shows the old screens until then)
+  if [ "$MODE" != check ] && [ ! -f web/dist/index.html ]; then
+    say "Fetching the board's screens"
+    as_owner bash deploy/screens.sh || die "couldn't get the screens - see the messages above (the board keeps showing the old ones)"
+  fi
+  if [ "$MODE" != check ] && [ -f "/etc/systemd/system/$SERVICE.service" ] && [ ! -f "/etc/systemd/system/$SERVICE-update.path" ]; then
+    say "Turning on Update now and the nightly update check"
+    bash deploy/install.sh --unit-only
   fi
   status current "Up to date (v$old_v)" "" "" ""
   exit 0
