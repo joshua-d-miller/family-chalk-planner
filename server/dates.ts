@@ -94,12 +94,18 @@ export function makeClock({ timeZone, time24, weekStart, southern }: ClockOption
   }
 
   // A date and time on the board's clock -> the real instant
+  // (a time the clocks skip, like 2:30 on the night they spring forward, means the same time on the
+  // clock from before the change: 3:30, as calendar apps do; a time that happens twice is the first one)
   function fromZoned(y: number, m: number, d: number, h: number, mi: number): Date {
-    let guess = Date.UTC(y, m - 1, d, h, mi);
-    for (let i = 0; i < 2; i++) {
-      const p = zoned(new Date(guess));
-      guess += Date.UTC(y, m - 1, d, h, mi) - Date.UTC(p.y, p.m - 1, p.d, p.h, p.mi);
-    }
+    const want = Date.UTC(y, m - 1, d, h, mi);
+    const offsetAt = (t: number) => {
+      const p = zoned(new Date(t));
+      return Date.UTC(p.y, p.m - 1, p.d, p.h, p.mi) - t;
+    };
+    let guess = want;
+    for (let i = 0; i < 2; i++) guess = want - offsetAt(guess);
+    const p = zoned(new Date(guess));
+    if (p.h !== h || p.mi !== mi || p.d !== d) guess = want - offsetAt(guess - 3 * 3600e3);
     return new Date(guess);
   }
 

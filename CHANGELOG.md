@@ -24,6 +24,8 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   password.
 - **Emoji** show on every screen: screens without emoji of their own get the board's.
 - Fixed: a phone on /chores could get the night slideshow over the chores.
+- Fixed: an event added for a time the clocks skip (2:30 on the night they spring forward) was put at
+  1:30; it's now at 3:30, as calendar apps do.
 
 ## 0.12.2 — hide holidays you don't want
 - **Holidays:** tap a holiday on the calendar (tablet or family screen) for the list of the board's

@@ -177,6 +177,9 @@ healthy() {   # $1: the version that should be running
   local out
   for _ in $(seq 1 45); do
     out="$(curl -fsS "http://127.0.0.1:$port/api/health" 2>/dev/null || true)"
+    # (versions before 0.13 have no /api/health: going back to one, the board answering is enough)
+    [ -z "$out" ] && curl -fsS "http://127.0.0.1:$port/api/today" >/dev/null 2>&1 \
+      && [ "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$port/api/health")" = 404 ] && out='{"ok":true}'
     if [ -n "$out" ] && node -e 'const h = JSON.parse(process.argv[1]); process.exit(h.ok && (!h.version || h.version === "v" + process.argv[2]) ? 0 : 1)' "$out" "$1" 2>/dev/null \
       && curl -fsS "http://127.0.0.1:$port/" 2>/dev/null | grep -q 'board-version'; then return 0; fi
     sleep 1

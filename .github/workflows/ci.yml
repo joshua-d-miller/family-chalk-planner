@@ -7,7 +7,7 @@ jobs:
     name: Code checks (types, lint, formatting, security audit, shell scripts)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -28,7 +28,7 @@ jobs:
     name: Server and API tests (accounts, calendars, lists, photos, updates)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -40,7 +40,7 @@ jobs:
     name: Install and update scripts (fresh install, updates, a failed update undone)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -52,7 +52,7 @@ jobs:
     name: Screens in a real browser (wall, tablet, family screen, kid's tablet, phone)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -73,7 +73,7 @@ jobs:
     name: Docker image builds and starts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Container image builds and starts
         run: |
           docker build -t fcp:ci .
