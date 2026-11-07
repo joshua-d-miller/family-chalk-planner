@@ -63,6 +63,12 @@ The server is TypeScript that Node runs directly (no build step); `npm run typec
 - **Licensing.** The project is AGPL-3.0-or-later. Third-party assets must have a compatible license
   and an entry in `NOTICE`.
 
+## The screens
+The new screens are a React app in `web/` (`npm run dev:web` with a board running on port 3002; `npm run build`
+builds `web/dist`). Releases carry them built: the release workflow publishes them as the git tag
+`screens-vX.Y.Z`, and `deploy/screens.sh` (run by install.sh and update.sh) fetches that tag, so a server
+never builds anything. Following main, they're built on the server instead (with the developer packages).
+
 ## Releasing (maintainers)
 Bump `version` in `package.json` (and `package-lock.json`), move the notes into a `## x.y.z` section of
 `CHANGELOG.md`, merge, then tag the merge commit `vx.y.z` and push the tag. The Release workflow

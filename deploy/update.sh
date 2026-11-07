@@ -139,11 +139,13 @@ undo() {
   say "Going back to ${old:0:7}"
   as_owner git reset --quiet --hard "$old"
   if grep -qx 'package-lock.json' <<<"$changed"; then as_owner npm ci --omit=dev --no-audit --no-fund --loglevel=error || true; fi
+  as_owner bash deploy/screens.sh || true
   status failed "The update stopped before the new version started; still on v$old_v" "v$old_v" "v$new_v"
 }
 trap 'undo $LINENO' ERR
 if grep -qx 'package-lock.json' <<<"$changed" || ! deps_ok; then say "Installing packages (fonts and others)"; install_deps; fi
 deps_ok || { say "Packages still incomplete after npm ci"; false; }   # (goes back to the previous version)
+as_owner bash deploy/screens.sh   # the new screens, built (releases carry them)
 if grep -qx 'face/requirements.txt' <<<"$changed" && [ -x face/venv/bin/python ]; then bash deploy/setup-face.sh "$APP_DIR"; fi
 if grep -qE '^deploy/(family-chalk-planner[a-z-]*\.(service|path|timer)|hardening\.conf)$' <<<"$changed"; then bash deploy/install.sh --unit-only; fi
 chmod -R o-w "$APP_DIR"
@@ -200,6 +202,7 @@ else
   if grep -qx 'package-lock.json' <<<"$changed"; then
     as_owner npm ci --omit=dev --no-audit --no-fund --loglevel=error || say "Couldn't reinstall the previous version's packages"
   fi
+  as_owner bash deploy/screens.sh || true
   systemctl start "$SERVICE" || true
   if healthy "$old_v"; then
     status rolledback "v$new_v didn't start properly, so the board went back to v$old_v (with its database from before)" "v$old_v" "v$new_v"

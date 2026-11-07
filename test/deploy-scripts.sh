@@ -120,4 +120,13 @@ bash "$W/app/deploy/update.sh" --nightly > "$W/out" 2>&1 || fail "nightly check"
 [ "$(git -C "$W/app" rev-parse HEAD)" = "$old" ] || fail "nightly check with automatic updates off doesn't update"
 grep -q '"state": "available"' "$W/app/data/update-status.json" || fail "nightly check notes the new version"
 pass "nightly check: automatic updates off"
+# 8. a release: its built screens come with it (the screens-vX.Y.Z tag), nothing is built on the server
+board conf
+( cd "$W/seed" && node -e 'const f="package.json",p=JSON.parse(require("fs").readFileSync(f));p.version="0.99.0";require("fs").writeFileSync(f,JSON.stringify(p,null,2))' \
+  && "${G[@]}" commit -qam "release 0.99.0" && git tag v0.99.0 && git push -q "$W/origin.git" main v0.99.0 )
+s="$(mktemp -d)"; ( cd "$s" && echo '<!-- screens for v0.99.0 -->' > index.html && mkdir assets && echo x > assets/a.js \
+  && "${G[@]}" init -q && "${G[@]}" add -A && "${G[@]}" commit -qm screens && git push -q "$W/origin.git" HEAD:refs/tags/screens-v0.99.0 )
+bash "$W/app/deploy/update.sh" > "$W/out" 2>&1 || fail "update to a release"
+grep -q 'screens for v0.99.0' "$W/app/web/dist/index.html" && [ "$(cat "$W/app/web/dist/.version")" = v0.99.0 ] || fail "the release's built screens are in place"
+pass "a release brings its built screens"
 echo "deploy scripts: all passed"

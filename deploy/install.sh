@@ -117,6 +117,7 @@ say "Installing dependencies"
 OWNER="$(stat -c %U "$APP_DIR")"
 as_owner() { if [ "$OWNER" = root ]; then "$@"; else runuser -u "$OWNER" -- "$@"; fi; }   # keep the checkout owned by whoever cloned it
 ( cd "$APP_DIR" && as_owner npm ci --omit=dev --no-audit --no-fund --loglevel=error )
+as_owner bash "$APP_DIR/deploy/screens.sh"   # the screens, built (releases carry them)
 chmod -R o-w "$APP_DIR"   # the service user can read the code but never change it
 
 # ---- service user ----
