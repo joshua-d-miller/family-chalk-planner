@@ -1,0 +1,308 @@
+/* drawing on a tablet */
+.slate .drawLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  touch-action: none;
+  cursor: crosshair;
+}
+.slate .drawLayer.tool-select,
+.slate .drawLayer.tool-place {
+  cursor: default;
+}
+.slate .drawLayer.tool-text {
+  cursor: text;
+}
+.slate .drawLayer .artSvg,
+.slate .drawLayer .gifLayer {
+  z-index: 1;
+}
+.slate .drawUi {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: visible;
+}
+.slate .drawUi .ring {
+  fill: none;
+  stroke: rgba(237, 234, 224, 0.7);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+.slate .drawUi .band,
+.slate .drawUi .selbox {
+  fill: rgba(242, 212, 121, 0.06);
+  stroke: #f2d479;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+.slate .selGrip {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  background: #f2d479;
+  border: 3px solid #161616;
+  z-index: 3;
+  cursor: nwse-resize;
+  touch-action: none;
+}
+.slate .selbar {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+  background: #161616;
+  border-radius: 24px;
+  padding: 4px 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
+}
+.slate .selbar button {
+  height: 40px;
+  min-width: 40px;
+  padding: 0 12px;
+  border-radius: 20px;
+  border: none;
+  background: transparent;
+  color: var(--chalk, #edeae0);
+  font:
+    700 15px 'Kalam',
+    cursive;
+  cursor: pointer;
+}
+.slate .selbar button.star {
+  color: #f2d479;
+}
+.slate .status {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 9;
+  background: rgba(22, 22, 22, 0.92);
+  color: #edeae0;
+  font:
+    700 17px 'Kalam',
+    cursive;
+  padding: 6px 18px;
+  border-radius: 18px;
+  pointer-events: none;
+}
+/* the tools on the strip */
+.cork .tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #161616;
+  border-radius: 24px;
+  padding: 0 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  min-width: 0;
+}
+.cork .swatches {
+  display: flex;
+  align-items: center;
+  max-width: 420px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cork .swatches::-webkit-scrollbar {
+  display: none;
+}
+.cork .sw {
+  width: 38px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.cork .sw span {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+.cork .sw.on {
+  border-color: var(--chalk);
+}
+.cork .cpick {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 50%;
+  margin: 0 4px;
+  cursor: pointer;
+  background: conic-gradient(#e8262b, #ffe500, #1fb04c, #3ec6f2, #2c64d6, #8b4fd8, #ff4fa3, #e8262b);
+}
+.cork .cpick input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.cork .tool {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: transparent;
+  color: var(--chalk);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.cork .tool.on {
+  border-color: var(--chalk);
+}
+.cork .tool:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.cork .tool.medium {
+  width: auto;
+  padding: 0 10px;
+  border-radius: 22px;
+  font:
+    700 15px 'Kalam',
+    cursive;
+  gap: 5px;
+}
+/* the cards */
+.ttext {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px dashed rgba(237, 234, 224, 0.6);
+  color: var(--chalk);
+  font:
+    22px 'Kalam',
+    cursive;
+  outline: none;
+  resize: none;
+}
+.tpreview {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: pre-wrap;
+  line-height: 1.2;
+}
+.libtabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+.lscroll {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 300px;
+}
+#libSheet {
+  width: min(860px, 100%);
+}
+.cgrid.big {
+  max-height: none;
+}
+.cgrid.big .ctile {
+  width: 64px;
+  height: 64px;
+  position: relative;
+}
+.ctile .x,
+.stamp .x {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: #e8262b;
+  color: #fff;
+  font-weight: 700;
+  line-height: 20px;
+  padding: 0;
+  cursor: pointer;
+}
+.ctile.up {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  text-align: center;
+  color: var(--yellow);
+  position: relative;
+}
+.ctile.up input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.emojis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.emojis button {
+  width: 56px;
+  height: 56px;
+  font-size: 34px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+}
+.emojis button:active {
+  background: rgba(242, 212, 121, 0.15);
+}
+.stamps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.stamp {
+  position: relative;
+  width: 140px;
+  cursor: pointer;
+  text-align: center;
+}
+.stamp .nm {
+  font-size: 15px;
+  margin-top: 4px;
+}
+.thumb {
+  position: relative;
+  width: 140px;
+  height: 100px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #141414;
+}
+.thumb .artSvg,
+.thumb .gifLayer {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.thumb .gifLayer img {
+  position: absolute;
+}

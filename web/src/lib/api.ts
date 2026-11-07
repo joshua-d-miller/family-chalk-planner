@@ -36,3 +36,10 @@ export const post = <T>(path: string, body: unknown = {}) =>
     headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
     body: JSON.stringify(body)
   });
+// a picture for the board (a GIF, a photo): sent as it is; the answer says where the board keeps it
+export const upload = (blob: Blob) =>
+  call<{ src: string }>('api/media', {
+    method: 'POST',
+    headers: { 'Content-Type': blob.type || 'application/octet-stream', 'X-Chalk': '1' },
+    body: blob
+  });

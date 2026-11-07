@@ -1,7 +1,7 @@
 // The art on a month: chalk and Posca lines, fills, words, clipart and GIFs, drawn as SVG over the
 // calendar. SVG is vector, so it's sharp at any size: a 4K wall shows the same chalk lines four times as
 // finely as a 1080p one. The chalk grain is a tile made at the screen's resolution.
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { url } from '../lib/api.ts';
 import { readable } from './color.ts';
 
@@ -23,6 +23,7 @@ export type ArtItem = {
   src?: string;
   still?: string;
   mode?: string;
+  g?: string; // things added together (a stamp, a copy) move as one
 };
 
 export const CHALK = ['#EDEAE0', '#F6B3CB', '#F2D479', '#9CC9E6', '#A9D8A0', '#E8A35C', '#B49CE0'];
@@ -84,6 +85,37 @@ const isClosed = (s: ArtItem) => {
     Math.hypot(p[0] - p[p.length - 2], p[1] - p[p.length - 1]) <= Math.max(2.5, (s.w || 4) * 0.8)
   );
 };
+// "Gentle" GIFs rest on a still frame and play for about 6 seconds every 2.5-4 minutes, each on its own
+// schedule so they don't all go at once
+function useGentle(items: ArtItem[], on: boolean) {
+  const [playing, setPlaying] = useState<Set<number>>(new Set());
+  const plan = useRef(new Map<number, { next: number; stop: number }>());
+  const ids = items.filter(it => it.k === 'g' && it.mode === 'gentle').map(it => it.id);
+  const key = ids.join(',');
+  useEffect(() => {
+    if (!on || !key) return;
+    const t = setInterval(() => {
+      const now = Date.now();
+      const p = plan.current;
+      const play = new Set<number>();
+      for (const id of key.split(',').map(Number)) {
+        let s = p.get(id);
+        if (!s) p.set(id, (s = { next: now + 20000 + Math.random() * 120000, stop: 0 }));
+        if (s.stop > now) play.add(id);
+        else if (s.stop && s.stop <= now) {
+          s.stop = 0;
+          s.next = now + 150000 + Math.random() * 90000;
+        } else if (now >= s.next) {
+          s.stop = now + 6000;
+          play.add(id);
+        }
+      }
+      setPlaying(cur => (cur.size === play.size && [...play].every(x => cur.has(x)) ? cur : play));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [on, key]);
+  return playing;
+}
 // stored addresses are /api/...; shown relative to the board's address
 const src = (s?: string) => (s ? url(s) : '');
 
@@ -96,6 +128,7 @@ export function Art({ items, bg, res, gifsPlay }: { items: ArtItem[]; bg: number
     }
     return [...set];
   }, [items, bg]);
+  const playing = useGentle(items, gifsPlay);
   const pid = (c: string) => 'g' + c.slice(1);
   const paint = (c: string, chalk: boolean) => (chalk ? `url(#${pid(c)})` : c);
   return (
@@ -180,7 +213,9 @@ export function Art({ items, bg, res, gifsPlay }: { items: ArtItem[]; bg: number
               key={it.id}
               alt=""
               decoding="async"
-              src={src(it.mode === 'loop' || (it.mode === 'gentle' && gifsPlay) ? it.src : it.still)}
+              src={src(
+                gifsPlay && (it.mode === 'loop' || (it.mode === 'gentle' && playing.has(it.id))) ? it.src : it.still
+              )}
               style={{
                 left: (it.x || 0) - (it.w || 0) / 2,
                 top: (it.y || 0) - (it.h || 0) / 2,

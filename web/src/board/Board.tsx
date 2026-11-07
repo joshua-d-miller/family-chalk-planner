@@ -25,6 +25,14 @@ import { TitleEditor } from './editors/TitleEditor.tsx';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
 import { Strip } from './Strip.tsx';
+import { DrawLayer, firstPen, isPosca, recolor } from './draw/Draw.tsx';
+import type { Pen } from './draw/Draw.tsx';
+import { Library } from './draw/Library.tsx';
+import type { Stamp } from './draw/Library.tsx';
+import { RecolorSheet, SaveStampSheet, TextSheet, Tools } from './draw/Tools.tsx';
+import { useArt } from './draw/useArt.ts';
+import { unionBox, xform } from './geom.ts';
+import type { ArtItem as Item } from './Art.tsx';
 import { themeCss, themeVals } from './theme.ts';
 import type { Theme } from './theme.ts';
 import './board.css';
@@ -69,7 +77,15 @@ const addMonths = (ym: string, n: number) => {
 };
 
 type Editing =
-  { k: 'event'; ev: BoardEvent | null; date: string } | { k: 'title' } | { k: 'border' } | { k: 'style' } | null;
+  | { k: 'event'; ev: BoardEvent | null; date: string }
+  | { k: 'title' }
+  | { k: 'border' }
+  | { k: 'style' }
+  | { k: 'text'; item: Item | null; at: [number, number] }
+  | { k: 'recolor' }
+  | { k: 'library' }
+  | { k: 'stamp' }
+  | null;
 
 export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }) {
   const today = useLive<{ ym: string; time24: boolean }>('api/today', ['calendar']).data;
@@ -151,13 +167,48 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
     if (ds) single.current = setTimeout(() => setDay(ds), 460); // wait: it might be a double tap
   };
   const mm = meta && 'artPad' in meta ? meta : null;
-  const items = Array.isArray(art.data) ? art.data : [];
+  const ed = useArt(shown, art);
+  const [drawing, setDrawing] = useState(false);
+  const [pen, setPen] = useState<Pen>(firstPen);
+  const [selection, setSelection] = useState<number[]>([]);
+  const [hidden, setHidden] = useState<number[]>([]);
+  const [placing, setPlacing] = useState<{ st: Stamp; k: number } | null>(null);
+  const [note, setNote] = useState('');
+  useEffect(() => {
+    setSelection([]);
+    setPlacing(null);
+  }, [shown, drawing]);
+  useEffect(() => {
+    if (!note) return;
+    const t = setTimeout(() => setNote(''), 3500);
+    return () => clearTimeout(t);
+  }, [note]);
+  const items = hidden.length ? ed.items.filter(x => !hidden.includes(x.id)) : ed.items;
+  const selItems = ed.items.filter(x => selection.includes(x.id));
+  const place = async (at: [number, number]) => {
+    if (!placing) return;
+    const b = unionBox(placing.st.items) || { x1: 0, y1: 0, x2: 0, y2: 0 };
+    const cx = (b.x1 + b.x2) / 2;
+    const cy = (b.y1 + b.y2) / 2;
+    const list = placing.st.items.map(it => {
+      const o = xform(it, at[0] - cx, at[1] - cy, placing.k, cx, cy);
+      delete (o as Partial<Item>).g;
+      return o;
+    });
+    setPlacing(null);
+    const ids = await ed.addMany(list);
+    setPen(p => ({ ...p, tool: 'select' }));
+    setSelection(ids);
+  };
   const titleStyle = titleDraft?.style || mm?.title || mm?.defaultTitle || DEFAULT_TITLE;
   const hand = titleDraft ? titleDraft.hand : !!mm?.hideTitle;
   const border = borderDraft !== undefined ? borderDraft : mm?.border || null;
   const go = (n: number) => shown && setYm(addMonths(shown, n));
   // a tablet: a day = everything on it (to change or add); an event = change it
-  const onDay = edit ? (ds: string) => setDay(ds) : undefined;
+  const onDay = edit
+    ? (ds: string) =>
+        m?.events.some(x => x.start <= ds && x.end >= ds) ? setDay(ds) : setEditing({ k: 'event', ev: null, date: ds })
+    : undefined;
   const onEvent = edit
     ? (ev: BoardEvent) => (ev.ref && !ev.readOnly ? setEditing({ k: 'event', ev, date: ev.start }) : setDay(ev.start))
     : undefined;
@@ -225,11 +276,60 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
             />
           )}
           <Notes time24={!!today?.time24} />
-          <Art items={items} bg={sf.lum} res={res} gifsPlay={false} />
+          <Art items={items} bg={sf.lum} res={res} gifsPlay />
+          {edit && drawing && (
+            <DrawLayer
+              art={ed}
+              pen={pen}
+              bg={sf.lum}
+              res={res}
+              selection={selection}
+              setSelection={setSelection}
+              onText={(item, at) => setEditing({ k: 'text', item, at })}
+              onRecolor={() => setEditing({ k: 'recolor' })}
+              onSaveStamp={() => setEditing({ k: 'stamp' })}
+              placing={!!placing}
+              onPlace={place}
+              onHide={setHidden}
+            />
+          )}
+          {(note || ed.err || placing) && (
+            <div className="status" role="status">
+              {placing ? `Tap the board where “${placing.st.name}” should go` : note || ed.err}
+            </div>
+          )}
         </div>
         {edit && (
-          <Strip who={who}>
-            {m && (
+          <Strip
+            who={who}
+            tools={
+              drawing ? (
+                <Tools
+                  pen={pen}
+                  setPen={setPen}
+                  onUndo={ed.undo}
+                  onRedo={ed.redo}
+                  canUndo={ed.canUndo}
+                  canRedo={ed.canRedo}
+                  onStamps={() => setEditing({ k: 'library' })}
+                  onClear={() => {
+                    const all = ed.items.filter(x => x.id >= 0 && !x.e);
+                    if (all.length && confirm(`Wipe all the art for ${monthName}? (Undo can bring it back.)`))
+                      ed.remove(all);
+                  }}
+                />
+              ) : undefined
+            }
+          >
+            <button
+              type="button"
+              className={'pill' + (drawing ? ' on' : '')}
+              id="drawBtn"
+              onClick={() => setDrawing(d => !d)}
+            >
+              ✎ {drawing ? 'Done drawing' : 'Draw'}
+            </button>
+            {m && !drawing && (
               <>
                 <button type="button" className="pill" id="titleBtn" onClick={() => setEditing({ k: 'title' })}>
                   ✎ Month title
@@ -303,6 +403,57 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
       )}
       {editing?.k === 'border' && m && shown && (
         <BorderEditor ym={shown} monthName={monthName} meta={mm} onPreview={setBorderDraft} onClose={closeEditor} />
+      )}
+      {editing?.k === 'text' && (
+        <TextSheet
+          item={editing.item}
+          color={pen.color[pen.medium]}
+          onClose={closeEditor}
+          onDelete={() => {
+            if (editing.item) ed.remove([editing.item]);
+            closeEditor();
+          }}
+          onSave={t => {
+            const posca = isPosca(t.c);
+            if (editing.item) {
+              const after: Item = { ...editing.item, ...t };
+              if (posca) after.m = true;
+              else delete after.m;
+              ed.update([editing.item], [after]);
+            } else ed.add({ id: 0, k: 't', x: editing.at[0], y: editing.at[1], ...t, ...(posca ? { m: true } : {}) });
+            closeEditor();
+          }}
+        />
+      )}
+      {editing?.k === 'recolor' && (
+        <RecolorSheet
+          onClose={closeEditor}
+          onSave={(line, fill) => {
+            ed.update(selItems, recolor(selItems, line, fill));
+            closeEditor();
+          }}
+        />
+      )}
+      {editing?.k === 'library' && (
+        <Library
+          bg={sf.lum}
+          onClose={closeEditor}
+          onPick={(st, k) => {
+            closeEditor();
+            setPen(p => (p.tool === 'erase' || p.tool === 'text' ? { ...p, tool: 'select' } : p));
+            setPlacing({ st, k });
+          }}
+        />
+      )}
+      {editing?.k === 'stamp' && (
+        <SaveStampSheet
+          items={selItems}
+          bg={sf.lum}
+          onClose={name => {
+            closeEditor();
+            if (name) setNote(`Saved “${name}” to Stamps`);
+          }}
+        />
       )}
       {editing?.k === 'style' && <StyleEditor theme={savedTheme} onPreview={setThemeDraft} onClose={closeEditor} />}
     </div>

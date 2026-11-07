@@ -392,3 +392,61 @@ test('the board (new screen, tablet): the month’s title, its border and the bo
   await board.admin.post('/api/border', { ym, border: null });
   await board.admin.post('/api/meta', { ym, title: null });
 });
+
+test('the board (new screen, tablet): draw, undo and redo, erase, write, select, put up a stamp', async ({
+  as,
+  board
+}) => {
+  const { ym } = thisMonth();
+  await board.admin.post('/api/art/clear', { ym });
+  const t = await as('tablet', { path: '/next/edit' });
+  const artOf = async () =>
+    (await (await board.admin.api(`/api/art?ym=${ym}`)).json()) as { k?: string; s?: string; z?: number }[];
+  await t.locator('#drawBtn').click();
+  const box = (await t.locator('.slate').boundingBox())!;
+  const at = (x: number, y: number) => [box.x + (x / 1252) * box.width, box.y + (y / 642) * box.height] as const;
+  // a chalk line
+  await t.mouse.move(...at(300, 300));
+  await t.mouse.down();
+  for (let i = 1; i <= 10; i++) await t.mouse.move(...at(300 + i * 20, 300 + (i % 2) * 15));
+  await t.mouse.up();
+  await expect.poll(async () => (await artOf()).length).toBe(1);
+  await expect(t.locator('.slate > .artSvg .lines g')).toHaveCount(1);
+  // undo, redo
+  await t.locator('#undoBtn').click();
+  await expect.poll(async () => (await artOf()).length).toBe(0);
+  await t.locator('#redoBtn').click();
+  await expect.poll(async () => (await artOf()).length).toBe(1);
+  // the eraser rubs it out
+  await t.locator('#eraseBtn').click();
+  await t.mouse.move(...at(340, 300));
+  await t.mouse.down();
+  await t.mouse.move(...at(420, 310));
+  await t.mouse.up();
+  await expect.poll(async () => (await artOf()).length).toBe(0);
+  // writing
+  await t.locator('#textBtn').click();
+  await t.mouse.click(...at(600, 400));
+  await t.locator('#tText').fill('Go team!');
+  await t.locator('#tSave').click();
+  await expect.poll(async () => (await artOf()).find(x => x.k === 't')?.s).toBe('Go team!');
+  // select it, make it bigger, erase it
+  await t.locator('#selectBtn').click();
+  await t.mouse.click(...at(600, 400));
+  await expect(t.locator('.selbar')).toBeVisible();
+  await t.locator('.selbar').getByRole('button', { name: 'Make bigger' }).click();
+  await expect.poll(async () => (await artOf()).find(x => x.k === 't')?.z).toBeGreaterThan(40);
+  await t.locator('.selbar').getByRole('button', { name: 'Erase' }).click();
+  await expect.poll(async () => (await artOf()).length).toBe(0);
+  // a stamp from the library: an emoji, put up where she taps
+  await t.locator('#stampsBtn').click();
+  await t.locator('#libSheet').getByRole('radio', { name: 'Emoji' }).click();
+  await t.locator('#libSheet').getByRole('button', { name: 'Emoji 🎂' }).click();
+  await expect(t.locator('.slate .status')).toContainText('Tap the board');
+  await t.mouse.click(...at(800, 300));
+  await expect.poll(async () => (await artOf()).find(x => x.k === 't')?.s).toBe('🎂');
+  await t.locator('#drawBtn').click(); // done drawing
+  await expect(t.locator('#addBtn')).toBeVisible();
+  expect(t.errors).toEqual([]);
+  await board.admin.post('/api/art/clear', { ym });
+});
