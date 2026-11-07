@@ -2275,6 +2275,24 @@ async function immichAlbum(src) {
     });
     return (r && r.assets && Array.isArray(r.assets.items)) ? r.assets.items : (Array.isArray(r) ? r : []);
   };
+  if (want === '__thisday__' || want.toLowerCase() === 'thisday' || want.toLowerCase() === 'on this day') {
+    // Custom album: on this day in previous years
+    const now = new Date();
+    const curYear = now.getFullYear();
+    const curMonth = now.getMonth();
+    const curDate = now.getDate();
+    const all = await searchMeta({});
+    const matches = all.filter(a => {
+      const dtStr = a.localDateTime || a.fileCreatedAt || (a.exifInfo && a.exifInfo.dateTimeOriginal) || a.createdAt;
+      if (!dtStr) return false;
+      const d = new Date(dtStr);
+      if (isNaN(d.getTime())) return false;
+      return d.getFullYear() < curYear && d.getMonth() === curMonth && d.getDate() === curDate;
+    });
+    if (matches.length) return immichAssetsToPhotos(matches, src.immichUrl, src.immichKey, null);
+    // If no exact matches for this date in previous years, fallback to all recent photos so slideshow isn't empty
+    return immichAssetsToPhotos(all, src.immichUrl, src.immichKey, null);
+  }
   if (want === '__favorites__' || want.toLowerCase() === 'favorites') {
     return immichAssetsToPhotos(await searchMeta({ isFavorite: true }), src.immichUrl, src.immichKey, null);
   }
@@ -2478,12 +2496,25 @@ setInterval(() => { if (photoSourceCfg().enabled) syncPhotos(); }, 15 * 60 * 100
 
 app.get('/api/photos', (req, res) => {
   const src = photoSourceCfg();
+  let photos = photoState.list;
+  if (req.query && (req.query.thisDay === '1' || req.query.thisDay === 'true')) {
+    const now = new Date();
+    const curYear = now.getFullYear();
+    const curMonth = now.getMonth();
+    const curDate = now.getDate();
+    const filtered = photos.filter(p => {
+      if (!p.date) return false;
+      const d = new Date(p.date);
+      return !isNaN(d.getTime()) && d.getFullYear() < curYear && d.getMonth() === curMonth && d.getDate() === curDate;
+    });
+    if (filtered.length) photos = filtered;
+  }
   res.json({
     enabled: src.enabled,
     kind: src.kind,
     immich: { url: src.immichUrl || '', hasKey: !!src.immichKey, album: src.immichAlbum || '' },
     albumUrl: src.albumUrl || '',
-    photos: photoState.list,
+    photos,
     cfg: photoCfg(),
     synced: photoState.synced,
     error: photoState.error

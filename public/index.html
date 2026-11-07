@@ -1278,6 +1278,7 @@ body.subpageOn #wheelBtn { z-index: 22; }
           <option value="">Auto (Favorites, or recent photos)</option>
           <option value="__favorites__">★ Favorites</option>
           <option value="__all__">All recent photos</option>
+          <option value="__thisday__">📅 Custom: On this day in previous years</option>
         </select>
       </div>
       <div style="flex:0 0 auto">
@@ -4298,13 +4299,23 @@ body.subpageOn #wheelBtn { z-index: 22; }
     var dx = Math.round(Math.random() * 36) * (left ? 1 : -1), dy = Math.round(Math.random() * 20) * (top ? 1 : -1);
     c.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';   // drift so nothing sits still all night
   }
-  function slideShow() {
+  var slideHistory = [];
+  var slideHistoryIdx = -1;
+  function slideShow(tilesOverride) {
     var fullW = window.innerWidth, H = window.innerHeight;
     var side = isSlideSidePanel();
     var panelW = side ? Math.min(380, Math.round(fullW * 0.3)) : 0;
     var W = fullW - panelW;
-    var tiles = planSlide(W, H);
+    var tiles = tilesOverride || planSlide(W, H);
     if (!tiles) return;
+    if (!tilesOverride) {
+      if (slideHistoryIdx >= 0 && slideHistoryIdx < slideHistory.length - 1) {
+        slideHistory = slideHistory.slice(0, slideHistoryIdx + 1);
+      }
+      slideHistory.push(tiles);
+      if (slideHistory.length > 50) slideHistory.shift();
+      slideHistoryIdx = slideHistory.length - 1;
+    }
     var sl = document.querySelectorAll('#slides .sl'), next = sl[1 - ph.slideCur], cur = sl[ph.slideCur];
     next.classList.remove('on'); next.innerHTML = '';
     var pending = tiles.length, shown = false;
@@ -4329,6 +4340,28 @@ body.subpageOn #wheelBtn { z-index: 22; }
       box.appendChild(fg); next.appendChild(box);
     });
     setTimeout(reveal, 8000);   // don't wait forever on a slow photo
+  }
+  function slidePrev() {
+    if (!ph.slideOn) return;
+    clearInterval(ph.slideTimer);
+    if (slideHistoryIdx > 0) {
+      slideHistoryIdx--;
+      slideShow(slideHistory[slideHistoryIdx]);
+    } else {
+      slideShow();
+    }
+    ph.slideTimer = setInterval(slideShow, (ph.cfg.every || 20) * 1000);
+  }
+  function slideNext() {
+    if (!ph.slideOn) return;
+    clearInterval(ph.slideTimer);
+    if (slideHistoryIdx >= 0 && slideHistoryIdx < slideHistory.length - 1) {
+      slideHistoryIdx++;
+      slideShow(slideHistory[slideHistoryIdx]);
+    } else {
+      slideShow();
+    }
+    ph.slideTimer = setInterval(slideShow, (ph.cfg.every || 20) * 1000);
   }
   // ---- Slideshow extras: today's events, temperature and reminders on translucent cards ----
   function slideCard(title, node) {   // one section inside the single box
@@ -4400,7 +4433,36 @@ body.subpageOn #wheelBtn { z-index: 22; }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitMeals(); fitDays(); });
   setInterval(layoutTitlePhotos, 5000);   // picks up new drawings near the title; does nothing if nothing moved
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { layoutTitlePhotos(); });
-  $('slides').addEventListener('click', function () {
+  var slideSwipeX = null, slideSwipeY = null, slideSwipeMoved = false;
+  $('slides').addEventListener('pointerdown', function (e) {
+    if (!ph.slideOn || !e.isPrimary) return;
+    slideSwipeX = e.clientX;
+    slideSwipeY = e.clientY;
+    slideSwipeMoved = false;
+  });
+  $('slides').addEventListener('pointermove', function (e) {
+    if (slideSwipeX === null) return;
+    if (Math.abs(e.clientX - slideSwipeX) > 20 || Math.abs(e.clientY - slideSwipeY) > 20) {
+      slideSwipeMoved = true;
+    }
+  });
+  $('slides').addEventListener('pointerup', function (e) {
+    if (slideSwipeX === null) return;
+    var dx = e.clientX - slideSwipeX, dy = e.clientY - slideSwipeY;
+    slideSwipeX = null; slideSwipeY = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      slideSwipeMoved = true;
+      if (dx > 0) {
+        // swipe left to right: go to previous photo
+        slidePrev();
+      } else {
+        // swipe right to left: go to next photo
+        slideNext();
+      }
+    }
+  });
+  $('slides').addEventListener('click', function (e) {
+    if (slideSwipeMoved) { slideSwipeMoved = false; return; }
     if (Date.now() - (ph.resumedAt || 0) < 1500) return;   // the tail end of the double tap that just brought it back
     if (ph.preview) ph.preview = false;
     else if (onWall() && ph.manual) {   // leaving the photo frame turned on by double tap
@@ -4462,6 +4524,7 @@ body.subpageOn #wheelBtn { z-index: 22; }
       sel.appendChild(new Option('Auto (Favorites, or recent photos)', ''));
       sel.appendChild(new Option('★ Favorites', '__favorites__'));
       sel.appendChild(new Option('All recent photos', '__all__'));
+      sel.appendChild(new Option('📅 Custom: On this day in previous years', '__thisday__'));
       (albums || []).forEach(function (a) {
         sel.appendChild(new Option(a.title + ' (' + a.count + ')' + (a.shared ? ' · shared' : ''), a.id));
       });
@@ -5517,18 +5580,25 @@ body.subpageOn #wheelBtn { z-index: 22; }
     h1.classList.toggle('hand', hand);
     if (mn) styleTitle(mn, h1, titleStyle(), 520);
   }
-  function setMonthTitle(text) {
+  function updateHeader(text) {
     var h1 = $('monthName'), mn = h1.querySelector('.mn');
     if (!mn) {
       h1.textContent = '';
       mn = el('span', 'mn');
       h1.appendChild(mn);
     }
-    if (mn.getAttribute('data-text') !== text || mn.textContent !== text) {
+    var targetText = text !== undefined ? text : (mn.getAttribute('data-text') || mn.textContent);
+    var targetStyle = titleStyle();
+    var curFont = mn.style.font || '';
+    var newFont = fontCss(targetStyle.f, targetStyle.z);
+    var textChanged = mn.getAttribute('data-text') !== targetText || mn.textContent !== targetText;
+    var styleChanged = curFont && curFont !== newFont;
+
+    if (textChanged || styleChanged) {
       mn.classList.add('mn-fade');
       setTimeout(function () {
-        mn.textContent = text;
-        mn.setAttribute('data-text', text);
+        mn.textContent = targetText;
+        mn.setAttribute('data-text', targetText);
         applyTitle();
         requestAnimationFrame(function () {
           mn.classList.remove('mn-fade');
@@ -5537,6 +5607,9 @@ body.subpageOn #wheelBtn { z-index: 22; }
     } else {
       applyTitle();
     }
+  }
+  function setMonthTitle(text) {
+    updateHeader(text);
   }
   // ---- Holiday border: up to 8 pictures repeated around the calendar (wall, tablet and family screens) ----
   var BORDER_SZ = { s: 20, m: 26, l: 34 };
@@ -5679,7 +5752,15 @@ body.subpageOn #wheelBtn { z-index: 22; }
   }
   applyMenuPos();
   function loadMeta(ym) {
-    return api('/api/meta?ym=' + ym).then(function (m) { if (ym === state.ym) { state.meta = m || {}; state.metaYm = ym; applyTitle(); applyBorder(); layoutTitlePhotos(); } }).catch(function () {});
+    return api('/api/meta?ym=' + ym).then(function (m) {
+      if (ym === state.ym) {
+        state.meta = m || {};
+        state.metaYm = ym;
+        updateHeader();
+        applyBorder();
+        layoutTitlePhotos();
+      }
+    }).catch(function () {});
   }
   function loadMonth(ym) {
     if (ym !== state.ym) {
@@ -5690,8 +5771,8 @@ body.subpageOn #wheelBtn { z-index: 22; }
     state.ym = ym;
     status('');
     var metaReady = loadMeta(ym);
-    return api('/api/month?ym=' + ym).then(function (d) { health.calendar = true; renderMonth(d); }).catch(function (e) { health.calendar = false; status('Calendar unavailable: ' + e.message); })
-      .then(function () { return metaReady; })   // the art needs to know which layout it was placed on
+    var monthReady = api('/api/month?ym=' + ym).then(function (d) { health.calendar = true; renderMonth(d); }).catch(function (e) { health.calendar = false; status('Calendar unavailable: ' + e.message); });
+    return Promise.all([metaReady, monthReady])
       .then(function () { return loadArt(ym); });
   }
 
