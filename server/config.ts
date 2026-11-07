@@ -67,6 +67,7 @@ export function readConfig(env: NodeJS.ProcessEnv, appDir: string, dataDir: stri
     weatherUrl: env.WEATHER_URL || 'https://api.open-meteo.com',
     photos: {
       album: { url: (env.PHOTO_ALBUM_URL || '').trim(), googleHost: env.PHOTO_GOOGLE_HOST, ckHost: env.PHOTO_CK_HOST },
+      immich: { url: env.IMMICH_URL || '', key: env.IMMICH_API_KEY || '', album: env.IMMICH_ALBUM || '' },
       faceDir,
       facePython: env.FACE_PYTHON || path.join(faceDir, 'venv', 'bin', 'python')
     },

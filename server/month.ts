@@ -36,6 +36,7 @@ export interface MonthMeta extends Omit<Stored, 'border'> {
   borderYearly?: boolean;
   defaultTitle?: TitleStyle;
   artPad: number;
+  boardPad?: number; // the frame's thickness
 }
 
 const BORDER_PAD = { s: 26, m: 32, l: 40 }; // picture size + 6 (the page's BORDER_SZ)
@@ -96,6 +97,8 @@ export function setup({
     const m = stored(ym) as Stored & Partial<MonthMeta>;
     const d = kv.get<TitleStyle>('titleDefault');
     if (d) m.defaultTitle = d;
+    const pad = kv.get<number>('boardPad');
+    if (pad != null) m.boardPad = pad;
     m.artPad = m.artPad || 0; // art from before borders: placed with no border
     const every = yearly()[ym.slice(5)];
     if (m.border && 'off' in m.border) delete m.border;
@@ -171,6 +174,16 @@ export function setup({
     store(ym, cur);
     broadcast('meta', { ym: '*' });
     res.json(metaFor(ym));
+  });
+
+  // How thick the frame around the board is, in board pixels (0-80): the same every month. From Colby
+  // Way's board.
+  app.post('/api/frame', (req, res) => {
+    const pad = Number((req.body || {}).pad);
+    if (!Number.isFinite(pad)) return res.status(400).json({ error: 'bad frame' });
+    kv.set('boardPad', Math.min(Math.max(Math.round(pad), 0), 80));
+    broadcast('meta', { ym: '*' });
+    res.json({ boardPad: kv.get('boardPad') });
   });
 
   return { metaFor, padOf, stored, store };

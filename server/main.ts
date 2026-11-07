@@ -213,7 +213,7 @@ media.setup({
 });
 
 // Photos from a shared album: beside the month name and the overnight slideshow
-photos.setup({ app, kv, broadcast, cacheDir: path.join(DATA_DIR, 'photo-cache'), ...cfg.photos });
+photos.setup({ app, kv, broadcast, today: clock.today, cacheDir: path.join(DATA_DIR, 'photo-cache'), ...cfg.photos });
 
 // The pages, icons, manifests and fonts; the admin console's ⚙️ Board
 const site = pages.setup({

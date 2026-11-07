@@ -11,6 +11,8 @@ import type { Express } from 'express';
 import type { Kv } from '../kv.ts';
 import { GP_UA, albumKind, imageHostOk, readAlbum } from './albums.ts';
 import type { AlbumConfig } from './albums.ts';
+import { immichAlbums, immichShare, normalizeImmichUrl, onThisDay, readImmich } from './immich.ts';
+import type { ImmichPhoto, ImmichSource } from './immich.ts';
 
 interface Face {
   [k: string]: unknown;
@@ -22,6 +24,7 @@ interface Photo {
   date: number;
   faces?: Face[];
 }
+type AlbumPhotoLike = { id: string; url: string; w: number; h: number; date: number };
 interface FaceResult {
   file: string;
   w?: number;
@@ -30,17 +33,33 @@ interface FaceResult {
   error?: string;
 }
 
-// the slideshow and title-photo settings
-const CFG_DEFAULT = { frame: true, night: true, from: '21:00', to: '06:00', every: 20, dim: 50 };
+// the slideshow and title-photo settings; the slideshow's extras (today's events, the temperature,
+// reminders, photos beside the board instead of over it) are from Colby Way's board
+const CFG_DEFAULT = {
+  frame: true,
+  night: true,
+  from: '21:00',
+  to: '06:00',
+  every: 20,
+  dim: 50,
+  showEvents: false,
+  showTemp: false,
+  showReminders: false,
+  sidePanel: false
+};
 type PhotoCfg = typeof CFG_DEFAULT;
 
 const isJpegPng = (b: Buffer) => b.length > 8 && ((b[0] === 0xff && b[1] === 0xd8) || b.readUInt32BE(0) === 0x89504e47);
+const isWebp = (b: Buffer) =>
+  b.length > 12 && b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP';
 
 export function setup({
   app,
   kv,
   broadcast,
+  today,
   album,
+  immich,
   cacheDir,
   faceDir,
   facePython
@@ -48,7 +67,9 @@ export function setup({
   app: Express;
   kv: Kv;
   broadcast: (event: string, data: unknown) => void;
+  today: () => string;
   album: AlbumConfig; // url '' = no album
+  immich: { url: string; key: string; album: string }; // url and key set = Immich instead of the album link
   cacheDir: string;
   faceDir: string;
   facePython: string;
@@ -60,7 +81,13 @@ export function setup({
     running: false
   };
   const cfg = (): PhotoCfg => ({ ...CFG_DEFAULT, ...(kv.get<Partial<PhotoCfg>>('photoCfg') || {}) });
-  const google = albumKind(album) === 'google';
+  // Where the photos come from: Immich (with a key), an Immich share link, Google Photos or iCloud
+  const immichUrl = normalizeImmichUrl(immich.url);
+  const immichSrc: ImmichSource | null =
+    immichUrl && immich.key ? { url: immichUrl, key: immich.key, album: immich.album } : immichShare(album.url);
+  const kind = immichSrc ? (immichSrc.shareKey ? 'immich-share' : 'immich') : album.url ? albumKind(album) : 'none';
+  const enabled = kind !== 'none';
+  const google = kind === 'google';
 
   const faceScript = path.join(faceDir, 'facefocus.py');
   const faceModel = path.join(faceDir, 'yunet.onnx');
@@ -91,32 +118,48 @@ export function setup({
     });
   }
 
-  async function getImage(url: string): Promise<Buffer | null> {
+  // only from the album service's own image hosts (Immich: the server that was set up)
+  const hostOk = (u: string) => (immichSrc ? u.startsWith(immichSrc.url + '/') : imageHostOk(album, u));
+  // JPEG or PNG (the wall can't show HEIC); Immich's previews can also be WebP
+  const imageOk = (b: Buffer) => isJpegPng(b) || (!!immichSrc && isWebp(b));
+  async function getImage(
+    url: string,
+    headers: Record<string, string> = {},
+    fallback?: string
+  ): Promise<Buffer | null> {
     const r = await fetch(url, {
-      headers: google ? { ...GP_UA, Accept: 'image/jpeg,image/png' } : {},
+      headers: google
+        ? { ...GP_UA, Accept: 'image/jpeg,image/png' }
+        : { Accept: 'image/jpeg,image/png,image/webp,image/*', ...headers },
       signal: AbortSignal.timeout(60000)
     });
-    if (!r.ok) return null;
-    const buf = Buffer.from(await r.arrayBuffer());
-    if (!isJpegPng(buf) && google && !url.endsWith('-rj')) return getImage(url + '-rj'); // ask Google for JPEG
-    return isJpegPng(buf) ? buf : null; // JPEG or PNG only (the wall can't show HEIC)
+    const buf = r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+    if (buf && imageOk(buf)) return buf;
+    if (buf && google && !url.endsWith('-rj')) return getImage(url + '-rj'); // ask Google for JPEG
+    if (fallback && fallback !== url) return getImage(fallback, headers);
+    return null;
   }
 
   const fileOf = (id: string, ext: string) => path.join(cacheDir, `${id}.${ext}`);
 
   async function sync() {
-    if (!album.url || state.running) return;
+    if (!enabled || state.running) return;
     state.running = true;
     try {
-      const assets = await readAlbum(album);
+      const assets: (AlbumPhotoLike & Partial<ImmichPhoto>)[] = immichSrc
+        ? await readImmich(immichSrc, today())
+        : await readAlbum(album);
       fs.mkdirSync(cacheDir, { recursive: true });
       for (const a of assets) {
         const file = fileOf(a.id, 'jpg');
-        if (fs.existsSync(file) || !imageHostOk(album, a.url)) continue;
-        const buf = await getImage(a.url);
+        if (fs.existsSync(file) || !hostOk(a.url) || (a.fallbackUrl && !hostOk(a.fallbackUrl))) continue;
+        const buf = await getImage(a.url, a.headers, a.fallbackUrl);
         if (!buf) continue;
         fs.writeFileSync(file + '.part', buf);
         fs.renameSync(file + '.part', file);
+        // Immich already found the faces
+        if (a.faces?.length && a.w && a.h && !fs.existsSync(fileOf(a.id, 'json')))
+          fs.writeFileSync(fileOf(a.id, 'json'), JSON.stringify({ w: a.w, h: a.h, faces: a.faces }));
       }
       const have = assets.filter(a => fs.existsSync(fileOf(a.id, 'jpg')));
       const todo = have.filter(a => !fs.existsSync(fileOf(a.id, 'json'))).map(a => fileOf(a.id, 'jpg'));
@@ -153,29 +196,35 @@ export function setup({
       state.running = false;
     }
   }
-  if (album.url) {
+  if (enabled) {
     setTimeout(sync, 5000);
     setInterval(sync, 15 * 60 * 1000);
   }
 
-  app.get('/api/photos', (_req, res) => {
-    res.json({ enabled: !!album.url, photos: state.list, cfg: cfg(), synced: state.synced, error: state.error });
+  // ?thisDay=1: only photos taken on this date in earlier years, if there are any
+  app.get('/api/photos', (req, res) => {
+    let photos = state.list;
+    if (req.query.thisDay === '1' || req.query.thisDay === 'true') {
+      const hits = onThisDay(photos, today());
+      if (hits.length) photos = hits;
+    }
+    res.json({ enabled, kind, photos, cfg: cfg(), synced: state.synced, error: state.error });
   });
 
   app.get('/api/photos/img/:id', (req, res) => {
     if (!/^[A-Za-z0-9_-]{1,80}$/.test(req.params.id)) return res.sendStatus(404);
     const file = fileOf(req.params.id, 'jpg');
-    let png: boolean;
+    let type: string;
     try {
       const fd = fs.openSync(file, 'r');
-      const b = Buffer.alloc(4);
-      fs.readSync(fd, b, 0, 4, 0);
+      const b = Buffer.alloc(16);
+      fs.readSync(fd, b, 0, 16, 0);
       fs.closeSync(fd);
-      png = b.readUInt32BE(0) === 0x89504e47;
+      type = b.readUInt32BE(0) === 0x89504e47 ? 'image/png' : isWebp(b) ? 'image/webp' : 'image/jpeg';
     } catch {
       return res.sendStatus(404);
     }
-    res.set('Cache-Control', 'public, max-age=31536000, immutable').type(png ? 'image/png' : 'image/jpeg');
+    res.set('Cache-Control', 'public, max-age=31536000, immutable').type(type);
     res.sendFile(file, err => {
       if (err && !res.headersSent) res.sendStatus(404);
     });
@@ -191,7 +240,11 @@ export function setup({
       from: hm(b.from) || cur.from,
       to: hm(b.to) || cur.to,
       every: [10, 20, 30, 60].includes(+b.every) ? +b.every : cur.every,
-      dim: [30, 50, 70, 100].includes(+b.dim) ? +b.dim : cur.dim // slideshow brightness, %
+      dim: [30, 50, 70, 100].includes(+b.dim) ? +b.dim : cur.dim, // slideshow brightness, %
+      showEvents: b.showEvents === undefined ? cur.showEvents : !!b.showEvents,
+      showTemp: b.showTemp === undefined ? cur.showTemp : !!b.showTemp,
+      showReminders: b.showReminders === undefined ? cur.showReminders : !!b.showReminders,
+      sidePanel: b.sidePanel === undefined ? cur.sidePanel : !!b.sidePanel
     };
     kv.set('photoCfg', next);
     broadcast('photos', {});
@@ -201,5 +254,27 @@ export function setup({
   app.post('/api/photos/sync', async (_req, res) => {
     await sync();
     res.json({ photos: state.list.length, error: state.error });
+  });
+
+  // Admin console → ⚙️ Board → Photos: the albums on an Immich server (what was typed, else what's saved).
+  // Only admins choose where photos come from: the board fetches from that address.
+  app.post('/api/board-settings/immich-albums', async (req, res) => {
+    const b = req.body || {};
+    const url = normalizeImmichUrl(b.url !== undefined ? String(b.url) : immich.url);
+    const key = String(b.apiKey || immich.key || '').trim();
+    if (!url)
+      return res.status(400).json({ error: 'Enter your Immich server address first (like http://192.168.1.50:2283)' });
+    try {
+      if (!/^https?:$/.test(new URL(url).protocol)) throw new Error('not http');
+    } catch {
+      return res.status(400).json({ error: 'The Immich address should start with http:// or https://' });
+    }
+    if (!key)
+      return res.status(400).json({ error: 'Enter your Immich API key first (Immich: Account Settings → API Keys)' });
+    try {
+      res.json({ albums: await immichAlbums(url, key) });
+    } catch (e) {
+      res.status(400).json({ error: (e as Error).message });
+    }
   });
 }

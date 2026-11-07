@@ -291,6 +291,14 @@ button:disabled{opacity:.5;cursor:default}
         <h2>Photos</h2>
         <p class="dim">The share link of an iCloud Shared Album (with Public Website on) or a Google Photos shared album. Step-by-step: docs/photos.md.</p>
         <label for="bfAlbum">Album link</label><input id="bfAlbum" data-k="PHOTO_ALBUM_URL" autocomplete="off" spellcheck="false">
+        <p class="dim" style="margin-top:14px">Or photos from your own <b>Immich</b> server (used instead of the album link). In Immich: Account Settings → API Keys → New API Key, with album.read, asset.read, asset.view and person.read.</p>
+        <div class="row">
+          <div><label for="bfImUrl">Immich address</label><input id="bfImUrl" data-k="IMMICH_URL" autocomplete="off" spellcheck="false" placeholder="http://192.168.1.50:2283"></div>
+          <div><label for="bfImKey">API key</label><input id="bfImKey" type="password" data-k="IMMICH_API_KEY" autocomplete="new-password"></div>
+        </div>
+        <label for="bfImAlbum">Which photos</label>
+        <div class="row"><div><select id="bfImAlbum" data-k="IMMICH_ALBUM"><option value="">Favorites (else recent photos)</option><option value="favorites">Favorites</option><option value="all">Everything (most recent)</option><option value="thisday">On this day, other years</option></select></div><div style="flex:0 1 auto"><button id="bfImList">List my albums</button></div></div>
+        <div class="err" id="bfImErr"></div>
       </div>
       <div class="card">
         <h2>On your network</h2>
@@ -505,6 +513,8 @@ button:disabled{opacity:.5;cursor:default}
         $('bfTz').appendChild(new Option('(default: the server’s time zone)', ''));
         d.timezones.forEach(function (z) { $('bfTz').appendChild(new Option(z.replace(/_/g, ' '), z)); });
       }
+      var ima = F.IMMICH_ALBUM && F.IMMICH_ALBUM.value, ims = $('bfImAlbum');   // an album picked before: keep it listed
+      if (ima && !Array.prototype.some.call(ims.options, function (o) { return o.value === ima; })) ims.appendChild(new Option('Album: ' + ima, ima));
       Array.prototype.forEach.call(document.querySelectorAll('#tBoard [data-k]'), function (inp) {
         var f = F[inp.dataset.k]; if (!f) return;
         if (f.type === 'secret') {
@@ -570,6 +580,17 @@ button:disabled{opacity:.5;cursor:default}
         $('bfFindErr').innerHTML = ''; $('bfFindErr').appendChild(el('span', 'ok', '✓ Signed in. Calendars: ' + (r.calendars.join(', ') || 'none found')));
         if (r.calendars.length === 1 && !$('bfCal').value) $('bfCal').value = r.calendars[0];
       }).catch(function (e) { $('bfFindErr').textContent = e.message; });
+  });
+  // Immich: list the albums (with what's typed, else what's saved), so one can be picked
+  $('bfImList').addEventListener('click', function () {
+    busy($('bfImList'), api('/api/board-settings/immich-albums', { url: $('bfImUrl').value, apiKey: $('bfImKey').value || undefined }))
+      .then(function (r) {
+        var sel = $('bfImAlbum'), keep = sel.value;
+        Array.prototype.slice.call(sel.options, 4).forEach(function (o) { o.remove(); });
+        r.albums.forEach(function (a) { sel.appendChild(new Option('Album: ' + a.name + ' (' + a.count + ')', a.id)); });
+        sel.value = keep;
+        $('bfImErr').innerHTML = ''; $('bfImErr').appendChild(el('span', 'ok', '✓ Connected. ' + r.albums.length + ' album' + (r.albums.length === 1 ? '' : 's') + ' found.'));
+      }).catch(function (e) { $('bfImErr').textContent = e.message; });
   });
   $('bfSave').addEventListener('click', function () {
     var values = {};

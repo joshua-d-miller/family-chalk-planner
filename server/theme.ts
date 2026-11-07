@@ -11,7 +11,7 @@ const TWEAKS: Record<string, 'color' | 'font' | string[]> = {
   numC: 'color',
   boxes: ['on', 'off'],
   todayC: 'color',
-  todayS: ['ring', 'circle', 'heart', 'star', 'box'],
+  todayS: ['ring', 'circle', 'heart', 'star', 'box', 'bg'], // bg: today's square filled in (from Colby Way's board)
   wkF: 'font',
   wkC: 'color',
   evF: 'font',

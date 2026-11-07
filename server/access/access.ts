@@ -413,6 +413,7 @@ export function setup(
     '/photos/settings',
     '/photos/sync',
     '/border',
+    '/frame',
     '/chores/check',
     // reminders, timers, the pantry and the right-hand column's pages
     '/reminders',

@@ -86,6 +86,10 @@ export const FIELDS: Record<string, Field> = {
   },
   // photos
   PHOTO_ALBUM_URL: { type: 'url', private: true },
+  // or Immich (from Colby Way's board): the server's address, an API key, and which photos
+  IMMICH_URL: { type: 'url' },
+  IMMICH_API_KEY: { type: 'secret' },
+  IMMICH_ALBUM: { type: 'text', max: 200 },
   // the board on your network
   PUBLIC_URL: { type: 'url' },
   TRUST_PROXY: { type: 'proxy' },
