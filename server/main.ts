@@ -31,6 +31,9 @@ import * as theme from './theme.ts';
 import * as meals from './meals.ts';
 import * as jars from './jars.ts';
 import * as chores from './chores.ts';
+import * as reminders from './reminders.ts';
+import * as timers from './timers.ts';
+import * as pantry from './pantry.ts';
 import * as media from './media.ts';
 import * as photos from './photos/photos.ts';
 import * as pages from './pages.ts';
@@ -189,6 +192,11 @@ chores.setup({
   kidOf: req => who.kidOf(req),
   who: req => who.whoOf(req)
 });
+
+// Reminders, timers and the pantry (from Colby Way's board)
+reminders.setup({ app, db, clock, broadcast });
+timers.setup({ app, db, broadcast });
+pantry.setup({ app, db, today: clock.today, broadcast });
 
 // Uploads, pictures from links, the GIF library
 media.setup({

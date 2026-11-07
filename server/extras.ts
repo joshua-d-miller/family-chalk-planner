@@ -2,7 +2,7 @@
 // plus which page shows at the bottom of the column. Trash day and the Notes choice are set in ⚙️.
 //   kv 'trash'  { day: 0-6 | null, recycle: { mode: 'same' | 'day' | 'biweekly' | 'off', day, anchor } }
 //               'biweekly' = every other week on recycle.day, counting from anchor (a known pickup date)
-//   kv 'notes'  { bottom: 'jars' | 'upnext' | 'today' | 'photos' | 'none' }
+//   kv 'notes'  { bottom: 'jars' | 'upnext' | 'today' | 'photos' | 'none', pages: up to 3 of RIGHT_PAGES }
 import type { Express } from 'express';
 import { addDays, isDate } from './dates.ts';
 
@@ -13,6 +13,30 @@ interface TrashCfg {
   recycle: { mode: RecycleMode; day?: number; anchor?: string };
 }
 const NOTES_BOTTOM = ['jars', 'upnext', 'today', 'photos', 'none'];
+export const RIGHT_PAGES = [
+  'info',
+  'reminders',
+  'meals',
+  'jars',
+  'chores',
+  'upnext',
+  'today',
+  'photos',
+  'timers',
+  'pantry'
+];
+interface NotesCfg {
+  bottom: string;
+  pages: string[];
+}
+export function rightPages(list: unknown, bottom: string): string[] {
+  if (Array.isArray(list)) {
+    const out: string[] = [];
+    for (const p of list) if (RIGHT_PAGES.includes(p) && !out.includes(p) && out.length < 3) out.push(p);
+    return out;
+  }
+  return bottom === 'none' ? ['info', 'meals'] : ['info', 'meals', bottom];
+}
 // The parts of Open-Meteo's forecast the board uses
 interface Forecast {
   current: { temperature_2m: number; weather_code: number };
@@ -94,7 +118,23 @@ export function setup({ app, kvGet, kvSet, broadcast, today, weather: w, trashDa
   }
 
   const trashCfg = () => (kvGet('trash') as TrashCfg | null) || { day: trashDay, recycle: { mode: 'same' } };
-  const notesCfg = () => (kvGet('notes') as { bottom: string } | null) || { bottom: 'jars' };
+  // The right-hand column: up to 3 mini pages (from Colby Way's board). Boards from before keep what they
+  // showed: the weather and trash, the meals, then the bottom they had picked.
+  function notesCfg(): NotesCfg {
+    const raw = (kvGet('notes') as Partial<NotesCfg> | null) || {};
+    const bottom = NOTES_BOTTOM.includes(raw.bottom as string) ? (raw.bottom as string) : 'jars';
+    return { bottom, pages: rightPages(raw.pages, bottom) };
+  }
+  function saveNotes(body: Record<string, unknown>) {
+    const cur = notesCfg();
+    const bottom = NOTES_BOTTOM.includes(body.bottom as string) ? (body.bottom as string) : cur.bottom;
+    // sending only a bottom (the current board) changes the last page; sending pages sets them all
+    const pages = Array.isArray(body.pages) ? rightPages(body.pages, bottom) : rightPages(null, bottom);
+    const cfg = { bottom, pages };
+    kvSet('notes', cfg);
+    broadcast('extras', {});
+    return cfg;
+  }
 
   function cleanTrash(b: Record<string, unknown>): TrashCfg {
     const day = (v: unknown) =>
@@ -158,11 +198,6 @@ export function setup({ app, kvGet, kvSet, broadcast, today, weather: w, trashDa
     broadcast('extras', {});
     res.json(trash() || { cfg });
   });
-  app.post('/api/notes', (req, res) => {
-    const b = (req.body || {}).bottom;
-    const cfg = { bottom: NOTES_BOTTOM.includes(b) ? b : 'jars' };
-    kvSet('notes', cfg);
-    broadcast('extras', {});
-    res.json(cfg);
-  });
+  app.post('/api/notes', (req, res) => res.json(saveNotes(req.body || {})));
+  app.post('/api/right-pages', (req, res) => res.json(saveNotes(req.body || {})));
 }

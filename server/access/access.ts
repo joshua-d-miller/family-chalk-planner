@@ -413,7 +413,19 @@ export function setup(
     '/photos/settings',
     '/photos/sync',
     '/border',
-    '/chores/check'
+    '/chores/check',
+    // reminders, timers, the pantry and the right-hand column's pages
+    '/reminders',
+    '/reminders/item',
+    '/reminders/item/delete',
+    '/reminders/check',
+    '/timers',
+    '/timers/item',
+    '/timers/item/delete',
+    '/pantry',
+    '/pantry/item',
+    '/pantry/item/delete',
+    '/right-pages'
   ]);
   const ADMIN = [
     /^\/board-settings/,

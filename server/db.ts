@@ -34,3 +34,16 @@ export function prepareDatabase(db: DatabaseSync, dataDir: string) {
   `);
   db.exec('DROP TABLE IF EXISTS sessions'); // PIN sign-ins of older versions
 }
+
+// Several changes as one: all of them, or (if anything fails) none
+export function tx<T>(db: DatabaseSync, fn: () => T): T {
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const out = fn();
+    db.exec('COMMIT');
+    return out;
+  } catch (e) {
+    db.exec('ROLLBACK');
+    throw e;
+  }
+}
