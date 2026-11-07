@@ -1,5 +1,42 @@
-// People (admin console): invite, start over, change name or role, sign out everywhere, remove; and each
-// person's sign-ins and passkeys, to end or remove one at a time (also "My account" → sign-ins).
+/*
+===============================================================================
+ Family Chalk Planner | Server | Access | people.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     People (admin console): invite, start over, change name or role, sign
+     out everywhere, remove; and each person's sign-ins and passkeys, to
+     end or remove one at a time (also "My account" → sign-ins).
+
+ Routes:
+     GET    /api/users
+     POST   /api/users/invite
+     POST   /api/users/reinvite
+     POST   /api/users/update
+     POST   /api/users/signout
+     POST   /api/users/remove
+     GET    /api/account/sessions
+     POST   /api/account/sessions/remove
+     GET    /api/users/:id
+     POST   /api/users/sessions/remove
+     POST   /api/users/passkeys/remove
+
+ Used by:
+     server/access/access.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Move access (screens, people, sign-in,
+                        claude    passkeys, security) to TypeScript.
+===============================================================================
+*/
+
 import type { Request } from 'express';
 import type { Ctx } from './access.ts';
 import { ADMIN_IDLE, ADMIN_MAX, C, DAY, INVITE_TTL } from './access.ts';
@@ -7,6 +44,10 @@ import { USERNAME } from './accounts.ts';
 import { rid, sha } from './secrets.ts';
 import type { SessionRow, User } from './store.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | People | //
+// ---------- //
 const USER_ROLES = ['editor', 'admin'];
 
 export function registerPeople({ app, q, rp, secCfg, audit, clear, userOf, myKeys }: Ctx) {
@@ -21,6 +62,9 @@ export function registerPeople({ app, q, rp, secCfg, audit, clear, userOf, myKey
   const lastAdmin = (u: User) => u.role === 'admin' && u.totp_ok && q.uAdmins() <= 1;
   const who = (u: User) => `${u.name} (@${u.username})`;
 
+  // ------------ //
+  // | The list | //
+  // ------------ //
   app.get('/api/users', (req, res) => {
     res.json({
       me: me(req).id,
@@ -33,6 +77,9 @@ export function registerPeople({ app, q, rp, secCfg, audit, clear, userOf, myKey
     });
   });
 
+  // -------------------- //
+  // | Inviting someone | //
+  // -------------------- //
   app.post('/api/users/invite', (req, res) => {
     const b = req.body || {};
     const username = String(b.username || '')
@@ -56,7 +103,10 @@ export function registerPeople({ app, q, rp, secCfg, audit, clear, userOf, myKey
     res.json({ link: invite(req, nu), expiresDays: INVITE_TTL / DAY });
   });
 
-  // forgot password / lost phone: start over with a new link
+  // ----------------- //
+  // | Starting over | //
+  // ----------------- //
+  // Forgot password / lost phone: start over with a new link                //
   app.post('/api/users/reinvite', (req, res) => {
     const u = q.uById(String((req.body || {}).id || ''));
     if (!u) return res.status(404).json({ error: 'Person not found' });
@@ -75,6 +125,9 @@ export function registerPeople({ app, q, rp, secCfg, audit, clear, userOf, myKey
     res.json({ link: invite(req, u), expiresDays: INVITE_TTL / DAY });
   });
 
+  // ----------------- //
+  // | Name and role | //
+  // ----------------- //
   app.post('/api/users/update', (req, res) => {
     const b = req.body || {};
     const u = q.uById(String(b.id || ''));
@@ -90,7 +143,10 @@ export function registerPeople({ app, q, rp, secCfg, audit, clear, userOf, myKey
     res.json({ ok: true });
   });
 
-  // lost tablet: end every sign-in for that person
+  // ----------------------- //
+  // | Sign out everywhere | //
+  // ----------------------- //
+  // Lost tablet: end every sign-in for that person                          //
   app.post('/api/users/signout', (req, res) => {
     const u = q.uById(String((req.body || {}).id || ''));
     if (!u) return res.status(404).json({ error: 'Person not found' });
@@ -103,6 +159,10 @@ export function registerPeople({ app, q, rp, secCfg, audit, clear, userOf, myKey
     res.json({ ok: true });
   });
 
+  // -------------------- //
+  // | Removing someone | //
+  // -------------------- //
+  // The last admin can't be removed or made an editor.                      //
   app.post('/api/users/remove', (req, res) => {
     const u = q.uById(String((req.body || {}).id || ''));
     if (!u) return res.status(404).json({ error: 'Person not found' });
@@ -115,7 +175,9 @@ export function registerPeople({ app, q, rp, secCfg, audit, clear, userOf, myKey
     res.json({ ok: true });
   });
 
-  // ---- sign-ins and passkeys, one at a time ----
+  // ---------------------------------------- //
+  // | Sign-ins and passkeys, one at a time | //
+  // ---------------------------------------- //
   function expires(s: SessionRow) {
     if (s.kind !== 'edit') return Math.min(s.last_seen + ADMIN_IDLE, s.created + ADMIN_MAX);
     const c = secCfg();
@@ -184,3 +246,5 @@ export function registerPeople({ app, q, rp, secCfg, audit, clear, userOf, myKey
     res.json({ ok: true });
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

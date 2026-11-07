@@ -1,7 +1,35 @@
-// ⚙️ Settings on the board (signed-in people). Admins also get the calendar (Google sign-in and which
-// calendars) and trash day; the rest of the board's settings are in the admin
-// console. Everyone signed in: holidays, the photos and the overnight slideshow, the right-hand column,
-// and this screen.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Pages | Settings.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     ⚙️ Settings on the board (signed-in people). Admins also get the
+     calendar (Google sign-in and which calendars) and trash day; the rest
+     of the board's settings are in the admin console. Everyone signed in:
+     holidays, the photos and the overnight slideshow, the right-hand
+     column, and this screen.
+
+ Used by:
+     web/src/App.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Settings (new screen), and an emoji font
+                        colby     Chrome-based tablets can show.
+                        claude
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import { post } from '../lib/api.ts';
 import { useLive } from '../lib/live.ts';
@@ -12,6 +40,11 @@ import { Btn, Field, Pick } from '../ui/bits.tsx';
 import { Page } from '../ui/Page.tsx';
 import './settings.css';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------- //
+// | The settings page | //
+// --------------------- //
+// A card for each part; the ones this screen may not change are left out.   //
 export function Settings({ who }: { who: Who | null }) {
   const admin = who?.user?.role === 'admin' && who.admin;
   const adminPerson = who?.user?.role === 'admin';
@@ -37,6 +70,10 @@ export function Settings({ who }: { who: Who | null }) {
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | A card, and saving | //
+// ---------------------- //
 function Card({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
   return (
     <section className="section scard" id={id}>
@@ -70,7 +107,11 @@ const useSaved = () => {
   return { run, line };
 };
 
-// ---- the calendar: Google sign-in and which calendars (several, from Colby Way's board) ----
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | The calendar | //
+// ---------------- //
+// Google sign-in and which calendars (several, from Colby Way's board).     //
 interface GCal {
   id: string;
   name: string;
@@ -262,7 +303,11 @@ function Calendar() {
   );
 }
 
-// ---- holidays: any can be hidden ----
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------ //
+// | Holidays | //
+// ------------ //
+// Any can be hidden.                                                        //
 function Holidays() {
   const h = useLive<{ country: string; holidays: { title: string; icon: string; date: string; off: boolean }[] }>(
     'api/holidays',
@@ -296,7 +341,11 @@ function Holidays() {
   );
 }
 
-// ---- photos: beside the month name, and the overnight slideshow ----
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | Photos | //
+// ---------- //
+// Beside the month name, and the overnight slideshow.                       //
 interface PhotoCfg {
   frame: boolean;
   night: boolean;
@@ -369,7 +418,11 @@ function Photos() {
   );
 }
 
-// ---- trash and recycling (admins) ----
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------- //
+// | Trash and recycling | //
+// ----------------------- //
+// For admins.                                                               //
 function Trash() {
   const x = useLive<{ bins: { day: number | null; recycle: { mode: string; day?: number; anchor?: string } } }>(
     'api/extras',
@@ -434,7 +487,11 @@ function Trash() {
   );
 }
 
-// ---- the right-hand column: up to 3 pages (from Colby Way's board) ----
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------- //
+// | The right-hand column | //
+// ------------------------- //
+// Up to 3 pages (from Colby Way's board).                                   //
 const RIGHT: [string, string][] = [
   ['info', '🌤️ Weather, trash, countdowns'],
   ['meals', '🍽️ Meal plan'],
@@ -482,7 +539,10 @@ function RightColumn() {
   );
 }
 
-// ---- this screen only ----
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | This screen only | //
+// -------------------- //
 function ThisScreen() {
   const [speak, setSpeak] = useState(speaksHere());
   return (
@@ -501,3 +561,5 @@ function ThisScreen() {
     </Card>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

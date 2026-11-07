@@ -1,5 +1,30 @@
-// Timers (from Colby Way's board): several at once, shared by every screen. When one ends, the screens
-// chosen for it (here: "Say it out loud on this screen") say its name.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Pages | Timers.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Timers (from Colby Way's board): several at once, shared by every
+     screen. When one ends, the screens chosen for it (here: "Say it out
+     loud on this screen") say its name.
+
+ Used by:
+     web/src/App.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import type { Timer } from '../../../shared/lists.ts';
 import { fmtLeft, left, say, setSpeaksHere, speaksHere, useTimers } from '../lib/timers.ts';
@@ -10,8 +35,16 @@ import { Page } from '../ui/Page.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
 import './lists.css';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | Quick times | //
+// --------------- //
 const QUICK = [1, 3, 5, 10, 15, 20, 30, 45, 60];
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | The timers page | //
+// ------------------- //
 export function Timers({ who }: { who: Who | null }) {
   const { timers, now, change, remove, loaded } = useTimers();
   const [adding, setAdding] = useState(false);
@@ -93,6 +126,10 @@ export function Timers({ who }: { who: Who | null }) {
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | A new timer | //
+// --------------- //
 function NewTimer({ onClose, onStart }: { onClose: () => void; onStart: (name: string, minutes: number) => void }) {
   const [name, setName] = useState('');
   const [min, setMin] = useState(10);
@@ -137,3 +174,5 @@ function NewTimer({ onClose, onStart }: { onClose: () => void; onStart: (name: s
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

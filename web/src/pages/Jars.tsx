@@ -1,5 +1,38 @@
-// Reward jars: a kid earns a piece, someone drops it in; the jar fills up toward its goal. Two screens
-// dropping pieces in at once both count.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Pages | Jars.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Reward jars: a kid earns a piece, someone drops it in; the jar fills
+     up toward its goal. Two screens dropping pieces in at once both
+     count.
+
+ Used by:
+     web/src/App.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+
+                                  The new board: the family's style, each
+                                  month's title and holiday border, polaroids,
+                                  drawn jars.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import type { Jar, JarPiece } from '../../../shared/lists.ts';
 import { post } from '../lib/api.ts';
@@ -12,8 +45,18 @@ import { Page } from '../ui/Page.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
 import './lists.css';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The pieces | //
+// -------------- //
 export const PIECE: Record<JarPiece, string> = { heart: '❤️', rainbow: '🌈', star: '⭐', bolt: '⚡', critter: '🐞' };
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | The jars page | //
+// ----------------- //
+// + adds a piece, − takes one back; family screens and signed-in people may //
+// change them.                                                              //
 export function Jars({ who }: { who: Who | null }) {
   const live = useLive<Jar[]>('api/jars', ['jars']);
   const [err, setErr] = useState('');
@@ -117,7 +160,12 @@ export function Jars({ who }: { who: Who | null }) {
   );
 }
 
-// a jar's name, its goal and what + puts in (in turn); remove it, or empty it for the reward
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Editing a jar | //
+// ----------------- //
+// A jar's name, its goal and what + puts in (in turn); remove it, or empty  //
+// it for the reward                                                         //
 function JarEditor({
   jar,
   onSave,
@@ -186,3 +234,5 @@ function JarEditor({
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

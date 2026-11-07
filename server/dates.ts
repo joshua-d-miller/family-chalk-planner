@@ -1,6 +1,49 @@
-// Dates and times as the board shows them: everything is in the board's time zone (TIMEZONE), and
-// days are plain 'YYYY-MM-DD' strings so they never shift with the server's own clock.
+/*
+===============================================================================
+ Family Chalk Planner | Server | dates.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
 
+ Purpose:
+     Dates and times as the board shows them: everything is in the board's
+     time zone (TIMEZONE), and days are plain 'YYYY-MM-DD' strings so they
+     never shift with the server's own clock.
+
+ Used by:
+     server/art.ts
+     server/calendar/ical.ts
+     server/calendar/routes.ts
+     server/calendar/source.ts
+     server/extras.ts
+     server/holidays.ts
+     server/main.ts
+     server/month.ts
+     server/pantry.ts
+     server/reminders.ts
+     test/time.test.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Dates and holidays in their own TypeScript
+                        claude    modules.
+
+                                  Live updates, nightly backup and the Notes
+                                  extras in their own TypeScript modules.
+
+                                  Daylight saving and time zone tests; the
+                                  newest libraries and CI actions.
+===============================================================================
+*/
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Types | //
+// --------- //
 export interface ClockOptions {
   timeZone: string;
   time24: boolean; // 13:30 instead of 1:30pm
@@ -17,6 +60,12 @@ export interface ZonedParts {
   dateStr: string;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | Plain dates | //
+// --------------- //
+// Days are 'YYYY-MM-DD' strings, worked out in UTC, so adding a day never   //
+// slips an hour when the clocks change.                                     //
 export const pad2 = (n: number) => String(n).padStart(2, '0');
 export const ymd = (y: number, m: number, d: number) => `${y}-${pad2(m)}-${pad2(d)}`;
 
@@ -25,7 +74,11 @@ export function addDays(dateStr: string, n: number): string {
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
 
-// The n-th weekday of a month (dow 0 = Sunday; n = -1: the last one)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | Holiday helpers | //
+// ------------------- //
+// The n-th weekday of a month (dow 0 = Sunday; n = -1: the last one)        //
 export function nthDow(y: number, m: number, dow: number, n: number): string {
   if (n > 0) {
     const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
@@ -36,7 +89,11 @@ export function nthDow(y: number, m: number, dow: number, n: number): string {
   return ymd(y, m, lastDay.getUTCDate() - back);
 }
 
-// Easter Sunday (the anonymous Gregorian algorithm)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Easter Sunday | //
+// ----------------- //
+// Easter Sunday (the anonymous Gregorian algorithm)                         //
 export function easter(y: number): string {
   const a = y % 19;
   const b = Math.floor(y / 100);
@@ -55,7 +112,11 @@ export function easter(y: number): string {
   return ymd(y, month, day);
 }
 
-// iCalendar text helpers
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | iCalendar text | //
+// ------------------ //
+// ICalendar text helpers                                                    //
 export const icsUtc = (date: Date) =>
   date
     .toISOString()
@@ -73,7 +134,14 @@ export const xmlUnescape = (s: string) =>
     .replace(/&#13;/g, '\r')
     .replace(/&amp;/g, '&');
 
-// The helpers that depend on the board's settings
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------- //
+// | The board's clock | //
+// --------------------- //
+// Everything that depends on the board's time zone, week start and          //
+// 12/24-hour setting: what date and time it is on the board, a time on the  //
+// board's clock as a real moment, how times are written, and which weeks a  //
+// month shows.                                                              //
 export function makeClock({ timeZone, time24, weekStart, southern }: ClockOptions) {
   const format = new Intl.DateTimeFormat('en-US', {
     timeZone,
@@ -93,9 +161,12 @@ export function makeClock({ timeZone, time24, weekStart, southern }: ClockOption
     return { y: +p.year, m: +p.month, d: +p.day, h: +p.hour, mi: +p.minute, dateStr: `${p.year}-${p.month}-${p.day}` };
   }
 
-  // A date and time on the board's clock -> the real instant
-  // (a time the clocks skip, like 2:30 on the night they spring forward, means the same time on the
-  // clock from before the change: 3:30, as calendar apps do; a time that happens twice is the first one)
+  // -------------------------------------------------- //
+  // | A time on the board's clock -> the real moment | //
+  // -------------------------------------------------- //
+  // A time the clocks skip (2:30 on the night they spring forward) means    //
+  // that time on the clock from before the change: 3:30, as calendar apps   //
+  // do. A time that happens twice (fall back) is the first one.             //
   function fromZoned(y: number, m: number, d: number, h: number, mi: number): Date {
     const want = Date.UTC(y, m - 1, d, h, mi);
     const offsetAt = (t: number) => {
@@ -118,7 +189,11 @@ export function makeClock({ timeZone, time24, weekStart, southern }: ClockOption
     return mi ? `${hh}:${pad2(mi)}${ap}` : `${hh}${ap}`;
   }
 
-  // The weeks shown for a month: from the week start on or before the 1st, 5 or 6 weeks
+  // ------------------------------- //
+  // | The weeks shown for a month | //
+  // ------------------------------- //
+  // The weeks shown for a month: from the week start on or before the 1st,  //
+  // 5 or 6 weeks                                                            //
   function monthGrid(ym: string) {
     const [y, m] = ym.split('-').map(Number);
     const first = new Date(Date.UTC(y, m - 1, 1));
@@ -134,6 +209,12 @@ export function makeClock({ timeZone, time24, weekStart, southern }: ClockOption
 }
 export type Clock = ReturnType<typeof makeClock>;
 
-// What screens send: a month 'YYYY-MM' or a day 'YYYY-MM-DD'
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------ //
+// | Checking what screens send | //
+// ------------------------------ //
+// What screens send: a month 'YYYY-MM' or a day 'YYYY-MM-DD'                //
 export const isYm = (s: unknown): s is string => typeof s === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
 export const isDate = (s: unknown): s is string => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

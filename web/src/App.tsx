@@ -1,4 +1,51 @@
-// Which page this is, and whether this screen may see it (else: sign in)
+/*
+===============================================================================
+ Family Chalk Planner | Screens | App.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Which page this is, and whether this screen may see it (else: sign
+     in)
+
+ How it fits:
+     Every address the board serves to the screens (/, /edit, /chores,
+     /meals...) loads the same app; this picks the page from the address
+     and checks who is looking first. An unpaired screen gets its pairing
+     code; a family screen goes to /edit; a kid's tablet to their chores;
+     someone who may not see a page is asked to sign in.
+
+ Used by:
+     web/src/main.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+
+                                  Settings (new screen), and an emoji font
+                                  Chrome-based tablets can show.
+
+                                  The board in React (wall view, next/board):
+                                  month, events, art, notes column; sharp at
+                                  4K.
+
+                                  The new board on a tablet (next/edit):
+                                  events, the month's title and border, the
+                                  board style.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useEffect } from 'react';
 import { paintSurface, surfaceOf } from './lib/surface.ts';
 import { kidOf, useWho } from './lib/who.ts';
@@ -15,6 +62,10 @@ import { SignIn } from './ui/SignIn.tsx';
 import { Pair } from './ui/Pair.tsx';
 import type { Who } from './lib/who.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | The pages | //
+// ------------- //
 const VIEWS: Record<string, (p: { who: Who | null }) => React.JSX.Element> = {
   board: Board,
   edit: p => <Board {...p} edit />,
@@ -27,7 +78,12 @@ const VIEWS: Record<string, (p: { who: Who | null }) => React.JSX.Element> = {
   settings: Settings
 };
 
-// the slate behind every page, as sharp as the screen (2× or 3× on phones and 4K walls)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------- //
+// | The slate behind every page | //
+// ------------------------------- //
+// The slate behind every page, as sharp as the screen (2× or 3× on phones   //
+// and 4K walls)                                                             //
 function useSlate() {
   useEffect(() => {
     try {
@@ -38,6 +94,10 @@ function useSlate() {
   }, []);
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------------------- //
+// | Which page, and may this screen see it? | //
+// ------------------------------------------- //
 export function App() {
   useSlate();
   const here = pageHere();
@@ -78,3 +138,5 @@ export function App() {
     );
   return <View who={who.data} />;
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

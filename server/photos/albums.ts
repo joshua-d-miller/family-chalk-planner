@@ -1,9 +1,40 @@
-// Reading a shared photo album, the way the album's own web page reads it (no sign-in):
-//  - an iCloud Shared Album (link sharing, "anyone with the link"), through CloudKit
-//  - a Google Photos shared album (Share -> Create link)
-// Neither is an official API, so either company could change it without notice.
+/*
+===============================================================================
+ Family Chalk Planner | Server | Photos | albums.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     Reading a shared photo album, the way the album's own web page reads
+     it (no sign-in):
+      - an iCloud Shared Album (link sharing, "anyone with the link"),
+          through CloudKit
+      - a Google Photos shared album (Share -> Create link)
+     Neither is an official API, so either company could change it without
+     notice.
+
+ Used by:
+     server/photos/immich.ts
+     server/photos/photos.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Move photos, pages and the console's board
+                        claude    settings into TypeScript modules.
+===============================================================================
+*/
+
 import crypto from 'node:crypto';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Types | //
+// --------- //
 export interface AlbumPhoto {
   id: string;
   url: string;
@@ -31,19 +62,33 @@ export const albumKind = (cfg: AlbumConfig) =>
     ? 'google'
     : 'icloud';
 
-// only download from the album service's own image hosts
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------- //
+// | Only from the album service | //
+// ------------------------------- //
+// Only download from the album service's own image hosts                    //
 export function imageHostOk(cfg: AlbumConfig, u: string) {
   return albumKind(cfg) === 'google'
     ? !!cfg.googleHost || /^https:\/\/lh\d\.googleusercontent\.com\//.test(u)
     : !!cfg.ckHost || /^https:\/\/[a-z0-9.-]+\.(icloud-content\.com|icloud\.com)\//.test(u);
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | Reading an album | //
+// -------------------- //
 export function readAlbum(cfg: AlbumConfig): Promise<AlbumPhoto[]> {
   return albumKind(cfg) === 'google' ? googleAlbum(cfg) : icloudAlbum(cfg);
 }
 
 // ---- iCloud ----
 /* eslint-disable @typescript-eslint/no-explicit-any -- CloudKit's records are loosely shaped JSON */
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | iCloud Shared Albums | //
+// ------------------------ //
+// Through CloudKit, the way the album's own web page does it.               //
 async function ckPost(url: string, body: unknown): Promise<any> {
   const r = await fetch(url, {
     method: 'POST',
@@ -55,9 +100,14 @@ async function ckPost(url: string, body: unknown): Promise<any> {
   return r.json();
 }
 
-// Apple's records -> photos, newest first.
-// CPLAsset = the photo in the album (date, hidden, edits); CPLMaster = the file, with ready-made JPEG
-// versions. resJPEGMedRes is ~2048 px and already upright, the right size for the wall. Videos are skipped.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------- //
+// | Apple's records -> photos | //
+// ----------------------------- //
+// Apple's records -> photos, newest first. CPLAsset = the photo in the      //
+// album (date, hidden, edits); CPLMaster = the file, with ready-made JPEG   //
+// versions. resJPEGMedRes is ~2048 px and already upright, the right size   //
+// for the wall. Videos are skipped.                                         //
 export function photoAssets(records: any[]): AlbumPhoto[] {
   const masters = new Map(
     records.filter(r => r.recordType === 'CPLMaster' && !r.deleted && r.fields).map(r => [r.recordName, r.fields])
@@ -109,6 +159,10 @@ export function photoAssets(records: any[]): AlbumPhoto[] {
   return out.sort((a, b) => b.date - a.date);
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | An iCloud album | //
+// ------------------- //
 async function icloudAlbum(cfg: AlbumConfig) {
   const ckHost = cfg.ckHost || 'https://ckdatabasews.icloud.com';
   const guid = (/\/album\/([A-Za-z0-9_-]{10,})/.exec(cfg.url) || [])[1];
@@ -138,9 +192,13 @@ async function icloudAlbum(cfg: AlbumConfig) {
   return photoAssets(records);
 }
 
-// ---- Google Photos ----
-// Each item is [itemId, [imageUrl, w, h, ...], takenMs, hash, ?, addedMs, ..., {extra}].
-// Image URLs take size options: "=w2048-h2048" = fit inside 2048 px, already upright.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Google Photos | //
+// ----------------- //
+// Each item is [itemId, [imageUrl, w, h, ...], takenMs, hash, ?, addedMs,   //
+// ..., {extra}]. Image URLs take size options: "=w2048-h2048" = fit inside  //
+// 2048 px, already upright.                                                 //
 export function gpItems(items: any[]): AlbumPhoto[] {
   const out: AlbumPhoto[] = [];
   for (const e of items || []) {
@@ -159,6 +217,12 @@ export function gpItems(items: any[]): AlbumPhoto[] {
   return out;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------- //
+// | A Google Photos album | //
+// ------------------------- //
+// The shared page carries a token; the photos come from the same call the   //
+// page itself makes.                                                        //
 async function googleAlbum(cfg: AlbumConfig) {
   const gpHost = cfg.googleHost || 'https://photos.google.com';
   const page = await fetch(cfg.url.replace(/^https:\/\/photos\.google\.com/i, gpHost), {
@@ -213,3 +277,5 @@ async function googleAlbum(cfg: AlbumConfig) {
   }
   return gpItems(items).sort((a, b) => b.date - a.date);
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

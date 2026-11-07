@@ -1,5 +1,25 @@
-// Time zones and daylight saving: the board's clock, events, chores and reminders when the clocks change
-// (spring forward: a skipped hour; fall back: an hour twice), on boards in other time zones too.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | time.test.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Time zones and daylight saving: the board's clock, events, chores and
+     reminders when the clocks change (spring forward: a skipped hour;
+     fall back: an hour twice), on boards in other time zones too.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Daylight saving and time zone tests; the
+                        claude    newest libraries and CI actions.
+===============================================================================
+*/
+
 import test from 'node:test';
 import assert from 'node:assert';
 import { periods } from '../server/chores.ts';

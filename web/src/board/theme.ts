@@ -1,7 +1,38 @@
-// The board's style ("theme"): a preset plus the family's tweaks (fonts, colors, lines, today's mark).
-// The same presets and fonts as the current board, so a theme saved on either looks the same on both.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | theme.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The board's style ("theme"): a preset plus the family's tweaks
+     (fonts, colors, lines, today's mark). The same presets and fonts as
+     the current board, so a theme saved on either looks the same on both.
+
+ Used by:
+     web/src/board/Board.tsx
+     web/src/board/Month.tsx
+     web/src/board/editors/StyleEditor.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board: the family's style, each
+                        colby     month's title and holiday border, polaroids,
+                        claude    drawn jars.
+===============================================================================
+*/
+
 import { lum, readable } from './color.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | The style | //
+// ------------- //
 export type Theme = { p: string; o?: Record<string, string>; s?: string; z?: 1 };
 export type ThemeVals = Record<string, string>;
 
@@ -17,6 +48,10 @@ export const TFONTS: Record<string, { n: string; ff: string; w: number; z: numbe
   classic: { n: 'Classic', ff: "'Cormorant Garamond', serif", w: 600, z: 1.05 }
 };
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | The usual look | //
+// ------------------ //
 const BASE: ThemeVals = {
   numF: 'kalam',
   numC: '#F2D479',
@@ -39,6 +74,10 @@ const BASE: ThemeVals = {
   lineW: 'normal'
 };
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------- //
+// | Presets | //
+// ----------- //
 export const PRESETS: { id: string; name: string; v: ThemeVals }[] = [
   { id: 'classic', name: 'Classic', v: {} },
   {
@@ -169,6 +208,10 @@ export const PRESETS: { id: string; name: string; v: ThemeVals }[] = [
   }
 ];
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | As CSS | //
+// ---------- //
 export function themeVals(t: Theme | null | undefined): ThemeVals {
   const pr = PRESETS.find(x => x.id === t?.p) || PRESETS[0];
   return { ...BASE, ...pr.v, ...(t?.o || {}) };
@@ -227,10 +270,17 @@ export function themeCss(v0: ThemeVals, bg: number) {
   ].join('\n');
 }
 
-// today's mark, 46x42, centered on the day number (23,21); 'box' and 'bg' are drawn by the day itself
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | Today's mark | //
+// ---------------- //
+// Today's mark, 46x42, centered on the day number (23,21); 'box' and 'bg'   //
+// are drawn by the day itself                                               //
 export const TODAY_MARKS: Record<string, string> = {
   ring: 'M11 12C16 7 31 6 37 12s3 17-5 20S11 34 8 26 9 14 14 10',
   circle: 'M38 21a15 15 0 1 1-30 0a15 15 0 1 1 30 0',
   heart: 'M23 38.5C11.5 30.5 4 23.5 4 14.5a9 9 0 0 1 19-4 9 9 0 0 1 19 4C42 23.5 34.5 30.5 23 38.5z',
   star: 'M23.0 3.5L27.6 15.7L40.6 16.3L30.4 24.4L33.9 37.0L23.0 29.8L12.1 37.0L15.6 24.4L5.4 16.3L18.4 15.7z'
 };
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

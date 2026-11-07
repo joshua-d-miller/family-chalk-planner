@@ -1,6 +1,35 @@
-// Passkeys (Face ID / Touch ID / fingerprint / Windows Hello): signing in and adding one.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Helpers | passkey.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Passkeys (Face ID / Touch ID / fingerprint / Windows Hello): signing
+     in and adding one.
+
+ Used by:
+     web/src/ui/SignIn.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+===============================================================================
+*/
+
 import { ApiError, post } from './api.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | Bytes and text | //
+// ------------------ //
 const toBuf = (s: string) => {
   let t = s.replace(/-/g, '+').replace(/_/g, '/');
   while (t.length % 4) t += '=';
@@ -12,11 +41,20 @@ const from = (buf: ArrayBuffer) =>
     .replace(/\//g, '_')
     .replace(/=+$/, '');
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------------- //
+// | Can this device use passkeys? | //
+// --------------------------------- //
 export const passkeysSupported = () =>
   !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
 const standalone = () => !!matchMedia?.('(display-mode: standalone)').matches;
 
-// the browser refused before anything reached the board: tell the board why (shows in 🛡 Activity)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------- //
+// | When the device says no | //
+// --------------------------- //
+// The browser refused before anything reached the board: tell the board   //
+// why (it shows in the admin console's Activity).                          //
 function report(stage: string, e: unknown) {
   const err = e as Error;
   if (!err?.name || e instanceof ApiError) return;
@@ -37,6 +75,10 @@ function friendly(e: unknown) {
   return err;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------- //
+// | Signing in with a passkey | //
+// ----------------------------- //
 type Opts = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 export async function signInWithPasskey(kind: 'edit' | 'admin') {
@@ -83,3 +125,5 @@ export async function signInWithPasskey(kind: 'edit' | 'admin') {
     throw friendly(e);
   }
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

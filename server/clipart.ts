@@ -1,11 +1,47 @@
-// Pictures to place on the board:
-//  - Fluent Emoji (flat) by Microsoft, MIT: installed with the board (npm), so it works offline
-//  - chalk drawings: a hand-picked, family-friendly part of Game Icons (game-icons.net, CC BY 3.0), one-color
-//    silhouettes in any color. Named "gi-<name>", or "gi-<name>--<rrggbb>" for a color (default chalk white)
-//  - Tabler Icons (MIT), about 5,000 line drawings for "Find more": downloaded once, cached, searched here
-//    (brand logos left out: trademarks)
-//  - animated emoji: Noto Animated Emoji (Google, CC BY 4.0), fetched once and served from here, so the
-//    wall never depends on the internet to show one
+/*
+===============================================================================
+ Family Chalk Planner | Server | clipart.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     Pictures to place on the board:
+      - Fluent Emoji (flat) by Microsoft, MIT: installed with the board
+          (npm), so it works offline
+      - chalk drawings: a hand-picked, family-friendly part of Game Icons
+          (game-icons.net, CC BY 3.0), one-color
+        silhouettes in any color. Named "gi-<name>", or
+            "gi-<name>--<rrggbb>" for a color (default chalk white)
+      - Tabler Icons (MIT), about 5,000 line drawings for "Find more":
+          downloaded once, cached, searched here
+        (brand logos left out: trademarks)
+      - animated emoji: Noto Animated Emoji (Google, CC BY 4.0), fetched
+          once and served from here, so the
+        wall never depends on the internet to show one
+
+ Routes:
+     GET    /api/clip/list
+     GET    /api/clip/drawings
+     GET    /api/clip/:name.svg
+     GET    /api/clipart/search
+     GET    /api/anim/list
+     GET    /api/anim/:cp/:kind
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Move clipart and media into their own
+                        claude    TypeScript modules.
+===============================================================================
+*/
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -17,6 +53,12 @@ const TABLER_VER = '3.49.0';
 const NAME = /^[a-z0-9-]{1,64}$/;
 const FOREVER = 'public, max-age=31536000, immutable';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------------- //
+// | The chalk drawings, in groups | //
+// --------------------------------- //
+// The groups shown in the stamp library, each a list of Game Icons names    //
+// (picked to be family-friendly).                                           //
 const DRAWING_GROUPS: Record<string, string> = {
   Halloween:
     'pumpkin pumpkin-lantern pumpkin-mask witch-face witch-flight mummy-head vampire-dracula female-vampire frankenstein-creature floating-ghost ghost bat moon-bats spider-web cobweb hanging-spider cauldron magic-broom broom tombstone candle-light candles cat owl moon skeleton wizard-face pointy-hat',
@@ -34,6 +76,10 @@ const DRAWING_GROUPS: Record<string, string> = {
     'cat dog-house horse-head cow pig sheep rooster chicken duck turtle frog unicorn dinosaur-rex elephant-head lion bear-head owl'
 };
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 interface IconSet {
   icons: Record<string, { body: string; width?: number; height?: number; left?: number; top?: number }>;
   aliases?: Record<string, { parent: string }>;
@@ -46,6 +92,10 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
 
   // loaded on first use (the files are large)
   let fluent: { icons: IconSet['icons']; w: number; h: number; names: string[] } | null = null;
+  // ----------------------------- //
+  // | The Fluent emoji pictures | //
+  // ----------------------------- //
+  // Read once from the installed package: each picture's name and file.     //
   function fluentSet() {
     if (!fluent) {
       const j = require('@iconify-json/fluent-emoji-flat/icons.json') as IconSet;
@@ -64,6 +114,9 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
   }
   let gi: { icons: IconSet['icons']; w: number; h: number; ok: Set<string>; groups: Record<string, string[]> } | null =
     null;
+  // ---------------------- //
+  // | The chalk drawings | //
+  // ---------------------- //
   function drawingSet() {
     if (!gi) {
       const j = require('@iconify-json/game-icons/icons.json') as IconSet;
@@ -78,7 +131,10 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
     }
     return gi;
   }
-  // "gi-pumpkin" or "gi-pumpkin--f2d479"
+  // --------------------------------- //
+  // | One chalk drawing, in a color | //
+  // --------------------------------- //
+  // "gi-pumpkin" or "gi-pumpkin--f2d479"                                    //
   function drawingSvg(name: string) {
     const m = /^gi-([a-z0-9]+(?:-[a-z0-9]+)*?)(?:--([0-9a-f]{6}))?$/.exec(name);
     if (!m) return null;
@@ -92,6 +148,9 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
 
   // ---- Fluent and chalk drawings ----
   const notInstalled = { error: 'Clipart isn’t installed (run npm ci)' };
+  // ---------------------- //
+  // | Every picture name | //
+  // ---------------------- //
   app.get('/api/clip/list', (_req, res) => {
     try {
       res
@@ -108,6 +167,10 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
       res.status(500).json(notInstalled);
     }
   });
+  // --------------- //
+  // | One picture | //
+  // --------------- //
+  // Cached for a long time: a name always means the same picture.           //
   app.get('/api/clip/:name.svg', (req, res) => {
     const name = req.params.name;
     if (name.startsWith('gi-')) {
@@ -144,6 +207,11 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
   }
   let tabler: TablerIcon[] | null = null;
   let tablerLoading: Promise<TablerIcon[]> | null = null;
+  // ----------------------------------------- //
+  // | "Find more": the Tabler line drawings | //
+  // ----------------------------------------- //
+  // Downloaded once (about 5,000), kept in the cache folder, searched by    //
+  // name and tags. Brand logos are left out (trademarks).                   //
   function loadTabler(): Promise<TablerIcon[]> {
     if (tabler) return Promise.resolve(tabler);
     if (tablerLoading) return tablerLoading;
@@ -203,6 +271,12 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
 
   // ---- animated emoji ----
   let animIndex: { cp: string; tags: string; cat: string }[] | null = null;
+  // ------------------ //
+  // | Animated emoji | //
+  // ------------------ //
+  // The list comes from Google once and is kept; each emoji is fetched once //
+  // and then served from here, so the wall never depends on the internet to //
+  // show one.                                                               //
   app.get('/api/anim/list', async (_req, res) => {
     try {
       if (!animIndex) {
@@ -258,7 +332,12 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
     }
   });
 
-  // a clipart or chalk-drawing name the board has (for borders)
+  // ------------------------------------ //
+  // | Is this a picture the board has? | //
+  // ------------------------------------ //
+  // A clipart or chalk-drawing name the board has (for borders)             //
   const pictureOk = (n: string) => (n.startsWith('gi-') ? drawingSet().ok.has(n.slice(3)) : !!fluentSet().icons[n]);
   return { pictureOk };
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

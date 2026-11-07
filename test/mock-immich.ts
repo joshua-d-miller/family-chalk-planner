@@ -1,5 +1,26 @@
-// Stand-in for an Immich server (the calls the board makes), for tests. One API key ('KEY'), two albums
-// (one shared with us), favorites, and a share link ('SHAREKEY0001'). Previews come back as WebP.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | mock-immich.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Stand-in for an Immich server (the calls the board makes), for tests.
+     One API key ('KEY'), two albums (one shared with us), favorites, and
+     a share link ('SHAREKEY0001'). Previews come back as WebP.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Immich photos, slideshow extras, a filled-in
+                        colby     today, and the frame's thickness.
+                        claude
+===============================================================================
+*/
+
 import http from 'node:http';
 
 export const KEY = 'KEY';

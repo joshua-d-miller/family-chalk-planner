@@ -1,9 +1,36 @@
-// Pairing a screen (a wall, a shared tablet, a kid's tablet): it shows a code, an admin types it in the
-// admin console (📺 Screens) and picks what the screen may do, and the screen carries on by itself.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | UI | Pair.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Pairing a screen (a wall, a shared tablet, a kid's tablet): it shows
+     a code, an admin types it in the admin console (📺 Screens) and picks
+     what the screen may do, and the screen carries on by itself.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens take over: /, /edit and
+                        colby     /chores are the React board; the old one
+                        claude    stays at /classic.
+===============================================================================
+*/
+
 import { useEffect, useState } from 'react';
 import { get, post } from '../lib/api.ts';
 import type { Who } from '../lib/who.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | The pairing code | //
+// -------------------- //
+// A new code is asked for when it runs out; the screen checks every few     //
+// seconds and carries on by itself once an admin has entered it.            //
 export function Pair({ who }: { who: Who }) {
   const [code, setCode] = useState('····-····');
   const [note, setNote] = useState('Waiting… (the code changes every 15 minutes)');
@@ -58,3 +85,5 @@ export function Pair({ who }: { who: Who }) {
     </div>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -1,7 +1,32 @@
-// A card over the page, for adding or changing one thing. Escape or a tap outside closes it.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | UI | Sheet.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     A card over the page, for adding or changing one thing. Escape or a
+     tap outside closes it.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+===============================================================================
+*/
+
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | A card | //
+// ---------- //
 export function Sheet({
   title,
   onClose,
@@ -29,3 +54,5 @@ export function Sheet({
     </div>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

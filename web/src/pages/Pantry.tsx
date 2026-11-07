@@ -1,5 +1,30 @@
-// The pantry (from Colby Way's board): what food is in the house and where, and when it was bought.
-// Search it; tap something to change it or use it up. Each item is saved on its own.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Pages | Pantry.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The pantry (from Colby Way's board): what food is in the house and
+     where, and when it was bought. Search it; tap something to change it
+     or use it up. Each item is saved on its own.
+
+ Used by:
+     web/src/App.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import type { PantryItem, PantryLoc } from '../../../shared/lists.ts';
 import { post } from '../lib/api.ts';
@@ -12,6 +37,10 @@ import { Page } from '../ui/Page.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
 import './lists.css';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------- //
+// | Where things are kept | //
+// ------------------------- //
 const LOCS: [PantryLoc, string, string][] = [
   ['pantry', 'Pantry', '🥫'],
   ['fridge', 'Fridge', '🧊'],
@@ -22,6 +51,10 @@ const LOCS: [PantryLoc, string, string][] = [
 type View = { items: PantryItem[] };
 const age = (date: string, today: string) => Math.round((Date.parse(today) - Date.parse(date)) / 864e5);
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | The pantry page | //
+// ------------------- //
 export function Pantry({ who }: { who: Who | null }) {
   const live = useLive<View>('api/pantry', ['pantry']);
   const today = useToday().data?.today || new Date().toISOString().slice(0, 10);
@@ -105,6 +138,10 @@ export function Pantry({ who }: { who: Who | null }) {
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------ //
+// | Adding or changing an item | //
+// ------------------------------ //
 function ItemSheet({
   item,
   err,
@@ -174,3 +211,5 @@ function ItemSheet({
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

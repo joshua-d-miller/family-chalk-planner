@@ -1,9 +1,46 @@
-// Holidays: worked out here for the board's country (never written to anyone's calendar). The family
-// can hide any of them (every year), and the big ones are counted down to in the Notes column.
-//   kv 'holidaysOff'  ["Indigenous Peoples' Day", ...]
+/*
+===============================================================================
+ Family Chalk Planner | Server | holidays.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     Holidays: worked out here for the board's country (never written to
+     anyone's calendar). The family can hide any of them (every year), and
+     the big ones are counted down to in the Notes column.
+       kv 'holidaysOff'  ["Indigenous Peoples' Day", ...]
+
+ Routes:
+     GET    /api/holidays
+     POST   /api/holidays
+
+ Used by:
+     server/calendar/routes.ts
+     server/config.ts
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Dates and holidays in their own TypeScript
+                        claude    modules.
+                        colby
+                                  Settings (new screen), and an emoji font
+                                  Chrome-based tablets can show.
+===============================================================================
+*/
+
 import type { Express } from 'express';
 import { addDays, easter, nthDow, ymd } from './dates.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Types | //
+// --------- //
 export type Country = 'us' | 'ca' | 'gb' | 'none';
 
 export interface Holiday {
@@ -27,6 +64,12 @@ export interface HolidayEvent {
 
 type Row = [string, string, string, boolean?]; // date, icon, title, big
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------------- //
+// | A country's holidays for a year | //
+// ----------------------------------- //
+// Fixed dates, the n-th weekday of a month, or worked out (Easter). "big"   //
+// ones get a countdown in the Notes column.                                 //
 function rowsFor(country: Country, y: number): Row[] {
   const ea = easter(y);
   if (country === 'gb')
@@ -112,6 +155,10 @@ export function holidaysOfYear(country: Country, y: number): Holiday[] {
   return rowsFor(country, y).map(([date, icon, title, big]) => ({ date, icon, title, big: !!big }));
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | What the routes need | //
+// ------------------------ //
 export interface HolidayDeps {
   app: Express;
   country: Country;
@@ -121,11 +168,18 @@ export interface HolidayDeps {
   today: () => string;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({ app, country, kvGet, kvSet, broadcast, today }: HolidayDeps) {
   const hidden = () => new Set((kvGet('holidaysOff') as string[] | null) || []);
   const ofYear = (y: number) => holidaysOfYear(country, y);
 
-  // The holidays (not hidden) from one date to another, both included
+  // ---------------------------------------- //
+  // | The holidays shown between two dates | //
+  // ---------------------------------------- //
+  // The holidays (not hidden) from one date to another, both included       //
   function between(from: string, to: string): HolidayEvent[] {
     const out: HolidayEvent[] = [];
     const off = hidden();
@@ -147,7 +201,10 @@ export function setup({ app, country, kvGet, kvSet, broadcast, today }: HolidayD
     return out;
   }
 
-  // The list (this year's dates) with which ones are hidden
+  // ---------------------------------- //
+  // | The list, and which are hidden | //
+  // ---------------------------------- //
+  // The list (this year's dates) with which ones are hidden                 //
   app.get('/api/holidays', (_req, res) => {
     const off = hidden();
     const y = +today().slice(0, 4);
@@ -171,3 +228,5 @@ export function setup({ app, country, kvGet, kvSet, broadcast, today }: HolidayD
 
   return { between, ofYear };
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

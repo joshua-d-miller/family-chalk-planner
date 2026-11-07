@@ -1,5 +1,26 @@
-// Home-network sign-in (from Colby Way's board): off unless an admin turns it on; then the board (not the
-// admin console) takes just a password, only from a home address with the board opened by IP.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | home-signin.test.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Home-network sign-in (from Colby Way's board): off unless an admin
+     turns it on; then the board (not the admin console) takes just a
+     password, only from a home address with the board opened by IP.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Home-network sign-in: just a password for
+                        colby     the board at home, off unless turned on.
+                        claude
+===============================================================================
+*/
+
 import test from 'node:test';
 import assert from 'node:assert';
 import fs from 'node:fs';

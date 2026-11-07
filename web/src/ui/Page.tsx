@@ -1,9 +1,34 @@
-// The frame of every page: the ☰ menu, the page's title and its buttons
+/*
+===============================================================================
+ Family Chalk Planner | Screens | UI | Page.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     The frame of every page: the ☰ menu, the page's title and its buttons
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Who } from '../lib/who.ts';
 import { Menu } from './Menu.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | A page | //
+// ---------- //
+// Its title, the ☰ menu button, its own tools, and the page itself.         //
 export function Page({
   id,
   title,
@@ -39,3 +64,5 @@ export function Page({
     </div>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

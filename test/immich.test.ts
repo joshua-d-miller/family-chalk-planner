@@ -1,5 +1,27 @@
-// Photos from Immich (from Colby Way's board): picked by an admin in the console, synced in the background,
-// faces from Immich kept for framing, WebP previews taken from Immich only, and an Immich share link.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | immich.test.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Photos from Immich (from Colby Way's board): picked by an admin in
+     the console, synced in the background, faces from Immich kept for
+     framing, WebP previews taken from Immich only, and an Immich share
+     link.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Immich photos, slideshow extras, a filled-in
+                        colby     today, and the frame's thickness.
+                        claude
+===============================================================================
+*/
+
 import test from 'node:test';
 import assert from 'node:assert';
 import fs from 'node:fs';

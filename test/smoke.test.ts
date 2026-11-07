@@ -1,4 +1,66 @@
-// End-to-end smoke test: real server + mock CalDAV + mock photo album, all on localhost.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | smoke.test.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     End-to-end smoke test: real server + mock CalDAV + mock photo album,
+     all on localhost.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.1.0     2026-10-11   joshua    Standalone service, installer, updater,
+                        claude    tests.
+
+ 0.3.0     2026-10-13   joshua    Admin console, paired screens, sign-in with
+                        claude    passkeys or password + authenticator.
+
+ 0.4.0     2026-10-13   joshua    Board backgrounds: black slate, green and
+                        claude    blue chalkboard, cork, kraft paper,
+                                  whiteboard.
+
+ 0.4.1     2026-10-13   joshua    Real clipart (Fluent Emoji, MIT); no zoom on
+                        claude    family screens.
+
+ 0.4.4     2026-10-14   joshua    Bundled fonts, stricter page protections,
+                        claude    HTTPS/proxy warnings, media tidy-up,
+                                  releases.
+
+ 0.8.0     2026-10-14   joshua    Four new backgrounds, optional seasonal
+                        claude    pattern, plainer console fonts.
+
+ 0.9.0     2026-10-16   joshua    Kids pick which piece goes in their reward
+                        claude    jar; jars remember every piece in order.
+
+ 0.10.0    2026-10-23   joshua    Event size on the board (Large / Extra
+                        claude    large), XL month title, tap a day to see its
+                                  events.
+
+ 0.11.0    2026-10-28   joshua    Holiday borders around the calendar; chalk
+                        claude    drawings (hand-picked Game Icons, CC BY 3.0)
+                                  in any color.
+
+ 0.12.1    2026-10-28   joshua    Art moves with the days when a border is
+                        claude    added, resized or removed; XL title fits
+                                  above the calendar.
+
+ 0.12.2    2026-10-29   joshua    Hide holidays (tap a holiday for the list);
+                        claude    tapping an event in a day's list opens it
+                                  again.
+
+ 0.13.0    2026-11-07   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+                        colby
+                                  Settings (new screen), and an emoji font
+                                  Chrome-based tablets can show.
+===============================================================================
+*/
+
 import test from 'node:test';
 import assert from 'node:assert';
 import { spawn } from 'node:child_process';

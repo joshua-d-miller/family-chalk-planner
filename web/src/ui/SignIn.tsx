@@ -1,11 +1,47 @@
-// Signing in on a phone or tablet: a passkey (Face ID, fingerprint), or username + password + the code
-// from the authenticator app (at home, with home sign-in on: just the password).
+/*
+===============================================================================
+ Family Chalk Planner | Screens | UI | SignIn.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Signing in on a phone or tablet: a passkey (Face ID, fingerprint), or
+     username + password + the code from the authenticator app (at home,
+     with home sign-in on: just the password).
+
+ Used by:
+     web/src/App.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import { post } from '../lib/api.ts';
 import { passkeysSupported, signInWithPasskey } from '../lib/passkey.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn, Field } from './bits.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | Signing in | //
+// -------------- //
+// A passkey where the device has one, or username, password and the code    //
+// from the authenticator app (just the password at home, if home sign-in is //
+// on).                                                                      //
 export function SignIn({ who, why, onDone }: { who: Who | null; why?: string; onDone: () => void }) {
   const [user, setUser] = useState('');
   const [pw, setPw] = useState('');
@@ -107,3 +143,5 @@ export function SignIn({ who, why, onDone }: { who: Who | null; why?: string; on
     </div>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

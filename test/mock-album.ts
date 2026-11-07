@@ -1,5 +1,28 @@
-// Stand-in for an iCloud shared album (the CloudKit calls the board makes), for tests and local development.
-// Usage: (await import('./mock-album.ts')).start(port) or  node test/mock-album.ts [port]
+/*
+===============================================================================
+ Family Chalk Planner | Tests | mock-album.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-06
+
+ Purpose:
+     A stand-in for an iCloud shared album (the CloudKit calls the board
+     makes), for tests and local development.
+
+     Usage:
+          (await import('./mock-album.ts')).start(port)
+          node test/mock-album.ts [port]
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+===============================================================================
+*/
+
 import http from 'node:http';
 // a tiny valid JPEG (1x1) for every photo
 const JPEG = Buffer.from(

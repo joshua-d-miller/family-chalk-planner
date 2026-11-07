@@ -1,5 +1,30 @@
-// ✎ Month title: typed (font, color, outline, size; for this month or every month) or hand-lettered.
-// The board shows it as you pick.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board editors | TitleEditor.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     ✎ Month title: typed (font, color, outline, size; for this month or
+     every month) or hand-lettered. The board shows it as you pick.
+
+ Used by:
+     web/src/board/Board.tsx
+     web/src/board/draw/Tools.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
+                        claude    events, the month's title and border, the
+                                  board style.
+===============================================================================
+*/
+
 import { useEffect, useState } from 'react';
 import { post } from '../../lib/api.ts';
 import { Btn, Segs } from '../../ui/bits.tsx';
@@ -10,6 +35,10 @@ import type { MonthMeta } from '../Board.tsx';
 import { DEFAULT_TITLE } from '../Title.tsx';
 import type { TitleStyle } from '../Title.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | Fonts and sizes | //
+// ------------------- //
 export const FONT_NAMES = ['Kalam', 'Caveat', 'Marker', 'Pacifico', 'Chalk', 'Tall', 'Scratchy', 'Script'];
 const SIZES: [string, string][] = [
   ['56', 'S'],
@@ -18,6 +47,10 @@ const SIZES: [string, string][] = [
   ['90', 'XL']
 ];
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------- //
+// | The month's title | //
+// --------------------- //
 export type TitleDraft = { hand: boolean; style: TitleStyle };
 
 export function TitleEditor({
@@ -101,3 +134,5 @@ export function TitleEditor({
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

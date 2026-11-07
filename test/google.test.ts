@@ -1,5 +1,35 @@
-// Google Calendar end to end against a fake Google: sign in (paste flow), pick a calendar,
-// read, add, edit, delete, token refresh, and a revoked sign-in.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | google.test.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Google Calendar end to end against a fake Google: sign in (paste
+     flow), pick a calendar, read, add, edit, delete, token refresh, and a
+     revoked sign-in.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.3.0     2026-10-13   joshua    Google Calendar, Settings, Up next, tap-a-
+                        claude    day, photos per month.
+
+                                  Admin console, paired screens, sign-in with
+                                  passkeys or password + authenticator.
+
+ 0.13.0    2026-11-07   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+                        colby
+                                  Google: several calendars at once, read-only
+                                  ones, and which calendar a new event goes
+                                  in.
+===============================================================================
+*/
+
 import test from 'node:test';
 import assert from 'node:assert';
 import { spawn } from 'node:child_process';

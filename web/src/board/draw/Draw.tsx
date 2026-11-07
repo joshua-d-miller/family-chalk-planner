@@ -1,6 +1,38 @@
-// Drawing on the board (a tablet): chalk or Posca lines (Apple Pencil pressure makes them thicker),
-// writing, the eraser, and selecting to move, resize, recolor, copy or erase. Lines are saved as they're
-// finished; everything can be undone. Fingers resting on the screen while the Pencil draws are ignored.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Drawing | Draw.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Drawing on the board (a tablet): chalk or Posca lines (Apple Pencil
+     pressure makes them thicker), writing, the eraser, and selecting to
+     move, resize, recolor, copy or erase. Lines are saved as they're
+     finished; everything can be undone. Fingers resting on the screen
+     while the Pencil draws are ignored.
+
+ Used by:
+     web/src/board/Board.tsx
+     web/src/board/draw/Find.tsx
+     web/src/board/draw/Tools.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board: drawing on a tablet (chalk,
+                        claude    Posca, writing, eraser, select, stamps,
+                        colby     GIFs).
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useRef, useState } from 'react';
 import type { PointerEvent as RPointerEvent } from 'react';
 import { Art } from '../Art.tsx';
@@ -11,6 +43,10 @@ import { CHALK, POSCA } from '../../ui/Colors.tsx';
 import type { ArtEditor } from './useArt.ts';
 import './draw.css';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | Tools and pens | //
+// ------------------ //
 export type Tool = 'pen' | 'erase' | 'text' | 'select';
 export type Medium = 'chalk' | 'posca';
 export const SIZES = [3, 6, 12];
@@ -21,7 +57,13 @@ export const TEXT_SIZES: [number, string][] = [
   [88, 'XL']
 ];
 const ERASE_R = 16;
-// fingers on the screen right now (the board counts them): two or more = pinching, not drawing
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------- //
+// | Fingers on the screen | //
+// ------------------------- //
+// Fingers on the screen right now (the board counts them): two or more =    //
+// pinching, not drawing                                                     //
 export const touches = new Set<number>();
 const W = 1252;
 const H = 642;
@@ -40,6 +82,10 @@ export const firstPen = (): Pen => ({
   size: 1
 });
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | Drawing on the board | //
+// ------------------------ //
 type Drag =
   | { k: 'line'; item: ArtItem }
   | { k: 'erase'; gone: Set<number>; last: [number, number]; at: [number, number] }
@@ -344,7 +390,11 @@ export function DrawLayer({
   );
 }
 
-// the line and fill colors of what's selected (fill: closed shapes only)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | Recoloring | //
+// -------------- //
+// The line and fill colors of what's selected (fill: closed shapes only)    //
 export function recolor(items: ArtItem[], line: string | undefined, fill: string | null | undefined) {
   return items.map(it => {
     const o: ArtItem = JSON.parse(JSON.stringify(it));
@@ -358,3 +408,5 @@ export function recolor(items: ArtItem[], line: string | undefined, fill: string
     return o;
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

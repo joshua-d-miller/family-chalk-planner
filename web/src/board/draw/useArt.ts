@@ -1,17 +1,53 @@
-// The month's art as this tablet changes it: shown at once, saved to the server, and undone or redone
-// (everything done on this tablet, this month). Other screens' changes arrive live.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Drawing | useArt.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The month's art as this tablet changes it: shown at once, saved to
+     the server, and undone or redone (everything done on this tablet,
+     this month). Other screens' changes arrive live.
+
+ Used by:
+     web/src/board/Board.tsx
+     web/src/board/draw/Draw.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board: drawing on a tablet (chalk,
+                        claude    Posca, writing, eraser, select, stamps,
+                                  GIFs).
+===============================================================================
+*/
+
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { post } from '../../lib/api.ts';
 import type { ArtItem } from '../Art.tsx';
 
 export const CLIENT = Math.random().toString(36).slice(2); // the server skips telling us about our own changes
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Undo and redo | //
+// ----------------- //
 type Action =
   { t: 'add'; items: ArtItem[] } | { t: 'del'; items: ArtItem[] } | { t: 'upd'; before: ArtItem[]; after: ArtItem[] };
 const snap = (it: ArtItem): ArtItem => JSON.parse(JSON.stringify(it));
 export const newGroup = () => Math.random().toString(36).slice(2, 10);
 let temp = -1; // items not saved yet have ids below zero
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | Changing the art | //
+// -------------------- //
+// Changes show at once and are saved in the background; new pieces have a   //
+// temporary id until the board answers.                                     //
 export function useArt(
   ym: string | null,
   live: { data: ArtItem[] | null; set: (v: ArtItem[]) => void; reload: () => void }
@@ -154,3 +190,5 @@ export function useArt(
   };
 }
 export type ArtEditor = ReturnType<typeof useArt>;
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

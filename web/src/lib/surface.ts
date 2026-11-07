@@ -1,6 +1,41 @@
-// The board's surfaces (black slate, green chalkboard, cork...), painted once into a picture: chalk dust,
-// eraser swipes, cork crumbs, wood grain; and a faint seasonal pattern if it's on. Ported from the board.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Helpers | surface.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The board's surfaces (black slate, green chalkboard, cork...),
+     painted once into a picture: chalk dust, eraser swipes, cork crumbs,
+     wood grain; and a faint seasonal pattern if it's on. Ported from the
+     board.
+
+ Used by:
+     web/src/App.tsx
+     web/src/board/Board.tsx
+     web/src/board/editors/StyleEditor.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+===============================================================================
+*/
+
 /* eslint-disable prefer-const -- kept as the board had it, so the textures stay exactly the same */
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | The surfaces | //
+// ---------------- //
+// Each with its colors, how light it is (light ones get dark writing), its  //
+// chalk dust and the frame it comes with.                                   //
 export interface Surface {
   id: string;
   name: string;
@@ -29,7 +64,11 @@ export const SURFACES: Surface[] = [
 ];
 // the seasonal pattern for a month (1-12): holidays in February and October, otherwise the season
 
-// (flipped south of the equator)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------- //
+// | Seasonal patterns | //
+// --------------------- //
+// (flipped south of the equator)                                            //
 export const SEASONS: Record<string, string> = {
   snow: 'Snowflakes',
   blossom: 'Blossoms',
@@ -44,6 +83,11 @@ export function seasonOf(m: number, south: boolean): string {
   let q = ((m + (south ? 6 : 0) - 1) % 12) + 1;
   return q === 12 || q <= 2 ? 'snow' : q <= 5 ? 'blossom' : q <= 8 ? 'sun' : 'leaf';
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------- //
+// | A faint seasonal pattern | //
+// ---------------------------- //
 function paintSeason(g: CanvasRenderingContext2D, W: number, H: number, kind: string, light: boolean) {
   let seed = 77 + kind.length * 131;
   const rnd = function () {
@@ -145,8 +189,14 @@ function paintSeason(g: CanvasRenderingContext2D, W: number, H: number, kind: st
   g.restore();
 }
 
-// The board's surface at `scale` times its size (the screen's pixel ratio: 2 on a 4K wall, so the
-// texture is as sharp as the writing on it). Returns a CSS background-image.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | Painting a surface | //
+// ---------------------- //
+// At `scale` times its size: the screen's pixel ratio, so the texture is as //
+// sharp as the writing on it (2 or more on a 4K wall). Returns a CSS        //
+// background-image. The steps are kept as the board had them, so the        //
+// textures stay exactly the same.                                           //
 export function paintSurface(sf: Surface, season: string, scale = 1) {
   const W = 1252,
     H = 642,
@@ -425,4 +475,11 @@ export function paintSurface(sf: Surface, season: string, scale = 1) {
   if (season) paintSeason(g, W, H, season, sf.lum > 0.18);
   return 'url(' + c.toDataURL('image/jpeg', 0.9) + ')';
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------- //
+// | A surface by name | //
+// --------------------- //
 export const surfaceOf = (id: string) => SURFACES.find(s => s.id === id) || SURFACES[0];
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

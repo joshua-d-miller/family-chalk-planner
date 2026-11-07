@@ -1,5 +1,25 @@
-// A real board for the browser tests: the server with a fake calendar, photo album and weather,
-// an admin who is signed in, and helpers to open the board as any kind of screen.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | Browser | fixtures.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-06
+
+ Purpose:
+     A real board for the browser tests: the server with a fake calendar,
+     photo album and weather, an admin who is signed in, and helpers to
+     open the board as any kind of screen.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+===============================================================================
+*/
+
 import * as base from '@playwright/test';
 import type { BrowserContext, BrowserContextOptions, Page } from '@playwright/test';
 import { spawn } from 'node:child_process';

@@ -1,6 +1,32 @@
-// Lists the screens show and change: meals, jars, reminders, timers, pantry.
+/*
+===============================================================================
+ Family Chalk Planner | Shared types | lists.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
 
-// Meal plan: each meal on a day of the week, or on none ('')
+ Purpose:
+     The household lists, as the server stores them and the screens show
+     them: meals, reward jars, reminders, timers and the pantry. Shared by
+     both, so a change on one side that the other doesn't expect fails the
+     build instead of the wall.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Database migrations; chores, meals and jars
+                        colby     in their own tables.
+                        claude
+===============================================================================
+*/
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | Meal plan | //
+// ------------- //
+// Meal plan: each meal on a day of the week, or on none ('')                //
 export type MealDay = '' | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
 export interface Meal {
   id: string;
@@ -13,6 +39,10 @@ export interface Meals {
   updated?: number;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | Reward jars | //
+// --------------- //
 export type JarPiece = 'heart' | 'rainbow' | 'star' | 'bolt' | 'critter';
 export interface Jar {
   id: string;
@@ -23,7 +53,12 @@ export interface Jar {
   goal: number;
 }
 
-// 'always': shown until ticked off. 'time': pops up at a time, every day or once.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | Reminders | //
+// ------------- //
+// 'always': shown until ticked off. 'time': pops up at a time, every day or //
+// once.                                                                     //
 export interface Reminder {
   id: string;
   title: string;
@@ -40,7 +75,11 @@ export interface RemindersView {
   nowHm: string;
 }
 
-// Shared by every screen: running (endsAt), paused (left) or done (doneAt)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | Timers | //
+// ---------- //
+// Shared by every screen: running (endsAt), paused (left) or done (doneAt)  //
 export interface Timer {
   id: string;
   name: string;
@@ -55,6 +94,10 @@ export interface TimersView {
   now: number; // the server's clock, so screens can correct theirs
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | Pantry | //
+// ---------- //
 export type PantryLoc = 'pantry' | 'fridge' | 'freezer' | 'basement' | 'other';
 export interface PantryItem {
   id: string;
@@ -64,3 +107,5 @@ export interface PantryItem {
   date: string; // bought or logged, YYYY-MM-DD
   notes: string;
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

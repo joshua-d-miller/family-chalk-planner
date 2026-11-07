@@ -1,12 +1,46 @@
-// Numbered changes to the database, run once each at start-up, in order, each in its own transaction.
-// The database remembers how far it got (PRAGMA user_version), so a board updated from any older
-// version catches up step by step. Never change a step that has shipped: add a new one.
-//
-// A board refuses to start on a database from a newer version (someone went back to an older release
-// without restoring its backup): it would not understand the newer tables. deploy/update.sh restores the
-// database it backed up when it rolls back.
+/*
+===============================================================================
+ Family Chalk Planner | Server | migrations.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Numbered changes to the database, run once each at start-up, in
+     order, each in its own transaction. The database remembers how far it
+     got (PRAGMA user_version), so a board updated from any older version
+     catches up step by step. Never change a step that has shipped: add a
+     new one.
+
+     A board refuses to start on a database from a newer version (someone
+     went back to an older release without restoring its backup): it would
+     not understand the newer tables. deploy/update.sh restores the
+     database it backed up when it rolls back.
+
+ Used by:
+     server/main.ts
+     server/updates.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Database migrations; chores, meals and jars
+                        colby     in their own tables.
+                        claude
+===============================================================================
+*/
+
 import type { DatabaseSync } from 'node:sqlite';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------- //
+// | Helpers | //
+// ----------- //
+// Reading an old value from the kv table, and its rows, for copying into    //
+// the new tables.                                                           //
 type Step = { name: string; run: (db: DatabaseSync) => void };
 
 const json = (db: DatabaseSync, key: string): unknown => {
@@ -20,6 +54,12 @@ const json = (db: DatabaseSync, key: string): unknown => {
 type Row = Record<string, unknown>;
 const rows = (v: unknown): Row[] => (Array.isArray(v) ? v.filter(x => x && typeof x === 'object') : []);
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------- //
+// | The steps, in order | //
+// ----------------------- //
+// Each one runs once, in its own transaction. Never change a step that has  //
+// shipped: add a new one at the end.                                        //
 export const STEPS: Step[] = [
   {
     // Lists that several screens change at once get their own tables, saved one item at a time, so two
@@ -95,6 +135,12 @@ export const STEPS: Step[] = [
 
 export const SCHEMA_VERSION = STEPS.length;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------------- //
+// | Bringing a database up to date | //
+// ---------------------------------- //
+// Runs the steps the database hasn't had yet, one at a time, and refuses a  //
+// database from a newer version of the board.                               //
 export function migrate(db: DatabaseSync, log: Pick<Console, 'log'> = console) {
   const at = (db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version;
   if (at > STEPS.length)
@@ -116,3 +162,5 @@ export function migrate(db: DatabaseSync, log: Pick<Console, 'log'> = console) {
   }
   return STEPS.length;
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

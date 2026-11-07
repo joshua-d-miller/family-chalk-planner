@@ -50,9 +50,55 @@ The server is TypeScript that Node runs directly (no build step); `npm run typec
   `clipart.ts`, `media.ts` (uploads, links, GIFs), `photos/`, `backup.ts`, `pages.ts`, `settings.ts` and
   `settings-routes.ts` (the console's ⚙️ Board), `live.ts` (live updates).
 - `shared/`: types used by both the server and the screens.
-- `public/index.html`: the board (wall, tablet editor, family screens); `public/admin.html`: the console.
+- `web/src/`: the screens (React): the board (wall, tablet, family screens) and the pages beside it.
+- `public/admin.html`: the admin console; `public/index.html`: the board as it was, kept at `/classic`.
 - `deploy/`: install, update (with rollback), reset-admin, systemd unit.
 - `docs/`: install, user guide, Google Calendar, photos.
+
+## Comments
+Every code file (`.ts`, `.tsx`, `.js`, `.sh`, `.py`) opens with a header, so it can be understood on its
+own later; `test/headers.test.ts` checks it's there.
+
+```
+/*
+===============================================================================
+ Family Chalk Planner | Server | reminders.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-10-30
+ Updated:   2026-11-07
+
+ Purpose:
+     What the file is for, in a few plain sentences.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    What changed in this file in that release.
+===============================================================================
+*/
+```
+
+- Shell scripts put it in a `: <<'HEADER' ... HEADER` block under the `#!` line; Python in a docstring.
+- Files of 80 lines or more add `Created`, and whichever of `How it fits`, `Usage`, `Routes`,
+  `Returns`, `Known limitations` and `Used by` help.
+- When you change a file, bump `Updated` and add a line to its changelog under the coming version.
+- Each part of a file starts with a boxed title and a sentence or two on what it does, padded to
+  column 79, with a `::::` line between top-level parts:
+
+```
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Checking what a screen sends | //
+// -------------------------------- //
+// A screen can send anything, so every field is checked, and anything       //
+// missing or odd falls back to a safe default.                              //
+```
+
+Shell and Python use `#` for the `::::` line and `###` in place of `//` for the box. Ordinary short
+comments inside code stay as they are.
 
 ## Ground rules
 - **Security first.** Every `/api` route is covered by the rank check in `server/access/access.ts`; new

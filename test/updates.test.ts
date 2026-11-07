@@ -1,5 +1,26 @@
-// The health check update.sh and Docker use, and "Update now" in the admin console (which only asks the
-// root update service to run; the board never updates itself).
+/*
+===============================================================================
+ Family Chalk Planner | Tests | updates.test.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     The health check update.sh and Docker use, and "Update now" in the
+     admin console (which only asks the root update service to run; the
+     board never updates itself).
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Updates: database backup and restore, a real
+                        claude    health check, Update now and nightly
+                                  updates.
+===============================================================================
+*/
+
 import test from 'node:test';
 import assert from 'node:assert';
 import fs from 'node:fs';

@@ -1,5 +1,36 @@
-// Passkeys (WebAuthn): Face ID / Touch ID / fingerprint sign-in. They need HTTPS and the board's public
-// address (PUBLIC_URL), because a passkey belongs to one web address.
+/*
+===============================================================================
+ Family Chalk Planner | Server | Access | passkeys.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     Passkeys (WebAuthn): Face ID / Touch ID / fingerprint sign-in. They
+     need HTTPS and the board's public address (PUBLIC_URL), because a
+     passkey belongs to one web address.
+
+ Routes:
+     POST   /api/passkey/register/options
+     POST   /api/passkey/register/verify
+     POST   /api/passkey/login/options
+     POST   /api/passkey/login/verify
+     POST   /api/passkey/client-error
+
+ Used by:
+     server/access/access.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Move access (screens, people, sign-in,
+                        claude    passkeys, security) to TypeScript.
+===============================================================================
+*/
+
 import type { Request, Response } from 'express';
 import * as webauthn from '@simplewebauthn/server';
 import type { Ctx } from './access.ts';
@@ -7,6 +38,13 @@ import { describe } from './http.ts';
 import { rid } from './secrets.ts';
 
 const TTL = 5 * 60e3;
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | Challenges | //
+// -------------- //
+// Each sign-in or new passkey starts with a random challenge, kept here for //
+// 5 minutes and usable once.                                                //
 interface Challenge {
   challenge: string;
   userId?: string;
@@ -41,7 +79,9 @@ export function registerPasskeys(
     return true;
   }
 
-  // ---- adding one (My account) ----
+  // --------------------------- //
+  // | Adding one (My account) | //
+  // --------------------------- //
   app.post('/api/passkey/register/options', async (req, res) => {
     const u = userOf(req);
     if (!u) return res.status(401).json({ error: 'Sign in first' });
@@ -97,7 +137,9 @@ export function registerPasskeys(
     }
   });
 
-  // ---- signing in with one ----
+  // ----------------------- //
+  // | Signing in with one | //
+  // ----------------------- //
   app.post('/api/passkey/login/options', async (req, res) => {
     if (noPasskeys(req, res) || !rp) return;
     if (tooMany('pk:' + req.ip, 30, 15 * 60e3))
@@ -170,8 +212,12 @@ export function registerPasskeys(
     res.json({ ok: true, role: u.role, name: u.name });
   });
 
-  // The phone/tablet couldn't produce a passkey at all (the board never saw one): log what the browser said,
-  // so "it just says it can't be used" shows up in Activity with the real reason.
+  // ---------------------------------- //
+  // | When the device can't make one | //
+  // ---------------------------------- //
+  // The phone/tablet couldn't produce a passkey at all (the board never saw //
+  // one): log what the browser said, so "it just says it can't be used"     //
+  // shows up in Activity with the real reason.                              //
   app.post('/api/passkey/client-error', (req, res) => {
     if (tooMany('pkerr:' + req.ip, 10, 15 * 60e3)) return res.status(429).json({ error: 'Too many reports' });
     const b = req.body || {};
@@ -189,3 +235,5 @@ export function registerPasskeys(
     res.json({ ok: true });
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

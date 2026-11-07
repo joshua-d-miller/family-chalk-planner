@@ -1,13 +1,57 @@
-// Chores: the family's checklist, kept on the server so every screen and phone shows the same list.
-// A chore repeats every day, week or month, and a check-off only counts for the current period,
-// so the lists reset by themselves. A chore for several people is either shared (done once, by any
-// of them: "load the dishwasher") or "each" (everyone checks off their own: "make your bed").
-//
-// Saved in the people, chores and chore_checks tables; the screens can change one chore at a time.
+/*
+===============================================================================
+ Family Chalk Planner | Server | chores.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     Chores: the family's checklist, kept on the server so every screen
+     and phone shows the same list. A chore repeats every day, week or
+     month, and a check-off only counts for the current period, so the
+     lists reset by themselves. A chore for several people is either
+     shared (done once, by any of them: "load the dishwasher") or "each"
+     (everyone checks off their own: "make your bed").
+
+     Saved in the people, chores and chore_checks tables; the screens can
+     change one chore at a time.
+
+ Routes:
+     GET    /api/chores
+     POST   /api/chores/check
+     POST   /api/chores/save
+     POST   /api/chores/item
+     POST   /api/chores/item/delete
+     POST   /api/chores/people
+
+ Used by:
+     server/main.ts
+     test/access.test.ts
+     test/time.test.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    TypeScript groundwork: type-check, lint and
+                        claude    format in CI; chores is the first TypeScript
+                        colby     module.
+
+                                  Database migrations; chores, meals and jars
+                                  in their own tables.
+===============================================================================
+*/
+
 import type { Express, Request } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import type { Chore, ChoreList, ChoreProgress, ChoresView, Every, Periods, Person } from '../shared/chores.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | Limits | //
+// ---------- //
 const EVERY: Every[] = ['day', 'week', 'month'];
 const MAX = { people: 8, chores: 120, title: 60, name: 20, times: 7 };
 
@@ -19,7 +63,12 @@ interface DoneRecord {
 }
 type DoneMap = Record<string, DoneRecord>;
 
-// A typical family's cleaning schedule to start from (rename the people, change anything)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | The example list | //
+// -------------------- //
+// A typical family's cleaning schedule to start from (rename the people,    //
+// change anything)                                                          //
 type ExampleRow = [Every, string, string, number?, boolean?];
 const EXAMPLE_ROWS: ExampleRow[] = [
   ['day', 'dad mom', 'Load/unload dishwasher'],
@@ -73,6 +122,10 @@ export const EXAMPLE: ChoreList = {
   }))
 };
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Checking what a screen sends | //
+// -------------------------------- //
 const isId = (v: unknown): v is string => typeof v === 'string' && /^[a-z0-9]{1,16}$/.test(v);
 const text = (v: unknown, max: number) =>
   String(v ?? '')
@@ -114,7 +167,13 @@ export function clean(input: unknown): ChoreList & { errs: string[] } {
   return { people, chores, errs };
 }
 
-// The current period keys for a date (YYYY-MM-DD) and the first day of the week (0 = Sunday)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------------- //
+// | Which day, week and month it is | //
+// ----------------------------------- //
+// A check-off counts for its period only, so the lists start again by       //
+// themselves: each day, each week (from the board's week start) and each    //
+// month.                                                                    //
 export function periods(today: string, weekStart: number): Periods {
   const [y, m, d] = today.split('-').map(Number);
   const t = Date.UTC(y, m - 1, d);
@@ -123,6 +182,10 @@ export function periods(today: string, weekStart: number): Periods {
   return { day: today, week: weekStarts, month: today.slice(0, 7) };
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | What the routes need | //
+// ------------------------ //
 export interface ChoresDeps {
   app: Express;
   db: DatabaseSync;
@@ -133,8 +196,13 @@ export interface ChoresDeps {
   who: (req: Request) => string | null; // a name for "done by"
 }
 
-// The tables (server/migrations.ts): people, chores (who is a JSON list of person ids), chore_checks
-// (key = chore id, or "chore id:person id" for "each" chores; only the current period counts)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The tables | //
+// -------------- //
+// The tables (server/migrations.ts): people, chores (who is a JSON list of  //
+// person ids), chore_checks (key = chore id, or "chore id:person id" for    //
+// "each" chores; only the current period counts)                            //
 function store(db: DatabaseSync) {
   const q = {
     people: db.prepare('SELECT id, name, kid FROM people ORDER BY sort, rowid'),
@@ -252,6 +320,10 @@ function store(db: DatabaseSync) {
   };
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({ app, db, broadcast, today, weekStart, kidOf, who }: ChoresDeps) {
   const st = store(db);
 
@@ -283,7 +355,11 @@ export function setup({ app, db, broadcast, today, weekStart, kidOf, who }: Chor
     res.json({ ...view(), mine: kidOf(req) || null });
   });
 
-  // Tick one off (or undo): family screens and signed-in people, anyone's; a kid's tablet, only their own
+  // ------------------- //
+  // | Ticking one off | //
+  // ------------------- //
+  // Tick one off (or undo): family screens and signed-in people, anyone's;  //
+  // a kid's tablet, only their own                                          //
   app.post('/api/chores/check', (req, res) => {
     const { id, undo, person } = (req.body || {}) as { id?: string; undo?: boolean; person?: string };
     const c = typeof id === 'string' ? st.chore(id) : null;
@@ -309,7 +385,11 @@ export function setup({ app, db, broadcast, today, weekStart, kidOf, who }: Chor
     res.json(view());
   });
 
-  // The whole list (signed-in people only); check-offs of removed chores are dropped
+  // ------------------ //
+  // | The whole list | //
+  // ------------------ //
+  // The whole list (signed-in people only); check-offs of removed chores    //
+  // are dropped                                                             //
   app.post('/api/chores/save', (req, res) => {
     const body = (req.body || {}) as { example?: boolean };
     const { people, chores, errs } = clean(body.example ? EXAMPLE : body);
@@ -319,7 +399,10 @@ export function setup({ app, db, broadcast, today, weekStart, kidOf, who }: Chor
     res.json(view());
   });
 
-  // One chore, added or changed (signed-in people only)
+  // ----------------------- //
+  // | One chore at a time | //
+  // ----------------------- //
+  // One chore, added or changed (signed-in people only)                     //
   app.post('/api/chores/item', (req, res) => {
     const { people } = st.list();
     const { chores, errs } = clean({ people, chores: [(req.body || {}).chore] });
@@ -334,7 +417,10 @@ export function setup({ app, db, broadcast, today, weekStart, kidOf, who }: Chor
     changed();
     res.json(view());
   });
-  // The people (signed-in people only)
+  // -------------- //
+  // | The people | //
+  // -------------- //
+  // The people (signed-in people only)                                      //
   app.post('/api/chores/people', (req, res) => {
     const { people, errs } = clean({ people: (req.body || {}).people, chores: [] });
     if (errs.length) return res.status(400).json({ error: errs[0] });
@@ -345,3 +431,5 @@ export function setup({ app, db, broadcast, today, weekStart, kidOf, who }: Chor
 
   return { people: () => st.list().people };
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

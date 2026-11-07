@@ -1,8 +1,45 @@
-// Admin console → ⚙️ Board: the settings that used to need .env (the fields are in settings.ts).
-// Saving restarts the board (a few seconds) so everything picks the new values up; screens reconnect.
+/*
+===============================================================================
+ Family Chalk Planner | Server | settings-routes.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     Admin console → ⚙️ Board: the settings that used to need .env (the
+     fields are in settings.ts). Saving restarts the board (a few seconds)
+     so everything picks the new values up; screens reconnect.
+
+ Routes:
+     GET    /api/board-settings
+     POST   /api/board-settings
+     POST   /api/board-settings/caldav-test
+     GET    /api/board-settings/geocode
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Move photos, pages and the console's board
+                        claude    settings into TypeScript modules.
+
+                                  Server and tests are all TypeScript (ES
+                                  modules).
+===============================================================================
+*/
+
 import type { Express, Request } from 'express';
 import { caldavCalendars } from './calendar/source.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function registerSettingsRoutes(
   app: Express,
   {
@@ -28,6 +65,11 @@ export function registerSettingsRoutes(
     audit: (req: Request, what: string, info: Record<string, string>) => void;
   }
 ) {
+  // --------------------------- //
+  // | Restarting after a save | //
+  // --------------------------- //
+  // A second later, so the console gets its answer first. systemd (or       //
+  // Docker) starts the board again with the new settings.                   //
   function restartSoon(why: string) {
     // the service manager starts it again
     setTimeout(() => {
@@ -57,7 +99,11 @@ export function registerSettingsRoutes(
     restartSoon('new settings');
   });
 
-  // "Find my calendars": try a CalDAV account and list its calendars (the password may be the saved one)
+  // --------------------- //
+  // | Find my calendars | //
+  // --------------------- //
+  // "Find my calendars": try a CalDAV account and list its calendars (the   //
+  // password may be the saved one)                                          //
   app.post('/api/board-settings/caldav-test', async (req, res) => {
     const b = req.body || {};
     const url = String(b.url || env.CALDAV_URL || 'https://caldav.icloud.com/').trim();
@@ -78,7 +124,10 @@ export function registerSettingsRoutes(
     }
   });
 
-  // Weather location: search a town (Open-Meteo geocoding, no account)
+  // -------------------- //
+  // | Weather location | //
+  // -------------------- //
+  // Weather location: search a town (Open-Meteo geocoding, no account)      //
   app.get('/api/board-settings/geocode', async (req, res) => {
     const q = String(req.query.q || '')
       .trim()
@@ -112,3 +161,5 @@ export function registerSettingsRoutes(
     }
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

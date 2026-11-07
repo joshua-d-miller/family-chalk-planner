@@ -1,7 +1,51 @@
-// Where things are on the board, in board pixels (the slate is 1252 x 642).
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | geom.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Where things are on the board, in board pixels (the slate is 1252 x
+     642).
+
+ Used by:
+     web/src/board/Board.tsx
+     web/src/board/Month.tsx
+     web/src/board/Title.tsx
+     web/src/board/TitlePhotos.tsx
+     web/src/board/draw/Draw.tsx
+     web/src/board/draw/Find.tsx
+     web/src/board/draw/Library.tsx
+     web/src/ui/JarArt.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board: the family's style, each
+                        colby     month's title and holiday border, polaroids,
+                        claude    drawn jars.
+
+                                  The new board: drawing on a tablet (chalk,
+                                  Posca, writing, eraser, select, stamps,
+                                  GIFs).
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { fontCss } from './Art.tsx';
 import type { ArtItem } from './Art.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Sizes | //
+// --------- //
 export type Box = { x1: number; y1: number; x2: number; y2: number };
 
 let ctx: CanvasRenderingContext2D | null = null;
@@ -44,6 +88,10 @@ export function itemBox(it: ArtItem): Box {
   return b;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Boxes | //
+// --------- //
 export const overlaps = (a: Box, b: Box) => a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
 
 // a small stable random number for item k (the same on every screen)
@@ -63,6 +111,10 @@ export function unionBox(items: ArtItem[]): Box | null {
   return u;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------ //
+// | Touching | //
+// ------------ //
 function segDist(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
   const dx = bx - ax;
   const dy = by - ay;
@@ -92,7 +144,12 @@ export function inRect(it: ArtItem, r: Box) {
     if (p[i] >= r.x1 && p[i] <= r.x2 && p[i + 1] >= r.y1 && p[i + 1] <= r.y2) return true;
   return false;
 }
-// a copy moved by dx, dy and scaled by k around (cx, cy)
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | Moving | //
+// ---------- //
+// A copy moved by dx, dy and scaled by k around (cx, cy)                    //
 export function xform(it: ArtItem, dx: number, dy: number, k = 1, cx = 0, cy = 0): ArtItem {
   const o: ArtItem = JSON.parse(JSON.stringify(it));
   if (o.k === 't' || o.k === 'g') {
@@ -115,7 +172,12 @@ export const isClosedLine = (s: ArtItem) =>
   s.p.length >= 8 &&
   Math.hypot(s.p[0] - s.p[s.p.length - 2], s.p[1] - s.p[s.p.length - 1]) <= Math.max(2.5, (s.w || 4) * 0.8);
 
-// The calendar's box on the slate (the days, weekday names and any border), in board pixels
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------- //
+// | Art on a new layout | //
+// ----------------------- //
+// The calendar's box on the slate (the days, weekday names and any border), //
+// in board pixels                                                           //
 export const CAL = { x: 18, y: 8 + 70, w: 1252 - 18 - 14 - 14 - 214, h: 642 - 8 - 10 - 70 };
 export const BORDER_PAD = { s: 26, m: 32, l: 40 }; // a border's picture size + 6
 
@@ -140,3 +202,5 @@ export function relayout(items: ArtItem[], p0: number, p1: number): ArtItem[] {
     return o;
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -1,7 +1,39 @@
-// Timers: several named countdowns shared by every screen. Each is running (endsAt), paused (left) or
-// done. Screens count down on their own (using `now` to correct their clock), and the screens chosen
-// for it say the timer's name out loud when one ends. From Colby Way's board.
-// Saved in the timers table; a screen changes one timer at a time.
+/*
+===============================================================================
+ Family Chalk Planner | Server | timers.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Timers: several named countdowns shared by every screen. Each is
+     running (endsAt), paused (left) or done. Screens count down on their
+     own (using `now` to correct their clock), and the screens chosen for
+     it say the timer's name out loud when one ends. From Colby Way's
+     board. Saved in the timers table; a screen changes one timer at a
+     time.
+
+ Routes:
+     GET    /api/timers
+     POST   /api/timers
+     POST   /api/timers/item
+     POST   /api/timers/item/delete
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Reminders, timers, the pantry and the right-
+                        colby     hand column's pages (server).
+                        claude
+===============================================================================
+*/
+
 import crypto from 'node:crypto';
 import type { Express } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
@@ -10,6 +42,13 @@ import { tx } from './db.ts';
 
 const MAX = 20;
 const DAY = 24 * 3600e3;
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Checking what a screen sends | //
+// -------------------------------- //
+// A timer lasts 1 second to a day; it's running (endsAt), paused (left) or  //
+// done (doneAt).                                                            //
 const isId = (v: unknown): v is string => typeof v === 'string' && /^[a-z0-9]{1,20}$/.test(v);
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -33,6 +72,10 @@ export function cleanTimer(raw: unknown, now = Date.now()): Timer {
   return out;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({
   app,
   db,
@@ -81,6 +124,9 @@ export function setup({
   };
 
   app.get('/api/timers', (_req, res) => res.json(view()));
+  // ------------------ //
+  // | The whole list | //
+  // ------------------ //
   app.post('/api/timers', (req, res) => {
     const list = (req.body || {}).items;
     if (!Array.isArray(list)) return res.status(400).json({ error: 'bad timers' });
@@ -95,7 +141,10 @@ export function setup({
     });
     res.json(changed());
   });
-  // one timer: started, paused, resumed, finished, renamed
+  // ----------------------- //
+  // | One timer at a time | //
+  // ----------------------- //
+  // One timer: started, paused, resumed, finished, renamed                  //
   app.post('/api/timers/item', (req, res) => {
     const t = cleanTimer((req.body || {}).timer);
     if (!q.one.get(t.id) && (q.count.get() as { n: number }).n >= MAX)
@@ -109,3 +158,5 @@ export function setup({
     res.json(changed());
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

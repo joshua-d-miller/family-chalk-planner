@@ -1,4 +1,31 @@
-// Holidays (hide one, bring it back), ⚙️ Settings for editors, and the photos beside the month name.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | Browser | holidays-photos.spec.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Holidays (hide one, bring it back), ⚙️ Settings for editors, and the
+     photos beside the month name.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Browser tests for the board as each screen
+                        claude    sees it (Playwright).
+                        colby
+                                  Server and tests are all TypeScript (ES
+                                  modules).
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { test, expect } from './fixtures.ts';
 
 // a month with a holiday on it (August has none)

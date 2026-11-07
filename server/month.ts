@@ -1,13 +1,53 @@
-// Each month's own options: the typed title's style (or a hand-lettered one), what goes beside the month
-// name (photos or room to draw), the holiday border, and which layout the month's art was placed on.
-//   month_meta(month)    { hideTitle, title, side, border, artPad }
-//   kv 'titleDefault'    the title style for months without their own
-//   kv 'borders'         { MM: border } borders that come back every year in that month
+/*
+===============================================================================
+ Family Chalk Planner | Server | month.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     Each month's own options: the typed title's style (or a hand-lettered
+     one), what goes beside the month name (photos or room to draw), the
+     holiday border, and which layout the month's art was placed on.
+       month_meta(month)    { hideTitle, title, side, border, artPad }
+       kv 'titleDefault'    the title style for months without their own
+       kv 'borders'         { MM: border } borders that come back every
+           year in that month
+
+ Routes:
+     GET    /api/meta
+     POST   /api/meta
+     POST   /api/border
+     POST   /api/frame
+
+ Used by:
+     server/art.ts
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Art, stamps, each month's options, board
+                        claude    style, meals and jars in their own
+                        colby     TypeScript modules.
+
+                                  Immich photos, slideshow extras, a filled-in
+                                  today, and the frame's thickness.
+===============================================================================
+*/
+
 import type { Express } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import { isYm } from './dates.ts';
 import type { Kv } from './kv.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Types | //
+// --------- //
 export interface TitleStyle {
   f: number; // font
   c: string; // color
@@ -39,6 +79,10 @@ export interface MonthMeta extends Omit<Stored, 'border'> {
   boardPad?: number; // the frame's thickness
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Checking what a screen sends | //
+// -------------------------------- //
 const BORDER_PAD = { s: 26, m: 32, l: 40 }; // picture size + 6 (the page's BORDER_SZ)
 const hex = (v: unknown) => (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v) ? v : null);
 
@@ -65,6 +109,10 @@ function cleanSide(v: unknown): Side | undefined {
   };
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({
   app,
   db,
@@ -92,7 +140,11 @@ export function setup({
   const store = (ym: string, m: Stored) => qSet.run(ym, JSON.stringify(m));
   const yearly = () => kv.get<Record<string, Border>>('borders') || {};
 
-  // A month as the screens see it: with the default title style, and its border worked out
+  // --------------------------------- //
+  // | A month as the screens see it | //
+  // --------------------------------- //
+  // A month as the screens see it: with the default title style, and its    //
+  // border worked out                                                       //
   function metaFor(ym: string): MonthMeta {
     const m = stored(ym) as Stored & Partial<MonthMeta>;
     const d = kv.get<TitleStyle>('titleDefault');
@@ -108,7 +160,10 @@ export function setup({
     }
     return m as MonthMeta;
   }
-  // how much the border takes from the calendar's edges (0 = no border)
+  // ---------------------- //
+  // | The border's width | //
+  // ---------------------- //
+  // How much the border takes from the calendar's edges (0 = no border)     //
   const padOf = (m: MonthMeta) => (m.border ? BORDER_PAD[m.border.size] || BORDER_PAD.m : 0);
 
   function cleanBorder(b: unknown): Border | null {
@@ -126,12 +181,19 @@ export function setup({
     return { items, color: (hex(v.color) || chalk).toUpperCase(), size };
   }
 
+  // --------------------- //
+  // | A month's options | //
+  // --------------------- //
   app.get('/api/meta', (req, res) => {
     if (!isYm(req.query.ym)) return res.status(400).json({ error: 'bad month' });
     res.json(metaFor(req.query.ym));
   });
 
-  // The title (typed style, or hand-lettered) and what goes beside it. makeDefault: for every month.
+  // -------------------------------------- //
+  // | The title, and what goes beside it | //
+  // -------------------------------------- //
+  // The title (typed style, or hand-lettered) and what goes beside it.      //
+  // makeDefault: for every month.                                           //
   app.post('/api/meta', (req, res) => {
     const { ym, hideTitle, title, makeDefault, side } = req.body || {};
     if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
@@ -153,7 +215,10 @@ export function setup({
     res.json(metaFor(ym));
   });
 
-  // { ym, border: {...} or null, yearly: true = every year in this month }
+  // ---------------------- //
+  // | The holiday border | //
+  // ---------------------- //
+  // { ym, border: {...} or null, yearly: true = every year in this month }  //
   app.post('/api/border', (req, res) => {
     const { ym, border, yearly: everyYear } = req.body || {};
     if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
@@ -176,8 +241,11 @@ export function setup({
     res.json(metaFor(ym));
   });
 
-  // How thick the frame around the board is, in board pixels (0-80): the same every month. From Colby
-  // Way's board.
+  // ------------------------------ //
+  // | The frame around the board | //
+  // ------------------------------ //
+  // How thick the frame around the board is, in board pixels (0-80): the    //
+  // same every month. From Colby Way's board.                               //
   app.post('/api/frame', (req, res) => {
     const pad = Number((req.body || {}).pad);
     if (!Number.isFinite(pad)) return res.status(400).json({ error: 'bad frame' });
@@ -189,3 +257,5 @@ export function setup({
   return { metaFor, padOf, stored, store };
 }
 export type Month = ReturnType<typeof setup>;
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

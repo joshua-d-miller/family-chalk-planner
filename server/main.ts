@@ -1,12 +1,65 @@
-// Family Chalk Planner: a chalkboard-style family wall calendar.
-//  - Events: any CalDAV calendar (iCloud, Nextcloud, Fastmail...) or Google - read and write
-//  - Art, stamps, meal plan, jars, chores, styles, people and screens: SQLite in DATA_DIR
-//  - Live: Server-Sent Events push changes to every open board (wall, tablets, phones)
-//
-// Copyright (C) 2026 Joshua Miller. Licensed under the GNU AGPL v3 or later; see LICENSE.
-// Settings come from the admin console (stored in the database) and the environment (see .env.example).
-//
-// This file only puts the parts together; each feature is its own module.
+/*
+===============================================================================
+ Family Chalk Planner | Server | main.ts (the start)
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     Family Chalk Planner: a chalkboard-style family wall calendar. This
+     file only puts the parts together; each feature is its own module.
+
+     - Events: any CalDAV calendar (iCloud, Nextcloud, Fastmail...) or
+       Google, read and write
+     - Art, stamps, meals, jars, chores, styles, people and screens:
+       SQLite in DATA_DIR
+     - Live: Server-Sent Events push every change to every open screen
+
+     Copyright (C) 2026 Joshua D. Miller. Licensed under the GNU AGPL v3
+     or later; see LICENSE.
+
+ How it fits:
+     Settings come from the admin console (stored in the database); only
+     where the board listens and keeps its data come from the environment
+     (PORT, BIND, DATA_DIR, BACKUP_DIR). The order below matters: the
+     access rules are registered first so they run before every other
+     route, and the pages last, after every /api route.
+
+     Command line, for the server's owner:
+     node server/chalkboard.js --setting get KEY
+     node server/chalkboard.js --setting set KEY [VALUE]
+     node server/chalkboard.js --reset-admin      (deploy/reset-admin.sh)
+
+ Routes:
+     GET    /api/today
+
+ Used by:
+     server/chalkboard.js
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+                        colby
+                                  Database migrations; chores, meals and jars
+                                  in their own tables.
+
+                                  Reminders, timers, the pantry and the right-
+                                  hand column's pages (server).
+
+                                  Google: several calendars at once, read-only
+                                  ones, and which calendar a new event goes
+                                  in.
+
+                                  ... and 3 more (the board rebuilt in React
+                                  and TypeScript)
+===============================================================================
+*/
+
 import path from 'node:path';
 import express from 'express';
 import pkg from '../package.json' with { type: 'json' };
@@ -41,11 +94,24 @@ import { registerSettingsRoutes } from './settings-routes.ts';
 import * as updates from './updates.ts';
 import * as favorites from './favorites.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | Where things are | //
+// -------------------- //
+// The board's folder, its data folder and its version (from package.json,   //
+// shown in the admin console and /api/health).                              //
 const ENV = process.env;
 const APP_DIR = path.join(import.meta.dirname, '..');
 const DATA_DIR = ENV.DATA_DIR || path.join(APP_DIR, 'data');
 const VERSION = 'v' + pkg.version;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------------------------- //
+// | The database and the admin console settings | //
+// ----------------------------------------------- //
+// What the console saved is put into ENV here, so every module below reads  //
+// its settings the same way. Not for the command-line tools, which work on  //
+// the stored values themselves.                                             //
 const db = openDatabase(DATA_DIR);
 // puts what the console saved into ENV (not for the command-line tools below, which work on the stored values)
 const boardSettings = settings.setup({
@@ -54,7 +120,12 @@ const boardSettings = settings.setup({
   importEnv: !['--setting', '--reset-admin'].some(a => process.argv.includes(a))
 });
 
-// Command line, for the server's owner (deploy/setting.sh):  --setting get KEY  |  --setting set KEY VALUE
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------- //
+// | Command line: --setting | //
+// --------------------------- //
+// For deploy/setting.sh: read or change one setting without the admin       //
+// console (a wrong https address, a proxy).                                 //
 if (process.argv[2] === '--setting') {
   const [, , , op, k, v] = process.argv;
   if (op === 'get' && k) {
@@ -74,6 +145,13 @@ if (process.argv[2] === '--setting') {
   process.exit(2);
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------------------- //
+// | Settings, database updates and the clock | //
+// -------------------------------------------- //
+// The database is brought up to date (server/migrations.ts) before anything //
+// reads it; a database from a newer version stops the board here with a     //
+// message. The clock knows the board's time zone.                           //
 const cfg = readConfig(ENV, APP_DIR, DATA_DIR);
 prepareDatabase(db, DATA_DIR);
 try {
@@ -94,12 +172,21 @@ const clock = makeClock({
 const live = createLive();
 const broadcast = live.broadcast;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | The web server | //
+// ------------------ //
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.set('trust proxy', cfg.trustProxy);
 
-// Who may do what: paired screens and signed-in people, the admin console (server/access/).
-// Registered first: its rules run before every other route.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | Who may do what | //
+// ------------------- //
+// Who may do what: paired screens and signed-in people, the admin console   //
+// (server/access/). Registered first: its rules run before every other      //
+// route.                                                                    //
 const who = access.setup(app, { db, kv, dataDir: DATA_DIR, env: ENV, title: cfg.title, broadcast });
 if (process.argv.includes('--reset-admin')) {
   // deploy/reset-admin.sh
@@ -108,7 +195,12 @@ if (process.argv.includes('--reset-admin')) {
   process.exit(0);
 }
 
-// Nightly snapshot of the database (a consistent copy while running), for restic or OneDrive
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | Nightly backup | //
+// ------------------ //
+// Nightly snapshot of the database (a consistent copy while running), for   //
+// restic or OneDrive                                                        //
 const { keyInfo } = backup.setup({
   db,
   dataDir: DATA_DIR,
@@ -117,14 +209,22 @@ const { keyInfo } = backup.setup({
   today: clock.today
 });
 
-// today's date: the screens, and the install and update health checks
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | Today's date | //
+// ---------------- //
+// Today's date: the screens, and the install and update health checks       //
 app.get('/api/today', (_req, res) => {
   const today = clock.today();
   // (and how the screens show dates: the first day of the week, 24-hour times)
   res.json({ today, ym: today.slice(0, 7), weekStart: cfg.weekStart, time24: cfg.time24 });
 });
 
-// Weather, trash day and notes (top of the Notes column)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------------------- //
+// | Weather, trash day and the Notes column | //
+// ------------------------------------------- //
+// Weather, trash day and notes (top of the Notes column)                    //
 extras.setup({
   app,
   broadcast,
@@ -135,10 +235,20 @@ extras.setup({
   weather: { lat: cfg.lat, lon: cfg.lon, unit: cfg.tempUnit, timeZone: cfg.timeZone, base: cfg.weatherUrl }
 });
 
-// Holidays: worked out here, shown on the board only, any can be hidden
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------ //
+// | Holidays | //
+// ------------ //
+// Holidays: worked out here, shown on the board only, any can be hidden     //
 const holidayList = holidays.setup({ app, country: cfg.holidays, broadcast, today: clock.today, kvGet, kvSet });
 
-// The calendar (server/calendar/)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | The calendar | //
+// ---------------- //
+// CalDAV (iCloud, Nextcloud...) or Google, plus read-only calendar links.   //
+// The status is what the admin console shows (connected, which calendars,   //
+// anything wrong).                                                          //
 const google = createGoogle(cfg.google, DATA_DIR);
 const calendar = createCalendarSource(cfg.calendar, clock, google);
 registerGoogleRoutes(app, {
@@ -183,7 +293,12 @@ registerCalendarRoutes({
   }
 });
 
-// Each month's options, the art layer and stamps, board style, meals, jars, chores
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | The board itself | //
+// -------------------- //
+// Each month's options, the art and stamps, the board style, meals, jars    //
+// and chores.                                                               //
 const pictures = clipart.setup({ app, cacheDir: path.join(DATA_DIR, 'clipart-cache') });
 const months = month.setup({ app, db, kv, broadcast, chalk: clipart.CHALK, pictureOk: pictures.pictureOk });
 art.setup({ app, db, month: months, broadcast });
@@ -200,12 +315,20 @@ chores.setup({
   who: req => who.whoOf(req)
 });
 
-// Reminders, timers and the pantry (from Colby Way's board)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Colby's pages | //
+// ----------------- //
+// Reminders, timers and the pantry (from Colby Way's board).                //
 reminders.setup({ app, db, clock, broadcast });
 timers.setup({ app, db, broadcast });
 pantry.setup({ app, db, today: clock.today, broadcast });
 
-// Favorites on the strip, per person or per screen
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------- //
+// | Favorites on the strip | //
+// -------------------------- //
+// Kept per person when someone is signed in, otherwise per screen.          //
 favorites.setup({
   app,
   kv,
@@ -217,7 +340,11 @@ favorites.setup({
   }
 });
 
-// Uploads, pictures from links, the GIF library
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------------------------- //
+// | Uploads, pictures from links, the GIF library | //
+// ------------------------------------------------- //
+// Kept inside the backup folder, so they ride along with the backups.       //
 media.setup({
   app,
   db,
@@ -227,10 +354,20 @@ media.setup({
   testRoutes: cfg.testRoutes
 });
 
-// Photos from a shared album: beside the month name and the overnight slideshow
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | Photos | //
+// ---------- //
+// A shared album or Immich: the photos beside the month name and the        //
+// overnight slideshow.                                                      //
 photos.setup({ app, kv, broadcast, today: clock.today, cacheDir: path.join(DATA_DIR, 'photo-cache'), ...cfg.photos });
 
-// The pages, icons, manifests and fonts; the admin console's ⚙️ Board
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------------------- //
+// | The pages, the admin console and updates | //
+// -------------------------------------------- //
+// The pages are served last: first every /api route, then the screens, then //
+// any file in public/.                                                      //
 const site = pages.setup({
   app,
   publicDir: path.join(APP_DIR, 'public'),
@@ -261,6 +398,12 @@ updates.setup({ app, db, dataDir: DATA_DIR, version: VERSION, updater: ENV.UPDAT
 live.serve(app, { version: site.boardVersion, stillAllowed: ck => who.stillAllowed(ck) });
 site.serve(); // last: the pages, then any file in public/
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | Start listening | //
+// ------------------- //
 app.listen(cfg.port, cfg.bind, () =>
   console.log(`Family Chalk Planner on ${cfg.bind}:${cfg.port} (data in ${DATA_DIR})`)
 );
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

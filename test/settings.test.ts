@@ -1,5 +1,24 @@
-// Admin console → ⚙️ Board: settings saved in the database override .env, passwords encrypted,
-// saving restarts the board.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | settings.test.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-06
+
+ Purpose:
+     Admin console → ⚙️ Board: settings saved in the database override
+     .env, passwords encrypted, saving restarts the board.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+===============================================================================
+*/
+
 import test from 'node:test';
 import assert from 'node:assert';
 import { spawn, execFileSync } from 'node:child_process';

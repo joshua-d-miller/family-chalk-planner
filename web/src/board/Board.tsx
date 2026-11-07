@@ -1,6 +1,57 @@
-// The board: the month, the art on it, and the right-hand column, on the board's surface. It's laid out
-// at 1252 x 642 board pixels and scaled to fill the screen. Text and art are vector, so they're sharp at
-// any size; the surface texture is painted at the screen's real resolution (4K included).
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | Board.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The board: the month, the art on it, and the right-hand column, on
+     the board's surface. It's laid out at 1252 x 642 board pixels and
+     scaled to fill the screen. Text and art are vector, so they're sharp
+     at any size; the surface texture is painted at the screen's real
+     resolution (4K included).
+
+ How it fits:
+     The same board is the wall (/), a tablet (/edit) and a family screen.
+     The wall only shows; a tablet changes everything; a family screen (a
+     shared touch screen in the kitchen) adds events and decorates. The
+     month grid, the right-hand column, the art and the editing cards are
+     drawn by the files beside this one; this one holds them together.
+
+ Used by:
+     web/src/App.tsx
+     web/src/board/editors/BorderEditor.tsx
+     web/src/board/editors/PhotosEditor.tsx
+     web/src/board/editors/TitleEditor.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The board in React (wall view, next/board):
+                        claude    month, events, art, notes column; sharp at
+                        colby     4K.
+
+                                  The new board: the family's style, each
+                                  month's title and holiday border, polaroids,
+                                  drawn jars.
+
+                                  The new wall board: the overnight slideshow,
+                                  the photo frame, the day view, reminders and
+                                  timers.
+
+                                  The new board on a tablet (next/edit):
+                                  events, the month's title and border, the
+                                  board style.
+
+                                  ... and 2 more (the board rebuilt in React
+                                  and TypeScript)
+===============================================================================
+*/
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent } from 'react';
 import { useLive, useOnline } from '../lib/live.ts';
@@ -48,6 +99,10 @@ const H = 642;
 const CORK = 50; // the strip under the board on a tablet
 const EDIT_FRAME = 14; // a tablet's board has a wooden frame unless the family set one
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | A month's settings | //
+// ---------------------- //
 export type MonthMeta = {
   hideTitle?: boolean;
   title?: TitleStyle;
@@ -59,8 +114,12 @@ export type MonthMeta = {
   boardPad?: number;
 };
 
-// how big the board is on this screen (with its frame, if it has one), and how many screen pixels each
-// board pixel gets
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------------- //
+// | Fitting the board to the screen | //
+// ----------------------------------- //
+// The board is always 1252 by 642, scaled to fit; a tablet adds the cork    //
+// strip and the wooden frame around it.                                     //
 function useFit(pad: number, h: number) {
   const calc = () => {
     const scale = Math.min(innerWidth / (W + 2 * pad), innerHeight / (h + 2 * pad));
@@ -81,6 +140,10 @@ const addMonths = (ym: string, n: number) => {
   return d.toISOString().slice(0, 7);
 };
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | What is being edited | //
+// ------------------------ //
 type Editing =
   | { k: 'event'; ev: BoardEvent | null; date: string }
   | { k: 'title' }
@@ -93,9 +156,17 @@ type Editing =
   | { k: 'photos' }
   | null;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | The board | //
+// ------------- //
 export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }) {
-  // a family screen (a shared touch screen in the kitchen): decorates and adds events, frameless, with
-  // the wall's photo frame and slideshow; the month's title and the board's look are set from a tablet
+  // --------------------------------- //
+  // | Wall, tablet or family screen | //
+  // --------------------------------- //
+  // A family screen (a shared touch screen in the kitchen): decorates and   //
+  // adds events, frameless, with the wall's photo frame and slideshow; the  //
+  // month's title and the board's look are set from a tablet                //
   const family = edit && !who?.user && who?.device?.role === 'family';
   const today = useLive<{ ym: string; time24: boolean }>('api/today', ['calendar']).data;
   const [ym, setYm] = useState<string | null>(null);
@@ -117,7 +188,10 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
     meta && 'artPad' in meta ? (meta.boardPad ?? (edit && !family ? EDIT_FRAME : 0)) : edit && !family ? EDIT_FRAME : 0;
   const bh = H + (edit ? CORK : 0);
   const fit = useFit(pad, bh);
-  // a tablet zooms in to draw: pinch, or the − / + / Fit buttons
+  // ---------------------- //
+  // | Zooming in to draw | //
+  // ---------------------- //
+  // A tablet zooms in to draw: pinch, or the − / + / Fit buttons            //
   const [zoom, setZoom] = useState({ z: 1, x: 0, y: 0 });
   const scale = fit.scale * zoom.z;
   // the surface and chalk grain are painted for the zoom once it settles (not on every step of a pinch)
@@ -193,6 +267,11 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   const savedTheme = useLive<Theme>('api/theme', ['theme']).data;
   const [themeDraft, setThemeDraft] = useState<Theme | null>(null);
   const theme = themeDraft || savedTheme;
+  // ------------- //
+  // | The cards | //
+  // ------------- //
+  // One card is open at a time; the drafts show on the board while it is    //
+  // open, and are saved (or thrown away) when it closes.                    //
   const [editing, setEditing] = useState<Editing>(null);
   const [titleDraft, setTitleDraft] = useState<TitleDraft | null>(null);
   const [borderDraft, setBorderDraft] = useState<Border | null | undefined>(undefined);
@@ -226,8 +305,11 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   const slides = useSlides(photos, !edit || family);
   const [day, setDay] = useState<string | null>(null);
   const closeDay = useCallback(() => setDay(null), []);
-  // On the wall: tap a day = everything on it; double tap = the photo frame (during a night-time peek,
-  // back to the slideshow)
+  // ----------------------- //
+  // | Tapping and swiping | //
+  // ----------------------- //
+  // On the wall: tap a day = everything on it; double tap = the photo frame //
+  // (during a night-time peek, back to the slideshow)                       //
   const lastTap = useRef(0);
   const single = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastDouble = useRef(0);
@@ -282,6 +364,10 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   };
   const mm = meta && 'artPad' in meta ? meta : null;
   const ed = useArt(shown, art);
+  // ----------- //
+  // | Drawing | //
+  // ----------- //
+  // The pen, what is picked, and a stamp being placed.                      //
   const [drawing, setDrawing] = useState(false);
   const [pen, setPen] = useState<Pen>(firstPen);
   const [selection, setSelection] = useState<number[]>([]);
@@ -306,7 +392,11 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
     const t = setTimeout(() => setNote(''), 3500);
     return () => clearTimeout(t);
   }, [note]);
-  // the art was placed on the layout the month had then (artPad); shown on the layout it has now
+  // ----------------------- //
+  // | Art on a new layout | //
+  // ----------------------- //
+  // The art was placed on the layout the month had then (artPad); shown on  //
+  // the layout it has now                                                   //
   const realPad = mm?.border ? BORDER_PAD[mm.border.size] || BORDER_PAD.m : 0;
   const shownPad =
     borderDraft !== undefined ? (borderDraft ? BORDER_PAD[borderDraft.size] || BORDER_PAD.m : 0) : realPad;
@@ -357,8 +447,12 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   const hand = titleDraft ? titleDraft.hand : !!mm?.hideTitle;
   const border = borderDraft !== undefined ? borderDraft : mm?.border || null;
   const go = (n: number) => shown && setYm(addMonths(shown, n));
-  // a tablet: a day = everything on it (to change or add); an event = change it
-  // a family screen waits a moment first: it might be a double tap
+  // ----------------------- //
+  // | Tapping on a tablet | //
+  // ----------------------- //
+  // A tablet: a day = everything on it (to change or add); an event =       //
+  // change it. A family screen waits a moment first: it might be a double   //
+  // tap.                                                                    //
   const soon = (f: () => void) => {
     if (!family) return f();
     if (single.current) clearTimeout(single.current);
@@ -390,6 +484,9 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   const photosOn = mm?.side ? mm.side.mode === 'photos' : !!photos?.cfg?.frame;
   const pool = photos?.photos && photosOn ? titlePool(photos.photos, mm?.side) : [];
   const monthName = m ? MONTHS[m.grid.m - 1] : '';
+  // -------------------- //
+  // | The board, drawn | //
+  // -------------------- //
   return (
     // one continuous surface across the whole screen, so the bands beside the board match it
     <div
@@ -662,7 +759,11 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   );
 }
 
-// the live connection to the board is down (Wi-Fi, the server restarting): say so, quietly, after a moment
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------- //
+// | Offline | //
+// ----------- //
+// Shown when the connection has been down for a while.                      //
 function Offline() {
   const on = useOnline();
   const [show, setShow] = useState(false);
@@ -678,3 +779,5 @@ function Offline() {
     </div>
   ) : null;
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

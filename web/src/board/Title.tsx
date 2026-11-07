@@ -1,11 +1,49 @@
-// The month's name above the calendar, in the month's own style (font, color, outline, size), or left
-// empty for a hand-lettered one. Shrinks a wide or tall font so it never runs into the arrows or off the top.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | Title.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The month's name above the calendar, in the month's own style (font,
+     color, outline, size), or left empty for a hand-lettered one. Shrinks
+     a wide or tall font so it never runs into the arrows or off the top.
+
+ Used by:
+     web/src/board/Board.tsx
+     web/src/board/editors/TitleEditor.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board: the family's style, each
+                        colby     month's title and holiday border, polaroids,
+                        claude    drawn jars.
+
+                                  The new board on a tablet (next/edit):
+                                  events, the month's title and border, the
+                                  board style.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { fontCss } from './Art.tsx';
 import { readable } from './color.ts';
 import { measure } from './geom.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | The style | //
+// ------------- //
 export type TitleStyle = { f: number; c: string; o: string | null; z: number };
 export const DEFAULT_TITLE: TitleStyle = { f: 7, c: '#F6B3CB', o: '#F3A35E', z: 68 };
 
@@ -13,6 +51,10 @@ const MAX_W = 520;
 const TOP = 3; // the letters stay between these (board pixels from the top of the slate)
 const BOTTOM = 84;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | The title | //
+// ------------- //
 export function Title({
   text,
   year,
@@ -96,3 +138,5 @@ export function Title({
     </h1>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

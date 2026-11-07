@@ -1,5 +1,26 @@
-// The strip under the board on a tablet: ☰ every page, the family's favorites, and the board's own
-// tools (the month's title and border, the style, drawing, adding an event).
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | Strip.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     The strip under the board on a tablet: ☰ every page, the family's
+     favorites, and the board's own tools (the month's title and border,
+     the style, drawing, adding an event).
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
+                        claude    events, the month's title and border, the
+                                  board style.
+===============================================================================
+*/
+
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useFavorites } from '../lib/favorites.ts';
@@ -7,6 +28,10 @@ import type { Who } from '../lib/who.ts';
 import { PAGES } from '../routes.ts';
 import { Menu } from '../ui/Menu.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | The strip | //
+// ------------- //
 export function Strip({
   who,
   tools,
@@ -37,3 +62,5 @@ export function Strip({
     </div>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

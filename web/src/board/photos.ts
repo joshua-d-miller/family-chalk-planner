@@ -1,7 +1,44 @@
-// The family's photos (the shared album or Immich): framing them on the people in them, and taking them
-// in a shuffled order so every photo shows once before any repeats.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | photos.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The family's photos (the shared album or Immich): framing them on the
+     people in them, and taking them in a shuffled order so every photo
+     shows once before any repeats.
+
+ Used by:
+     web/src/board/Board.tsx
+     web/src/board/Notes.tsx
+     web/src/board/Slideshow.tsx
+     web/src/board/TitlePhotos.tsx
+     web/src/board/editors/PhotosEditor.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board: the family's style, each
+                        colby     month's title and holiday border, polaroids,
+                        claude    drawn jars.
+
+                                  The new wall board: the overnight slideshow,
+                                  the photo frame, the day view, reminders and
+                                  timers.
+===============================================================================
+*/
+
 import { url } from '../lib/api.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | Photos | //
+// ---------- //
 export type Photo = { id: string; w: number; h: number; date: number; faces?: number[][] };
 export type PhotoCfg = {
   frame: boolean;
@@ -19,6 +56,10 @@ export type Photos = { photos: Photo[]; cfg: PhotoCfg };
 
 export const photoSrc = (p: Photo) => url('api/photos/img/' + p.id);
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Faces | //
+// --------- //
 type FBox = { x1: number; y1: number; x2: number; y2: number; none?: boolean };
 function faceBox(p: Photo, pad: boolean, only?: number[]): FBox {
   if (!p.faces?.length) return { x1: 0.5, y1: 0.42, x2: 0.5, y2: 0.42, none: true }; // no faces: a little above center
@@ -48,8 +89,13 @@ function faceBox(p: Photo, pad: boolean, only?: number[]): FBox {
   return { x1: Math.max(0, b.x1), y1: Math.max(0, b.y1), x2: Math.min(1, b.x2), y2: Math.min(1, b.y2) };
 }
 
-// How to fill a bw x bh box with photo p (object-fit: cover): where to aim, whether the people still fit,
-// and how far a small frame can zoom in so the people fill it
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------- //
+// | Framing | //
+// ----------- //
+// How to fill a bw x bh box with photo p (object-fit: cover): where to aim, //
+// whether the people still fit, and how far a small frame can zoom in so    //
+// the people fill it                                                        //
 export function frameFor(p: Photo, bw: number, bh: number) {
   const iw = p.w || 4;
   const ih = p.h || 3;
@@ -102,7 +148,11 @@ export function zoomed(p: Photo, bw: number, bh: number) {
   };
 }
 
-// every photo once before any repeats, never one that's already showing
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | Shuffling | //
+// ------------- //
+// Every photo once before any repeats, never one that's already showing     //
 export function shuffleBag<T extends { id: string }>() {
   let bag: T[] = [];
   return (pool: T[], showing: string[] = []): T | null => {
@@ -125,3 +175,5 @@ export function shuffleBag<T extends { id: string }>() {
     return bag.pop() || pool[0];
   };
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

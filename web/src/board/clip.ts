@@ -1,8 +1,33 @@
-// Clipart: the pictures the board has (Fluent emoji, Game Icons "gi-", Tabler "tb-"), found by name or by
-// an everyday word (pumpkin, halloween, birthday...). The same words as the current board.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | clip.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Clipart: the pictures the board has (Fluent emoji, Game Icons "gi-",
+     Tabler "tb-"), found by name or by an everyday word (pumpkin,
+     halloween, birthday...). The same words as the current board.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
+                        claude    events, the month's title and border, the
+                                  board style.
+===============================================================================
+*/
+
 import { url } from '../lib/api.ts';
 
-// a picture's address; one-color Game Icons drawings take a chalk color
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | A picture | //
+// ------------- //
+// A picture's address; one-color Game Icons drawings take a chalk color     //
 export const clipSrc = (n: string, color?: string | null) =>
   url(
     'api/clip/' +
@@ -11,6 +36,10 @@ export const clipSrc = (n: string, color?: string | null) =>
       '.svg'
   );
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | Finding one | //
+// --------------- //
 export const CLIP_SYN: Record<string, string> = {
   pumpkin: 'jack-o-lantern',
   halloween:
@@ -53,3 +82,5 @@ export function searchClip(names: string[], q: string, max = 60) {
   return [...syn, ...names.filter(n => !syn.includes(n) && terms.every(t => n.includes(t)))].slice(0, max);
 }
 export const clipLabel = (n: string) => n.replace(/^(gi|tb)-/, '').replace(/-/g, ' ');
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

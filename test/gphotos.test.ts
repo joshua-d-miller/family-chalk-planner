@@ -1,4 +1,24 @@
-// Google Photos shared album as the photo source (mock Google on localhost).
+/*
+===============================================================================
+ Family Chalk Planner | Tests | gphotos.test.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-06
+
+ Purpose:
+     Google Photos shared album as the photo source (mock Google on
+     localhost).
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+===============================================================================
+*/
+
 import test from 'node:test';
 import assert from 'node:assert';
 import { spawn } from 'node:child_process';

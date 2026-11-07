@@ -1,7 +1,40 @@
-// Keys, codes, passwords and authenticator-app codes.
+/*
+===============================================================================
+ Family Chalk Planner | Server | Access | secrets.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     Keys, codes, passwords and authenticator-app codes.
+
+ Used by:
+     server/access/access.ts
+     server/access/accounts.ts
+     server/access/passkeys.ts
+     server/access/people.ts
+     server/access/screens.ts
+     test/helpers.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Move access (screens, people, sign-in,
+                        claude    passkeys, security) to TypeScript.
+===============================================================================
+*/
+
 import crypto from 'node:crypto';
 
 const CODE_ABC = 'ACDEFGHJKLMNPQRTUVWXY34679'; // no look-alikes (0/O, 1/I/L, 2/Z, 5/S, 8/B)
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | Keys and codes | //
+// ------------------ //
 export const sha = (s: unknown) => crypto.createHash('sha256').update(String(s)).digest('hex');
 export const rid = (n = 9) => crypto.randomBytes(n).toString('base64url');
 export const randomKey = () => crypto.randomBytes(32).toString('base64url');
@@ -17,7 +50,10 @@ export function safeEq(a: unknown, b: unknown) {
   return x.length === y.length && crypto.timingSafeEqual(x, y);
 }
 
-// ---- passwords (scrypt) ----
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | Passwords (scrypt) | //
+// ---------------------- //
 const SCRYPT = { N: 32768, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
 export function hashPassword(pw: unknown) {
   const salt = crypto.randomBytes(16);
@@ -34,7 +70,12 @@ export function checkPassword(pw: unknown, stored: string | null | undefined) {
   return crypto.timingSafeEqual(got, Buffer.from(h, 'base64'));
 }
 
-// ---- authenticator-app codes (TOTP, RFC 6238: 30 s, 6 digits, SHA-1 - what every app supports) ----
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------- //
+// | Authenticator-app codes | //
+// --------------------------- //
+// TOTP (RFC 6238): 30 seconds, 6 digits, SHA-1, what every app supports. A  //
+// code can be used once.                                                    //
 const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 export function b32enc(buf: Buffer) {
   let bits = '';
@@ -70,9 +111,15 @@ export function totpCheck(secret: string, code: unknown, lastStep: number) {
   return -1;
 }
 
-// Authenticator secrets are locked with each person's own password: AES-256-GCM with a key derived from the
-// password (scrypt). Nothing extra to keep safe - no key file - and a copied database or backup can't produce
-// sign-in codes without cracking that person's password first. (Passwords themselves are separate scrypt hashes.)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------------------------------- //
+// | Authenticator secrets, locked with the password | //
+// --------------------------------------------------- //
+// Authenticator secrets are locked with each person's own password:         //
+// AES-256-GCM with a key derived from the password (scrypt). Nothing extra  //
+// to keep safe - no key file - and a copied database or backup can't        //
+// produce sign-in codes without cracking that person's password first.      //
+// (Passwords themselves are separate scrypt hashes.)                        //
 export const pwKey = (pw: unknown, salt: Buffer) => crypto.scryptSync('totp-key:' + String(pw), salt, 32, SCRYPT);
 export function sealWith(key: Buffer, salt: Buffer, plain: string) {
   const iv = crypto.randomBytes(12);
@@ -97,3 +144,5 @@ export function unsealPw(pw: unknown, v: string | null) {
     return null;
   }
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

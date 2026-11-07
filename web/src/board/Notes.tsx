@@ -1,5 +1,38 @@
-// The right-hand column: up to 3 pages, chosen in ⚙️ Settings (weather, trash and countdowns; the meal
-// plan; reward jars; up next; reminders; chores; timers; the pantry)
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | Notes.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The right-hand column: up to 3 pages, chosen in ⚙️ Settings (weather,
+     trash and countdowns; the meal plan; reward jars; up next; reminders;
+     chores; timers; the pantry)
+
+ Used by:
+     web/src/board/Board.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The board in React (wall view, next/board):
+                        claude    month, events, art, notes column; sharp at
+                        colby     4K.
+
+                                  The new board: the family's style, each
+                                  month's title and holiday border, polaroids,
+                                  drawn jars.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { ChoresView } from '../../../shared/chores.ts';
@@ -15,6 +48,10 @@ import { fmtLeft, left, useTimers } from '../lib/timers.ts';
 import { fmtTime } from '../lib/today.ts';
 import { isDone } from '../pages/Reminders.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | The weather | //
+// --------------- //
 const ICONS: Record<string, string> = {
   sun: '<circle cx="24" cy="24" r="9"/><path d="M24 5v6M24 37v6M5 24h6M37 24h6M10.5 10.5l4.2 4.2M33.3 33.3l4.2 4.2M10.5 37.5l4.2-4.2M33.3 14.7l4.2-4.2"/>',
   partly:
@@ -40,6 +77,10 @@ const Wx = ({ kind, color }: { kind: string; color: string }) => (
   />
 );
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------- //
+// | Today and the weather | //
+// ------------------------- //
 interface Extras {
   weather: {
     now: { temp: number; kind: string };
@@ -111,6 +152,11 @@ function Info({ x }: { x: Extras }) {
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | The pages | //
+// ------------- //
+// Each page the right-hand column can show.                                 //
 function MealsPage() {
   const m = useLive<Meals>('api/meals', ['meals']);
   return (
@@ -307,7 +353,11 @@ function TimersPage() {
   );
 }
 
-// on a tablet, a page opens its own screen to change it
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------- //
+// | The right-hand column | //
+// ------------------------- //
+// On a tablet, a page opens its own screen to change it                     //
 const OPENS: Record<string, string> = {
   meals: 'meals',
   jars: 'jars',
@@ -346,3 +396,5 @@ export function Notes({ time24, edit = false }: { time24: boolean; edit?: boolea
     </aside>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

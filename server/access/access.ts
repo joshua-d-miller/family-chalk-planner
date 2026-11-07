@@ -1,24 +1,78 @@
-// Who may do what.
-//
-// SCREENS are paired once and have a role (no sign-in, they just keep working):
-//   view    - shows the board (a wall display)
-//   family  - view + change events, meals, jars and countdowns, and decorate with stamps / clipart / words
-//             (no freehand drawing)
-//   kid:<person> - a child's own tablet: see the board, check off their own chores
-//
-// PEOPLE sign in, on a tablet or phone, with a passkey (Face ID / Touch ID / fingerprint, needs HTTPS and
-// PUBLIC_URL) or with username + password + a code from an authenticator app:
-//   editor  - everything on the board: events, drawing, board style, photos (signs in again every 60 days,
-//             adjustable)
-//   admin   - editor + the admin console at /admin: screens, people, calendar and board settings.
-//             The console asks for a fresh sign-in (it lasts 30 idle minutes, 12 hours at most).
-//
-// First run: the one-time setup code from the server log / data/setup-code.txt creates the first admin.
-// deploy/reset-admin.sh wipes every person, sign-in and screen and makes a new code.
-// Every key (screen, sign-in) is random, kept in an HttpOnly cookie, and stored only as a hash.
-//
-// This file: who is asking, the rules every /api request passes, and the setup code. The routes are in
-// screens.ts (pairing), accounts.ts (signing in, my account), passkeys.ts, people.ts and security.ts.
+/*
+===============================================================================
+ Family Chalk Planner | Server | Access | access.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     Who may do what.
+
+     SCREENS are paired once and have a role (no sign-in, they just keep
+     working):
+       view    - shows the board (a wall display)
+       family  - view + change events, meals, jars and countdowns, and
+           decorate with stamps / clipart / words
+                 (no freehand drawing)
+       kid:<person> - a child's own tablet: see the board, check off their
+           own chores
+
+     PEOPLE sign in, on a tablet or phone, with a passkey (Face ID / Touch
+     ID / fingerprint, needs HTTPS and PUBLIC_URL) or with username +
+     password + a code from an authenticator app:
+       editor  - everything on the board: events, drawing, board style,
+           photos (signs in again every 60 days,
+                 adjustable)
+       admin   - editor + the admin console at /admin: screens, people,
+           calendar and board settings.
+                 The console asks for a fresh sign-in (it lasts 30 idle
+                     minutes, 12 hours at most).
+
+     First run: the one-time setup code from the server log /
+     data/setup-code.txt creates the first admin. deploy/reset-admin.sh
+     wipes every person, sign-in and screen and makes a new code. Every
+     key (screen, sign-in) is random, kept in an HttpOnly cookie, and
+     stored only as a hash.
+
+     This file: who is asking, the rules every /api request passes, and
+     the setup code. The routes are in screens.ts (pairing), accounts.ts
+     (signing in, my account), passkeys.ts, people.ts and security.ts.
+
+ Routes:
+     USE    /api
+     GET    /api/whoami
+
+ Used by:
+     server/access/accounts.ts
+     server/access/passkeys.ts
+     server/access/people.ts
+     server/access/screens.ts
+     server/access/security.ts
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Move access (screens, people, sign-in,
+                        claude    passkeys, security) to TypeScript.
+                        colby
+                                  Database migrations; chores, meals and jars
+                                  in their own tables.
+
+                                  Reminders, timers, the pantry and the right-
+                                  hand column's pages (server).
+
+                                  Immich photos, slideshow extras, a filled-in
+                                  today, and the frame's thickness.
+
+                                  ... and 3 more (the board rebuilt in React
+                                  and TypeScript)
+===============================================================================
+*/
+
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
@@ -41,13 +95,23 @@ export const INVITE_TTL = 3 * DAY;
 export const ADMIN_IDLE = 30 * 60e3;
 export const ADMIN_MAX = 12 * 3600e3;
 export const KEEP = 400 * DAY; // cookie lifetime (browsers cap it near 400 days); renewed every day the device is used
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------- //
+// | Cookie names and ranks | //
+// -------------------------- //
 export const C = { device: 'fcp_device', pair: 'fcp_pair', user: 'fcp_user', admin: 'fcp_admin' };
 export const RANK = { view: 1, family: 2, editor: 3, admin: 4 };
 const roleRank = (r: string) => (/^kid:/.test(r || '') ? 1 : 0) || { view: 1, family: 2 }[r] || 0;
 
-// Board sign-ins ask again every signinMaxDays after signing in, or sooner after signinIdleDays unused.
-// Screens stay paired for good: quiet ones are only flagged (screenRemoveDays 0 = never remove
-// automatically); an admin removes them.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------------- //
+// | How long sign-ins and screens last | //
+// -------------------------------------- //
+// Board sign-ins ask again every signinMaxDays after signing in, or sooner  //
+// after signinIdleDays unused. Screens stay paired for good: quiet ones are //
+// only flagged (screenRemoveDays 0 = never remove automatically); an admin  //
+// removes them.                                                             //
 export const SEC_DEFAULT = {
   signinIdleDays: 60,
   signinMaxDays: 60,
@@ -59,6 +123,10 @@ export const SEC_DEFAULT = {
 };
 export type SecCfg = typeof SEC_DEFAULT;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Types | //
+// --------- //
 export interface AuditInfo {
   actor?: string | null;
   target?: string | null;
@@ -69,6 +137,10 @@ export interface AuditInfo {
 type Kind = 'edit' | 'admin';
 type SignedIn = Session & { user: User };
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | The rules, and who is asking | //
+// -------------------------------- //
 export function setup(
   app: Express,
   {
@@ -90,7 +162,11 @@ export function setup(
   const q = makeStore(db);
   const openView = /^(1|true|yes|lan)$/i.test(String(env.ALLOW_UNPAIRED_VIEW || ''));
 
-  // Passkeys are tied to one web address (they need HTTPS and a name, not an IP): PUBLIC_URL
+  // -------------------------------------------- //
+  // | Passkeys need the board's public address | //
+  // -------------------------------------------- //
+  // Passkeys are tied to one web address (they need HTTPS and a name, not   //
+  // an IP): PUBLIC_URL                                                      //
   let rp: { origin: string; id: string } | null = null;
   try {
     if (env.PUBLIC_URL) {
@@ -101,8 +177,12 @@ export function setup(
     console.error('Chalk Planner: PUBLIC_URL is not a valid address - passkeys are off');
   }
   const passkeysHere = (req: Request) => !!rp && `${req.protocol}://${req.get('host')}` === rp.origin;
-  // Board sign-in with just a password, at home (admin console → ⚙️ Board → On your network; off unless
-  // turned on). Never for the admin console, and new accounts still set up an authenticator app.
+  // ---------------- //
+  // | Home sign-in | //
+  // ---------------- //
+  // Board sign-in with just a password, at home (admin console → Board      //
+  // settings → On your network; off unless turned on). Never for the admin  //
+  // console, and new accounts still set up an authenticator app.            //
   const homeSigninOn = env.HOME_SIGNIN === 'on';
   const homeSignin = (req: Request) => homeSigninOn && privateAddress(req.ip) && openedByIp(req.get('host'));
 
@@ -110,6 +190,11 @@ export function setup(
 
   // ---- who is this? (a paired screen, a signed-in person, or both); remembered for the request ----
   const seen = new WeakMap<object, { dev?: Device | null; edit?: SignedIn | null; admin?: SignedIn | null }>();
+  // ---------------- //
+  // | Who is this? | //
+  // ---------------- //
+  // A paired screen, a signed-in person, or both. Worked out once per       //
+  // request and remembered for it.                                          //
   const memo = (req: ReqLike) => {
     let m = seen.get(req);
     if (!m) seen.set(req, (m = {}));
@@ -151,7 +236,11 @@ export function setup(
     return (m[kind] = s && u ? { ...s, user: u } : null);
   }
   const userOf = (req: ReqLike) => (sessionOf(req, 'admin') || sessionOf(req, 'edit'))?.user || null;
-  // a kid's tablet (when no grown-up is signed in on it): the person id it belongs to
+  // ------------------ //
+  // | A kid's tablet | //
+  // ------------------ //
+  // A kid's tablet (when no grown-up is signed in on it): the person id it  //
+  // belongs to                                                              //
   const kidOf = (req: ReqLike) => {
     if (userOf(req)) return null;
     const m = /^kid:([a-z0-9]{1,16})$/.exec(deviceOf(req)?.role || '');
@@ -167,7 +256,11 @@ export function setup(
     return r;
   }
 
-  // ---- the activity log: every security event, who did it, to what, from which device and address ----
+  // -------------------- //
+  // | The activity log | //
+  // -------------------- //
+  // Every security event: who did it, to what, from which device and        //
+  // address.                                                                //
   function audit(req: Request | null, event: string, o: AuditInfo = {}) {
     let actor = o.actor;
     if (actor === undefined && req) {
@@ -193,7 +286,9 @@ export function setup(
     }
   }
 
-  // ---- cookies ----
+  // ------------------------ //
+  // | Cookies and sign-ins | //
+  // ------------------------ //
   function cookie(
     req: Request,
     res: Response,
@@ -228,7 +323,10 @@ export function setup(
     if (kind === 'admin') cookie(req, res, C.admin, key, ADMIN_MAX, { same: 'Strict' });
     else cookie(req, res, C.user, key, KEEP);
   }
-  // this device's own sign-ins (to keep them when ending the others)
+  // ------------------------------ //
+  // | This device's own sign-ins | //
+  // ------------------------------ //
+  // This device's own sign-ins (to keep them when ending the others)        //
   function myKeys(req: Request) {
     const ck = parseCookies(req.get('cookie'));
     return [ck[C.user], ck[C.admin]].filter(Boolean).map(k => sha(k));
@@ -236,7 +334,11 @@ export function setup(
 
   // ---- rate limits ----
   const tries = new Map<string, number[]>();
-  // count = false: only check whether they're used up
+  // --------------- //
+  // | Rate limits | //
+  // --------------- //
+  // Wrong passwords, codes and pairing requests are counted per address;    //
+  // too many in a while and it waits. count = false only checks.            //
   function tooMany(key: string, max: number, windowMs: number, count = true) {
     const now = Date.now();
     const t = (tries.get(key) || []).filter(x => now - x < windowMs);
@@ -251,6 +353,11 @@ export function setup(
 
   // ---- the one-time setup code ----
   const setupFile = path.join(dataDir, 'setup-code.txt');
+  // --------------------------- //
+  // | The one-time setup code | //
+  // --------------------------- //
+  // Shown in the server log and data/setup-code.txt on a new board; it      //
+  // creates the first admin and then stops working.                         //
   function newSetupCode() {
     const code = randCode(8);
     kv.set('setupCode', { hash: sha('setup:' + code), at: Date.now() });
@@ -274,7 +381,10 @@ export function setup(
       /* already gone */
     }
   }
-  // deploy/reset-admin.sh
+  // ----------------------------------------- //
+  // | Starting over (deploy/reset-admin.sh) | //
+  // ----------------------------------------- //
+  // Deploy/reset-admin.sh                                                   //
   function resetAll() {
     q.wipe();
     audit(null, 'reset', {
@@ -288,7 +398,11 @@ export function setup(
     console.log(`Family Chalk Planner: no admin yet. Open /admin and enter the setup code ${code}`);
   }
 
-  // ---- housekeeping: expired sign-ins and invites, unfinished accounts, long-gone screens, old log lines ----
+  // ---------------- //
+  // | Housekeeping | //
+  // ---------------- //
+  // Expired sign-ins and invites, unfinished accounts, long-gone screens    //
+  // and old log lines; soon after start-up, then every hour.                //
   function cleanup() {
     const now = Date.now();
     const cfg = secCfg();
@@ -321,7 +435,11 @@ export function setup(
   setTimeout(cleanup, 2000).unref();
   setInterval(cleanup, 3600e3).unref();
 
-  // which address forwards requests to the board (the reverse proxy), so the console can name it
+  // -------------------------------------- //
+  // | The reverse proxy, if there is one | //
+  // -------------------------------------- //
+  // Which address forwards requests to the board (the reverse proxy), so    //
+  // the console can name it                                                 //
   let proxySeen: string | null = null;
   app.use((req, _res, next) => {
     if (!env.TRUST_PROXY && req.get('x-forwarded-for'))
@@ -329,7 +447,13 @@ export function setup(
     next();
   });
 
-  // ---- browser protections on every response ----
+  // ----------------------------------------- //
+  // | Browser protections on every response | //
+  // ----------------------------------------- //
+  // The board pages load everything from the board itself (fonts, pictures, //
+  // live updates) and nothing else; the new screens allow no inline scripts //
+  // at all. No framing, no referrer, no camera or microphone, and nothing   //
+  // private is cached.                                                      //
   const CSP_CONSOLE =
     "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'";
   // the board pages: everything comes from the board itself (fonts, pictures, live updates); nothing else may load
@@ -364,7 +488,11 @@ export function setup(
     next();
   });
 
-  // ---- keep the cookies of screens and board sign-ins that are in use from running out ----
+  // ------------------------------------------- //
+  // | Keeping cookies in use from running out | //
+  // ------------------------------------------- //
+  // A screen or board sign-in that's being used has its cookie sent again   //
+  // (at most once a day), so it doesn't run out while it's in use.          //
   const renewed = new Map<string, number>(); // key hash -> last time its cookie was re-sent
   app.use((req, res, next) => {
     const ck = parseCookies(req.get('cookie'));
@@ -385,8 +513,16 @@ export function setup(
     next();
   });
 
-  // ---- the rules ----
-  // public: pairing, sign-in/setup/join, whoami, today's date (install/update health checks)
+  // ------------- //
+  // | The rules | //
+  // ------------- //
+  // Public: pairing, signing in or setting up, whoami, today's date (the    //
+  // install and update health checks). SELF: needs a signed-in person,      //
+  // checked in the route. Family screens: events, meals, jars, countdowns,  //
+  // event colors, placing, moving and erasing art (stamps, clipart, words), //
+  // the board style, the month title and photos: everything but drawing.    //
+  // Not wiping a month, the stamp and GIF libraries, uploads or settings.   //
+  // Admins: everything in the admin console.                                //
   const PUBLIC = [
     /^\/pair\//,
     /^\/whoami$/,
@@ -451,6 +587,12 @@ export function setup(
     /^\/notes$/,
     /^\/updates/
   ];
+  // ---------------------------------- //
+  // | Every /api request passes here | //
+  // ---------------------------------- //
+  // A change must carry the X-Chalk header (no other site can post to the   //
+  // board), then it needs the rank its address asks for. The answer tells   //
+  // the screen what to do: sign in, pair, or sign in to the console again.  //
   app.use('/api', (req, res, next) => {
     const write = !(req.method === 'GET' || req.method === 'HEAD');
     if (write && req.get('X-Chalk') !== '1') return res.status(403).json({ error: 'Missing request header' }); // no cross-site form posts
@@ -479,6 +621,9 @@ export function setup(
     });
   });
 
+  // ------------- //
+  // | Who am I? | //
+  // ------------- //
   app.get('/api/whoami', (req, res) => {
     const d = deviceOf(req);
     const e = sessionOf(req, 'edit');
@@ -499,7 +644,10 @@ export function setup(
     });
   });
 
-  // what the route files share
+  // ------------------------------ //
+  // | What the route files share | //
+  // ------------------------------ //
+  // What the route files share                                              //
   const ctx = {
     app,
     q,
@@ -531,7 +679,11 @@ export function setup(
   registerPeople(ctx);
   registerSecurity(ctx);
 
-  // still allowed? (for open live-update streams: re-checked so a removed screen or ended sign-in stops getting updates)
+  // ------------------ //
+  // | Still allowed? | //
+  // ------------------ //
+  // Still allowed? (for open live-update streams: re-checked so a removed   //
+  // screen or ended sign-in stops getting updates)                          //
   function stillAllowed(cookieHeader: string) {
     const fake: ReqLike = { get: h => (String(h).toLowerCase() === 'cookie' ? cookieHeader : ''), ip: '' };
     return rankOf(fake) > 0;
@@ -551,6 +703,11 @@ export function setup(
     proxySeen: () => proxySeen
   };
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------------- //
+// | The shared context, as a type | //
+// --------------------------------- //
 export type Ctx = {
   app: Express;
   q: ReturnType<typeof makeStore>;
@@ -583,3 +740,5 @@ export type Ctx = {
   cleanup: () => void;
   proxySeen: () => string | null;
 };
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

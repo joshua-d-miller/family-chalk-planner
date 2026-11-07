@@ -1,6 +1,37 @@
-// Every page, for the router and the ☰ menu. `href` is relative to the board's address.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | routes.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Every page, for the router and the ☰ menu. `href` is relative to the
+     board's address.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { RANK } from './lib/who.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | Every page | //
+// -------------- //
+// For the router and the ☰ menu: its title, icon, address (relative to the  //
+// board's address), who may open it, and its group in the menu.             //
 export interface PageDef {
   id: string;
   title: string;
@@ -22,7 +53,11 @@ export const PAGES: PageDef[] = [
   { id: 'admin', title: 'Admin console', icon: '🛡️', href: 'admin', need: RANK.admin, group: 'account' }
 ];
 
-// which page this address is (relative to the board's <base>)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------ //
+// | Which page this address is | //
+// ------------------------------ //
+// Which page this address is (relative to the board's <base>)               //
 export function pageHere(): string {
   const base = new URL(document.baseURI).pathname;
   let p = location.pathname.startsWith(base)
@@ -31,3 +66,5 @@ export function pageHere(): string {
   p = p.replace(/\/+$/, '');
   return p || 'board';
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

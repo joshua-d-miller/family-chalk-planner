@@ -1,4 +1,24 @@
-// The app icons (home screen and installed app), built in so there are no image files to copy
+/*
+===============================================================================
+ Family Chalk Planner | Server | icons.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-06
+
+ Purpose:
+     The app icons (home screen and installed app), built in as base64 so
+     there are no image files to copy.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Move photos, pages and the console's board
+                        claude    settings into TypeScript modules.
+===============================================================================
+*/
+
 export const ICONS: Record<string, string> = {
   'apple-touch-icon.png':
     'iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAEOklEQVR4nO3dvY7UVgCGYW+UMtewWdFRpEJKTZFmocodZAu4h1xG2lCEJmmpUFrKiDYFHQKugZ4UIznG9ufx3/hvn0cUMOM9Gum8HJ/1zHqvnjy6KaDNN2u/ALZLHETiIBIHkTiIxEEkDiJxEImDSBxE4iASB5E4iMRBJA6ib2cZ5e3Hz7OMw4x+/P67iSNMjUMWm3WamimJjI9DFrswJZGRew5l7Mu4+bIhJRoTh2Vjj0bMmpWDaHAclo39Gjp3Vg4icRCJg0gcROIgEgeROIjEQSQOInEQiYNIHETiIJrnA8Y1r18+v8SwdHv6y+/zDniROIoLvNDS65fPDd46+OxjOq0QiYNIHETiIBIHkTiIxEEkDiJxEImDSBxE4iASB5E4iMRBJA6iS33YZy7v3zyr/vPB4xdrvZJ7aLtx1LIoH3z3YfGXcl9t9LTSWsbJw5svHc/2H4ezNhrHWX1m/XSMPkbb4mmlOp3VTcagaa4e/P7NM5uVEVZYObrnuGMiHzx+0bOV2iDKGGfpOPos9eWzUyZ1lkHuuUXjqC313QekSX334Wr6IPSxaBy1pb42tSN2js1BmNHSp5Wyj+4yuv/Hp0EKy8asVtiQNjeVIy6D1gYp/8z3MtnAdY4LXSC3bEy3Thwd36xOH2ToOCSrrRzN+Rsxo7UrH62PMNqap5W5rlOVXyuLea18+dwOY8vW35CyWeIgEgfR1ZNHN4O+oM+vgnLDuFX0ueHYoF8w64Zxxxl89jGdVojEQSQOInEQiYNIHERb/NGE7fj0x9/NB6/vbs8e0zxsj8TRLk15+dRp7nsetlNOKy06prx6TM/D5nhF6xBH3ezTud8+nFa+8sOXn6/vbsvpbD0pNCe7+7DTgHs8v1g56rrLaEqHlY/vd+UQx/+qs9hRRv81oHrkHhMRB5E4xri+uz2tCnvcSfQnjvGOXUYhjqrZtwg9NzGbJQ4icXzl36tX5d8nLh57XzYKcbSafoli6MWSbRJHXfUKaTGqj9qX77cPcbTo+aZ8q9rB+y2jEEcyro8jlVGIo8PQPg5WRiGObj37aH624wBlFOI4q9lHrYOe7+DvkTjOa052GcSByyh82Ken2ve3xdGzOLFy9FW+E5ueXfLFLEMcMzhkGYU4hjpqB63EQWRDOlj1x5mOvZCIY6RjZ3HitEIkDiJ3EzwOdxPc9w3/3E2QgxAHkTiIxEEkDiJxEImDSBxE4iASB5E4iMRBJA4icRCJg0gcROIgEgeROIjEQSQOInEQiYNIHETiIBIHkTiIxEEkDiJxEImDSBxE4iASB5E4iMRB5G6Cx7GPuwle7p55LMlphUgcROIgGrzn+PPXny7xOljGb3/90/9gKweROIjEQSQOInEQiYNIHETiIBIH0eC37Lk/rBxE4iASB5E4iMRBJA4icRCJg0gcROIgEgeROIjEQSQOov8AHDhtx321wTQAAAAASUVORK5CYII=',

@@ -1,12 +1,41 @@
-// Changing the chores (signed-in people): the people, and each chore's name, who does it, how often and
-// how many times. Only what changed is sent, one chore at a time, so a phone and a tablet changing the
-// list at once don't undo each other.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Pages | ChoresEditor.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Changing the chores (signed-in people): the people, and each chore's
+     name, who does it, how often and how many times. Only what changed is
+     sent, one chore at a time, so a phone and a tablet changing the list
+     at once don't undo each other.
+
+ Used by:
+     web/src/pages/Chores.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import type { Chore, ChoreList, ChoresView, Every, Person } from '../../../shared/chores.ts';
 import { post } from '../lib/api.ts';
 import { Btn, Segs } from '../ui/bits.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | How often | //
+// ------------- //
 const EVERY: [Every, string][] = [
   ['day', 'Every day'],
   ['week', 'Every week'],
@@ -15,6 +44,12 @@ const EVERY: [Every, string][] = [
 const newId = (p: string) => p + Math.random().toString(36).slice(2, 10);
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | Editing the chores | //
+// ---------------------- //
+// The whole list is edited here and saved at once; an example list can be   //
+// loaded to start from.                                                     //
 export function ChoresEditor({
   data,
   onClose,
@@ -217,3 +252,5 @@ export function ChoresEditor({
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

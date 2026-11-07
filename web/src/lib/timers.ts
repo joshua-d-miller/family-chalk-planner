@@ -1,11 +1,39 @@
-// Timers count down on each screen (corrected by the server's clock); when one ends, a screen marks it
-// done, and the screens chosen for it say its name out loud.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Helpers | timers.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Timers count down on each screen (corrected by the server's clock);
+     when one ends, a screen marks it done, and the screens chosen for it
+     say its name out loud.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+===============================================================================
+*/
+
 import { useEffect, useRef, useState } from 'react';
 import type { Timer, TimersView } from '../../../shared/lists.ts';
 import { post } from './api.ts';
 import { useLive } from './live.ts';
 
 const SPEAK_KEY = 'fcp:speakTimers';
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------- //
+// | Speaking on this screen | //
+// --------------------------- //
+// Only the screens chosen for it say a timer's name out loud (kept on this  //
+// device).                                                                  //
 export function speaksHere() {
   try {
     return localStorage.getItem(SPEAK_KEY) === '1';
@@ -31,6 +59,10 @@ export function say(text: string) {
   }
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | Time left | //
+// ------------- //
 export const left = (t: Timer, now: number) =>
   t.state === 'running' ? Math.max(0, (t.endsAt || 0) - now) : t.state === 'paused' ? t.left || 0 : 0;
 export function fmtLeft(ms: number) {
@@ -43,6 +75,12 @@ export function fmtLeft(ms: number) {
     : `${m}:${String(ss).padStart(2, '0')}`;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------- //
+// | The timers, counting down | //
+// ----------------------------- //
+// Corrected by the server's clock, ticking only while one runs. The first   //
+// screen to see one end marks it done.                                      //
 export function useTimers() {
   const live = useLive<TimersView>('api/timers', ['timers']);
   const [now, setNow] = useState(Date.now());
@@ -74,3 +112,5 @@ export function useTimers() {
   const remove = async (id: string) => live.set(await post<TimersView>('api/timers/item/delete', { id }));
   return { timers: live.data?.items || [], now, change, remove, loaded: !!live.data };
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -1,12 +1,46 @@
-// Polaroids in the empty space either side of the month name, changing one at a time. The spots are
-// measured from the real layout (the title's width, the arrows), and any spot the month's drawing
-// already uses is skipped, so they never cover art.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | TitlePhotos.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Polaroids in the empty space either side of the month name, changing
+     one at a time. The spots are measured from the real layout (the
+     title's width, the arrows), and any spot the month's drawing already
+     uses is skipped, so they never cover art.
+
+ Used by:
+     web/src/board/Board.tsx
+     web/src/board/editors/PhotosEditor.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board: the family's style, each
+                        colby     month's title and holiday border, polaroids,
+                        claude    drawn jars.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ArtItem } from './Art.tsx';
 import { itemBox, overlaps } from './geom.ts';
 import { photoSrc, shuffleBag, zoomed } from './photos.ts';
 import type { Photo } from './photos.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | Which photos | //
+// ---------------- //
 export type Side = { mode: 'photos' | 'art'; pick: 'random' | 'chosen'; ids: string[] };
 type Spot = { x: number; y: number; w: number; h: number; r: number };
 
@@ -19,6 +53,10 @@ export function titlePool(list: Photo[], side: Side | null | undefined) {
   return list;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Where they go | //
+// ----------------- //
 function spots(slate: HTMLElement, art: ArtItem[]): Spot[] {
   const row = slate.querySelector<HTMLElement>('.titlerow');
   const prev = slate.querySelector<HTMLElement>('#prev');
@@ -51,6 +89,10 @@ function spots(slate: HTMLElement, art: ArtItem[]): Spot[] {
   return out;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The photos | //
+// -------------- //
 export function TitlePhotos({ pool, art, layoutKey }: { pool: Photo[]; art: ArtItem[]; layoutKey: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [want, setWant] = useState<Spot[]>([]);
@@ -105,7 +147,11 @@ export function TitlePhotos({ pool, art, layoutKey }: { pool: Photo[]; art: ArtI
   );
 }
 
-// two images, so a new photo fades in over the old one once it has loaded
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | One polaroid | //
+// ---------------- //
+// Two images, so a new photo fades in over the old one once it has loaded   //
 function Polaroid({ spot, photo }: { spot: Spot; photo: Photo | null }) {
   const [imgs, setImgs] = useState<{ a: Photo | null; b: Photo | null; on: 'a' | 'b'; ready: boolean }>({
     a: null,
@@ -149,3 +195,5 @@ function Polaroid({ spot, photo }: { spot: Spot; photo: Photo | null }) {
     </div>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

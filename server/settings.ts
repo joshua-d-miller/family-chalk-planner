@@ -1,20 +1,62 @@
-// Board settings: all kept in the database and changed in the admin console (⚙️ Board). There is no
-// settings file. Only where the board lives (PORT, BIND, DATA_DIR, BACKUP_DIR) is server-level, set
-// by the installer in the service definition (or by Docker).
-//
-// An install from before 0.7 had a .env file: its settings are moved into the database on the first
-// start (once), and after that the environment no longer decides any of these.
-//
-// Passwords, the Google client secret and anything that works like a password (the calendar account
-// name, the photo album link, calendar links that carry a private token) are encrypted with AES-256-GCM
-// using a key that is NOT in the database: SECRET_KEY if set, otherwise data/secret.key (mode 600,
-// created on first use, copied into the nightly backup). A copy of the database alone reveals none of
-// them. If the key is lost, the board keeps working and the console asks for those values again.
+/*
+===============================================================================
+ Family Chalk Planner | Server | settings.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     Board settings: all kept in the database and changed in the admin
+     console (⚙️ Board). There is no settings file. Only where the board
+     lives (PORT, BIND, DATA_DIR, BACKUP_DIR) is server-level, set by the
+     installer in the service definition (or by Docker).
+
+     An install from before 0.7 had a .env file: its settings are moved
+     into the database on the first start (once), and after that the
+     environment no longer decides any of these.
+
+     Passwords, the Google client secret and anything that works like a
+     password (the calendar account name, the photo album link, calendar
+     links that carry a private token) are encrypted with AES-256-GCM
+     using a key that is NOT in the database: SECRET_KEY if set, otherwise
+     data/secret.key (mode 600, created on first use, copied into the
+     nightly backup). A copy of the database alone reveals none of them.
+     If the key is lost, the board keeps working and the console asks for
+     those values again.
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Settings (admin console → ⚙️ Board) in
+                        claude    TypeScript, same behavior.
+                        colby
+                                  Immich photos, slideshow extras, a filled-in
+                                  today, and the frame's thickness.
+
+                                  Home-network sign-in: just a password for
+                                  the board at home, off unless turned on.
+
+                                  Updates: database backup and restore, a real
+                                  health check, Update now and nightly
+                                  updates.
+===============================================================================
+*/
+
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | Checking a value | //
+// -------------------- //
 type Field =
   | { type: 'text'; max: number; private?: boolean }
   | { type: 'enum'; values: string[] }
@@ -38,6 +80,12 @@ function jsonList(v: string, ok: (item: Record<string, unknown>) => boolean): st
   return a.every(x => x && typeof x === 'object' && ok(x)) ? null : 'each needs a name, a color and a valid address';
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Every setting | //
+// ----------------- //
+// Its type, its default, and whether it's kept encrypted. The admin console //
+// builds its form from this list.                                           //
 export const FIELDS: Record<string, Field> = {
   // the board
   BOARD_TITLE: { type: 'text', max: 60 },
@@ -102,7 +150,12 @@ export const FIELDS: Record<string, Field> = {
   SOURCE_URL: { type: 'url' }
 };
 
-// TRUST_PROXY: addresses / ranges of the reverse proxy, or Express's names for groups of them
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------------- //
+// | Trusted proxies and time zones | //
+// ---------------------------------- //
+// TRUST_PROXY: addresses / ranges of the reverse proxy, or Express's names  //
+// for groups of them                                                        //
 const proxyOk = (v: string) =>
   v
     .split(/\s*,\s*/)
@@ -122,7 +175,12 @@ function validTz(v: string) {
   }
 }
 
-// What's wrong with a value for a setting, or null if it's fine ('' always is: it means the default)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------- //
+// | What's wrong with a value | //
+// ----------------------------- //
+// What's wrong with a value for a setting, or null if it's fine ('' always  //
+// is: it means the default)                                                 //
 export function check(key: string, value: unknown): string | null {
   const f = FIELDS[key];
   if (!f) return 'unknown setting';
@@ -157,16 +215,28 @@ export function check(key: string, value: unknown): string | null {
   }
 }
 
-// Kept encrypted in the database
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | Kept encrypted | //
+// ------------------ //
+// Kept encrypted in the database                                            //
 const isSealed = (f: Field) => f.type === 'secret' || ('private' in f && !!f.private);
 
-// The old names some settings had in .env files before 0.6
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | Old .env names | //
+// ------------------ //
+// The old names some settings had in .env files before 0.6                  //
 const LEGACY_NAMES: Record<string, string> = {
   CALDAV_USER: 'ICLOUD_USER',
   CALDAV_PASSWORD: 'ICLOUD_APP_PASSWORD',
   CALDAV_CALENDAR: 'ICLOUD_CALENDAR'
 };
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Types | //
+// --------- //
 interface Imported {
   at: number;
   moved: string[];
@@ -180,6 +250,10 @@ export interface FieldView {
   value?: string;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------- //
+// | Settings in the database | //
+// ---------------------------- //
 export function setup({
   db,
   DATA_DIR,
@@ -195,6 +269,12 @@ export function setup({
 
   // The encryption key. Only saving makes a new one; reading never does (a missing key = values to re-enter).
   let keyCache: Buffer | null = null;
+  // ---------------------- //
+  // | The encryption key | //
+  // ---------------------- //
+  // SECRET_KEY if set, otherwise data/secret.key (mode 600, created on      //
+  // first use). AES-256-GCM; a lost key only means typing those values      //
+  // again.                                                                  //
   function key(create = false): Buffer {
     if (keyCache) return keyCache;
     const derive = (secret: string) =>
@@ -292,7 +372,11 @@ export function setup({
       `Chalk Planner: couldn't unlock ${lost.join(', ')} (secret.key / SECRET_KEY changed) - enter them again in the admin console`
     );
 
-  // What the console shows: every field, where its value comes from, and the value (never a secret's)
+  // -------------------------- //
+  // | What the console shows | //
+  // -------------------------- //
+  // What the console shows: every field, where its value comes from, and    //
+  // the value (never a secret's)                                            //
   function view() {
     const cur = load();
     const fields: Record<string, FieldView> = {};
@@ -310,8 +394,11 @@ export function setup({
     return { fields, lost, imported: imported?.moved?.length ? imported : null };
   }
 
-  // values: {KEY: 'new value'}; an empty string clears it (back to the default).
-  // Secrets: leave out (or undefined) to keep; '' to remove.
+  // ---------- //
+  // | Saving | //
+  // ---------- //
+  // Values: {KEY: 'new value'}; an empty string clears it (back to the      //
+  // default). Secrets: leave out (or undefined) to keep; '' to remove.      //
   function save(
     values: Record<string, unknown> | null | undefined
   ): { errors: Record<string, string> } | { changed: string[] } {
@@ -351,7 +438,10 @@ export function setup({
     return { changed };
   }
 
-  // for the server's command line (deploy/setting.sh): read one value
+  // ------------------------ //
+  // | For the command line | //
+  // ------------------------ //
+  // For the server's command line (deploy/setting.sh): read one value       //
   function get(k: string) {
     const cur = load();
     if (!FIELDS[k] || cur[k] === undefined) return '';
@@ -360,3 +450,5 @@ export function setup({
 
   return { view, save, get, FIELDS, lost };
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -1,6 +1,38 @@
-// The family's calendar: any CalDAV server (iCloud, Nextcloud, Fastmail...) with a password, or Google
-// Calendar (Google's CalDAV with a Google sign-in). Plus more calendars on the same account, each with
-// its own color, and read-only calendar links (iCal: school, sports teams).
+/*
+===============================================================================
+ Family Chalk Planner | Server | Calendar | source.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     The family's calendar: any CalDAV server (iCloud, Nextcloud,
+     Fastmail...) with a password, or Google Calendar (Google's CalDAV
+     with a Google sign-in). Plus more calendars on the same account, each
+     with its own color, and read-only calendar links (iCal: school,
+     sports teams).
+
+ Used by:
+     server/calendar/routes.ts
+     server/config.ts
+     server/main.ts
+     server/settings-routes.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The calendar in its own TypeScript modules
+                        claude    (server/calendar/).
+                        colby
+                                  Google: several calendars at once, read-only
+                                  ones, and which calendar a new event goes
+                                  in.
+===============================================================================
+*/
+
 import crypto from 'node:crypto';
 import { addDays, icsEscape, icsUtc, xmlUnescape } from '../dates.ts';
 import type { Clock } from '../dates.ts';
@@ -9,6 +41,10 @@ import type { Google } from './google.ts';
 import { applyEventChange, makeIcal } from './ical.ts';
 import type { BoardEvent, EventChange, EventRef } from './ical.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Types | //
+// --------- //
 export interface CalendarConfig {
   provider: 'caldav' | 'google';
   caldavUrl: string;
@@ -19,7 +55,12 @@ export interface CalendarConfig {
   feeds: { name: string; url: string; color: string }[];
 }
 
-// The PROPFIND / REPORT replies are XML; these read the few parts the board needs
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------- //
+// | Reading CalDAV replies | //
+// -------------------------- //
+// The PROPFIND / REPORT replies are XML; these read the few parts the board //
+// needs                                                                     //
 const tag = (block: string, name: string) => (block.match(new RegExp(`<(?:\\w+:)?${name}[^>]*>([^<]*)<`)) || [])[1];
 const responses = (xml: string) => xml.split(/<(?:\w+:)?response[\s>]/).slice(1);
 
@@ -31,7 +72,12 @@ const sameUrl = (u: string, base: string) => {
   }
 };
 
-// Every calendar on a CalDAV account: [{ name, url }] (also the console's "Find my calendars")
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Every calendar on an account | //
+// -------------------------------- //
+// Every calendar on a CalDAV account: [{ name, url }] (also the console's   //
+// "Find my calendars")                                                      //
 export async function caldavCalendars(base: string, auth: string) {
   const req = async (url: string, body: string, depth = '0') => {
     const r = await fetch(url, {
@@ -77,6 +123,10 @@ export async function caldavCalendars(base: string, auth: string) {
   return out;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------- //
+// | The calendar the board uses | //
+// ------------------------------- //
 export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: Google) {
   const ical = makeIcal(clock);
   const basicAuth = 'Basic ' + Buffer.from(`${cfg.user}:${cfg.password}`).toString('base64');
@@ -87,6 +137,9 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
   const problems = new Map<string, string>(); // calendar name -> what went wrong (shown in ⚙️)
   const feedCache = new Map<string, { at: number; text?: string; error?: string }>();
 
+  // ---------------------------------- //
+  // | Talking to the calendar server | //
+  // ---------------------------------- //
   async function dav(url: string, method: string, body: string, depth = '0') {
     const r = await fetch(url, {
       method,
@@ -98,10 +151,17 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     return r.text();
   }
 
-  // Google: the calendars picked in ⚙️ (several, some read-only); the main one is where new events go
+  // -------------------------------- //
+  // | Google: the calendars picked | //
+  // -------------------------------- //
+  // Google: the calendars picked in Settings (several, some read-only); the //
+  // main one is where new events go                                         //
   const googleCalendars = () => google.selected(cfg.extraCalendars);
   const googleMain = () => mainOf(googleCalendars(), google.load().calendarId);
 
+  // --------------------- //
+  // | The main calendar | //
+  // --------------------- //
   async function findCalendar(): Promise<string> {
     if (mainUrl) return mainUrl;
     if (cfg.provider === 'google') {
@@ -120,6 +180,9 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     return (mainUrl = found.url);
   }
 
+  // --------------------- //
+  // | Events in a range | //
+  // --------------------- //
   async function caldavRange(url: string, rangeStart: Date, rangeEnd: Date) {
     const xml = await dav(
       url,
@@ -149,7 +212,11 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     return out;
   }
 
-  // More calendars on the same account (shown with their own color, editable like the main one)
+  // -------------------------------------- //
+  // | More calendars on the same account | //
+  // -------------------------------------- //
+  // More calendars on the same account (shown with their own color,         //
+  // editable like the main one)                                             //
   const extraUrl = (c: { id: string }) => (cfg.provider === 'google' ? google.calendarUrl(c.id) : c.id);
   // the account's password only ever goes to the server the main calendar lives on
   async function sameAccount(url: string) {
@@ -164,7 +231,11 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
         .map(extraUrl);
     return [await findCalendar(), ...cfg.extraCalendars.map(extraUrl)];
   }
-  // The calendars a new event can go in, the main one first (the edit card offers them when there are several)
+  // --------------------------------------- //
+  // | The calendars a new event can go in | //
+  // --------------------------------------- //
+  // The calendars a new event can go in, the main one first (the edit card  //
+  // offers them when there are several)                                     //
   function writable(): { id: string; name: string; color: string | null; main: boolean }[] {
     if (cfg.provider === 'google') {
       const main = googleMain();
@@ -180,6 +251,11 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
       ...cfg.extraCalendars.map(c => ({ id: c.id, name: c.name, color: c.color, main: false }))
     ];
   }
+  // ------------------------- //
+  // | Calendar links (iCal) | //
+  // ------------------------- //
+  // School and sports calendars: read-only, fetched at most every 15        //
+  // minutes; the last good copy is kept if a fetch fails.                   //
   const readOnlyCopy = (e: BoardEvent): BoardEvent => ({ ...e, ref: undefined, readOnly: true });
 
   // Read-only iCal links: fetched at most every 15 minutes; the last good copy is kept if a fetch fails
@@ -210,7 +286,11 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     }
   }
 
-  // Every event shown in a month's weeks, from every calendar and link (cached for a minute)
+  // ---------------------------------- //
+  // | Every event in a month's weeks | //
+  // ---------------------------------- //
+  // Every event shown in a month's weeks, from every calendar and link      //
+  // (cached for a minute)                                                   //
   async function eventsForMonth(ym: string): Promise<BoardEvent[]> {
     const cached = monthCache.get(ym);
     if (cached && Date.now() - cached.at < 60 * 1000) return cached.events;
@@ -258,7 +338,11 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     return out;
   }
 
-  // A new event, in the main calendar or the one picked on the edit card; returns where it lives
+  // --------------- //
+  // | A new event | //
+  // --------------- //
+  // A new event, in the main calendar or the one picked on the edit card;   //
+  // returns where it lives                                                  //
   async function addEvent(
     { title, date, allDay, time, minutes, through }: EventChange,
     calendarId?: string
@@ -313,8 +397,12 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     return new URL(`${url}${uid}.ics`).pathname;
   }
 
-  // Change (or, with change = null, delete) an event: the whole event or series, or one occurrence.
-  // If someone changed it meanwhile (its version, the etag, moved on), nothing is overwritten.
+  // ------------------------ //
+  // | Changing or deleting | //
+  // ------------------------ //
+  // Change (or, with change = null, delete) an event: the whole event or    //
+  // series, or one occurrence. If someone changed it meanwhile (its         //
+  // version, the etag, moved on), nothing is overwritten.                   //
   async function changeEvent(ref: EventRef, scope: 'all' | 'one', change: EventChange | null) {
     const url = new URL(ref.href, await findCalendar()).toString();
     if (!(await editableCalendars()).some(c => sameUrl(url, c)))
@@ -362,3 +450,5 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
   };
 }
 export type CalendarSource = ReturnType<typeof createCalendarSource>;
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

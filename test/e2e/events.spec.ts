@@ -1,4 +1,34 @@
-// Events on the tablet: add one, see it on its day, tap the day for the list, change it, delete it.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | Browser | events.spec.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Events on the tablet: add one, see it on its day, tap the day for the
+     list, change it, delete it.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Browser tests for the board as each screen
+                        claude    sees it (Playwright).
+                        colby
+                                  Server and tests are all TypeScript (ES
+                                  modules).
+
+                                  Database migrations; chores, meals and jars
+                                  in their own tables.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { test, expect, thisMonth } from './fixtures.ts';
 
 const day = (page, date) => page.locator(`#grid [data-date="${date}"]`);

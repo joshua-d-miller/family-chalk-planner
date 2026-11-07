@@ -1,5 +1,33 @@
-// Reminders (from Colby Way's board): "always" ones stay until ticked off; timed ones pop up on the board
-// screens at their time, every day or once. Each is saved on its own.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Pages | Reminders.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Reminders (from Colby Way's board): "always" ones stay until ticked
+     off; timed ones pop up on the board screens at their time, every day
+     or once. Each is saved on its own.
+
+ Used by:
+     web/src/App.tsx
+     web/src/board/Alerts.tsx
+     web/src/board/Notes.tsx
+     web/src/board/Slideshow.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import type { Reminder, RemindersView } from '../../../shared/lists.ts';
 import { post } from '../lib/api.ts';
@@ -12,11 +40,19 @@ import { Page } from '../ui/Page.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
 import './lists.css';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | Reminders | //
+// ------------- //
 const blank: Partial<Reminder> = { title: '', mode: 'always', time: '09:00', repeat: 'daily', important: true };
 // ticked off for now: an always-on one until unticked, a daily one for today
 export const isDone = (r: Reminder, today: string) =>
   r.mode === 'time' && r.repeat === 'daily' ? r.ackDate === today : r.done;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | The reminders page | //
+// ---------------------- //
 export function Reminders({ who }: { who: Who | null }) {
   const live = useLive<RemindersView>('api/reminders', ['reminders']);
   const time24 = !!useToday().data?.time24;
@@ -109,6 +145,10 @@ export function Reminders({ who }: { who: Who | null }) {
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------------- //
+// | Adding or changing a reminder | //
+// --------------------------------- //
 function ReminderSheet({
   r: start,
   err,
@@ -188,3 +228,5 @@ function ReminderSheet({
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

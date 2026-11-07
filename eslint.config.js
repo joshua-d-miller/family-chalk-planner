@@ -1,5 +1,32 @@
-// Lint the TypeScript server and tests (and later the React screens). public/ is the current browser code,
-// replaced by the React screens.
+/*
+===============================================================================
+ Family Chalk Planner | Build | eslint.config.js
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     The lint rules for the server, the tests and the screens (React).
+     public/ is the old board's browser code and isn't linted.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    TypeScript groundwork: type-check, lint and
+                        claude    format in CI; chores is the first TypeScript
+                        colby     module.
+
+                                  Server and tests are all TypeScript (ES
+                                  modules).
+
+                                  The new screens (React + TypeScript): meal
+                                  plan, reminders, timers, pantry, jars and
+                                  chores.
+===============================================================================
+*/
+
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import globals from 'globals';

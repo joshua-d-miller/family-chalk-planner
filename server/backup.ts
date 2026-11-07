@@ -1,15 +1,45 @@
-// Nightly snapshot of the database (a consistent copy, taken while the board runs) into the backup
-// folder, for restic or any other backup tool. The last 14 days are kept.
-//
-// The encryption key for passwords saved in the console (data/secret.key) is copied there too, right
-// away and whenever it changes, so a backup always has the key that matches it. A different key that's
-// already there is never thrown away: an older database may need it.
+/*
+===============================================================================
+ Family Chalk Planner | Server | backup.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     Nightly snapshot of the database (a consistent copy, taken while the
+     board runs) into the backup folder, for restic or any other backup
+     tool. The last 14 days are kept.
+
+     The encryption key for passwords saved in the console
+     (data/secret.key) is copied there too, right away and whenever it
+     changes, so a backup always has the key that matches it. A different
+     key that's already there is never thrown away: an older database may
+     need it.
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Live updates, nightly backup and the Notes
+                        claude    extras in their own TypeScript modules.
+===============================================================================
+*/
+
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 
 const KEEP_SNAPSHOTS = 14;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Nightly snapshot and the key | //
+// -------------------------------- //
 export function setup({
   db,
   dataDir,
@@ -26,6 +56,12 @@ export function setup({
   const keyFile = path.join(dataDir, 'secret.key');
   const keyBackup = path.join(backupDir, 'secret.key');
 
+  // ------------------------------------------- //
+  // | The encryption key, next to the backups | //
+  // ------------------------------------------- //
+  // Copied right away and whenever it changes, so a backup always has the   //
+  // key that matches it. A different key already there is kept: an older    //
+  // database may need it.                                                   //
   function backupKey() {
     try {
       if (!fs.existsSync(keyFile)) return;
@@ -42,7 +78,10 @@ export function setup({
     }
   }
 
-  // for ⚙️ Board: where the key is and whether the backup has it
+  // ------------------------- //
+  // | For the admin console | //
+  // ------------------------- //
+  // For Board settings: where the key is and whether the backup has it      //
   function keyInfo() {
     if (secretFromEnv)
       return { source: 'env', note: 'SECRET_KEY (set outside the board) — keep it with your server notes' };
@@ -56,6 +95,11 @@ export function setup({
     return { source: 'file', path: keyFile, exists, backup: keyBackup, backedUp };
   }
 
+  // ------------------ //
+  // | Tonight's copy | //
+  // ------------------ //
+  // VACUUM INTO makes a consistent copy while the board runs. The last 14   //
+  // days are kept.                                                          //
   function snapshot() {
     try {
       fs.mkdirSync(backupDir, { recursive: true });
@@ -82,3 +126,5 @@ export function setup({
   setInterval(snapshot, 10 * 60 * 1000); // makes one per day, shortly after midnight
   return { keyInfo };
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -1,8 +1,44 @@
-// A row of color dots: the chalk colors, the Posca colors, and the family's own picked colors (the last 6,
-// remembered on this screen), plus a picker for any other. `none` adds "the usual color".
+/*
+===============================================================================
+ Family Chalk Planner | Screens | UI | Colors.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     A row of color dots: the chalk colors, the Posca colors, and the
+     family's own picked colors (the last 6, remembered on this screen),
+     plus a picker for any other. `none` adds "the usual color".
+
+ Used by:
+     web/src/board/EventEditor.tsx
+     web/src/board/draw/Draw.tsx
+     web/src/board/draw/Find.tsx
+     web/src/board/draw/Library.tsx
+     web/src/board/draw/Tools.tsx
+     web/src/board/editors/BorderEditor.tsx
+     web/src/board/editors/StyleEditor.tsx
+     web/src/board/editors/TitleEditor.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
+                        claude    events, the month's title and border, the
+                                  board style.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import './colors.css';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The colors | //
+// -------------- //
 export const CHALK = ['#EDEAE0', '#F6B3CB', '#F2D479', '#9CC9E6', '#A9D8A0', '#E8A35C', '#B49CE0'];
 export const POSCA = [
   '#FFFFFF',
@@ -18,6 +54,12 @@ export const POSCA = [
 ];
 const KEY = 'chalkCustomColors'; // the same list the current board keeps
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | Her own colors | //
+// ------------------ //
+// The last 6 picked, remembered on this screen (the same list the board as  //
+// it was kept).                                                             //
 export function customColors(): string[] {
   try {
     const a = JSON.parse(localStorage.getItem(KEY) || '[]');
@@ -36,6 +78,10 @@ function addCustom(c: string) {
   }
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | The row of dots | //
+// ------------------- //
 export function Colors({
   value,
   onChange,
@@ -96,3 +142,5 @@ export function Colors({
     </div>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

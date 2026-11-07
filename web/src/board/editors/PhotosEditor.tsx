@@ -1,5 +1,30 @@
-// 📷 Beside the month name: the family's photos (a random few, or ones she picks, in order) or room
-// to draw. The slideshow's own settings are in ⚙️ Settings.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board editors | PhotosEditor.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     📷 Beside the month name: the family's photos (a random few, or ones
+     she picks, in order) or room to draw. The slideshow's own settings
+     are in ⚙️ Settings.
+
+ Used by:
+     web/src/board/Board.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens take over: /, /edit and
+                        colby     /chores are the React board; the old one
+                        claude    stays at /classic.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import { post } from '../../lib/api.ts';
 import { Btn, Segs } from '../../ui/bits.tsx';
@@ -9,6 +34,10 @@ import { photoSrc } from '../photos.ts';
 import type { Photos } from '../photos.ts';
 import type { Side } from '../TitlePhotos.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------- //
+// | Photos beside the title | //
+// --------------------------- //
 export function PhotosEditor({
   ym,
   monthName,
@@ -89,3 +118,5 @@ export function PhotosEditor({
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

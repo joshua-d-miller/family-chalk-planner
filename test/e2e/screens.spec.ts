@@ -1,4 +1,35 @@
-// The other kinds of screen: the wall (view only), a family touch screen, and a new screen being paired.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | Browser | screens.spec.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     The other kinds of screen: the wall (view only), a family touch
+     screen, and a new screen being paired.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Browser tests for the board as each screen
+                        claude    sees it (Playwright).
+                        colby
+                                  Browser tests: no overnight slideshow over
+                                  the tests; a test for it with a night-time
+                                  clock.
+
+                                  Server and tests are all TypeScript (ES
+                                  modules).
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { test, expect, thisMonth } from './fixtures.ts';
 
 test('the wall: no buttons, a tapped day shows its events, and it can’t change anything', async ({ as, board }) => {

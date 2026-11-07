@@ -1,18 +1,61 @@
-// The meal plan: meals for the week, each on a day of the week or on none, ticked off as you go.
-// Saved in the meals table, one meal at a time (/api/meals/item); the whole list can still be sent at
-// once (the old board's editor).
-// Meals by day of the week: from Colby Way's board.
+/*
+===============================================================================
+ Family Chalk Planner | Server | meals.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     The meal plan: meals for the week, each on a day of the week or on
+     none, ticked off as you go. Saved in the meals table, one meal at a
+     time (/api/meals/item); the whole list can still be sent at once (the
+     old board's editor). Meals by day of the week: from Colby Way's
+     board.
+
+ Routes:
+     GET    /api/meals
+     POST   /api/meals
+     POST   /api/meals/item
+     POST   /api/meals/item/delete
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Art, stamps, each month's options, board
+                        claude    style, meals and jars in their own
+                        colby     TypeScript modules.
+
+                                  Database migrations; chores, meals and jars
+                                  in their own tables.
+===============================================================================
+*/
+
 import crypto from 'node:crypto';
 import type { Express } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import type { Meal, MealDay, Meals } from '../shared/lists.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Checking what a screen sends | //
+// -------------------------------- //
 const DAYS: MealDay[] = ['', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const MAX = 21;
 const isId = (v: unknown): v is string => typeof v === 'string' && /^[a-z0-9]{1,16}$/.test(v);
 const newId = () => 'm' + crypto.randomBytes(5).toString('hex');
 
-// A meal as sent by a screen. "[mon] Tacos" (how Colby's board first kept the day) still works.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------ //
+// | One meal | //
+// ------------ //
+// A meal as sent by a screen. "[mon] Tacos" (how Colby's board first kept   //
+// the day) still works.                                                     //
 function cleanMeal(raw: unknown): Omit<Meal, 'id'> & { id?: string; hasDay: boolean } {
   const it = (raw || {}) as Record<string, unknown>;
   let t = String(it.t || '').trim();
@@ -28,6 +71,10 @@ function cleanMeal(raw: unknown): Omit<Meal, 'id'> & { id?: string; hasDay: bool
   return { ...(isId(it.id) ? { id: it.id } : {}), t: t.slice(0, 60), day, done: !!it.done, hasDay };
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({
   app,
   db,
@@ -65,7 +112,11 @@ export function setup({
 
   app.get('/api/meals', (_req, res) => res.json(list()));
 
-  // The whole list (the old board): meals sent without a day keep the day they had
+  // ------------------ //
+  // | The whole list | //
+  // ------------------ //
+  // The whole list (the old board): meals sent without a day keep the day   //
+  // they had                                                                //
   app.post('/api/meals', (req, res) => {
     const sent = (req.body || {}).items;
     if (!Array.isArray(sent)) return res.status(400).json({ error: 'bad list' });
@@ -94,7 +145,10 @@ export function setup({
     res.json(changed());
   });
 
-  // One meal, added or changed
+  // ---------------------- //
+  // | One meal at a time | //
+  // ---------------------- //
+  // One meal, added or changed                                              //
   app.post('/api/meals/item', (req, res) => {
     const m = cleanMeal((req.body || {}).meal);
     if (!m.t) return res.status(400).json({ error: 'What’s the meal?' });
@@ -110,3 +164,5 @@ export function setup({
     res.json(changed());
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

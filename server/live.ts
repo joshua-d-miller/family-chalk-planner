@@ -1,7 +1,36 @@
-// Live updates: every open screen keeps one Server-Sent Events connection (/api/stream), and any change
-// is pushed to all of them at once ("calendar", "stroke", "chores"...). Screens reconnect by themselves.
+/*
+===============================================================================
+ Family Chalk Planner | Server | live.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-06
+
+ Purpose:
+     Live updates: every open screen keeps one Server-Sent Events
+     connection (/api/stream), and any change is pushed to all of them at
+     once ("calendar", "stroke", "chores"...). Screens reconnect by
+     themselves.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Live updates, nightly backup and the Notes
+                        claude    extras in their own TypeScript modules.
+===============================================================================
+*/
+
 import type { Express, Response } from 'express';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------------------- //
+// | Every open screen, and telling them all | //
+// ------------------------------------------- //
+// Broadcast sends one event to every connected screen. serve adds           //
+// /api/stream: the version is sent first, so a page can tell a new version  //
+// was installed and reload; every 25 seconds each connection is checked     //
+// again, so a removed screen or an ended sign-in stops getting updates.     //
 export function createLive() {
   const clients = new Set<Response>();
 
@@ -46,3 +75,5 @@ export function createLive() {
   return { broadcast, serve };
 }
 export type Broadcast = ReturnType<typeof createLive>['broadcast'];
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -1,14 +1,56 @@
-// Google Calendar: Google's CalDAV, with a Google sign-in (OAuth with PKCE) instead of a password.
-// The refresh token and the chosen calendar live in DATA_DIR/google-auth.json (mode 600).
-//
-// By default Google sends the browser to http://localhost (nothing there) and the address is pasted back
-// into ⚙️, so it works without HTTPS. With GOOGLE_REDIRECT_URI=https://<board>/oauth/google/callback it
-// completes by itself.
+/*
+===============================================================================
+ Family Chalk Planner | Server | Calendar | google.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     Google Calendar: Google's CalDAV, with a Google sign-in (OAuth with
+     PKCE) instead of a password. The refresh token and the chosen
+     calendar live in DATA_DIR/google-auth.json (mode 600).
+
+     By default Google sends the browser to http://localhost (nothing
+     there) and the address is pasted back into ⚙️, so it works without
+     HTTPS. With GOOGLE_REDIRECT_URI=https://<board>/oauth/google/callback
+     it completes by itself.
+
+ Routes:
+     POST   /api/google/start
+     POST   /api/google/finish
+     GET    /oauth/google/callback
+     POST   /api/google/calendars
+     POST   /api/google/calendar
+     POST   /api/google/disconnect
+
+ Used by:
+     server/calendar/source.ts
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The calendar in its own TypeScript modules
+                        claude    (server/calendar/).
+                        colby
+                                  Google: several calendars at once, read-only
+                                  ones, and which calendar a new event goes
+                                  in.
+===============================================================================
+*/
+
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Express } from 'express';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | Types and colors | //
+// -------------------- //
 export interface GoogleConfig {
   id: string; // client ID and secret: from the family's own Google Cloud project (docs/google-calendar.md)
   secret: string;
@@ -47,7 +89,12 @@ interface TokenReply {
   error_description?: string;
 }
 
-// Where new events go: the one asked for if it can be changed, else the first that can
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------- //
+// | Where new events go | //
+// ----------------------- //
+// Where new events go: the one asked for if it can be changed, else the     //
+// first that can                                                            //
 export function mainOf(list: GoogleCalendar[], want?: string | null) {
   return (
     list.find(c => c.id === want && !c.readOnly) ||
@@ -58,6 +105,12 @@ export function mainOf(list: GoogleCalendar[], want?: string | null) {
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | The Google sign-in | //
+// ---------------------- //
+// The refresh token and the chosen calendars live in                        //
+// DATA_DIR/google-auth.json (mode 600), never in the database.              //
 export function createGoogle(config: GoogleConfig, dataDir: string) {
   const file = path.join(dataDir, 'google-auth.json');
   let access: { token: string; exp: number } | null = null;
@@ -74,6 +127,9 @@ export function createGoogle(config: GoogleConfig, dataDir: string) {
     fs.chmodSync(file, 0o600);
   }
 
+  // -------------------------- //
+  // | A current access token | //
+  // -------------------------- //
   async function tokenRequest(params: Record<string, string>) {
     const r = await fetch(config.token, {
       method: 'POST',
@@ -104,7 +160,11 @@ export function createGoogle(config: GoogleConfig, dataDir: string) {
 
   const calendarUrl = (id: string) => `${config.dav}/caldav/v2/${encodeURIComponent(id)}/events/`;
 
-  // The calendars shown: those picked (or, from before, the one), then the console's "more calendars"
+  // ----------------------- //
+  // | The calendars shown | //
+  // ----------------------- //
+  // The calendars shown: those picked (or, from before, the one), then the  //
+  // console's "more calendars"                                              //
   function selected(extra: { id: string; name: string; color: string }[] = []): GoogleCalendar[] {
     const st = load();
     const picked: Partial<GoogleCalendar>[] = st.calendars?.length
@@ -144,7 +204,13 @@ export function createGoogle(config: GoogleConfig, dataDir: string) {
 }
 export type Google = ReturnType<typeof createGoogle>;
 
-// Signing in, picking the calendar and disconnecting (admins, in ⚙️ Settings on the tablet)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------------------------ //
+// | Signing in, picking calendars, disconnecting | //
+// ------------------------------------------------ //
+// For admins, in Settings. OAuth with PKCE: the board starts, Google asks   //
+// the person, and the board finishes with the code Google gives back        //
+// (pasted, or sent straight back to GOOGLE_REDIRECT_URI).                   //
 export function registerGoogleRoutes(
   app: Express,
   {
@@ -187,6 +253,9 @@ export function registerGoogleRoutes(
     res.json({ url: u.toString() });
   });
 
+  // ------------------------- //
+  // | Finishing the sign-in | //
+  // ------------------------- //
   async function finish(code: string, state: string) {
     const p = pending.get(state);
     if (!p) throw new Error('That sign-in has expired or was already used - start again');
@@ -255,6 +324,9 @@ export function registerGoogleRoutes(
     }
   });
 
+  // --------------------------------- //
+  // | Every calendar on the account | //
+  // --------------------------------- //
   app.post('/api/google/calendars', async (_req, res) => {
     try {
       // every calendar, including ones the family can only look at (school, holidays, shared to view)
@@ -288,8 +360,12 @@ export function registerGoogleRoutes(
     }
   });
 
-  // Which calendars the board shows ({ calendars: [{ id, name, color, readOnly }], calendarId: where new
-  // events go }), or just one ({ id, name }, as before)
+  // ----------------------------------- //
+  // | Which calendars the board shows | //
+  // ----------------------------------- //
+  // Which calendars the board shows ({ calendars: [{ id, name, color,       //
+  // readOnly }], calendarId: where new events go }), or just one ({ id,     //
+  // name }, as before)                                                      //
   app.post('/api/google/calendar', (req, res) => {
     const st = google.load();
     if (!st.refresh) return res.status(400).json({ error: 'Connect Google first' });
@@ -316,6 +392,9 @@ export function registerGoogleRoutes(
     res.json({ ok: true, calendarId: main?.id || null, calendar: main?.name || null, calendars: list });
   });
 
+  // ----------------- //
+  // | Disconnecting | //
+  // ----------------- //
   app.post('/api/google/disconnect', (_req, res) => {
     google.disconnect();
     calendarChanged();
@@ -323,3 +402,5 @@ export function registerGoogleRoutes(
     res.json({ ok: true });
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

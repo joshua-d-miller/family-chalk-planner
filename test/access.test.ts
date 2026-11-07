@@ -1,6 +1,55 @@
-// Who may do what: paired screens (view / family), people (editor / admin) with password +
-// authenticator code, invites, the admin console sign-in, and deploy/reset-admin.sh.
-// (Passkeys are tested in a real browser with a virtual authenticator - see docs/development.)
+/*
+===============================================================================
+ Family Chalk Planner | Tests | access.test.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-06
+
+ Purpose:
+     Who may do what: paired screens (view / family), people (editor /
+     admin) with password + authenticator code, invites, the admin console
+     sign-in, and deploy/reset-admin.sh. (Passkeys are tested in a real
+     browser with a virtual authenticator - see docs/development.)
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.3.0     2026-10-13   joshua    Admin console, paired screens, sign-in with
+                        claude    passkeys or password + authenticator.
+
+ 0.3.2     2026-10-13   joshua    Passkey failures on the device show up in
+                        claude    Activity; 👤 menu lists your passkeys.
+
+ 0.4.0     2026-10-13   joshua    Family screens can decorate: stamps,
+                        claude    clipart, emoji, GIFs and words, no freehand
+                                  drawing.
+
+ 0.7.0     2026-10-14   joshua    No more settings file - everything in the
+                        claude    admin console and the database.
+
+ 0.8.3     2026-10-14   joshua    Family screens can change the board style,
+                        claude    month title and photos (everything but
+                                  drawing).
+
+ 0.8.5     2026-10-14   joshua    Test the real install/update scripts in CI;
+                        claude    fix fresh installs and the failed-update
+                                  undo.
+
+ 0.12.0    2026-10-28   joshua    Chores - a family checklist on the board
+                        claude    (swipe from the calendar, /chores on phones,
+                                  kid's tablets).
+
+ 0.13.0    2026-11-06   joshua    TypeScript groundwork: type-check, lint and
+                        claude    format in CI; chores is the first TypeScript
+                                  module.
+
+                                  Server and tests are all TypeScript (ES
+                                  modules).
+===============================================================================
+*/
+
 import test from 'node:test';
 import assert from 'node:assert';
 import { spawn, execFileSync } from 'node:child_process';

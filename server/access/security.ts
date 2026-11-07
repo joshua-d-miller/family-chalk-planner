@@ -1,9 +1,40 @@
-// 🛡 Security (admin console): things that need a look, each with what to do about it; the settings; and the
-// activity log.
+/*
+===============================================================================
+ Family Chalk Planner | Server | Access | security.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     🛡 Security (admin console): things that need a look, each with what
+     to do about it; the settings; and the activity log.
+
+ Routes:
+     GET    /api/security
+     POST   /api/security/settings
+
+ Used by:
+     server/access/access.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Move access (screens, people, sign-in,
+                        claude    passkeys, security) to TypeScript.
+===============================================================================
+*/
+
 import type { Ctx, SecCfg } from './access.ts';
 import { DAY, SEC_DEFAULT } from './access.ts';
 import type { AuditRow } from './store.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------------- //
+// | Actions offered with an alert | //
+// --------------------------------- //
 interface Action {
   label: string;
   call: string;
@@ -18,7 +49,16 @@ const A = (label: string, call: string, body: Record<string, unknown>, confirm?:
 });
 const days = (t: number) => Math.round((Date.now() - t) / DAY);
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function registerSecurity({ app, q, kv, rp, secCfg, audit, cleanup, proxySeen }: Ctx) {
+  // --------------------------- //
+  // | Things that need a look | //
+  // --------------------------- //
+  // Each with what it means and the fix: no passkeys, HTTPS missing, an     //
+  // admin without a recent sign-in, quiet screens, many wrong passwords.    //
   function alerts() {
     const now = Date.now();
     const cfg = secCfg();
@@ -112,7 +152,10 @@ export function registerSecurity({ app, q, kv, rp, secCfg, audit, cleanup, proxy
     return out;
   }
 
-  // log lines point at things that may still exist: offer what can be done
+  // ------------------------------------------- //
+  // | The activity log, with what can be done | //
+  // ------------------------------------------- //
+  // Log lines point at things that may still exist: offer what can be done  //
   function withActions(e: AuditRow) {
     const acts: Action[] = [];
     const ref = e.ref_id || '';
@@ -159,3 +202,5 @@ export function registerSecurity({ app, q, kv, rp, secCfg, audit, cleanup, proxy
     res.json(out);
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

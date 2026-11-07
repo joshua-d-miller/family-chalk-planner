@@ -1,9 +1,41 @@
-// The ☰ menu: every page, what this screen may open; ☆ keeps one on the strip (up to 4).
+/*
+===============================================================================
+ Family Chalk Planner | Screens | UI | Menu.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The ☰ menu: every page, what this screen may open; ☆ keeps one on the
+     strip (up to 4).
+
+ Used by:
+     web/src/board/Strip.tsx
+     web/src/ui/Page.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+===============================================================================
+*/
+
 import { post } from '../lib/api.ts';
 import { MAX_FAVORITES, useFavorites } from '../lib/favorites.ts';
 import type { Who } from '../lib/who.ts';
 import { PAGES } from '../routes.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The ☰ menu | //
+// -------------- //
+// Every page this screen may open, in groups; ☆ keeps up to 4 on the strip. //
+// Signed in: who, and Sign out.                                             //
 const GROUPS: [string, string][] = [
   ['pages', 'Pages'],
   ['board', 'The board'],
@@ -84,3 +116,5 @@ export function Menu({ who, here, onClose }: { who: Who | null; here: string; on
     </>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

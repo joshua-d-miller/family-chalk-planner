@@ -1,5 +1,36 @@
-// ★ Stamps: clipart and chalk drawings, emoji, GIFs (her own and animated emoji) and the family's own
-// saved stamps. Pick one, then tap the board where it should go.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Drawing | Library.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     ★ Stamps: clipart and chalk drawings, emoji, GIFs (her own and
+     animated emoji) and the family's own saved stamps. Pick one, then tap
+     the board where it should go.
+
+ Used by:
+     web/src/board/Board.tsx
+     web/src/board/draw/Find.tsx
+     web/src/board/draw/Tools.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board: drawing on a tablet (chalk,
+                        claude    Posca, writing, eraser, select, stamps,
+                        colby     GIFs).
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useEffect, useMemo, useState } from 'react';
 import { get, post, upload, url } from '../../lib/api.ts';
 import { Segs } from '../../ui/bits.tsx';
@@ -11,6 +42,10 @@ import { clipLabel, clipSrc, searchClip } from '../clip.ts';
 import { unionBox } from '../geom.ts';
 import { FindPane } from './Find.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | Stamps | //
+// ---------- //
 export type Stamp = { name: string; items: ArtItem[] };
 const SIZES: [string, string][] = [
   ['0.6', 'Small'],
@@ -75,6 +110,10 @@ const GIF_MODES: [string, string][] = [
 type Gif = { id: string; src: string; still: string; w: number; h: number };
 type Anim = { cp: string; tags: string; cat: string };
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | The library | //
+// --------------- //
 export function Library({
   onPick,
   onClose,
@@ -115,6 +154,10 @@ export function Library({
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------ //
+// | Clip art | //
+// ------------ //
 function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
   const [names, setNames] = useState<string[] | null>(null);
   const [groups, setGroups] = useState<Record<string, string[]>>({});
@@ -193,6 +236,10 @@ function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Emoji | //
+// --------- //
 function EmojiPane({ pick }: { pick: (s: Stamp) => void }) {
   const [cat, setCat] = useState(0);
   return (
@@ -223,7 +270,11 @@ function EmojiPane({ pick }: { pick: (s: Stamp) => void }) {
   );
 }
 
-// the first frame of a picture, for GIFs that rest between plays
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------- //
+// | GIFs | //
+// -------- //
+// The first frame of a picture, for GIFs that rest between plays            //
 function stillOf(src: string): Promise<{ still: Blob | null; w: number; h: number }> {
   return new Promise((ok, fail) => {
     const im = new Image();
@@ -370,6 +421,10 @@ function GifPane({ pick }: { pick: (s: Stamp) => void }) {
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | Saved stamps | //
+// ---------------- //
 function MinePane({ pick, bg }: { pick: (s: Stamp) => void; bg: number }) {
   const [list, setList] = useState<(Stamp & { id: number })[] | null>(null);
   const [err, setErr] = useState('');
@@ -404,7 +459,11 @@ function MinePane({ pick, bg }: { pick: (s: Stamp) => void; bg: number }) {
   );
 }
 
-// a stamp, small: its drawing scaled to fit
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | A thumbnail | //
+// --------------- //
+// A stamp, small: its drawing scaled to fit                                 //
 export function Thumb({ items, bg }: { items: ArtItem[]; bg: number }) {
   const b = unionBox(items) || { x1: 0, y1: 0, x2: 1, y2: 1 };
   const w = Math.max(1, b.x2 - b.x1);
@@ -428,3 +487,5 @@ export function Thumb({ items, bg }: { items: ArtItem[]; bg: number }) {
     </div>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

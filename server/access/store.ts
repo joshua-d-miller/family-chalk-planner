@@ -1,6 +1,37 @@
-// The access tables and the queries on them. Every key and code is stored only as a hash.
+/*
+===============================================================================
+ Family Chalk Planner | Server | Access | store.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     The access tables and the queries on them. Every key and code is
+     stored only as a hash.
+
+ Used by:
+     server/access/access.ts
+     server/access/accounts.ts
+     server/access/people.ts
+     server/access/security.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Move access (screens, people, sign-in,
+                        claude    passkeys, security) to TypeScript.
+===============================================================================
+*/
+
 import type { DatabaseSync, StatementSync } from 'node:sqlite';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------ //
+// | The rows | //
+// ------------ //
 export interface Device {
   id: string;
   key_hash: string;
@@ -73,6 +104,10 @@ export interface AuditRow {
   ref_id: string | null;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------------------- //
+// | The tables, and every query on them | //
+// --------------------------------------- //
 export function makeStore(db: DatabaseSync) {
   db.exec(`CREATE TABLE IF NOT EXISTS devices (
     id TEXT PRIMARY KEY, key_hash TEXT UNIQUE NOT NULL, name TEXT NOT NULL, role TEXT NOT NULL,
@@ -235,3 +270,5 @@ export function makeStore(db: DatabaseSync) {
   };
 }
 export type Store = ReturnType<typeof makeStore>;
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

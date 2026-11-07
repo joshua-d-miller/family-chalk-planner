@@ -1,5 +1,40 @@
-// The new screens (React): the meal plan, reminders, timers, the pantry, reward jars and chores, on a phone,
-// a family screen and the wall; the ☰ menu and favorites.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | Browser | app-pages.spec.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     The new screens (React): the meal plan, reminders, timers, the
+     pantry, reward jars and chores, on a phone, a family screen and the
+     wall; the ☰ menu and favorites.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+
+                                  Settings (new screen), and an emoji font
+                                  Chrome-based tablets can show.
+
+                                  The board in React (wall view, next/board):
+                                  month, events, art, notes column; sharp at
+                                  4K.
+
+                                  The new board: the family's style, each
+                                  month's title and holiday border, polaroids,
+                                  drawn jars.
+
+                                  ... and 4 more (the board rebuilt in React
+                                  and TypeScript)
+===============================================================================
+*/
+
 import { test, expect, thisMonth } from './fixtures.ts';
 
 const noSideScroll = page => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);

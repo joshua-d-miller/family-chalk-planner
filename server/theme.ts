@@ -1,9 +1,37 @@
-// Board style ("theme"): a preset name plus the family's tweaks to it, the background, and whether it
-// changes with the season. The presets themselves live in the page; the server only checks the shape.
-//   kv 'theme'  { p: preset, o: { key: value }, s?: background, z?: 1 }
+/*
+===============================================================================
+ Family Chalk Planner | Server | theme.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Board style ("theme"): a preset name plus the family's tweaks to it,
+     the background, and whether it changes with the season. The presets
+     themselves live in the page; the server only checks the shape.
+       kv 'theme'  { p: preset, o: { key: value }, s?: background, z?: 1 }
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Art, stamps, each month's options, board
+                        claude    style, meals and jars in their own
+                        colby     TypeScript modules.
+
+                                  Immich photos, slideshow extras, a filled-in
+                                  today, and the frame's thickness.
+===============================================================================
+*/
+
 import type { Express } from 'express';
 import type { Kv } from './kv.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------- //
+// | What a style may hold | //
+// ------------------------- //
 const FONTS = ['kalam', 'caveat', 'marker', 'pacifico', 'chalk', 'tall', 'scratchy', 'script', 'classic'];
 // each tweak: a color, a font, or one of a few choices
 const TWEAKS: Record<string, 'color' | 'font' | string[]> = {
@@ -36,6 +64,10 @@ export interface Theme {
   z?: 1;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Checking what a screen sends | //
+// -------------------------------- //
 export function cleanTheme(input: unknown): Theme {
   const t = (input || {}) as Record<string, unknown>;
   const out: Theme = { p: typeof t.p === 'string' && /^[a-z]{2,20}$/.test(t.p) ? t.p : 'classic', o: {} };
@@ -50,6 +82,10 @@ export function cleanTheme(input: unknown): Theme {
   return out;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({
   app,
   kv,
@@ -67,3 +103,5 @@ export function setup({
     res.json(t);
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

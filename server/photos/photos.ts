@@ -1,9 +1,44 @@
-// Photos: a shared album feeds the photos beside the month name and the overnight slideshow.
-// Every photo is copied into photo-cache/ so the wall never waits on the album.
-//
-// Face finding (optional): OpenCV's YuNet model run by face/facefocus.py in its own Python venv. Each photo
-// is checked once; the result sits next to it as <id>.json so the board can frame people instead of
-// cropping the middle.
+/*
+===============================================================================
+ Family Chalk Planner | Server | Photos | photos.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     Photos: a shared album feeds the photos beside the month name and the
+     overnight slideshow. Every photo is copied into photo-cache/ so the
+     wall never waits on the album.
+
+     Face finding (optional): OpenCV's YuNet model run by
+     face/facefocus.py in its own Python venv. Each photo is checked once;
+     the result sits next to it as <id>.json so the board can frame people
+     instead of cropping the middle.
+
+ Routes:
+     GET    /api/photos
+     GET    /api/photos/img/:id
+     POST   /api/photos/settings
+     POST   /api/photos/sync
+     POST   /api/board-settings/immich-albums
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Move photos, pages and the console's board
+                        claude    settings into TypeScript modules.
+                        colby
+                                  Immich photos, slideshow extras, a filled-in
+                                  today, and the frame's thickness.
+===============================================================================
+*/
+
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,6 +49,10 @@ import type { AlbumConfig } from './albums.ts';
 import { immichAlbums, immichShare, normalizeImmichUrl, onThisDay, readImmich } from './immich.ts';
 import type { ImmichPhoto, ImmichSource } from './immich.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Types | //
+// --------- //
 interface Face {
   [k: string]: unknown;
 }
@@ -33,8 +72,13 @@ interface FaceResult {
   error?: string;
 }
 
-// the slideshow and title-photo settings; the slideshow's extras (today's events, the temperature,
-// reminders, photos beside the board instead of over it) are from Colby Way's board
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------------- //
+// | Slideshow and title photo settings | //
+// -------------------------------------- //
+// The slideshow and title-photo settings; the slideshow's extras (today's   //
+// events, the temperature, reminders, photos beside the board instead of    //
+// over it) are from Colby Way's board                                       //
 const CFG_DEFAULT = {
   frame: true,
   night: true,
@@ -49,10 +93,18 @@ const CFG_DEFAULT = {
 };
 type PhotoCfg = typeof CFG_DEFAULT;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Picture types | //
+// ----------------- //
 const isJpegPng = (b: Buffer) => b.length > 8 && ((b[0] === 0xff && b[1] === 0xd8) || b.readUInt32BE(0) === 0x89504e47);
 const isWebp = (b: Buffer) =>
   b.length > 12 && b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({
   app,
   kv,
@@ -91,6 +143,11 @@ export function setup({
 
   const faceScript = path.join(faceDir, 'facefocus.py');
   const faceModel = path.join(faceDir, 'yunet.onnx');
+  // ------------------- //
+  // | The face finder | //
+  // ------------------- //
+  // Face/facefocus.py (OpenCV YuNet), if it's installed: where the faces    //
+  // are in each photo, so frames can be filled with people.                 //
   const faceReady = () => [facePython, faceScript, faceModel].every(f => fs.existsSync(f));
   function findFaces(files: string[]): Promise<FaceResult[]> {
     return new Promise(resolve => {
@@ -118,7 +175,11 @@ export function setup({
     });
   }
 
-  // only from the album service's own image hosts (Immich: the server that was set up)
+  // ----------------------- //
+  // | Downloading a photo | //
+  // ----------------------- //
+  // Only from the album service's own image hosts (Immich: the server that  //
+  // was set up)                                                             //
   const hostOk = (u: string) => (immichSrc ? u.startsWith(immichSrc.url + '/') : imageHostOk(album, u));
   // JPEG or PNG (the wall can't show HEIC); Immich's previews can also be WebP
   const imageOk = (b: Buffer) => isJpegPng(b) || (!!immichSrc && isWebp(b));
@@ -142,6 +203,11 @@ export function setup({
 
   const fileOf = (id: string, ext: string) => path.join(cacheDir, `${id}.${ext}`);
 
+  // --------------------------------- //
+  // | Keeping the copies up to date | //
+  // --------------------------------- //
+  // Every photo is copied into photo-cache/, so the wall never waits on the //
+  // album; the album is checked again every few hours.                      //
   async function sync() {
     if (!enabled || state.running) return;
     state.running = true;
@@ -201,7 +267,11 @@ export function setup({
     setInterval(sync, 15 * 60 * 1000);
   }
 
-  // ?thisDay=1: only photos taken on this date in earlier years, if there are any
+  // -------------- //
+  // | The photos | //
+  // -------------- //
+  // ?thisDay=1: only photos taken on this date in earlier years, if there   //
+  // are any                                                                 //
   app.get('/api/photos', (req, res) => {
     let photos = state.list;
     if (req.query.thisDay === '1' || req.query.thisDay === 'true') {
@@ -230,6 +300,9 @@ export function setup({
     });
   });
 
+  // ------------ //
+  // | Settings | //
+  // ------------ //
   app.post('/api/photos/settings', (req, res) => {
     const b = req.body || {};
     const hm = (v: unknown) => (typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : null);
@@ -256,8 +329,12 @@ export function setup({
     res.json({ photos: state.list.length, error: state.error });
   });
 
-  // Admin console → ⚙️ Board → Photos: the albums on an Immich server (what was typed, else what's saved).
-  // Only admins choose where photos come from: the board fetches from that address.
+  // ----------------- //
+  // | Immich albums | //
+  // ----------------- //
+  // Admin console → Board settings → Photos: the albums on an Immich server //
+  // (what was typed, else what's saved). Only admins choose where photos    //
+  // come from: the board fetches from that address.                         //
   app.post('/api/board-settings/immich-albums', async (req, res) => {
     const b = req.body || {};
     const url = normalizeImmichUrl(b.url !== undefined ? String(b.url) : immich.url);
@@ -278,3 +355,5 @@ export function setup({
     }
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

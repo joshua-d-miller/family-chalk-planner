@@ -1,5 +1,58 @@
-// The pages themselves: the board page (wall, tablet and phone chores), the admin console, the app icons
-// and install manifests, the board's fonts, and the board version (the wall reloads itself when it changes).
+/*
+===============================================================================
+ Family Chalk Planner | Server | pages.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     The pages themselves: the board page (wall, tablet and phone chores),
+     the admin console, the app icons and install manifests, the board's
+     fonts, and the board version (the wall reloads itself when it
+     changes).
+
+ Routes:
+     GET    /icons/:name
+     GET    /fonts.css
+     GET    /fonts/:pkg/files/:file
+     GET    /
+     GET    /next/:page
+     USE    /assets
+     GET    /edit
+     GET    /chores
+     GET    /classic
+     GET    /classic/edit
+     GET    /classic/chores
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Move photos, pages and the console's board
+                        claude    settings into TypeScript modules.
+                        colby
+                                  The new screens (React + TypeScript): meal
+                                  plan, reminders, timers, pantry, jars and
+                                  chores.
+
+                                  Settings (new screen), and an emoji font
+                                  Chrome-based tablets can show.
+
+                                  The board in React (wall view, next/board):
+                                  month, events, art, notes column; sharp at
+                                  4K.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -9,9 +62,14 @@ import { ICONS } from './icons.ts';
 
 const require = createRequire(import.meta.url);
 
-// Fonts: bundled from npm (SIL Open Font License) and served by the board itself, so no screen
-// ever calls Google and the board looks right with the internet down.
-// [name in the address, its package, the style sheets in it]
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Fonts | //
+// --------- //
+// Bundled from npm (SIL Open Font License) and served by the board itself,  //
+// so no screen ever calls Google and the board looks right with the         //
+// internet down. Each: [name in the address, its package, the style sheets  //
+// in it].                                                                   //
 const fontsource = (name: string, weights: number[]): [string, string, string[]] => [
   name,
   `@fontsource/${name}`,
@@ -33,6 +91,11 @@ const FONTS: [string, string, string[]][] = [
   // ('Apple Color Emoji', 'Segoe UI Emoji').
   ['noto-color-emoji', '@infolektuell/noto-color-emoji', ['index.css']]
 ];
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------- //
+// | Are the fonts installed? | //
+// ---------------------------- //
 const installed = (spec: string) => {
   try {
     require.resolve(spec);
@@ -44,7 +107,13 @@ const installed = (spec: string) => {
 const fontsMissing = () =>
   FONTS.filter(([, pkg, files]) => files.some(f => !installed(`${pkg}/${f}`))).map(([name]) => name);
 
-// Installable app: the wall opens full-screen at "/", the iPad opens "/edit"
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | Installable apps | //
+// -------------------- //
+// Each screen can be installed as an app (a home-screen icon): the wall     //
+// opens full-screen at "/", the iPad at "/edit", and each page at its own   //
+// address.                                                                  //
 type Kind = 'wall' | 'edit' | 'chores' | 'meals' | 'reminders' | 'timers' | 'pantry' | 'jars' | 'settings';
 const app = (name: string, path: string) => ({
   name,
@@ -89,6 +158,10 @@ const manifests = (title: string): Record<Kind, Record<string, string>> => ({
   }
 });
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({
   app,
   publicDir,
@@ -108,6 +181,9 @@ export function setup({
   version: string; // 'v1.2.3'
   broadcast: (event: string, data: unknown) => void;
 }) {
+  // ----------------------- //
+  // | Icons and manifests | //
+  // ----------------------- //
   app.get('/icons/:name', (req, res) => {
     const b64 = ICONS[req.params.name];
     if (!b64) return res.sendStatus(404);
@@ -134,6 +210,11 @@ export function setup({
   const pageFile = path.join(publicDir, 'index.html');
   const serverMtime = Math.round(fs.statSync(serverFile).mtimeMs);
   let pageMtime = 0;
+  // --------------------- //
+  // | The board version | //
+  // --------------------- //
+  // When the page and server were last changed. A new one is sent to every  //
+  // open screen, which reloads itself.                                      //
   function boardVersion() {
     try {
       pageMtime = Math.round(fs.statSync(pageFile).mtimeMs);
@@ -160,6 +241,12 @@ export function setup({
       `Chalk Planner: the board's fonts aren't installed (${fontsGone.join(', ')}) - screens fall back to plain fonts. Fix: sudo bash ${appDir_}/deploy/update.sh`
     );
   let fontsCss: string | null = null;
+  // ------------------------- //
+  // | The fonts style sheet | //
+  // ------------------------- //
+  // The font files' addresses are made relative, so they work wherever the  //
+  // board is served from. The emoji are renamed 'Board Emoji', so they're   //
+  // only ever a fallback after the screen's own.                            //
   app.get('/fonts.css', (_req, res) => {
     if (fontsCss === null) {
       // the font files' addresses are relative, so they work wherever the board is served from
@@ -200,6 +287,9 @@ export function setup({
   });
 
   const safeTitle = title.replace(/[<>&"]/g, '');
+  // --------------------------------- //
+  // | The board as it was (classic) | //
+  // --------------------------------- //
   function sendBoard(kind: Kind): RequestHandler {
     return (_req, res) => {
       fs.readFile(pageFile, 'utf8', (err, html) => {
@@ -224,6 +314,12 @@ export function setup({
   // The new screens (web/dist, built by `npm run build`; releases ship it built). Every address in them is
   // relative to <base>, set here to where the board is served from.
   const appDir = path.join(appDir_, 'web', 'dist');
+  // --------------- //
+  // | The screens | //
+  // --------------- //
+  // Web/dist, built by `npm run build` (releases ship it built). Every      //
+  // address in them is relative to <base>, set here to where the board is   //
+  // served from.                                                            //
   function sendApp(kind: Kind): RequestHandler {
     return (_req, res) => {
       fs.readFile(path.join(appDir, 'index.html'), 'utf8', (err, html) => {
@@ -248,7 +344,10 @@ export function setup({
     };
   }
 
-  // Call last: the pages, then any file in public/
+  // ------------------------- //
+  // | Registering the pages | //
+  // ------------------------- //
+  // Call last: the pages, then any file in public/                          //
   function serve() {
     for (const p of APP_PAGES) app.get('/' + p, sendApp(p as Kind));
     // the addresses the new screens had while they were being built
@@ -278,3 +377,5 @@ export function setup({
 
   return { boardVersion, fontsGone, serve };
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

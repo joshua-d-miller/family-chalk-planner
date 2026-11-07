@@ -1,15 +1,36 @@
 #!/usr/bin/env bash
-# Puts the board's screens (the React app, web/dist) in place for the code that's checked out.
-# Releases carry them already built: for release vX.Y.Z, CI publishes them as the git tag screens-vX.Y.Z,
-# fetched here with the same access as the code itself (so it works for a private copy too). A server
-# never builds anything. Following "every change on main" (developers), they're built here instead.
-#   bash deploy/screens.sh            (run by install.sh and update.sh, as the folder's owner)
-# Exit code 0 even if they can't be had: the current board still works; only the new screens wait.
+: <<'HEADER'
+===============================================================================
+ Family Chalk Planner | Deploy | screens.sh
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Puts the board's screens (the React app in web/dist) in place for the
+     code that's checked out.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Releases carry the built screens; servers
+                        claude    fetch them instead of building.
+===============================================================================
+HEADER
+
 set -euo pipefail
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$APP_DIR"
 say() { printf '\033[1;33m==>\033[0m %s\n' "$*"; }
 
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #
+### --------------------------- ###
+### | Swapping the screens in | ###
+### --------------------------- ###
+### The new folder replaces web/dist in one move, so a screen loading in    ###
+### the middle never gets half of each.                                     ###
 put() {   # $1: a folder with the built screens -> web/dist (swapped in at once)
   [ -f "$1/index.html" ] || return 1
   rm -rf web/dist.old
@@ -18,6 +39,12 @@ put() {   # $1: a folder with the built screens -> web/dist (swapped in at once)
   rm -rf web/dist.old
 }
 
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #
+### ----------------------------------- ###
+### | A release: download its screens | ###
+### ----------------------------------- ###
+### The tag screens-vX.Y.Z holds them; .version says which ones are in      ###
+### place, so a second run does nothing.                                    ###
 tag="$(git describe --tags --exact-match HEAD 2>/dev/null | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)"
 if [ -n "$tag" ]; then
   have="$(cat web/dist/.version 2>/dev/null || true)"
@@ -31,6 +58,13 @@ if [ -n "$tag" ]; then
   say "This release has no built screens to download (releases before 0.13 don't): the board works as before"
   exit 0
 fi
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #
+### ---------------------------------- ###
+### | Not a release: build them here | ###
+### ---------------------------------- ###
+### Needs the developer packages (npm ci), so this is for people following  ###
+### a branch.                                                               ###
 # not a release: build them, if the tools are here (they're the developer packages)
 if [ -x node_modules/.bin/vite ] || npm ci --no-audit --no-fund --loglevel=error >/dev/null 2>&1; then
   if npx vite build --outDir dist.new >/dev/null 2>&1 && [ -f web/dist.new/index.html ]; then
@@ -41,3 +75,5 @@ if [ -x node_modules/.bin/vite ] || npm ci --no-audit --no-fund --loglevel=error
 fi
 rm -rf web/dist.new
 say "Couldn't build the screens here (run: npm ci && npm run build): the board works as before"
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #

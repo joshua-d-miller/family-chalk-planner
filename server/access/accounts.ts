@@ -1,5 +1,48 @@
-// People signing in: the first admin (with the setup code), invite links, setting up the authenticator app,
-// signing in and out, and "My account" (password, authenticator, passkeys).
+/*
+===============================================================================
+ Family Chalk Planner | Server | Access | accounts.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     People signing in: the first admin (with the setup code), invite
+     links, setting up the authenticator app, signing in and out, and "My
+     account" (password, authenticator, passkeys).
+
+ Routes:
+     POST   /api/account/setup
+     POST   /api/account/join
+     POST   /api/account/enroll
+     POST   /api/account/login
+     POST   /api/account/logout
+     GET    /api/account/me
+     POST   /api/account/password
+     POST   /api/account/totp
+     POST   /api/account/passkeys/remove
+
+ Used by:
+     server/access/access.ts
+     server/access/people.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Move access (screens, people, sign-in,
+                        claude    passkeys, security) to TypeScript.
+                        colby
+                                  Home-network sign-in: just a password for
+                                  the board at home, off unless turned on.
+
+                                  Updates: database backup and restore, a real
+                                  health check, Update now and nightly
+                                  updates.
+===============================================================================
+*/
+
 import crypto from 'node:crypto';
 import type { Request, Response } from 'express';
 import QRCode from 'qrcode';
@@ -23,6 +66,11 @@ import type { User } from './store.ts';
 export const USERNAME = /^[a-z0-9][a-z0-9._-]{1,31}$/;
 const ENROLL_TTL = 20 * 60e3;
 const RECENT = 10 * 60e3;
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | Passwords | //
+// ------------- //
 const pwProblem = (pw: unknown) =>
   typeof pw !== 'string' || pw.length < 10
     ? 'Use a password of at least 10 characters'
@@ -30,6 +78,12 @@ const pwProblem = (pw: unknown) =>
       ? 'That password is too long'
       : null;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------------- //
+// | Setting up an authenticator app | //
+// ----------------------------------- //
+// A new account (or a new app) gets a QR code; the first code it shows      //
+// proves it's set up. Until then nothing is saved for good.                 //
 interface Enrolling {
   userId: string;
   secret: string;
@@ -61,7 +115,11 @@ export function registerAccounts(ctx: Ctx) {
     };
   }
 
-  // step 1 of the first run: setup code + the new admin's name and password -> authenticator QR
+  // ------------------- //
+  // | The first admin | //
+  // ------------------- //
+  // Step 1 of the first run: setup code + the new admin's name and password //
+  // -> authenticator QR                                                     //
   app.post('/api/account/setup', async (req, res) => {
     const b = req.body || {};
     if (!ctx.setupOpen()) return res.status(400).json({ error: 'Setup is already done - sign in instead' });
@@ -104,7 +162,10 @@ export function registerAccounts(ctx: Ctx) {
     res.json(await enrollment(u, 'setup', b.password));
   });
 
-  // invite link: the person sets their password -> authenticator QR
+  // ------------------ //
+  // | An invite link | //
+  // ------------------ //
+  // Invite link: the person sets their password -> authenticator QR         //
   app.post('/api/account/join', async (req, res) => {
     const b = req.body || {};
     if (tooMany('join:' + req.ip, 10, 15 * 60e3, false))
@@ -122,7 +183,11 @@ export function registerAccounts(ctx: Ctx) {
     res.json({ ...(await enrollment(u, 'join:' + inv.code_hash, b.password)), username: u.username });
   });
 
-  // step 2: the first code from the authenticator app proves it's set up -> signed in
+  // ------------------------------- //
+  // | The first code from the app | //
+  // ------------------------------- //
+  // Step 2: the first code from the authenticator app proves it's set up -> //
+  // signed in                                                               //
   app.post('/api/account/enroll', (req, res) => {
     const b = req.body || {};
     const e = enrolls.get(String(b.enroll || ''));
@@ -168,7 +233,11 @@ export function registerAccounts(ctx: Ctx) {
     res.json({ ok: true, role: fresh.role });
   });
 
-  // sign in with password + authenticator code; kind 'edit' (the board, long-lived) or 'admin' (the console)
+  // -------------- //
+  // | Signing in | //
+  // -------------- //
+  // Sign in with password + authenticator code; kind 'edit' (the board,     //
+  // long-lived) or 'admin' (the console)                                    //
   app.post('/api/account/login', (req, res) => {
     const b = req.body || {};
     const kind = b.kind === 'admin' ? 'admin' : 'edit';
@@ -206,6 +275,9 @@ export function registerAccounts(ctx: Ctx) {
     res.json({ ok: true, role: u.role });
   });
 
+  // --------------- //
+  // | Signing out | //
+  // --------------- //
   app.post('/api/account/logout', (req, res) => {
     const ck = parseCookies(req.get('cookie'));
     const u = userOf(req);
@@ -221,7 +293,9 @@ export function registerAccounts(ctx: Ctx) {
     res.json({ ok: true });
   });
 
-  // ---- my account: password, authenticator, passkeys ----
+  // -------------- //
+  // | My account | //
+  // -------------- //
   app.get('/api/account/me', (req, res) => {
     const u = userOf(req);
     if (!u) return res.status(401).json({ error: 'Sign in first', signin: true });
@@ -257,7 +331,10 @@ export function registerAccounts(ctx: Ctx) {
     res.json({ ok: true });
   });
 
-  // move to a new authenticator app (needs the password)
+  // --------------------------- //
+  // | A new authenticator app | //
+  // --------------------------- //
+  // Move to a new authenticator app (needs the password)                    //
   app.post('/api/account/totp', async (req, res) => {
     const u = userOf(req);
     const b = req.body || {};
@@ -267,8 +344,12 @@ export function registerAccounts(ctx: Ctx) {
     res.json(await enrollment(u, 'reset', b.password));
   });
 
-  // Adding or removing a passkey needs a sign-in from the last 10 minutes on this device, so someone who
-  // picks up a tablet that's already signed in can't add their own passkey (and keep access) or remove yours.
+  // ---------------------------------- //
+  // | Passkeys need a recent sign-in | //
+  // ---------------------------------- //
+  // Adding or removing a passkey needs a sign-in from the last 10 minutes   //
+  // on this device, so someone who picks up a tablet that's already signed  //
+  // in can't add their own passkey (and keep access) or remove yours.       //
   function needRecent(req: Request, res: Response) {
     const now = Date.now();
     if ([sessionOf(req, 'admin'), sessionOf(req, 'edit')].some(s => s && now - s.created < RECENT)) return false;
@@ -290,3 +371,5 @@ export function registerAccounts(ctx: Ctx) {
 
   return { needRecent };
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

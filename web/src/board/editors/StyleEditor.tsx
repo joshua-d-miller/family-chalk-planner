@@ -1,5 +1,30 @@
-// 🎨 Board style: the background, a preset, and her own tweaks to it (fonts, colors, lines, today's
-// mark). The board shows it as you pick; Save makes it the style on every screen.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board editors | StyleEditor.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     🎨 Board style: the background, a preset, and her own tweaks to it
+     (fonts, colors, lines, today's mark). The board shows it as you pick;
+     Save makes it the style on every screen.
+
+ Used by:
+     web/src/board/Board.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
+                        claude    events, the month's title and border, the
+                                  board style.
+===============================================================================
+*/
+
 import { useEffect, useState } from 'react';
 import { post } from '../../lib/api.ts';
 import { SURFACES } from '../../lib/surface.ts';
@@ -9,6 +34,10 @@ import { Sheet } from '../../ui/Sheet.tsx';
 import { PRESETS, TFONTS, themeVals } from '../theme.ts';
 import type { Theme } from '../theme.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------- //
+// | What can be changed | //
+// ----------------------- //
 type Part = [string, 'font' | 'color' | [string, string][]];
 const ROWS: { label: string; parts: Part[] }[] = [
   {
@@ -97,6 +126,10 @@ const ROWS: { label: string; parts: Part[] }[] = [
   }
 ];
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------- //
+// | The board's style | //
+// --------------------- //
 export function StyleEditor({
   theme,
   onPreview,
@@ -240,3 +273,5 @@ export function StyleEditor({
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

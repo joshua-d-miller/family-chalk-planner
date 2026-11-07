@@ -1,22 +1,69 @@
-// Reward jars (up to 4, one per kid): pieces go in from the tablet or a family screen; the wall shows
-// them filling up. Each jar remembers every piece in the order it went in (a kid can ask for a rainbow).
-// Saved in the jars table. Adding or taking out a piece changes just that jar (/api/jars/piece), so two
-// screens dropping pieces in at once both count; the whole set can still be sent at once.
+/*
+===============================================================================
+ Family Chalk Planner | Server | jars.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     Reward jars (up to 4, one per kid): pieces go in from the tablet or a
+     family screen; the wall shows them filling up. Each jar remembers
+     every piece in the order it went in (a kid can ask for a rainbow).
+     Saved in the jars table. Adding or taking out a piece changes just
+     that jar (/api/jars/piece), so two screens dropping pieces in at once
+     both count; the whole set can still be sent at once.
+
+ Routes:
+     GET    /api/jars
+     POST   /api/jars
+     POST   /api/jars/piece
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Art, stamps, each month's options, board
+                        claude    style, meals and jars in their own
+                        colby     TypeScript modules.
+
+                                  Database migrations; chores, meals and jars
+                                  in their own tables.
+===============================================================================
+*/
+
 import type { Express } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import type { Jar, JarPiece } from '../shared/lists.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------- //
+// | Pieces | //
+// ---------- //
 const PIECES: JarPiece[] = ['heart', 'rainbow', 'star', 'bolt', 'critter'];
 const MAX_IN = 200;
 const isPiece = (p: unknown): p is JarPiece => PIECES.includes(p as JarPiece);
 
-// What's in the jar, kept as long as count: anything missing is filled in the jar's usual rotation
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | What's in a jar | //
+// ------------------- //
+// What's in the jar, kept as long as count: anything missing is filled in   //
+// the jar's usual rotation                                                  //
 function jarItems(items: unknown, count: number, pieces: JarPiece[]): JarPiece[] {
   const out = (Array.isArray(items) ? items.filter(isPiece) : []).slice(0, count);
   while (out.length < count) out.push(pieces[out.length % pieces.length]);
   return out;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({
   app,
   db,
@@ -45,7 +92,10 @@ export function setup({
 
   app.get('/api/jars', (_req, res) => res.json(getJars()));
 
-  // the whole set (adding, renaming or removing jars)
+  // ----------------- //
+  // | The whole set | //
+  // ----------------- //
+  // The whole set (adding, renaming or removing jars)                       //
   app.post('/api/jars', (req, res) => {
     const list = (req.body || {}).jars;
     if (!Array.isArray(list)) return res.status(400).json({ error: 'bad jars' });
@@ -78,7 +128,11 @@ export function setup({
     res.json(changed());
   });
 
-  // One piece in ({ id, piece? }: the jar's next piece unless one is picked), or out ({ id, out: true })
+  // ----------------------- //
+  // | One piece in or out | //
+  // ----------------------- //
+  // One piece in ({ id, piece? }: the jar's next piece unless one is        //
+  // picked), or out ({ id, out: true })                                     //
   app.post('/api/jars/piece', (req, res) => {
     const b = req.body || {};
     const r = typeof b.id === 'string' ? (q.one.get(b.id) as Row | undefined) : undefined;
@@ -92,3 +146,5 @@ export function setup({
     res.json(changed());
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -1,9 +1,38 @@
-// Immich (a photo server many families run at home): an album, Favorites, everything, or "on this day",
-// read with an API key; or an Immich share link, read with no key. From Colby Way's board.
-// Immich already knows where the faces are, so those come along for framing.
+/*
+===============================================================================
+ Family Chalk Planner | Server | Photos | immich.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Immich (a photo server many families run at home): an album,
+     Favorites, everything, or "on this day", read with an API key; or an
+     Immich share link, read with no key. From Colby Way's board. Immich
+     already knows where the faces are, so those come along for framing.
+
+ Used by:
+     server/photos/photos.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Immich photos, slideshow extras, a filled-in
+                        colby     today, and the frame's thickness.
+                        claude
+===============================================================================
+*/
+
 import crypto from 'node:crypto';
 import type { AlbumPhoto } from './albums.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Types | //
+// --------- //
 export interface ImmichSource {
   url: string; // the server, as you open Immich (http://192.168.1.50:2283)
   key?: string; // an API key (Account Settings → API Keys): album.read, asset.read, asset.view, person.read
@@ -16,7 +45,12 @@ export interface ImmichPhoto extends AlbumPhoto {
   faces?: number[][]; // [x, y, w, h], 0-1
 }
 
-// Whatever was pasted from the address bar: no /api, no web-page path (/photos, /albums/…, /auth/login…)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | The server address | //
+// ---------------------- //
+// Whatever was pasted from the address bar: no /api, no web-page path       //
+// (/photos, /albums/…, /auth/login…)                                        //
 export function normalizeImmichUrl(u: string) {
   return String(u || '')
     .trim()
@@ -30,7 +64,12 @@ export function normalizeImmichUrl(u: string) {
     .replace(/\/+$/, '');
 }
 
-// An Immich share link ("https://immich.example/share/<key>"), not iCloud or Google
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | A share link | //
+// ---------------- //
+// An Immich share link ("https://immich.example/share/<key>"), not iCloud   //
+// or Google                                                                 //
 export function immichShare(link: string): ImmichSource | null {
   const m = /^(https?:\/\/[^/]+(?:\/[^/]+)*?)\/share\/([A-Za-z0-9_-]{10,})/i.exec(link || '');
   if (!m || /photos\.google\.com|icloud\.com|goo\.gl/i.test(m[1])) return null;
@@ -38,6 +77,11 @@ export function immichShare(link: string): ImmichSource | null {
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- Immich's replies are large JSON objects */
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Asking Immich | //
+// ----------------- //
 async function request(base: string, key: string | undefined, apiPath: string, opts: RequestInit = {}): Promise<any> {
   const headers = { Accept: 'application/json', ...(key ? { 'x-api-key': key } : {}), ...(opts.headers || {}) };
   let r: Response;
@@ -60,6 +104,10 @@ async function request(base: string, key: string | undefined, apiPath: string, o
   return r.json();
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------ //
+// | The albums (admin console) | //
+// ------------------------------ //
 export async function immichAlbums(base: string, key: string) {
   const [own, shared] = await Promise.all([
     request(base, key, '/api/albums'),
@@ -78,6 +126,11 @@ export async function immichAlbums(base: string, key: string) {
   return out;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------------- //
+// | Immich photos -> board photos | //
+// --------------------------------- //
+// With the faces Immich found, for framing.                                 //
 export function toPhotos(assets: any[], base: string, key?: string, shareKey?: string): ImmichPhoto[] {
   const out: ImmichPhoto[] = [];
   const seen = new Set<string>();
@@ -127,7 +180,12 @@ export function toPhotos(assets: any[], base: string, key?: string, shareKey?: s
   return out.sort((a, b) => b.date - a.date);
 }
 
-// photos taken on today's date in earlier years (month and day as `today`, YYYY-MM-DD)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | On this day | //
+// --------------- //
+// Photos taken on today's date in earlier years (month and day as `today`,  //
+// YYYY-MM-DD)                                                               //
 export function onThisDay<T extends { date: number }>(photos: T[], today: string) {
   const [y, m, d] = today.split('-').map(Number);
   return photos.filter(p => {
@@ -137,6 +195,11 @@ export function onThisDay<T extends { date: number }>(photos: T[], today: string
   });
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | Reading the photos | //
+// ---------------------- //
+// An album by name, Favorites, everything, or a share link.                 //
 export async function readImmich(src: ImmichSource, today: string): Promise<ImmichPhoto[]> {
   if (src.shareKey) {
     const k = encodeURIComponent(src.shareKey);
@@ -185,3 +248,5 @@ export async function readImmich(src: ImmichSource, today: string): Promise<Immi
   const first = (await immichAlbums(src.url, src.key || '')).find(a => a.count > 0);
   return first ? photos(await albumAssets(first.id)) : [];
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

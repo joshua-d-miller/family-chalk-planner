@@ -1,4 +1,33 @@
-// The drawing tools on the strip, and the cards they open: writing, recoloring, wiping the month.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Drawing | Tools.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The drawing tools on the strip, and the cards they open: writing,
+     recoloring, wiping the month.
+
+ Used by:
+     web/src/board/Board.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board: drawing on a tablet (chalk,
+                        claude    Posca, writing, eraser, select, stamps,
+                        colby     GIFs).
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import type { ArtItem } from '../Art.tsx';
 import { fontCss } from '../Art.tsx';
@@ -11,6 +40,10 @@ import { Thumb } from './Library.tsx';
 import { isPosca, SIZES, TEXT_SIZES } from './Draw.tsx';
 import type { Medium, Pen, Tool } from './Draw.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Icons | //
+// --------- //
 const Ic = ({ d, dash }: { d: string; dash?: boolean }) => (
   <svg
     width="20"
@@ -28,6 +61,10 @@ const Ic = ({ d, dash }: { d: string; dash?: boolean }) => (
   </svg>
 );
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | The toolbar | //
+// --------------- //
 export function Tools({
   pen,
   setPen,
@@ -161,7 +198,11 @@ export function Tools({
   );
 }
 
-// writing on the board: the words, a font, a size and a color
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | Writing text | //
+// ---------------- //
+// Writing on the board: the words, a font, a size and a color               //
 export function TextSheet({
   item,
   color,
@@ -233,6 +274,10 @@ export function TextSheet({
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | Recoloring | //
+// -------------- //
 export function RecolorSheet({
   onSave,
   onClose
@@ -258,7 +303,12 @@ export function RecolorSheet({
   );
 }
 
-// ★ Save as stamp: what's selected goes in the family's stamp library, to put up again any time
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | Saving a stamp | //
+// ------------------ //
+// ★ Save as stamp: what's selected goes in the family's stamp library, to   //
+// put up again any time                                                     //
 export function SaveStampSheet({
   items,
   bg,
@@ -310,3 +360,5 @@ export function SaveStampSheet({
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -1,5 +1,30 @@
-// "Find more": about 5,000 line drawings (Tabler Icons, MIT) turned into real chalk or Posca lines, so
-// they can be erased, recolored and filled like anything drawn by hand.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Drawing | Find.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     "Find more": about 5,000 line drawings (Tabler Icons, MIT) turned
+     into real chalk or Posca lines, so they can be erased, recolored and
+     filled like anything drawn by hand.
+
+ Used by:
+     web/src/board/draw/Library.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens take over: /, /edit and
+                        colby     /chores are the React board; the old one
+                        claude    stays at /classic.
+===============================================================================
+*/
+
 import { createElement, useEffect, useRef, useState } from 'react';
 import { get } from '../../lib/api.ts';
 import { CHALK, Colors } from '../../ui/Colors.tsx';
@@ -8,13 +33,22 @@ import { isClosedLine } from '../geom.ts';
 import { isPosca } from './Draw.tsx';
 import type { Stamp } from './Library.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------- //
+// | Pictures from the web | //
+// ------------------------- //
 type Node = [string, Record<string, string>];
 type Found = { items: { name: string; nodes: Node[] }[]; total?: number };
 const WORDS =
   'birthday christmas halloween easter heart star sport food pet school weather car home music flower'.split(' ');
 const NS = 'http://www.w3.org/2000/svg';
 
-// every outline sampled into points; a jump in a path (a "move") starts a new line
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------ //
+// | Into art | //
+// ------------ //
+// Every outline sampled into points; a jump in a path (a "move") starts a   //
+// new line                                                                  //
 function toItems(nodes: Node[], line: string, fill: string | null): ArtItem[] {
   const holder = document.createElementNS(NS, 'svg');
   holder.setAttribute('viewBox', '0 0 24 24');
@@ -65,6 +99,10 @@ function toItems(nodes: Node[], line: string, fill: string | null): ArtItem[] {
   return out;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | The Find pane | //
+// ----------------- //
 export function FindPane({ pick }: { pick: (s: Stamp) => void }) {
   const [q, setQ] = useState('');
   const [found, setFound] = useState<Found | null>(null);
@@ -151,3 +189,5 @@ export function FindPane({ pick }: { pick: (s: Stamp) => void }) {
     </>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

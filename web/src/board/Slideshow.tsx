@@ -1,7 +1,37 @@
-// The overnight slideshow on the wall: a photo, or a collage of 2-3, framed on the people in them, with
-// a clock in whichever corner covers the fewest faces. Optional extras (from Colby Way's board): today's
-// weather, events and reminders on a translucent card, or in a panel down the left side.
-// A tap shows the calendar for 5 minutes; a double tap on the calendar turns the photo frame on any time.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | Slideshow.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The overnight slideshow on the wall: a photo, or a collage of 2-3,
+     framed on the people in them, with a clock in whichever corner covers
+     the fewest faces. Optional extras (from Colby Way's board): today's
+     weather, events and reminders on a translucent card, or in a panel
+     down the left side. A tap shows the calendar for 5 minutes; a double
+     tap on the calendar turns the photo frame on any time.
+
+ Used by:
+     web/src/board/Board.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new wall board: the overnight slideshow,
+                        colby     the photo frame, the day view, reminders and
+                        claude    timers.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RemindersView } from '../../../shared/lists.ts';
 import { useLive } from '../lib/live.ts';
@@ -11,6 +41,10 @@ import { frameFor, photoSrc } from './photos.ts';
 import type { Photo, PhotoCfg, Photos } from './photos.ts';
 import './slides.css';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | Night time | //
+// -------------- //
 const hm = (s: string) => {
   const m = /^(\d\d):(\d\d)$/.exec(s || '');
   return m ? +m[1] * 60 + +m[2] : null;
@@ -24,7 +58,11 @@ export function nightNow(cfg: PhotoCfg | undefined, d = new Date()) {
   return f < t ? m >= f && m < t : m >= f || m < t;
 }
 
-// Whether the slideshow is showing, and the taps that change it
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------- //
+// | When the slideshow shows | //
+// ---------------------------- //
+// Whether the slideshow is showing, and the taps that change it             //
 export function useSlides(photos: Photos | null, wall: boolean) {
   const has = !!photos?.photos.length;
   const [manual, setManual] = useState(false); // the photo frame, turned on by a double tap
@@ -58,7 +96,12 @@ export function useSlides(photos: Photos | null, wall: boolean) {
   };
 }
 
-// Layouts are fractions of the screen; each tile says which photo shape suits it
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------- //
+// | Layouts | //
+// ----------- //
+// Layouts are fractions of the screen; each tile says which photo shape     //
+// suits it                                                                  //
 type Kind = 'p' | 'l' | 'any';
 const LAYOUTS: { n: string; w: number; tiles: { x: number; y: number; w: number; h: number; k: Kind }[] }[] = [
   { n: 'one', w: 6, tiles: [{ x: 0, y: 0, w: 1, h: 1, k: 'any' }] },
@@ -118,6 +161,10 @@ const GAP = 10;
 const portrait = (p: Photo) => (p.h || 3) > (p.w || 4) * 1.1;
 type Tile = { x: number; y: number; w: number; h: number; p: Photo; fr: ReturnType<typeof frameFor>; whole: boolean };
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | Planning a slide | //
+// -------------------- //
 function planner() {
   const bags: Record<Kind, string[]> = { p: [], l: [], any: [] };
   let lastLayout = '';
@@ -199,7 +246,12 @@ function planner() {
   };
 }
 
-// the clock goes in whichever corner covers the fewest faces (a slight preference for the bottom)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | The clock | //
+// ------------- //
+// The clock goes in whichever corner covers the fewest faces (a slight      //
+// preference for the bottom)                                                //
 function clockCorner(tiles: Tile[], W: number, H: number) {
   const cw = 400;
   const ch = 150;
@@ -258,6 +310,10 @@ function useClock(time24: boolean) {
   };
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | The slideshow | //
+// ----------------- //
 type Slide = { key: number; tiles: Tile[]; corner: string; dx: number; dy: number };
 const SIDE_W = 380;
 
@@ -392,7 +448,11 @@ export function Slideshow({
   );
 }
 
-// today's weather, events and reminders, when chosen in ⚙️ Settings
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------- //
+// | Today, on the slide | //
+// ----------------------- //
+// Today's weather, events and reminders, when chosen in Settings            //
 function SlideInfo({ cfg, time24, right }: { cfg: PhotoCfg; time24: boolean; right: boolean }) {
   const x = useLive<{ weather: { now: { temp: number }; today: { hi: number; lo: number } } | null }>('api/extras', [
     'extras'
@@ -451,3 +511,5 @@ function SlideInfo({ cfg, time24, right }: { cfg: PhotoCfg; time24: boolean; rig
   if (!secs.length) return null;
   return <div className={'sinfo' + (right ? ' right' : '')}>{secs}</div>;
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -1,6 +1,40 @@
-// Chores: today's, this week's and this month's, a column per person and per group that shares one.
-// Tap to tick off (a chore done several times: once per tap). On a kid's tablet: only theirs.
-// Signed-in people can change the list (✎).
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Pages | Chores.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Chores: today's, this week's and this month's, a column per person
+     and per group that shares one. Tap to tick off (a chore done several
+     times: once per tap). On a kid's tablet: only theirs. Signed-in
+     people can change the list (✎).
+
+ Used by:
+     web/src/App.tsx
+     web/src/board/Notes.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+
+                                  The new board: the family's style, each
+                                  month's title and holiday border, polaroids,
+                                  drawn jars.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useEffect, useMemo, useState } from 'react';
 import type { Chore, ChoreProgress, ChoresView, Every, Person } from '../../../shared/chores.ts';
 import { post } from '../lib/api.ts';
@@ -12,11 +46,20 @@ import { Page } from '../ui/Page.tsx';
 import { ChoresEditor } from './ChoresEditor.tsx';
 import './chores.css';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------- //
+// | Daily, weekly, monthly | //
+// -------------------------- //
 const TABS: [Every, string][] = [
   ['day', 'Today'],
   ['week', 'This week'],
   ['month', 'This month']
 ];
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | What's on the page | //
+// ---------------------- //
 interface Entry {
   c: ChoreProgress;
   who: string[];
@@ -37,6 +80,13 @@ export function entries(d: ChoresView, every: Every): Entry[] {
   return out;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | The chores page | //
+// ------------------- //
+// Ticking off (by whoever may), the week's stars, and the way back to the   //
+// board: the ← button, a swipe, or a minute untouched when it was opened    //
+// from the board.                                                           //
 export function Chores({ who }: { who: Who | null }) {
   const live = useLive<ChoresView>('api/chores', ['chores']);
   const d = live.data;
@@ -94,7 +144,11 @@ export function Chores({ who }: { who: Who | null }) {
   const order = useMemo(() => Object.fromEntries((d?.people || []).map((p: Person, i: number) => [p.id, i])), [d]);
   const have = d ? TABS.filter(([t]) => entries(d, t).length) : [];
   const shown = have.some(([t]) => t === tab) ? tab : have[0]?.[0] || 'day';
-  // who may tick it here: signed-in people and family screens, anyone's; a kid's tablet, their own; the wall, none
+  // ------------------------ //
+  // | Who may tick it here | //
+  // ------------------------ //
+  // Who may tick it here: signed-in people and family screens, anyone's; a  //
+  // kid's tablet, their own; the wall, none                                 //
   const can = (en: Entry) => (who?.rank || 0) >= RANK.family || (!!d?.mine && en.who.includes(d.mine));
 
   async function tick(en: Entry) {
@@ -230,3 +284,5 @@ export function Chores({ who }: { who: Who | null }) {
     </Page>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

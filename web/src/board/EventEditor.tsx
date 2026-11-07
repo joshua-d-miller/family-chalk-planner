@@ -1,6 +1,31 @@
-// Adding or changing an event: what, when, how long (or all day, through another day), which calendar,
-// and the board-only extras: a color, a size, a countdown star. A repeating event asks "just this one"
-// or "all of them". Changes go to everyone's calendar.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | EventEditor.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Adding or changing an event: what, when, how long (or all day,
+     through another day), which calendar, and the board-only extras: a
+     color, a size, a countdown star. A repeating event asks "just this
+     one" or "all of them". Changes go to everyone's calendar.
+
+ Used by:
+     web/src/board/Board.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
+                        claude    events, the month's title and border, the
+                                  board style.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { ApiError, post } from '../lib/api.ts';
@@ -9,6 +34,10 @@ import { Colors } from '../ui/Colors.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
 import type { BoardEvent, WritableCal } from './Month.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------ //
+// | How long | //
+// ------------ //
 const LENGTHS: [number, string][] = [
   [30, '30 minutes'],
   [60, '1 hour'],
@@ -18,6 +47,10 @@ const LENGTHS: [number, string][] = [
   [240, '4 hours']
 ];
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------- //
+// | Adding or changing an event | //
+// ------------------------------- //
 export function EventEditor({
   ev,
   date,
@@ -211,3 +244,5 @@ export function EventEditor({
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

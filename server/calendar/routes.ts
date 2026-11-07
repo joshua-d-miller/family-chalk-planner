@@ -1,11 +1,52 @@
-// What the screens ask the calendar for: a month (with holidays and the board's own colors, sizes
-// and countdown stars), "Up next", the countdowns, and adding, changing or deleting events.
-//
-// Colors, sizes and countdown stars are board-only (the calendar server never sees them), stored by
-// event: 'href|rid' for one occurrence, 'href|' for a whole event or series.
-//   kv 'evcolors'    { key: '#RRGGBB' }
-//   kv 'evsizes'     { key: 'l' | 'xl' }
-//   kv 'countdowns'  { key: { title, date } }
+/*
+===============================================================================
+ Family Chalk Planner | Server | Calendar | routes.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     What the screens ask the calendar for: a month (with holidays and the
+     board's own colors, sizes and countdown stars), "Up next", the
+     countdowns, and adding, changing or deleting events.
+
+     Colors, sizes and countdown stars are board-only (the calendar server
+     never sees them), stored by event: 'href|rid' for one occurrence,
+     'href|' for a whole event or series.
+       kv 'evcolors'    { key: '#RRGGBB' }
+       kv 'evsizes'     { key: 'l' | 'xl' }
+       kv 'countdowns'  { key: { title, date } }
+
+ Routes:
+     GET    /api/calendar/status
+     GET    /api/month
+     GET    /api/upnext
+     POST   /api/evcolor
+     POST   /api/evsize
+     POST   /api/countdowns
+     GET    /api/countdowns
+     POST   /api/events
+     POST   /api/events/update
+     POST   /api/events/delete
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The calendar in its own TypeScript modules
+                        claude    (server/calendar/).
+                        colby
+                                  Google: several calendars at once, read-only
+                                  ones, and which calendar a new event goes
+                                  in.
+===============================================================================
+*/
+
 import type { Express } from 'express';
 import { addDays, isDate, isYm } from '../dates.ts';
 import type { Clock } from '../dates.ts';
@@ -13,9 +54,17 @@ import type { HolidayEvent } from '../holidays.ts';
 import type { CalendarSource } from './source.ts';
 import type { EventChange, EventRef } from './ical.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | Board-only marks | //
+// -------------------- //
 const EV_SIZES = ['l', 'xl'];
 const keyOf = (ref: EventRef) => `${ref.href}|${ref.rid || ''}`;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Checking what a screen sends | //
+// -------------------------------- //
 function validRef(ref: unknown): ref is EventRef {
   const r = ref as EventRef | null;
   return (
@@ -30,7 +79,11 @@ function validRef(ref: unknown): ref is EventRef {
 const markRef = (ref: unknown): ref is EventRef =>
   !!ref && typeof (ref as EventRef).href === 'string' && (ref as EventRef).href.length <= 500;
 
-// The edit card's fields, checked; or what's wrong with them
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------- //
+// | The edit card, checked | //
+// -------------------------- //
+// The edit card's fields, checked; or what's wrong with them                //
 function readChange(b: Record<string, unknown>): EventChange | string {
   const { title, date, allDay, time, minutes, through } = b;
   if (!title || !String(title).trim() || !isDate(date)) return 'Title and date are required';
@@ -46,6 +99,10 @@ function readChange(b: Record<string, unknown>): EventChange | string {
   };
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | What the routes need | //
+// ------------------------ //
 export interface CalendarRouteDeps {
   app: Express;
   source: CalendarSource;
@@ -61,6 +118,10 @@ export interface CalendarRouteDeps {
   status: () => Record<string, unknown>; // for ⚙️: which calendar, connected, problems
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function registerCalendarRoutes({
   app,
   source,
@@ -81,6 +142,11 @@ export function registerCalendarRoutes({
 
   app.get('/api/calendar/status', (_req, res) => res.json(status()));
 
+  // ----------- //
+  // | A month | //
+  // ----------- //
+  // Its weeks, every event in them (with the board's own colors, sizes and  //
+  // stars), the holidays, and the calendars a new event can go in.          //
   app.get('/api/month', async (req, res) => {
     const ym = req.query.ym;
     if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
@@ -107,7 +173,11 @@ export function registerCalendarRoutes({
     }
   });
 
-  // "Up next": the next events from today on (two weeks ahead), for the bottom of the Notes column
+  // ----------- //
+  // | Up next | //
+  // ----------- //
+  // "Up next": the next events from today on (two weeks ahead), for the     //
+  // bottom of the Notes column                                              //
   app.get('/api/upnext', async (_req, res) => {
     try {
       const now = clock.zoned(new Date());
@@ -145,8 +215,12 @@ export function registerCalendarRoutes({
     }
   });
 
-  // A color for an event on the board. Set with "All of them" (or on a one-off event), it's stored
-  // for the whole series; clearing a series' color clears its one-offs too.
+  // ------------------------ //
+  // | A color on the board | //
+  // ------------------------ //
+  // A color for an event on the board. Set with "All of them" (or on a      //
+  // one-off event), it's stored for the whole series; clearing a series'    //
+  // color clears its one-offs too.                                          //
   app.post('/api/evcolor', (req, res) => {
     const { ref, color } = req.body || {};
     if (!markRef(ref) || (color != null && !/^#[0-9a-fA-F]{6}$/.test(color)))
@@ -160,7 +234,11 @@ export function registerCalendarRoutes({
     res.json({ ok: true });
   });
 
-  // Text size on the board (Large / Extra large, for birthdays and big days), kept like colors
+  // ----------------------- //
+  // | A size on the board | //
+  // ----------------------- //
+  // Text size on the board (Large / Extra large, for birthdays and big      //
+  // days), kept like colors                                                 //
   app.post('/api/evsize', (req, res) => {
     const { ref, size } = req.body || {};
     if (!markRef(ref) || (size != null && !EV_SIZES.includes(size))) return res.status(400).json({ error: 'bad size' });
@@ -173,7 +251,10 @@ export function registerCalendarRoutes({
     res.json({ ok: true });
   });
 
-  // ⭐ Count down to this
+  // ---------------------- //
+  // | Count down to this | //
+  // ---------------------- //
+  // Count down to this                                                      //
   app.post('/api/countdowns', (req, res) => {
     const { ref, title, date, on } = req.body || {};
     if (!markRef(ref) || !isDate(date)) return res.status(400).json({ error: 'bad countdown' });
@@ -187,7 +268,11 @@ export function registerCalendarRoutes({
     res.json({ ok: true });
   });
 
-  // The next 3 within 60 days: big holidays, starred events, and birthdays from the calendar
+  // ------------------ //
+  // | The countdowns | //
+  // ------------------ //
+  // The next 3 within 60 days: big holidays, starred events, and birthdays  //
+  // from the calendar                                                       //
   app.get('/api/countdowns', async (_req, res) => {
     const today = clock.today();
     const horizon = addDays(today, 60);
@@ -221,6 +306,9 @@ export function registerCalendarRoutes({
     res.json(list.slice(0, 3));
   });
 
+  // ------------------- //
+  // | Adding an event | //
+  // ------------------- //
   app.post('/api/events', async (req, res) => {
     const change = readChange(req.body || {});
     if (typeof change === 'string') return res.status(400).json({ error: change });
@@ -234,7 +322,11 @@ export function registerCalendarRoutes({
     }
   });
 
-  // someone else changed it meanwhile: 409, so the tablet refreshes and says so
+  // ---------------------------- //
+  // | Changing or deleting one | //
+  // ---------------------------- //
+  // If someone changed it meanwhile, the answer is 409, so the tablet shows //
+  // the calendar as it is now and says so.                                  //
   const conflict = (err: unknown) => ((err as Error).message.includes('moment ago') ? 409 : 502);
 
   app.post('/api/events/update', async (req, res) => {
@@ -265,3 +357,5 @@ export function registerCalendarRoutes({
     }
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

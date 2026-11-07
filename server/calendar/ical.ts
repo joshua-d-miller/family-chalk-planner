@@ -1,21 +1,61 @@
-// iCalendar (the format CalDAV servers and calendar links use): reading events for the board, and
-// changing or deleting them the way Apple Calendar does, so repeating events keep working everywhere.
-//   scope 'all' = the whole event (or the whole series); 'one' = just this occurrence
+/*
+===============================================================================
+ Family Chalk Planner | Server | Calendar | ical.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     iCalendar (the format CalDAV servers and calendar links use): reading
+     events for the board, and changing or deleting them the way Apple
+     Calendar does, so repeating events keep working everywhere.
+       scope 'all' = the whole event (or the whole series); 'one' = just
+           this occurrence
+
+ Used by:
+     server/calendar/routes.ts
+     server/calendar/source.ts
+     test/time.test.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    The calendar in its own TypeScript modules
+                        claude    (server/calendar/).
+===============================================================================
+*/
+
 import ICAL from 'ical.js';
 import { addDays, pad2 } from '../dates.ts';
 import type { Clock } from '../dates.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Types | //
+// --------- //
 type Time = InstanceType<typeof ICAL.Time>;
 type Component = InstanceType<typeof ICAL.Component>;
 
-// Where an event lives on the calendar server, so it can be changed: the resource, its version (etag),
-// and for one occurrence of a repeating event, which one (its RECURRENCE-ID)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | Where an event lives | //
+// ------------------------ //
+// Where an event lives on the calendar server, so it can be changed: the    //
+// resource, its version (etag), and for one occurrence of a repeating       //
+// event, which one (its RECURRENCE-ID)                                      //
 export interface EventRef {
   href: string;
   etag: string | null;
   rid?: string | null;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------------- //
+// | An event as the board shows it | //
+// ---------------------------------- //
 export interface BoardEvent {
   title: string;
   allDay: boolean;
@@ -32,7 +72,11 @@ export interface BoardEvent {
   readOnly?: boolean;
 }
 
-// What the edit card sends
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------- //
+// | What the edit card sends | //
+// ---------------------------- //
+// What the edit card sends                                                  //
 export interface EventChange {
   title: string;
   date: string;
@@ -42,6 +86,12 @@ export interface EventChange {
   through?: string;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------- //
+// | Time zones in a calendar | //
+// ---------------------------- //
+// A calendar names the time zones its events use (VTIMEZONE); they're       //
+// registered so repeating events keep their local time.                     //
 const dateOf = (t: Time) => `${t.year}-${pad2(t.month)}-${pad2(t.day)}`;
 
 export function registerZones(comp: Component) {
@@ -54,8 +104,15 @@ export function registerZones(comp: Component) {
   }
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | Reading events | //
+// ------------------ //
 export function makeIcal(clock: Clock) {
-  // One occurrence, as the board shows it
+  // ----------------------------------------- //
+  // | One occurrence, as the board shows it | //
+  // ----------------------------------------- //
+  // One occurrence, as the board shows it                                   //
   function toBoardEvent(title: string, startTime: Time, endTime: Time | null): BoardEvent {
     if (startTime.isDate) {
       const s = dateOf(startTime);
@@ -87,7 +144,11 @@ export function makeIcal(clock: Clock) {
     };
   }
 
-  // One calendar's events in a time range (shared by CalDAV and iCal links)
+  // ------------------------------------ //
+  // | One calendar's events in a range | //
+  // ------------------------------------ //
+  // Shared by CalDAV and iCal links. Repeating events are expanded into     //
+  // their occurrences, with any changed or cancelled ones applied.          //
   function eventsFromIcs(text: string, ref: EventRef | null, rangeStart: Date, rangeEnd: Date, out: BoardEvent[]) {
     const comp = new ICAL.Component(ICAL.parse(text));
     registerZones(comp);
@@ -121,7 +182,10 @@ export function makeIcal(clock: Clock) {
     return out;
   }
 
-  // The new start and end from the edit card
+  // ------------------------- //
+  // | The new start and end | //
+  // ------------------------- //
+  // The new start and end from the edit card                                //
   function newTimes({ date, allDay, time, minutes, through }: EventChange) {
     const [y, m, d] = date.split('-').map(Number);
     if (allDay) {
@@ -143,6 +207,13 @@ export function makeIcal(clock: Clock) {
   return { toBoardEvent, eventsFromIcs, newTimes };
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------------------- //
+// | Changing events like Apple Calendar does | //
+// -------------------------------------------- //
+// So repeating events keep working on every device: a change to one         //
+// occurrence is kept as an exception (RECURRENCE-ID), a deleted one as an   //
+// EXDATE, and every change bumps the SEQUENCE.                              //
 function setTime(vevent: Component, name: string, time: Time) {
   vevent.removeAllProperties(name);
   const p = new ICAL.Property(name);
@@ -153,7 +224,11 @@ function setTime(vevent: Component, name: string, time: Time) {
   return p;
 }
 
-// The occurrence's RECURRENCE-ID as a time in the master's zone and type
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | Which occurrence | //
+// -------------------- //
+// The occurrence's RECURRENCE-ID as a time in the master's zone and type    //
 function ridTime(master: Component, rid: string | null | undefined): Time {
   const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z)?)?$/.exec(rid || '');
   if (!m) throw new Error('bad occurrence id');
@@ -183,7 +258,11 @@ function bumpSequence(vevent: Component) {
   vevent.updatePropertyWithValue('dtstamp', ICAL.Time.now());
 }
 
-// Keep any EXDATEs the series already had, plus the new one
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------ //
+// | Keeping the cancelled ones | //
+// ------------------------------ //
+// Keep any EXDATEs the series already had, plus the new one                 //
 function rebuildExdates(cal: Component, master: Component, originalText: string, occ: Time) {
   const orig = new ICAL.Component(ICAL.parse(originalText));
   const om = orig.getAllSubcomponents('vevent').find(v => !v.hasProperty('recurrence-id'));
@@ -198,7 +277,12 @@ function rebuildExdates(cal: Component, master: Component, originalText: string,
   return cal.toString();
 }
 
-// change: null deletes. Returns { del: true } to remove the whole resource, or { text } to PUT back.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------- //
+// | Applying a change | //
+// --------------------- //
+// Change: null deletes. Returns { del: true } to remove the whole resource, //
+// or { text } to PUT back.                                                  //
 export function applyEventChange(
   newTimes: ReturnType<typeof makeIcal>['newTimes'],
   icsText: string,
@@ -294,3 +378,5 @@ export function applyEventChange(
   cal.addSubcomponent(ex);
   return { text: cal.toString() };
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

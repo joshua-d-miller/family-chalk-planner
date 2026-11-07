@@ -1,5 +1,34 @@
-// What pops up on the board: a reminder whose time has come (from Colby Way's board), a timer that's
-// done, and the day view when someone taps a day on the wall.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | Alerts.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     What pops up on the board: a reminder whose time has come (from Colby
+     Way's board), a timer that's done, and the day view when someone taps
+     a day on the wall.
+
+ Used by:
+     web/src/board/Board.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new wall board: the overnight slideshow,
+                        colby     the photo frame, the day view, reminders and
+                        claude    timers.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useEffect, useRef, useState } from 'react';
 import type { Reminder, RemindersView } from '../../../shared/lists.ts';
 import { post } from '../lib/api.ts';
@@ -13,6 +42,10 @@ import { readable } from './color.ts';
 import { evText } from './Month.tsx';
 import type { BoardEvent } from './Month.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------- //
+// | Reminders that pop up | //
+// ------------------------- //
 const due = (r: Reminder, v: RemindersView) => !isDone(r, v.today) && r.mode === 'time' && v.nowHm >= r.time;
 
 // A timed reminder pops up once when its time comes. OK = seen (a one-off one is then done); ticking one
@@ -73,7 +106,12 @@ export function ReminderAlert({ time24 }: { time24: boolean }) {
   );
 }
 
-// A timer that's done: a banner until someone taps it (here), or for 10 minutes
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | A timer is done | //
+// ------------------- //
+// A timer that's done: a banner until someone taps it (here), or for 10     //
+// minutes                                                                   //
 export function TimerDone() {
   const { timers, now } = useTimers();
   const [gone, setGone] = useState<string[]>([]);
@@ -100,7 +138,12 @@ export function TimerDone() {
 
 const CARD = 0.0069; // the cards are dark, like the slate
 
-// Everything on one day, big. On the wall a tap anywhere closes it (and it closes itself after 30 s).
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------- //
+// | Everything on a day | //
+// ----------------------- //
+// Everything on one day, big. On the wall a tap anywhere closes it (and it  //
+// closes itself after 30 s).                                                //
 export function DayView({
   date,
   events,
@@ -172,3 +215,5 @@ export function DayView({
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

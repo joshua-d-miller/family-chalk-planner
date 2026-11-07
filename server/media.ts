@@ -1,9 +1,44 @@
-// Pictures people add to the board: uploads, "Add from link", and the GIF library.
-// Stored in backup/media (inside the synced backup folder, so they ride along with the backups).
-//
-// "Add from link": paste a link to a GIF (or a GIPHY / Tenor / KLIPY page) and the board downloads it once
-// and keeps it with your uploads, so it works offline and never depends on that site later.
-// The board only fetches public internet addresses: never anything on your own network (no SSRF).
+/*
+===============================================================================
+ Family Chalk Planner | Server | media.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     Pictures people add to the board: uploads, "Add from link", and the
+     GIF library. Stored in backup/media (inside the synced backup folder,
+     so they ride along with the backups).
+
+     "Add from link": paste a link to a GIF (or a GIPHY / Tenor / KLIPY
+     page) and the board downloads it once and keeps it with your uploads,
+     so it works offline and never depends on that site later. The board
+     only fetches public internet addresses: never anything on your own
+     network (no SSRF).
+
+ Routes:
+     POST   /api/media
+     POST   /api/media/fromlink
+     GET    /api/media/:file
+     POST   /api/test/clean-media
+     GET    /api/gifs
+     POST   /api/gifs/add
+     POST   /api/gifs/delete
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Move clipart and media into their own
+                        claude    TypeScript modules.
+===============================================================================
+*/
+
 import crypto from 'node:crypto';
 import dns from 'node:dns';
 import fs from 'node:fs';
@@ -16,6 +51,12 @@ import type { Express } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import type { Kv } from './kv.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Picture types | //
+// ----------------- //
+// Recognized by their first bytes, never by the name or what the sender     //
+// says it is.                                                               //
 type Kind = 'gif' | 'png' | 'jpg' | 'webp';
 const MAGIC: [Kind, (b: Buffer) => boolean][] = [
   ['gif', b => b.subarray(0, 6).toString('latin1').startsWith('GIF8')],
@@ -29,6 +70,13 @@ const FILE = /^[a-z0-9]{16}\.(gif|webp|png|jpg)$/;
 const SRC = /^\/api\/media\/[a-z0-9]{16}\.(gif|webp|png|jpg)$/;
 const LINK_MAX = 10 * 1024 * 1024;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------- //
+// | Private addresses | //
+// --------------------- //
+// The board only fetches public internet addresses for "Add from link":     //
+// never anything on your own network (no SSRF), checked again after every   //
+// redirect.                                                                 //
 export function privateIp(ip: string): boolean {
   if (net.isIPv4(ip)) {
     const [a, b] = ip.split('.').map(Number);
@@ -49,7 +97,12 @@ export function privateIp(ip: string): boolean {
   return v === '::' || v === '::1' || /^(fc|fd|fe[89ab]|ff)/.test(v);
 }
 
-// a GIPHY page or media link -> its id (GIPHY pages are built by script, so read the id from the link)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | GIF sites | //
+// ------------- //
+// A GIPHY page or media link -> its id (GIPHY pages are built by script, so //
+// read the id from the link)                                                //
 function giphyId(u: string) {
   const m =
     /giphy\.com\/(?:gifs|stickers|clips|embed)\/(?:[\w-]*-)?([A-Za-z0-9]{8,40})(?:[/?#]|$)/.exec(u) ||
@@ -58,7 +111,11 @@ function giphyId(u: string) {
   return m && m[1];
 }
 
-// the picture a web page shares (a GIF if it has one)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------- //
+// | The picture a page shares | //
+// ----------------------------- //
+// The picture a web page shares (a GIF if it has one)                       //
 function pageImage(html: string, base: string) {
   const metas = [...html.matchAll(/<meta\b[^>]*>/gi)].map(t => t[0]);
   const val = (want: string[]) => {
@@ -82,6 +139,10 @@ function pageImage(html: string, base: string) {
   return all.find(x => /\.gif/i.test(x)) || val(['og:image', 'twitter:image', 'og:image:url']) || all[0] || null;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({
   app,
   db,
@@ -97,6 +158,11 @@ export function setup({
   allowPrivateLinks: boolean;
   testRoutes: boolean;
 }) {
+  // --------------------- //
+  // | Keeping a picture | //
+  // --------------------- //
+  // Named by its contents (a hash), so the same picture uploaded twice is   //
+  // kept once.                                                              //
   function keep(buf: Buffer, kind: Kind) {
     fs.mkdirSync(mediaDir, { recursive: true });
     const file = `${crypto.randomBytes(8).toString('hex')}.${kind}`;
@@ -104,6 +170,9 @@ export function setup({
     return { src: `/api/media/${file}` };
   }
 
+  // ----------- //
+  // | Uploads | //
+  // ----------- //
   app.post('/api/media', express.raw({ type: () => true, limit: '10mb' }), (req, res) => {
     const buf = req.body;
     if (!Buffer.isBuffer(buf) || buf.length < 16) return res.status(400).json({ error: 'No image received' });
@@ -114,6 +183,11 @@ export function setup({
 
   // ---- from a link ----
   type Lookup = (err: Error | null, address?: string | dns.LookupAddress[], family?: number) => void;
+  // -------------------------------- //
+  // | Fetching from a link, safely | //
+  // -------------------------------- //
+  // The address a name points to is checked before connecting (and on every //
+  // redirect, at most 5); at most 10 MB.                                    //
   function safeLookup(host: string, opts: dns.LookupOptions, cb: Lookup) {
     dns.lookup(host, { ...opts, all: true }, (err, addrs) => {
       if (err) return cb(err);
@@ -185,6 +259,11 @@ export function setup({
     });
   }
 
+  // ---------------------------- //
+  // | From a link to a picture | //
+  // ---------------------------- //
+  // A link to the GIF itself, or a GIPHY / Tenor / KLIPY page: read the     //
+  // page for the picture it shares, and fetch that.                         //
   async function imageFromLink(link: string): Promise<{ buf: Buffer; kind: Kind }> {
     const gid = giphyId(link);
     // GIPHY: the 200-pixel copy is plenty for the board and far lighter for the wall (originals can be 7 MB+)
@@ -216,6 +295,9 @@ export function setup({
   }
 
   const linkTries = new Map<string | undefined, number[]>();
+  // ----------------- //
+  // | Add from link | //
+  // ----------------- //
   app.post('/api/media/fromlink', async (req, res) => {
     const link = String((req.body || {}).url || '')
       .trim()
@@ -233,6 +315,9 @@ export function setup({
     }
   });
 
+  // --------------------- //
+  // | Showing a picture | //
+  // --------------------- //
   app.get('/api/media/:file', (req, res) => {
     const m = FILE.exec(req.params.file);
     if (!m) return res.sendStatus(404);
@@ -242,9 +327,12 @@ export function setup({
     });
   });
 
-  // ---- tidy-up ----
-  // Uploaded/linked pictures that nothing uses any more (not on any month, not in the GIF library, not in a
-  // stamp) and are over 30 days old are removed once a day, so backups don't grow forever.
+  // ----------- //
+  // | Tidy-up | //
+  // ----------- //
+  // Pictures that nothing uses any more (not on any month, not in the GIF   //
+  // library, not in a stamp) and are over 30 days old are removed once a    //
+  // day, so the backups don't grow forever.                                 //
   function inUse() {
     const used = new Set<string>();
     for (const table of ['strokes', 'stamps', 'kv', 'month_meta'])
@@ -286,6 +374,9 @@ export function setup({
     w: number;
     h: number;
   }
+  // ------------------- //
+  // | The GIF library | //
+  // ------------------- //
   const gifs = () => kv.get<Gif[]>('gifs') || [];
   app.get('/api/gifs', (_req, res) => res.json(gifs()));
   app.post('/api/gifs/add', (req, res) => {
@@ -312,3 +403,5 @@ export function setup({
     res.json({ ok: true }); // files stay, in case a GIF on some month still uses it
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

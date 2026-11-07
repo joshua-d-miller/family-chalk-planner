@@ -1,5 +1,30 @@
-// 🖼 Border: a ready-made holiday set, or up to 8 pictures of her own, repeated around the calendar, for
-// this month or every year in this month. The board shows it as you pick.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board editors | BorderEditor.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     🖼 Border: a ready-made holiday set, or up to 8 pictures of her own,
+     repeated around the calendar, for this month or every year in this
+     month. The board shows it as you pick.
+
+ Used by:
+     web/src/board/Board.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
+                        claude    events, the month's title and border, the
+                                  board style.
+===============================================================================
+*/
+
 import { useEffect, useState } from 'react';
 import { get, post } from '../../lib/api.ts';
 import { Btn, Segs } from '../../ui/bits.tsx';
@@ -9,6 +34,10 @@ import type { MonthMeta } from '../Board.tsx';
 import { clipLabel, clipSrc, searchClip } from '../clip.ts';
 import type { Border } from '../Month.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | Ready-made borders | //
+// ---------------------- //
 const PRESETS: [string, string, string][] = [
   ['🎃 Halloween', 'jack-o-lantern gi-bat gi-mummy-head gi-vampire-dracula gi-witch-face ghost', '#F3A35E'],
   ['🦃 Thanksgiving', 'gi-pumpkin gi-corn turkey maple-leaf gi-acorn gi-wheat', '#F2D479'],
@@ -24,6 +53,10 @@ const PRESETS: [string, string, string][] = [
   ['🎒 Back to school', 'school-bus books pencil backpack red-apple', '#EDEAE0']
 ];
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | The month's border | //
+// ---------------------- //
 export function BorderEditor({
   ym,
   monthName,
@@ -149,3 +182,5 @@ export function BorderEditor({
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

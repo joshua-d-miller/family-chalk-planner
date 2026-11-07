@@ -1,5 +1,34 @@
-// Shared test helpers: create the first admin with the setup code (password + authenticator code),
-// and send requests with a given set of cookies.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | helpers.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Shared test helpers: create the first admin with the setup code
+     (password + authenticator code), and send requests with a given set
+     of cookies.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.3.0     2026-10-13   joshua    Admin console, paired screens, sign-in with
+                        claude    passkeys or password + authenticator.
+
+ 0.13.0    2026-11-07   joshua    Move access (screens, people, sign-in,
+                        claude    passkeys, security) to TypeScript.
+                        colby
+                                  Server and tests are all TypeScript (ES
+                                  modules).
+
+                                  Database migrations; chores, meals and jars
+                                  in their own tables.
+===============================================================================
+*/
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { totpAt } from '../server/access/secrets.ts';

@@ -1,10 +1,53 @@
-// The art on a month: chalk and Posca lines, fills, words, clipart and GIFs, drawn as SVG over the
-// calendar. SVG is vector, so it's sharp at any size: a 4K wall shows the same chalk lines four times as
-// finely as a 1080p one. The chalk grain is a tile made at the screen's resolution.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | Art.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The art on a month: chalk and Posca lines, fills, words, clipart and
+     GIFs, drawn as SVG over the calendar. SVG is vector, so it's sharp at
+     any size: a 4K wall shows the same chalk lines four times as finely
+     as a 1080p one. The chalk grain is a tile made at the screen's
+     resolution.
+
+ Used by:
+     web/src/board/Board.tsx
+     web/src/board/Title.tsx
+     web/src/board/TitlePhotos.tsx
+     web/src/board/draw/Draw.tsx
+     web/src/board/draw/Find.tsx
+     web/src/board/draw/Library.tsx
+     web/src/board/draw/Tools.tsx
+     web/src/board/draw/useArt.ts
+     web/src/board/editors/TitleEditor.tsx
+     web/src/board/geom.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The board in React (wall view, next/board):
+                        claude    month, events, art, notes column; sharp at
+                                  4K.
+
+                                  The new board: drawing on a tablet (chalk,
+                                  Posca, writing, eraser, select, stamps,
+                                  GIFs).
+===============================================================================
+*/
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { url } from '../lib/api.ts';
 import { readable } from './color.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | A piece of art | //
+// ------------------ //
 export type ArtItem = {
   id: number;
   k?: 't' | 'g';
@@ -26,6 +69,10 @@ export type ArtItem = {
   g?: string; // things added together (a stamp, a copy) move as one
 };
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | Colors and fonts | //
+// -------------------- //
 export const CHALK = ['#EDEAE0', '#F6B3CB', '#F2D479', '#9CC9E6', '#A9D8A0', '#E8A35C', '#B49CE0'];
 const FONTS = [
   "700 {z}px 'Kalam', cursive",
@@ -39,7 +86,12 @@ const FONTS = [
 ];
 export const fontCss = (f = 0, z = 40) => (FONTS[f] || FONTS[0]).replace('{z}', String(z));
 
-// the speckled chalk grain for a color, as an image tile (`res` pixels per board pixel)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | Chalk grain | //
+// --------------- //
+// The speckled chalk grain for a color, as an image tile (`res` pixels per  //
+// board pixel)                                                              //
 const grains = new Map<string, string>();
 function grain(color: string, res: number) {
   const key = color + res;
@@ -68,6 +120,10 @@ function grain(color: string, res: number) {
   return out;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Lines | //
+// --------- //
 const r1 = (n: number) => Math.round(n * 10) / 10;
 export function strokePath(p: number[]) {
   let d = `M${r1(p[0])} ${r1(p[1])}`;
@@ -85,8 +141,13 @@ const isClosed = (s: ArtItem) => {
     Math.hypot(p[0] - p[p.length - 2], p[1] - p[p.length - 1]) <= Math.max(2.5, (s.w || 4) * 0.8)
   );
 };
-// "Gentle" GIFs rest on a still frame and play for about 6 seconds every 2.5-4 minutes, each on its own
-// schedule so they don't all go at once
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Moving gently | //
+// ----------------- //
+// "Gentle" GIFs rest on a still frame and play for about 6 seconds every    //
+// 2.5-4 minutes, each on its own schedule so they don't all go at once      //
 function useGentle(items: ArtItem[], on: boolean) {
   const [playing, setPlaying] = useState<Set<number>>(new Set());
   const plan = useRef(new Map<number, { next: number; stop: number }>());
@@ -116,7 +177,12 @@ function useGentle(items: ArtItem[], on: boolean) {
   }, [on, key]);
   return playing;
 }
-// stored addresses are /api/...; shown relative to the board's address
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | The art, drawn | //
+// ------------------ //
+// Stored addresses are /api/...; shown relative to the board's address      //
 const src = (s?: string) => (s ? url(s) : '');
 
 export function Art({ items, bg, res, gifsPlay }: { items: ArtItem[]; bg: number; res: number; gifsPlay: boolean }) {
@@ -228,3 +294,5 @@ export function Art({ items, bg, res, gifsPlay }: { items: ArtItem[]; bg: number
     </>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

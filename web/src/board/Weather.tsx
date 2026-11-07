@@ -1,8 +1,33 @@
-// Weather that moves: gentle rain, snow or a storm across the board when it's actually happening,
-// for about 20 seconds every 10 minutes. ?wx=rain / snow / storm to see it any time.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | Weather.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Weather that moves: gentle rain, snow or a storm across the board
+     when it's actually happening, for about 20 seconds every 10 minutes.
+     ?wx=rain / snow / storm to see it any time.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens take over: /, /edit and
+                        colby     /chores are the React board; the old one
+                        claude    stays at /classic.
+===============================================================================
+*/
+
 import { useEffect, useMemo, useState } from 'react';
 import { useLive } from '../lib/live.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Rain and snow | //
+// ----------------- //
 export function WeatherMotion({ wall }: { wall: boolean }) {
   const x = useLive<{ weather: { now: { kind: string } } | null }>('api/extras', ['extras']).data;
   let kind = new URLSearchParams(location.search).get('wx') || x?.weather?.now?.kind || '';
@@ -64,3 +89,5 @@ export function WeatherMotion({ wall }: { wall: boolean }) {
     </div>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

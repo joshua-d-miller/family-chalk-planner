@@ -1,5 +1,25 @@
-// "Add from link": the board downloads a GIF (or the GIF a page shares) once and keeps it.
-// It must never fetch anything on the local network unless told to (tests only).
+/*
+===============================================================================
+ Family Chalk Planner | Tests | gif-link.test.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-06
+
+ Purpose:
+     "Add from link": the board downloads a GIF (or the GIF a page shares)
+     once and keeps it. It must never fetch anything on the local network
+     unless told to (tests only).
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+===============================================================================
+*/
+
 import test from 'node:test';
 import assert from 'node:assert';
 import { spawn } from 'node:child_process';

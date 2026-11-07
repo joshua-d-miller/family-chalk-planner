@@ -1,11 +1,39 @@
-// Favorites: the few things each person (and each family screen) uses most, kept on the strip next to
-// Add event and Draw; everything else is in the ☰ menu. Saved per person, or per screen when nobody is
-// signed in on it.
-//   kv 'favorites'  { 'p:<person id>' | 's:<screen id>': [up to 4 menu item ids] }
+/*
+===============================================================================
+ Family Chalk Planner | Server | favorites.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Favorites: the few things each person (and each family screen) uses
+     most, kept on the strip next to Add event and Draw; everything else
+     is in the ☰ menu. Saved per person, or per screen when nobody is
+     signed in on it.
+       kv 'favorites'  { 'p:<person id>' | 's:<screen id>': [up to 4 menu
+           item ids] }
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+===============================================================================
+*/
+
 import type { Express, Request } from 'express';
 import type { Kv } from './kv.ts';
 
 const MAX = 4;
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------------- //
+// | Favorites, per person or screen | //
+// ----------------------------------- //
+// Up to 4, kept under p:<person id> or s:<screen id>.                       //
 const isItem = (v: unknown): v is string => typeof v === 'string' && /^[a-z][a-z0-9-]{0,31}$/.test(v);
 
 export function setup({
@@ -34,3 +62,5 @@ export function setup({
     res.json({ items, saved: true });
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

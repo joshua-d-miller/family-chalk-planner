@@ -1,5 +1,28 @@
-// Minimal CalDAV stand-in shaped like iCloud's responses, for tests and local development.
-// Usage: (await import('./mock-caldav.ts')).start(port) or  node test/mock-caldav.ts [port]
+/*
+===============================================================================
+ Family Chalk Planner | Tests | mock-caldav.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-06
+
+ Purpose:
+     A minimal CalDAV stand-in shaped like iCloud's responses, for tests
+     and local development.
+
+     Usage:
+          (await import('./mock-caldav.ts')).start(port)
+          node test/mock-caldav.ts [port]
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+===============================================================================
+*/
+
 import express from 'express';
 const app = express();
 app.use(express.text({ type: '*/*', limit: '2mb' }));

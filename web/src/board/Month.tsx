@@ -1,11 +1,60 @@
-// The month: its name, the weekdays, and a box per day with its events, multi-day bars, trash day and
-// holidays. Same layout as the board (1252 x 642 board pixels), so art drawn on a day stays on that day.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | Month.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The month: its name, the weekdays, and a box per day with its events,
+     multi-day bars, trash day and holidays. Same layout as the board
+     (1252 x 642 board pixels), so art drawn on a day stays on that day.
+
+ Used by:
+     web/src/board/Alerts.tsx
+     web/src/board/Board.tsx
+     web/src/board/EventEditor.tsx
+     web/src/board/Notes.tsx
+     web/src/board/editors/BorderEditor.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The board in React (wall view, next/board):
+                        claude    month, events, art, notes column; sharp at
+                        colby     4K.
+
+                                  The new board: the family's style, each
+                                  month's title and holiday border, polaroids,
+                                  drawn jars.
+
+                                  The new wall board: the overnight slideshow,
+                                  the photo frame, the day view, reminders and
+                                  timers.
+
+                                  The new board on a tablet (next/edit):
+                                  events, the month's title and border, the
+                                  board style.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import type { CSSProperties, ReactNode } from 'react';
 import { clipSrc } from './clip.ts';
 import { hash } from './geom.ts';
 import { TODAY_MARKS } from './theme.ts';
 import { readable } from './color.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | Events and the month | //
+// ------------------------ //
 export interface BoardEvent {
   title: string;
   start: string;
@@ -38,6 +87,10 @@ export interface Bins {
   recycle: { mode: string; day?: number; anchor?: string };
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | Names | //
+// --------- //
 export const MONTHS = [
   'January',
   'February',
@@ -56,6 +109,10 @@ const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDA
 const EV_SIZE = { l: 1.35, xl: 1.8 };
 const GRID_H = 642 - 8 - 10 - 70 - 28; // the slate, less its padding, the title and the weekdays
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | Days and events | //
+// ------------------- //
 export const addDays = (ds: string, n: number) => {
   const [y, m, d] = ds.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
@@ -66,7 +123,12 @@ export function evText(ev: BoardEvent) {
   if (!ev.holiday && /birthday|bday/i.test(t) && !t.includes('🎂')) t = '🎂 ' + t;
   return ev.allDay || ev.holiday ? t : `${t} @ ${ev.time}`;
 }
-// which bins go out on a date (as the server works it out)
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------- //
+// | Trash and recycling | //
+// ----------------------- //
+// Which bins go out on a date (as the server works it out)                  //
 function binsFor(ds: string, b: Bins | null): ('trash' | 'recycle')[] {
   if (!b) return [];
   const dn = (x: string) => Date.UTC(+x.slice(0, 4), +x.slice(5, 7) - 1, +x.slice(8, 10)) / 864e5;
@@ -112,6 +174,10 @@ const Ring = ({ color, shape }: { color: string; shape: string }) => (
   </svg>
 );
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | The month grid | //
+// ------------------ //
 export function Month({
   data,
   bins,
@@ -293,6 +359,10 @@ export function Month({
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The arrows | //
+// -------------- //
 const NavBtn = ({ dir, onClick }: { dir: 'prev' | 'next'; onClick?: () => void }) => (
   <button
     type="button"
@@ -318,7 +388,11 @@ const NavBtn = ({ dir, onClick }: { dir: 'prev' | 'next'; onClick?: () => void }
   </button>
 );
 
-// A holiday border: up to 8 pictures repeated around the calendar's edge
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The border | //
+// -------------- //
+// A holiday border: up to 8 pictures repeated around the calendar's edge    //
 export type Border = { items: string[]; color: string; size: 's' | 'm' | 'l' };
 const BORDER_SZ = { s: 20, m: 26, l: 34 };
 const CAL_W = 1252 - 18 - 14 - 14 - 214; // the calendar box in board pixels: the slate less its padding, the gap and the notes
@@ -358,3 +432,5 @@ function BorderLayer({ border: b }: { border: Border }) {
     </div>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -1,5 +1,30 @@
-// The meal plan, by day of the week (from Colby Way's board), plus meals not on a day yet. Tap a meal to
-// tick it off; ✎ to change it. Each meal is saved on its own.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Pages | Meals.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     The meal plan, by day of the week (from Colby Way's board), plus
+     meals not on a day yet. Tap a meal to tick it off; ✎ to change it.
+     Each meal is saved on its own.
+
+ Used by:
+     web/src/App.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+===============================================================================
+*/
+
 import { useState } from 'react';
 import type { Meal, MealDay, Meals as MealsData } from '../../../shared/lists.ts';
 import { post } from '../lib/api.ts';
@@ -12,6 +37,10 @@ import { Page } from '../ui/Page.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
 import './lists.css';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | The meals page | //
+// ------------------ //
 export function Meals({ who }: { who: Who | null }) {
   const live = useLive<MealsData>('api/meals', ['meals']);
   const today = useToday().data;
@@ -109,6 +138,10 @@ export function Meals({ who }: { who: Who | null }) {
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------- //
+// | Adding or changing a meal | //
+// ----------------------------- //
 function MealSheet({
   meal,
   days,
@@ -163,3 +196,5 @@ function MealSheet({
     </Sheet>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

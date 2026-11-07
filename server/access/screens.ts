@@ -1,15 +1,55 @@
-// Screens: pairing (the screen shows a code, an admin enters it in the console), renaming, changing what a
-// screen may do, removing one.
+/*
+===============================================================================
+ Family Chalk Planner | Server | Access | screens.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     Screens: pairing (the screen shows a code, an admin enters it in the
+     console), renaming, changing what a screen may do, removing one.
+
+ Routes:
+     POST   /api/pair/start
+     GET    /api/pair/status
+     GET    /api/devices
+     POST   /api/devices/approve
+     POST   /api/devices/update
+     POST   /api/devices/remove
+
+ Used by:
+     server/access/access.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Move access (screens, people, sign-in,
+                        claude    passkeys, security) to TypeScript.
+===============================================================================
+*/
+
 import type { Ctx } from './access.ts';
 import { PAIR_TTL, KEEP, C } from './access.ts';
 import { describe, parseCookies } from './http.ts';
 import { fmtCode, normCode, randCode, randomKey, rid, sha } from './secrets.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | What a screen may be | //
+// ------------------------ //
+// View (a wall), family (a shared touch screen) or kid:<person> (a child's  //
+// own tablet).                                                              //
 const DEVICE_ROLES = ['view', 'family']; // and 'kid:<person>'
 const roleOk = (r: unknown): r is string =>
   typeof r === 'string' && (DEVICE_ROLES.includes(r) || /^kid:[a-z0-9]{1,16}$/.test(r));
 
 export function registerScreens({ app, q, broadcast, audit, cookie, clear, deviceOf, tooMany }: Ctx) {
+  // -------------------------------- //
+  // | A new screen asks for a code | //
+  // -------------------------------- //
   app.post('/api/pair/start', (req, res) => {
     if (deviceOf(req)) return res.status(400).json({ error: 'This screen is already paired' });
     q.pPurge(Date.now() - PAIR_TTL);
@@ -24,6 +64,11 @@ export function registerScreens({ app, q, broadcast, audit, cookie, clear, devic
     res.json({ code: fmtCode(code), expires: Date.now() + PAIR_TTL });
   });
 
+  // -------------------------------- //
+  // | Has an admin entered it yet? | //
+  // -------------------------------- //
+  // The screen asks every few seconds; once approved, its key is handed     //
+  // over exactly once, as a cookie.                                         //
   app.get('/api/pair/status', (req, res) => {
     const secret = parseCookies(req.get('cookie'))[C.pair];
     const p = secret ? q.pBySecret(sha(secret)) : undefined;
@@ -35,6 +80,9 @@ export function registerScreens({ app, q, broadcast, audit, cookie, clear, devic
     res.json({ state: 'paired', role: p.role });
   });
 
+  // -------------------------------- //
+  // | Screens in the admin console | //
+  // -------------------------------- //
   app.get('/api/devices', (_req, res) => {
     q.pPurge(Date.now() - PAIR_TTL);
     res.json({ devices: q.dList(), waiting: q.pList().map(p => ({ agent: p.agent, created: p.created })) });
@@ -96,3 +144,5 @@ export function registerScreens({ app, q, broadcast, audit, cookie, clear, devic
     res.json({ ok: true });
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

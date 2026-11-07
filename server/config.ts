@@ -1,12 +1,44 @@
-// The board's settings, read once at start-up: the environment (.env), with what the admin console saved
-// already put into it (settings.ts). Saving in the console restarts the board, so these never change while
-// it runs.
+/*
+===============================================================================
+ Family Chalk Planner | Server | config.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     The board's settings, read once at start-up: the environment (.env),
+     with what the admin console saved already put into it (settings.ts).
+     Saving in the console restarts the board, so these never change while
+     it runs.
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+                        colby
+                                  Immich photos, slideshow extras, a filled-in
+                                  today, and the frame's thickness.
+===============================================================================
+*/
+
 import path from 'node:path';
 import type { Country } from './holidays.ts';
 import type { CalendarConfig } from './calendar/source.ts';
 
 const num = <D>(v: string | undefined, d: D) => (v === undefined || v === '' || !Number.isFinite(+v) ? d : +v);
-// a list kept as JSON (at most 8), as the console saved it
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | A saved list | //
+// ---------------- //
+// A list kept as JSON (at most 8), as the console saved it                  //
 function jsonList<T>(v: string | undefined): T[] {
   try {
     const a = JSON.parse(v || '[]');
@@ -16,6 +48,13 @@ function jsonList<T>(v: string | undefined): T[] {
   }
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Every setting the board uses | //
+// -------------------------------- //
+// Read from ENV (with the admin console's values already in it), checked,   //
+// and given its default. Saving in the console restarts the board, so none  //
+// of these change while it runs.                                            //
 export function readConfig(env: NodeJS.ProcessEnv, appDir: string, dataDir: string) {
   const holidays = (env.HOLIDAYS || '').toLowerCase();
   const provider =
@@ -83,3 +122,5 @@ export function readConfig(env: NodeJS.ProcessEnv, appDir: string, dataDir: stri
   return cfg;
 }
 export type Config = ReturnType<typeof readConfig>;
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

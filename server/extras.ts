@@ -1,11 +1,51 @@
-// The top of the Notes column: weather (Open-Meteo, no account needed) and trash / recycling day,
-// plus which page shows at the bottom of the column. Trash day and the Notes choice are set in ⚙️.
-//   kv 'trash'  { day: 0-6 | null, recycle: { mode: 'same' | 'day' | 'biweekly' | 'off', day, anchor } }
-//               'biweekly' = every other week on recycle.day, counting from anchor (a known pickup date)
-//   kv 'notes'  { bottom: 'jars' | 'upnext' | 'today' | 'photos' | 'none', pages: up to 3 of RIGHT_PAGES }
+/*
+===============================================================================
+ Family Chalk Planner | Server | extras.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
+
+ Purpose:
+     The top of the Notes column: weather (Open-Meteo, no account needed)
+     and trash / recycling day, plus which page shows at the bottom of the
+     column. Trash day and the Notes choice are set in ⚙️.
+       kv 'trash'  { day: 0-6 | null, recycle: { mode: 'same' | 'day' |
+           'biweekly' | 'off', day, anchor } }
+                   'biweekly' = every other week on recycle.day, counting
+                       from anchor (a known pickup date)
+       kv 'notes'  { bottom: 'jars' | 'upnext' | 'today' | 'photos' |
+           'none', pages: up to 3 of RIGHT_PAGES }
+
+ Routes:
+     GET    /api/extras
+     POST   /api/trash
+     POST   /api/notes
+     POST   /api/right-pages
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Live updates, nightly backup and the Notes
+                        claude    extras in their own TypeScript modules.
+                        colby
+                                  Reminders, timers, the pantry and the right-
+                                  hand column's pages (server).
+===============================================================================
+*/
+
 import type { Express } from 'express';
 import { addDays, isDate } from './dates.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------------- //
+// | Types and the right-hand column | //
+// ----------------------------------- //
 type WeatherKind = 'sun' | 'partly' | 'cloud' | 'fog' | 'rain' | 'snow' | 'storm';
 type RecycleMode = 'same' | 'day' | 'biweekly' | 'off';
 interface TrashCfg {
@@ -37,7 +77,12 @@ export function rightPages(list: unknown, bottom: string): string[] {
   }
   return bottom === 'none' ? ['info', 'meals'] : ['info', 'meals', bottom];
 }
-// The parts of Open-Meteo's forecast the board uses
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | The weather | //
+// --------------- //
+// The parts of Open-Meteo's forecast the board uses                         //
 interface Forecast {
   current: { temperature_2m: number; weather_code: number };
   daily: {
@@ -60,7 +105,11 @@ function weatherKind(code: number): WeatherKind {
   return 'cloud';
 }
 
-// Day numbers, so "every other week" works across months and years
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------- //
+// | Trash and recycling days | //
+// ---------------------------- //
+// Day numbers, so "every other week" works across months and years          //
 const dayNum = (ds: string) => Date.UTC(+ds.slice(0, 4), +ds.slice(5, 7) - 1, +ds.slice(8, 10)) / 864e5;
 const weekday = (ds: string) => new Date(dayNum(ds) * 864e5).getUTCDay();
 
@@ -76,6 +125,10 @@ function binsOn(cfg: TrashCfg, ds: string): ('trash' | 'recycle')[] {
   return out;
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | What the routes need | //
+// ------------------------ //
 export interface ExtrasDeps {
   app: Express;
   kvGet: (key: string) => unknown;
@@ -86,9 +139,18 @@ export interface ExtrasDeps {
   trashDay: number | null; // the starting value, until it's set in ⚙️
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({ app, kvGet, kvSet, broadcast, today, weather: w, trashDay }: ExtrasDeps) {
   let weatherCache: unknown = null;
   let weatherAt = 0;
+  // ---------------- //
+  // | The forecast | //
+  // ---------------- //
+  // Open-Meteo (no account needed), kept for 30 minutes; the last good one  //
+  // is shown if it can't be reached.                                        //
   async function weather() {
     if (w.lat === null || w.lon === null) return null;
     if (weatherCache && Date.now() - weatherAt < 10 * 60 * 1000) return weatherCache; // fresh enough to catch rain starting
@@ -118,8 +180,12 @@ export function setup({ app, kvGet, kvSet, broadcast, today, weather: w, trashDa
   }
 
   const trashCfg = () => (kvGet('trash') as TrashCfg | null) || { day: trashDay, recycle: { mode: 'same' } };
-  // The right-hand column: up to 3 mini pages (from Colby Way's board). Boards from before keep what they
-  // showed: the weather and trash, the meals, then the bottom they had picked.
+  // ------------------------- //
+  // | The right-hand column | //
+  // ------------------------- //
+  // The right-hand column: up to 3 mini pages (from Colby Way's board).     //
+  // Boards from before keep what they showed: the weather and trash, the    //
+  // meals, then the bottom they had picked.                                 //
   function notesCfg(): NotesCfg {
     const raw = (kvGet('notes') as Partial<NotesCfg> | null) || {};
     const bottom = NOTES_BOTTOM.includes(raw.bottom as string) ? (raw.bottom as string) : 'jars';
@@ -136,6 +202,9 @@ export function setup({ app, kvGet, kvSet, broadcast, today, weather: w, trashDa
     return cfg;
   }
 
+  // ---------------------- //
+  // | Trash day settings | //
+  // ---------------------- //
   function cleanTrash(b: Record<string, unknown>): TrashCfg {
     const day = (v: unknown) =>
       v !== '' && v !== null && Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 6 ? Number(v) : null;
@@ -147,7 +216,10 @@ export function setup({ app, kvGet, kvSet, broadcast, today, weather: w, trashDa
     return out;
   }
 
-  // The next pickup, as the Notes column says it
+  // ------------------- //
+  // | The next pickup | //
+  // ------------------- //
+  // The next pickup, as the Notes column says it                            //
   function trash() {
     const cfg = trashCfg();
     const r = cfg.recycle || { mode: 'same' };
@@ -182,6 +254,9 @@ export function setup({ app, kvGet, kvSet, broadcast, today, weather: w, trashDa
     return { title: 'Trash', days: t.i, label: label(t, 'cans'), sub: `♻️ Recycling ${when(rc)}`, cfg };
   }
 
+  // ---------------------- //
+  // | Everything at once | //
+  // ---------------------- //
   app.get('/api/extras', async (_req, res) => {
     let wx = null;
     try {
@@ -201,3 +276,5 @@ export function setup({ app, kvGet, kvSet, broadcast, today, weather: w, trashDa
   app.post('/api/notes', (req, res) => res.json(saveNotes(req.body || {})));
   app.post('/api/right-pages', (req, res) => res.json(saveNotes(req.body || {})));
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

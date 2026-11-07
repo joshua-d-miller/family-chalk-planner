@@ -1,10 +1,33 @@
 #!/usr/bin/env python3
-"""facefocus.py - find the faces in a photo so the chalkboard can frame people.
-
-Usage: facefocus.py MODEL.onnx PHOTO [PHOTO ...]
-Prints one JSON line per photo: {"file":..., "w":..., "h":..., "faces":[[x,y,w,h,score], ...]}
-with face boxes as fractions of the image (0..1). Uses OpenCV's YuNet detector.
 """
+===============================================================================
+ Family Chalk Planner | Face finder | facefocus.py
+===============================================================================
+ Version:   0.1.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-10-11
+
+ Purpose:
+     Finds the faces in a photo so the board can frame people: the
+     polaroids beside the month name zoom in on them, and the slideshow
+     keeps them in view and puts its clock where it covers no one. Uses
+     OpenCV's YuNet detector (installed by deploy/setup-face.sh).
+
+     facefocus.py MODEL.onnx PHOTO [PHOTO ...]
+
+     Prints one JSON line per photo: {"file", "w", "h", "faces": [[x, y,
+     w, h, score], ...]}, with the face boxes as fractions of the image (0
+     to 1).
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.1.0     2026-10-11   joshua    Standalone service, installer, updater,
+                        claude    tests.
+===============================================================================
+"""
+
 import json
 import sys
 

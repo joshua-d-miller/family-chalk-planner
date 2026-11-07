@@ -1,7 +1,34 @@
-// Stand-in for Google's OAuth token endpoint, Calendar API (calendar list) and CalDAV
-// (/caldav/v2/<calendarId>/events/), for tests. Every calendar call must carry a valid
-// Bearer token; tokens expire quickly (expiresIn) so refreshing gets exercised.
-// Usage: const g = await (await import('./mock-google.ts')).start(port, { expiresIn: 2 })
+/*
+===============================================================================
+ Family Chalk Planner | Tests | mock-google.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     A stand-in for Google's OAuth token endpoint, Calendar API (calendar
+     list) and CalDAV (/caldav/v2/<calendarId>/events/), for tests. Every
+     calendar call must carry a valid Bearer token; tokens expire quickly
+     (expiresIn) so refreshing gets exercised.
+
+     Usage:
+          const g = await (await import('./mock-google.ts'))
+              .start(port, { expiresIn: 2 })
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+                        colby
+                                  Google: several calendars at once, read-only
+                                  ones, and which calendar a new event goes
+                                  in.
+===============================================================================
+*/
+
 import http from 'node:http';
 import crypto from 'node:crypto';
 

@@ -1,13 +1,51 @@
-// Reading requests: cookies, and what kind of device sent it.
+/*
+===============================================================================
+ Family Chalk Planner | Server | Access | http.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-07
 
-// What the access checks need from a request (a live-update stream is checked with just its cookie)
+ Purpose:
+     Reading requests: cookies, and what kind of device sent it.
+
+ Used by:
+     server/access/access.ts
+     server/access/accounts.ts
+     server/access/passkeys.ts
+     server/access/screens.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Move access (screens, people, sign-in,
+                        claude    passkeys, security) to TypeScript.
+                        colby
+                                  Home-network sign-in: just a password for
+                                  the board at home, off unless turned on.
+===============================================================================
+*/
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------- //
+// | What the access checks need | //
+// ------------------------------- //
+// What the access checks need from a request (a live-update stream is       //
+// checked with just its cookie)                                             //
 export interface ReqLike {
   get(name: string): string | undefined;
   ip?: string;
 }
 
-// Home-network sign-in (from Colby Way's board): a request from a private address to the board opened by
-// its IP address (http://192.168.1.20:3002), not by a name. Through a reverse proxy, or by name, it isn't.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------------------------- //
+// | Home sign-in: at home, opened by IP | //
+// --------------------------------------- //
+// Home-network sign-in (from Colby Way's board): a request from a private   //
+// address to the board opened by its IP address (http://192.168.1.20:3002), //
+// not by a name. Through a reverse proxy, or by name, it isn't.             //
 export function privateAddress(ip: string | undefined) {
   const v = String(ip || '')
     .replace(/^::ffff:/i, '')
@@ -30,6 +68,10 @@ export function openedByIp(host: string | undefined) {
   return h === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(h) || (h.includes(':') && /^[0-9a-f:.]+$/.test(h));
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------- //
+// | Cookies | //
+// ----------- //
 export function parseCookies(h: string | undefined) {
   const out: Record<string, string> = {};
   for (const part of String(h || '').split(';')) {
@@ -44,8 +86,12 @@ export function parseCookies(h: string | undefined) {
   return out;
 }
 
-// "Safari on iPad", "Chrome on Android" ... so people can tell devices apart in the console.
-// Only for that: every browser works the same.
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | Which device | //
+// ---------------- //
+// "Safari on iPad", "Chrome on Android" ... so people can tell devices      //
+// apart in the console. Only for that: every browser works the same.        //
 export function describe(agent: string | undefined) {
   const ua = String(agent || '');
   const os = /iPad/.test(ua)
@@ -81,3 +127,5 @@ export function describe(agent: string | undefined) {
   const br = browsers.find(([re]) => re.test(ua))?.[1] || 'Browser';
   return `${br} on ${os}`;
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

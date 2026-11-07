@@ -1,5 +1,29 @@
-// Stand-in for a Google Photos shared album (the page and the follow-up call the board makes), for tests.
-// Usage: (await import('./mock-gphotos.ts')).start(port, { drop }) ; album link: http://127.0.0.1:<port>/share/AF1QipTESTALBUM?key=TESTKEY
+/*
+===============================================================================
+ Family Chalk Planner | Tests | mock-gphotos.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-06
+
+ Purpose:
+     A stand-in for a Google Photos shared album (the page and the
+     follow-up call the board makes), for tests.
+
+     Usage:
+          (await import('./mock-gphotos.ts')).start(port, { drop })
+          album link:
+            http://127.0.0.1:<port>/share/AF1QipTESTALBUM?key=TESTKEY
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+===============================================================================
+*/
+
 import http from 'node:http';
 const JPEG = Buffer.from(
   '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/yQALCAABAAEBAREA/8wABgAQEAX/2gAIAQEAAD8A0s8g/9k=',

@@ -1,5 +1,36 @@
-// Pantry: what food is in the house and where (pantry, fridge, freezer, basement...), with the day it was
-// bought or logged. From Colby Way's board. Saved in the pantry table, one item at a time.
+/*
+===============================================================================
+ Family Chalk Planner | Server | pantry.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Pantry: what food is in the house and where (pantry, fridge, freezer,
+     basement...), with the day it was bought or logged. From Colby Way's
+     board. Saved in the pantry table, one item at a time.
+
+ Routes:
+     GET    /api/pantry
+     POST   /api/pantry
+     POST   /api/pantry/item
+     POST   /api/pantry/item/delete
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Reminders, timers, the pantry and the right-
+                        colby     hand column's pages (server).
+                        claude
+===============================================================================
+*/
+
 import crypto from 'node:crypto';
 import type { Express } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
@@ -7,6 +38,10 @@ import type { PantryItem, PantryLoc } from '../shared/lists.ts';
 import { isDate } from './dates.ts';
 import { tx } from './db.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Checking what a screen sends | //
+// -------------------------------- //
 const LOCATIONS: PantryLoc[] = ['pantry', 'fridge', 'freezer', 'basement', 'other'];
 const MAX = 500;
 const isId = (v: unknown): v is string => typeof v === 'string' && /^[a-z0-9_-]{1,32}$/i.test(v);
@@ -28,6 +63,10 @@ export function cleanPantryItem(raw: unknown, today: string): PantryItem {
   };
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({
   app,
   db,
@@ -59,6 +98,9 @@ export function setup({
   };
 
   app.get('/api/pantry', (_req, res) => res.json(view()));
+  // ------------------ //
+  // | The whole list | //
+  // ------------------ //
   app.post('/api/pantry', (req, res) => {
     const list = (req.body || {}).items;
     if (!Array.isArray(list)) return res.status(400).json({ error: 'bad items list' });
@@ -73,6 +115,9 @@ export function setup({
     });
     res.json(changed());
   });
+  // ---------------------- //
+  // | One item at a time | //
+  // ---------------------- //
   app.post('/api/pantry/item', (req, res) => {
     const it = cleanPantryItem((req.body || {}).item, today());
     if (!it.name) return res.status(400).json({ error: 'What is it?' });
@@ -87,3 +132,5 @@ export function setup({
     res.json(changed());
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

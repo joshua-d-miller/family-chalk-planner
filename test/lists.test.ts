@@ -1,5 +1,26 @@
-// The lists (chores, meals, jars) in their own tables: copied over from older versions, changed one item at
-// a time so two screens saving together both count, and a database from a newer version is refused.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | lists.test.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     The lists (chores, meals, jars) in their own tables: copied over from
+     older versions, changed one item at a time so two screens saving
+     together both count, and a database from a newer version is refused.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Database migrations; chores, meals and jars
+                        colby     in their own tables.
+                        claude
+===============================================================================
+*/
+
 import test from 'node:test';
 import assert from 'node:assert';
 import fs from 'node:fs';

@@ -1,6 +1,38 @@
-// Reminders: "always" ones stay on the board until ticked off; timed ones pop up on the board screens at
-// a time, every day or once, and are seen to with a tap. Managed from their own page (/reminders).
-// From Colby Way's board. Saved in the reminders table, one at a time.
+/*
+===============================================================================
+ Family Chalk Planner | Server | reminders.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Reminders: "always" ones stay on the board until ticked off; timed
+     ones pop up on the board screens at a time, every day or once, and
+     are seen to with a tap. Managed from their own page (/reminders).
+     From Colby Way's board. Saved in the reminders table, one at a time.
+
+ Routes:
+     GET    /api/reminders
+     POST   /api/reminders
+     POST   /api/reminders/item
+     POST   /api/reminders/item/delete
+     POST   /api/reminders/check
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Reminders, timers, the pantry and the right-
+                        colby     hand column's pages (server).
+                        claude
+===============================================================================
+*/
+
 import crypto from 'node:crypto';
 import type { Express } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
@@ -9,6 +41,12 @@ import { isDate, pad2 } from './dates.ts';
 import type { Clock } from './dates.ts';
 import { tx } from './db.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Checking what a screen sends | //
+// -------------------------------- //
+// A screen can send anything, so every field is checked, and anything       //
+// missing or odd falls back to a safe default.                              //
 const MAX = 50;
 const isId = (v: unknown): v is string => typeof v === 'string' && /^[a-z0-9]{1,16}$/.test(v);
 const newId = () => 'r' + crypto.randomBytes(5).toString('hex');
@@ -32,6 +70,10 @@ export function cleanReminder(raw: unknown): Reminder {
   };
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({
   app,
   db,
@@ -88,7 +130,10 @@ export function setup({
 
   app.get('/api/reminders', (_req, res) => res.json(view()));
 
-  // the whole list at once
+  // ------------------ //
+  // | The whole list | //
+  // ------------------ //
+  // The whole list at once                                                  //
   app.post('/api/reminders', (req, res) => {
     const list = (req.body || {}).items;
     if (!Array.isArray(list)) return res.status(400).json({ error: 'bad reminders' });
@@ -104,7 +149,10 @@ export function setup({
     res.json(changed());
   });
 
-  // one, added or changed
+  // -------------------------- //
+  // | One reminder at a time | //
+  // -------------------------- //
+  // One, added or changed                                                   //
   app.post('/api/reminders/item', (req, res) => {
     const r = cleanReminder((req.body || {}).reminder);
     if (!r.title) return res.status(400).json({ error: 'What’s the reminder?' });
@@ -119,7 +167,11 @@ export function setup({
     res.json(changed());
   });
 
-  // Tick off / untick ({ done }), or "seen it" on a popup ({ ack: true }: a one-off is then done)
+  // ----------------- //
+  // | Done, or seen | //
+  // ----------------- //
+  // Tick off / untick ({ done }), or "seen it" on a popup ({ ack: true }: a //
+  // one-off is then done)                                                   //
   app.post('/api/reminders/check', (req, res) => {
     const { id, done, ack } = req.body || {};
     const row = isId(id) ? (q.one.get(id) as Row | undefined) : undefined;
@@ -140,3 +192,5 @@ export function setup({
     res.json(changed());
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

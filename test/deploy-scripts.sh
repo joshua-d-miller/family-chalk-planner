@@ -1,8 +1,46 @@
 #!/usr/bin/env bash
-# Runs deploy/install.sh and deploy/update.sh the way a real server does (as root), with systemd and
-# the health check stubbed out: a fresh install, then updates with and without an old .env and
-# server.conf, an "already up to date" run, and an update that fails and must be undone.
-# Needs root. CI:  sudo env "PATH=$PATH" bash test/deploy-scripts.sh
+: <<'HEADER'
+===============================================================================
+ Family Chalk Planner | Tests | deploy-scripts.sh
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Runs deploy/install.sh and deploy/update.sh the way a real server
+     does (as root), with systemd and the health check stubbed out: a
+     fresh install, then updates with and without an old .env and
+     server.conf, an "already up to date" run, and an update that fails
+     and must be undone.
+
+     Needs root. In CI:
+          sudo env "PATH=$PATH" bash test/deploy-scripts.sh
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.8.5     2026-10-14   joshua    Test the real install/update scripts in CI;
+                        claude    fix fresh installs and the failed-update
+                                  undo.
+
+                                  CI: fix ShellCheck 0.9 warning (SC2120) in
+                                  test/deploy-scripts.sh.
+
+ 0.13.0    2026-11-07   joshua    TypeScript groundwork: type-check, lint and
+                        claude    format in CI; chores is the first TypeScript
+                                  module.
+
+                                  Updates: database backup and restore, a real
+                                  health check, Update now and nightly
+                                  updates.
+
+                                  Releases carry the built screens; servers
+                                  fetch them instead of building.
+===============================================================================
+HEADER
+
 set -euo pipefail
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 [ "$(id -u)" = 0 ] || { echo "run as root (it writes the systemd unit, like a real install)" >&2; exit 1; }

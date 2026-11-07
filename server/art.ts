@@ -1,11 +1,52 @@
-// The art layer: chalk and Posca drawings, words, clipart, GIFs and stamps on each month, plus the stamp
-// library (saved designs to place again). Every change goes to every open screen straight away.
-//   strokes(id, month, data, created)   one item each, drawn in id order
-//   stamps(id, name, data, created)     a saved design: a list of items
-//
-// Art is placed on the calendar as it looks at the time. A holiday border makes the days a little smaller,
-// so each month remembers which layout its art was placed on (artPad: the border's width, 0 = none); the
-// tablet moves the art onto the days when the border changes (/api/art/relayout).
+/*
+===============================================================================
+ Family Chalk Planner | Server | art.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-06
+ Updated:   2026-11-06
+
+ Purpose:
+     The art layer: chalk and Posca drawings, words, clipart, GIFs and
+     stamps on each month, plus the stamp library (saved designs to place
+     again). Every change goes to every open screen straight away.
+       strokes(id, month, data, created)   one item each, drawn in id order
+       stamps(id, name, data, created)     a saved design: a list of items
+
+     Art is placed on the calendar as it looks at the time. A holiday
+     border makes the days a little smaller, so each month remembers which
+     layout its art was placed on (artPad: the border's width, 0 = none);
+     the tablet moves the art onto the days when the border changes
+     (/api/art/relayout).
+
+ Routes:
+     GET    /api/art
+     POST   /api/art
+     POST   /api/art/update
+     POST   /api/art/bulk
+     POST   /api/art/restore
+     POST   /api/art/delete
+     POST   /api/art/undo
+     POST   /api/art/clear
+     POST   /api/art/relayout
+     GET    /api/stamps
+     POST   /api/stamps
+     POST   /api/stamps/delete
+
+ Used by:
+     server/main.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-06   joshua    Art, stamps, each month's options, board
+                        claude    style, meals and jars in their own
+                                  TypeScript modules.
+===============================================================================
+*/
+
 import type { Express } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import { isYm } from './dates.ts';
@@ -16,10 +57,21 @@ const GROUP = /^[a-z0-9]{1,16}$/; // items placed together move together
 const MEDIA_SRC =
   /^\/api\/(media\/[a-z0-9]{16}\.(gif|webp|png|jpg)|anim\/[0-9a-f_]{2,48}\/(gif|svg)|clip\/[a-z0-9-]{1,64}\.svg)$/;
 
-// A stroke { c, w, p: [x, y, ...], m: Posca, e: eraser, fc: fill }, words { k: 't', s, x, y, f, z, c },
-// or a picture { k: 'g', src, still, x, y, w, h, mode } (GIF, animated emoji or clipart)
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------------- //
+// | What a piece of art looks like | //
+// ---------------------------------- //
+// A line { c, w, p: [x, y, ...], m: Posca, e: eraser, fc: fill }, words {   //
+// k: 't', s, x, y, f, z, c }, or a picture { k: 'g', src, still, x, y, w,   //
+// h, mode } (a GIF, animated emoji or clipart).                             //
 export type ArtItem = Record<string, unknown>;
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Checking what a screen sends | //
+// -------------------------------- //
+// Anything missing or odd falls back to something safe; anything that can't //
+// be drawn is refused.                                                      //
 export function cleanItem(raw: unknown): ArtItem | null {
   if (!raw || typeof raw !== 'object') return null;
   const it = raw as Record<string, unknown>;
@@ -72,6 +124,10 @@ export function cleanItem(raw: unknown): ArtItem | null {
   };
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The routes | //
+// -------------- //
 export function setup({
   app,
   db,
@@ -104,13 +160,19 @@ export function setup({
   };
   const add = (ym: string, item: ArtItem) => Number(q.insert.run(ym, JSON.stringify(item), Date.now()).lastInsertRowid);
 
-  // The first art of a month is placed on the layout the month has now
+  // ----------------------------------- //
+  // | The layout new art is placed on | //
+  // ----------------------------------- //
+  // The first art of a month is placed on the layout the month has now      //
   function noteLayout(ym: string) {
     const cur = month.stored(ym);
     if (cur.artPad !== undefined || (q.count.get(ym) as { n: number }).n) return;
     month.store(ym, { ...cur, artPad: month.padOf(month.metaFor(ym)) });
   }
 
+  // ----------------- //
+  // | A month's art | //
+  // ----------------- //
   app.get('/api/art', (req, res) => {
     if (!isYm(req.query.ym)) return res.status(400).json({ error: 'bad month' });
     res.json(
@@ -118,7 +180,11 @@ export function setup({
     );
   });
 
-  // from: the screen that made the change (it already shows it, so it skips the broadcast)
+  // -------------------------------- //
+  // | A new line, words or picture | //
+  // -------------------------------- //
+  // From: the screen that made the change (it already shows it, so it skips //
+  // the broadcast)                                                          //
   app.post('/api/art', (req, res) => {
     const { ym, stroke, from } = req.body || {};
     const item = cleanItem(stroke);
@@ -129,7 +195,11 @@ export function setup({
     res.json({ id });
   });
 
-  // Move / re-word / restyle items in place: { items: [{ id, ... }] } (or the older { id, stroke })
+  // ----------------------------- //
+  // | Moving or changing things | //
+  // ----------------------------- //
+  // Move / re-word / restyle items in place: { items: [{ id, ... }] } (or   //
+  // the older { id, stroke })                                               //
   app.post('/api/art/update', (req, res) => {
     const { ym, from } = req.body || {};
     let list = req.body?.items;
@@ -146,7 +216,10 @@ export function setup({
     res.json({ ok: true });
   });
 
-  // Several new items at once (placing a stamp, copying)
+  // ------------------- //
+  // | Several at once | //
+  // ------------------- //
+  // Several new items at once (placing a stamp, copying)                    //
   app.post('/api/art/bulk', (req, res) => {
     const { ym, items, from } = req.body || {};
     if (!isYm(ym) || !Array.isArray(items) || items.length > 5000) return res.status(400).json({ error: 'bad items' });
@@ -167,7 +240,11 @@ export function setup({
     res.json({ ids });
   });
 
-  // Undo of an erase or a wipe: the items come back with their old ids (so they keep their layering)
+  // ----------------- //
+  // | Undo an erase | //
+  // ----------------- //
+  // Undo of an erase or a wipe: the items come back with their old ids (so  //
+  // they keep their layering)                                               //
   app.post('/api/art/restore', (req, res) => {
     const { ym, items, from } = req.body || {};
     if (!isYm(ym) || !Array.isArray(items)) return res.status(400).json({ error: 'bad restore' });
@@ -183,7 +260,10 @@ export function setup({
     res.json({ ok: true, restored: back.length });
   });
 
-  // The eraser: whole strokes, words or pictures
+  // -------------- //
+  // | The eraser | //
+  // -------------- //
+  // The eraser: whole strokes, words or pictures                            //
   app.post('/api/art/delete', (req, res) => {
     const { ym, ids } = req.body || {};
     if (!isYm(ym) || !Array.isArray(ids)) return res.status(400).json({ error: 'bad delete' });
@@ -193,6 +273,9 @@ export function setup({
     res.json({ ok: true });
   });
 
+  // ------------------------ //
+  // | Undo (older screens) | //
+  // ------------------------ //
   app.post('/api/art/undo', (req, res) => {
     const ym = req.body?.ym;
     if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
@@ -204,7 +287,11 @@ export function setup({
     res.json({ ok: true });
   });
 
-  // Wipe the month; its next art starts on whatever layout the month has then
+  // ------------------ //
+  // | Wipe the month | //
+  // ------------------ //
+  // Wipe the month; its next art starts on whatever layout the month has    //
+  // then                                                                    //
   app.post('/api/art/clear', (req, res) => {
     const ym = req.body?.ym;
     if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
@@ -218,8 +305,12 @@ export function setup({
     res.json({ ok: true });
   });
 
-  // The border changed: the tablet sends the month's art moved onto the new layout. Done once, by whichever
-  // screen gets there first ({ padFrom, padTo } must match what the server has; 409 = already done).
+  // -------------------------- //
+  // | Art following a border | //
+  // -------------------------- //
+  // The border changed: the tablet sends the month's art moved onto the new //
+  // layout. Done once, by whichever screen gets there first ({ padFrom,     //
+  // padTo } must match what the server has; 409 = already done).            //
   app.post('/api/art/relayout', (req, res) => {
     const { ym, padFrom, padTo, items, from } = req.body || {};
     if (!isYm(ym) || !Array.isArray(items) || items.length > 5000)
@@ -246,7 +337,10 @@ export function setup({
     res.json({ ok: true, artPad: padTo, moved: done.length });
   });
 
-  // ---- the stamp library ----
+  // --------------------- //
+  // | The stamp library | //
+  // --------------------- //
+  // ---- the stamp library ----                                             //
   app.get('/api/stamps', (_req, res) => {
     res.json(
       (q.stamps.all() as { id: number; name: string; data: string }[]).map(r => ({
@@ -277,3 +371,5 @@ export function setup({
     res.json({ ok: true });
   });
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

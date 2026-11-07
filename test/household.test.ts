@@ -1,5 +1,29 @@
-// Reminders, timers, the pantry and the right-hand column's pages (from Colby Way's board): each item saved
-// on its own, what a family screen and a wall may do, and the values the server won't take.
+/*
+===============================================================================
+ Family Chalk Planner | Tests | household.test.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Reminders, timers, the pantry and the right-hand column's pages (from
+     Colby Way's board): each item saved on its own, what a family screen
+     and a wall may do, and the values the server won't take.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Reminders, timers, the pantry and the right-
+                        colby     hand column's pages (server).
+                        claude
+                                  The new screens (React + TypeScript): meal
+                                  plan, reminders, timers, pantry, jars and
+                                  chores.
+===============================================================================
+*/
+
 import test from 'node:test';
 import assert from 'node:assert';
 import fs from 'node:fs';

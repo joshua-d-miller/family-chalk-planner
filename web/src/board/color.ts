@@ -1,5 +1,30 @@
-// Colors that stay readable on the board's surface: a color too close to the background is made lighter
-// (on dark boards) or darker (on light ones) until it reads. Ported from the board.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | color.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     Colors that stay readable on the board's surface: a color too close
+     to the background is made lighter (on dark boards) or darker (on
+     light ones) until it reads. Ported from the board.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The board in React (wall view, next/board):
+                        claude    month, events, art, notes column; sharp at
+                                  4K.
+===============================================================================
+*/
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | Lightness | //
+// ------------- //
 export function lum(hex: string) {
   const n = parseInt(hex.slice(1), 16);
   const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => {
@@ -22,6 +47,11 @@ function hsl2hex(h: number, s: number, l: number) {
       .toUpperCase()
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------- //
+// | Readable on the board | //
+// ------------------------- //
 const cache = new Map<string, string>();
 export function readable(hex: string, bg: number, min = 4.5) {
   if (!/^#[0-9a-fA-F]{6}$/.test(hex || '')) return hex;
@@ -57,3 +87,5 @@ export function readable(hex: string, bg: number, min = 4.5) {
   }
   return done(dark ? '#111111' : '#FFFFFF');
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

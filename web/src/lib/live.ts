@@ -1,8 +1,59 @@
-// Live updates: one connection to the board (/api/stream) for the whole page. A change anywhere arrives
-// as an event ("chores", "meals"...), and whatever shows that list fetches it again.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Helpers | live.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     Live updates: one connection to the board (/api/stream) for the whole
+     page. A change anywhere arrives as an event ("chores", "meals"...),
+     and whatever shows that list fetches it again.
+
+ Used by:
+     web/src/board/Alerts.tsx
+     web/src/board/Board.tsx
+     web/src/board/Notes.tsx
+     web/src/board/Slideshow.tsx
+     web/src/board/Weather.tsx
+     web/src/lib/favorites.ts
+     web/src/lib/timers.ts
+     web/src/lib/today.ts
+     web/src/lib/who.ts
+     web/src/pages/Chores.tsx
+     web/src/pages/Jars.tsx
+     web/src/pages/Meals.tsx
+     web/src/pages/Pantry.tsx
+     web/src/pages/Reminders.tsx
+     web/src/pages/Settings.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
+                        colby     plan, reminders, timers, pantry, jars and
+                        claude    chores.
+
+                                  The new screens take over: /, /edit and
+                                  /chores are the React board; the old one
+                                  stays at /classic.
+===============================================================================
+*/
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError, get, url } from './api.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | The one connection | //
+// ---------------------- //
+// Opened by the first thing that subscribes, shared by everything on the    //
+// page. A new board version (the hello event) reloads the page; after a     //
+// reconnect everything is fetched again, since anything may have changed    //
+// meanwhile.                                                                //
 type Handler = (data: unknown) => void;
 const handlers = new Map<string, Set<Handler>>();
 let source: EventSource | null = null;
@@ -22,7 +73,12 @@ function connect() {
   source.onopen = () => setOnline(true);
   source.onerror = () => setOnline(false); // EventSource keeps trying by itself
 }
-// whether the live connection is up (the board shows "Offline" when it isn't)
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Online or not | //
+// ----------------- //
+// The board shows "Offline" when the connection has been down for a while.  //
 let online = true;
 const onlineSubs = new Set<(v: boolean) => void>();
 function setOnline(v: boolean) {
@@ -41,6 +97,11 @@ export function useOnline() {
   }, []);
   return v;
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------- //
+// | Listening for an event | //
+// -------------------------- //
 function emit(event: string, data: unknown) {
   for (const h of handlers.get(event) || []) h(data);
 }
@@ -57,7 +118,12 @@ export function subscribe(event: string, h: Handler) {
   return () => handlers.get(event)!.delete(h);
 }
 
-// Something from the server, kept up to date: fetched now, and again whenever one of `events` arrives
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------------------------- //
+// | Something from the server, kept up to date | //
+// ---------------------------------------------- //
+// Something from the server, kept up to date: fetched now, and again        //
+// whenever one of `events` arrives                                          //
 export function useLive<T>(path: string, events: string[]) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
@@ -78,3 +144,5 @@ export function useLive<T>(path: string, events: string[]) {
   // a change this screen made: show the server's answer straight away
   return { data, error, reload: load, set: setData };
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

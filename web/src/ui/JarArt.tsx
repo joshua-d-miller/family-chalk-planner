@@ -1,11 +1,43 @@
-// A reward jar, drawn: the pieces stacked from the bottom in offset rows, a dashed line at the goal, and
-// the jar glowing once it's full. New pieces drop in. The same drawing as the current board.
+/*
+===============================================================================
+ Family Chalk Planner | Screens | UI | JarArt.tsx
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Created:   2026-11-07
+ Updated:   2026-11-07
+
+ Purpose:
+     A reward jar, drawn: the pieces stacked from the bottom in offset
+     rows, a dashed line at the goal, and the jar glowing once it's full.
+     New pieces drop in. The same drawing as the current board.
+
+ Used by:
+     web/src/board/Notes.tsx
+     web/src/pages/Jars.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    The new board: the family's style, each
+                        colby     month's title and holiday border, polaroids,
+                        claude    drawn jars.
+===============================================================================
+*/
+
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { Jar, JarPiece } from '../../../shared/lists.ts';
 import { hash } from '../board/geom.ts';
 import './jar.css';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The pieces | //
+// -------------- //
+// Hearts, stars, lightning bolts, rainbows and a little round critter, each //
+// in a few colors.                                                          //
 const COLORS: Record<JarPiece, string[]> = {
   heart: ['#FF4FA3', '#F6B3CB', '#E8262B', '#FF8FC7'],
   star: ['#FFE500', '#F2D479', '#FFFFFF', '#FF8C1A'],
@@ -50,6 +82,12 @@ function Piece({ type, c }: { type: JarPiece; c: string }): ReactNode {
   );
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------- //
+// | One jar | //
+// ----------- //
+// The pieces stack from the bottom in offset rows, with a little jitter;    //
+// the dashed line is the goal. Pieces added since the last time drop in.    //
 export function JarArt({ jar: j }: { jar: Jar }) {
   // the count it showed last time: the pieces added since then drop in
   const seen = useRef<number | null>(null);
@@ -110,7 +148,11 @@ export function JarArt({ jar: j }: { jar: Jar }) {
   );
 }
 
-// the jars in a row, as on the board's Notes column
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------- //
+// | The jars in a row | //
+// --------------------- //
+// The jars in a row, as on the board's Notes column                         //
 export function JarRow({ jars }: { jars: Jar[] }) {
   return (
     <div className={'jars n' + jars.length}>
@@ -124,3 +166,5 @@ export function JarRow({ jars }: { jars: Jar[] }) {
     </div>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
