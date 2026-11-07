@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { paintSurface, surfaceOf } from './lib/surface.ts';
 import { useWho } from './lib/who.ts';
 import { PAGES, pageHere } from './routes.ts';
+import { Board } from './board/Board.tsx';
 import { Chores } from './pages/Chores.tsx';
 import { Jars } from './pages/Jars.tsx';
 import { Meals } from './pages/Meals.tsx';
@@ -14,6 +15,7 @@ import { SignIn } from './ui/SignIn.tsx';
 import type { Who } from './lib/who.ts';
 
 const VIEWS: Record<string, (p: { who: Who | null }) => React.JSX.Element> = {
+  board: Board,
   chores: Chores,
   meals: Meals,
   reminders: Reminders,

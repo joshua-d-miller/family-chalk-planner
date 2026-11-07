@@ -1197,7 +1197,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   // A family screen (paired touch screen) edits like a tablet but behaves like the wall:
   // no frame, photo frame on double tap, night slideshow, updates itself, back to this month when idle.
   function isFamily() { return document.body.classList.contains('family'); }
-  function onWall() { return !EDIT || isFamily(); }
+  function onWall() { return !CHORES_PAGE && (!EDIT || isFamily()); }   // never the phone chores page: no slideshow over it at night
   function framelessNow() { return FRAMELESS || isFamily(); }
   function baseScale() { return Math.min(window.innerWidth / BOARD_W, window.innerHeight / BOARD_H); }
   function clampView() {

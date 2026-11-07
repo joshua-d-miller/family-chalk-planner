@@ -1,6 +1,6 @@
 // The new screens (React): the meal plan, reminders, timers, the pantry, reward jars and chores, on a phone,
 // a family screen and the wall; the ☰ menu and favorites.
-import { test, expect } from './fixtures.ts';
+import { test, expect, thisMonth } from './fixtures.ts';
 
 const noSideScroll = page => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
 
@@ -102,6 +102,9 @@ test('chores (new screen): a phone ticks one off; a kid’s tablet sees only the
   await phone.locator('.chitem', { hasText: 'Quick living room pickup' }).click();
   await expect(phone.locator('.chitem', { hasText: 'Quick living room pickup' })).toHaveClass(/done/);
   expect(await noSideScroll(phone)).toBe(true);
+  // and back, for the other tests
+  await phone.locator('.chitem', { hasText: 'Quick living room pickup' }).click();
+  await expect(phone.locator('.chitem', { hasText: 'Quick living room pickup' })).not.toHaveClass(/done/);
   const kid = await as('kid:kid1', { path: '/next/chores' });
   await expect(kid.locator('#chores h2')).toHaveText('Kid 1’s chores');
   await expect(kid.locator('#chCols .chcol h3').first()).toContainText('Just me');
@@ -167,6 +170,14 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
   await expect
     .poll(async () => (await (await board.admin.api('/api/extras')).json()).notes.pages)
     .toEqual(['info', 'meals', 'reminders']);
+  // put things back for the other tests (the night slideshow would cover the screens)
+  await page.getByLabel('Show photos overnight on the wall (a slideshow)').uncheck();
+  await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.night).toBe(false);
+  await page.getByRole('button', { name: /Reminders/ }).click();
+  await page.getByRole('button', { name: /Reward jars/ }).click();
+  await expect
+    .poll(async () => (await (await board.admin.api('/api/extras')).json()).notes.pages)
+    .toEqual(['info', 'meals', 'jars']);
   expect(page.errors).toEqual([]);
 });
 
@@ -176,4 +187,45 @@ test('settings for an admin: the calendar and trash day', async ({ as, board }) 
   await page.getByLabel('Trash pickup').selectOption('4');
   await expect.poll(async () => (await (await board.admin.api('/api/extras')).json()).bins.day).toBe(4);
   await page.getByLabel('Trash pickup').selectOption('2');
+});
+
+test('the board (new screen, wall): the month, its events and art, sharp on a 4K wall', async ({ as, board }) => {
+  const { ym, date } = thisMonth();
+  const added = (title: string) =>
+    board.admin
+      .post('/api/events', { title, date, allDay: true })
+      .then(r => r.json())
+      .then(j => j.href as string);
+  const hrefs = [await added('Piano recital')];
+  const { id: artId } = await (
+    await board.admin.post('/api/art', { ym, stroke: { c: '#F6B3CB', w: 6, p: [300, 300, 340, 260, 380, 300] } })
+  ).json();
+  for (const size of [
+    { viewport: { width: 1920, height: 1080 } },
+    { viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 2 }
+  ]) {
+    const wall = await as('wall', { path: '/next/board', context: size });
+    await expect(wall.locator(`#grid [data-date="${date}"]`)).toContainText('Piano recital');
+    await expect(wall.locator('.artSvg .lines g')).toHaveCount(1);
+    const box = await wall.locator('#board').boundingBox();
+    expect(Math.round(box!.width)).toBe(1920); // fills the screen (as wide as it can go)
+    // the surface is painted for the screen: 2 board pixels per screen pixel... times the pixel ratio
+    const w = await wall.evaluate(async () => {
+      const m = /url\("?(.*?)"?\)$/.exec(getComputedStyle(document.getElementById('stage')!).backgroundImage);
+      const img = new Image();
+      img.src = m![1];
+      await img.decode();
+      return img.naturalWidth;
+    });
+    expect(w).toBeGreaterThanOrEqual(1252 * 1.5 * (size.deviceScaleFactor || 1));
+    expect(wall.errors).toEqual([]);
+  }
+  // live: a change shows up without reloading
+  const wall = await as('wall', { path: '/next/board' });
+  hrefs.push(await added('Book fair'));
+  await expect(wall.locator(`#grid [data-date="${date}"]`)).toContainText('Book fair');
+  // tidy up: today stays free for the other tests
+  for (const href of hrefs) await board.admin.post('/api/events/delete', { ref: { href }, origDate: date });
+  await board.admin.post('/api/art/delete', { ym, ids: [artId] });
+  await expect(wall.locator(`#grid [data-date="${date}"]`)).not.toContainText('Book fair');
 });

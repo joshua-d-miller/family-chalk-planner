@@ -1,0 +1,361 @@
+/* The board: the same layout as the current board, in board pixels (1252 x 642), scaled to the screen */
+body.boardpage {
+  overflow: hidden;
+  background: #151615;
+}
+#stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --ink: 237, 234, 224;
+  --barline: #a7b48c;
+  --bartext: #c9d4b0;
+  background-size: cover;
+  background-position: center;
+}
+#board {
+  width: 1252px;
+  height: 642px;
+  flex: none;
+  transform-origin: center center;
+}
+.slate {
+  position: relative;
+  width: 1252px;
+  height: 642px;
+  background: transparent;
+  color: var(--chalk);
+  padding: 8px 14px 10px 18px;
+  display: flex;
+  gap: 14px;
+  overflow: hidden;
+  font-family: var(--hand);
+  font-size: 16px;
+  line-height: normal;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.slate .chalk {
+  text-shadow: 0 0 1px rgba(var(--ink), 0.45);
+}
+.slate .cal {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.slate .titlerow {
+  position: relative;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+.slate .titlerow h1 {
+  margin: 0;
+  font-family: var(--script);
+  font-weight: 700;
+  font-size: 68px;
+  line-height: 1;
+  color: var(--pink);
+  min-width: 330px;
+  text-align: center;
+}
+/* the orange outline: a stroked copy of the word behind it */
+.slate .titlerow h1 .mn {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+}
+.slate .titlerow h1 .mn::before {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  color: var(--tout, #f3a35e);
+  -webkit-text-stroke: var(--toutw, 4.5px) var(--tout, #f3a35e);
+  pointer-events: none;
+}
+.slate .titlerow h1 small {
+  font-size: 30px;
+  color: var(--yellow);
+  margin-left: 10px;
+}
+.slate .weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  height: 28px;
+  align-items: end;
+  padding-bottom: 4px;
+}
+.slate .weekdays div {
+  text-align: center;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: 1.5px;
+  color: #ede6d2;
+}
+.slate #grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  border-top: 1.5px solid var(--gold);
+  border-left: 1.5px solid var(--gold);
+}
+.slate .week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-height: 0;
+  position: relative;
+}
+.slate .day {
+  grid-row: 1;
+  position: relative;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-right: 1.5px solid var(--gold);
+  border-bottom: 1.5px solid var(--gold);
+  padding: 5px 7px;
+  color: var(--chalk);
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  cursor: default;
+}
+.slate .day .num {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 27px;
+  border-left: 1.5px solid var(--gold);
+  border-bottom: 1.5px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--yellow);
+}
+.slate .day.other .num {
+  color: rgba(242, 212, 121, 0.35);
+}
+.slate .ringAt {
+  position: absolute;
+  top: -7.5px;
+  width: 46px;
+  height: 42px;
+  pointer-events: none;
+  z-index: 3;
+}
+.slate .ring {
+  width: 46px;
+  height: 42px;
+  overflow: visible;
+}
+.slate .day .top {
+  height: 24px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--green);
+  gap: 4px;
+}
+.slate .day .ev {
+  font-size: 13px;
+  line-height: 1.15;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  word-break: break-word;
+  flex: none;
+}
+.slate .day .ev .tm {
+  white-space: nowrap;
+}
+.slate .day .ev.allday {
+  color: var(--yellow);
+}
+.slate .day .ev.holiday {
+  color: var(--blue);
+}
+.slate .day .ev[class*='sz-'] {
+  line-height: 1.08;
+  margin: 1px 0;
+}
+.slate .day .more {
+  font-size: 12px;
+  color: rgba(var(--ink), 0.6);
+}
+.slate .bar {
+  position: relative;
+  grid-row: 1;
+  align-self: start;
+  height: 21px;
+  margin: 0 7px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  border: 1.5px solid var(--barline);
+  border-radius: 11px;
+  background: rgba(167, 180, 140, 0.18);
+  overflow: hidden;
+  z-index: 1;
+}
+.slate .bar span {
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--bartext);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.slate .notes {
+  width: 214px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 4px 4px 14px;
+  border-left: 1.5px solid var(--gold);
+  gap: 12px;
+  overflow: hidden;
+}
+.slate .notes h2 {
+  margin: 0;
+  font-family: var(--script);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1;
+  color: #ede6d2;
+  text-align: center;
+}
+.slate .nslot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+.slate .npage {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.slate .info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.slate .info .lbl {
+  font-size: 13px;
+  color: rgba(var(--ink), 0.75);
+}
+.slate .info .val {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.slate .trashIc {
+  width: 34px;
+  text-align: center;
+  font-size: 24px;
+  font-family: var(--emoji), sans-serif;
+}
+.slate .cd {
+  display: flex;
+  gap: 6px;
+  font-size: 15px;
+  align-items: baseline;
+}
+.slate .cd .ct {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slate .cd b {
+  color: var(--yellow);
+  white-space: nowrap;
+}
+.slate .rule {
+  height: 1.5px;
+  background: rgba(201, 180, 122, 0.6);
+}
+.slate .mh {
+  margin: 0 0 4px;
+  font-family: var(--script);
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--pink);
+  text-align: center;
+}
+.slate .meals ul,
+.slate .nlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.slate .meals li,
+.slate .nlist li {
+  font-size: 17px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.slate .meals li.done {
+  color: rgba(var(--ink), 0.45);
+  text-decoration: line-through;
+}
+.slate .mday {
+  color: var(--yellow);
+  font-size: 0.8em;
+}
+.slate .njar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 16px;
+}
+.slate .njar span:first-child {
+  flex: 1;
+}
+.slate .artSvg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1252px;
+  height: 642px;
+  pointer-events: none;
+  z-index: 5;
+  overflow: visible;
+}
+.slate .gifLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.slate .gifLayer img {
+  position: absolute;
+}
+#stage.light .slate {
+  --chalk: #2a2a26;
+  --ink: 42, 42, 38;
+}

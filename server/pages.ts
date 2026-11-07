@@ -253,7 +253,7 @@ export function setup({
     app.get('/next/:page', (req, res, next) => {
       const page = req.params.page;
       if (!/^[a-z-]{1,20}$/.test(page)) return next();
-      sendApp(page in manifests(title) ? (page as Kind) : 'edit')(req, res, next);
+      sendApp(page === 'board' ? 'wall' : page in manifests(title) ? (page as Kind) : 'edit')(req, res, next);
     });
     // the screens' scripts and styles: names change with every build, so they're kept for good
     app.use(
