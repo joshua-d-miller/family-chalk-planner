@@ -1,0 +1,50 @@
+.chtabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-bottom: 4px;
+  padding: 2px;
+}
+.chtabs button {
+  flex: none;
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 23px;
+  border: 2px solid var(--faint);
+  background: transparent;
+  color: var(--chalk);
+  font: 700 0.85em var(--hand);
+  white-space: nowrap;
+}
+.chtabs button.on {
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+.chtabs button small {
+  font-size: 0.75em;
+  opacity: 0.75;
+  margin-left: 6px;
+}
+#chCols {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 0 28px;
+}
+#chCols .section + .section {
+  margin-top: 0;
+}
+@media (min-width: 700px) {
+  #chCols .section + .section {
+    border-top: none;
+  }
+}
+.chitem .cn {
+  font-size: 0.75em;
+  color: var(--yellow);
+  white-space: nowrap;
+}
+.chitem:disabled {
+  cursor: default;
+  opacity: 1;
+}

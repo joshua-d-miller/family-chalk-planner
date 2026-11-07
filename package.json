@@ -1,16 +1,24 @@
 {
   "name": "family-chalk-planner",
-  "version": "0.12.2",
+  "version": "0.13.0",
   "description": "A chalkboard-style family wall calendar: CalDAV events, chalk art, photos, meal plan and reward jars, edited from a tablet.",
   "license": "AGPL-3.0-or-later",
   "private": true,
-  "main": "server/chalkboard.js",
+  "type": "module",
+  "main": "server/main.ts",
   "scripts": {
     "start": "node server/chalkboard.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.ts",
+    "test:e2e": "playwright test",
+    "build": "vite build",
+    "dev:web": "vite",
+    "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json && tsc -p web/tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write --no-error-on-unmatched-pattern \"server/**/*.ts\" \"shared/**/*.ts\" \"test/**/*.ts\" \"web/**/*.{ts,tsx,css}\" \"*.config.ts\"",
+    "format:check": "prettier --check --no-error-on-unmatched-pattern \"server/**/*.ts\" \"shared/**/*.ts\" \"test/**/*.ts\" \"web/**/*.{ts,tsx,css}\" \"*.config.ts\""
   },
   "engines": {
-    "node": ">=22.5"
+    "node": ">=22.18"
   },
   "dependencies": {
     "@fontsource/amatic-sc": "5.3.0",
@@ -24,9 +32,28 @@
     "@fontsource/rock-salt": "5.3.0",
     "@iconify-json/fluent-emoji-flat": "1.2.6",
     "@iconify-json/game-icons": "1.2.4",
-    "@simplewebauthn/server": "14.0.3",
+    "@infolektuell/noto-color-emoji": "0.2.0",
+    "@simplewebauthn/server": "14.1.0",
     "express": "5.3.0",
     "ical.js": "2.2.1",
     "qrcode": "1.5.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.65.0",
+    "@types/express": "5.0.6",
+    "@types/node": "22.20.5",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "eslint": "10.14.0",
+    "globals": "17.14.0",
+    "prettier": "3.9.10",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
+    "vite": "8.3.6"
   }
 }

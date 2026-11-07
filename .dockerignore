@@ -13,3 +13,4 @@ docs
 *.db-wal
 *.db-shm
 *.patch
+web/dist

@@ -16,7 +16,9 @@ A chalkboard-style family wall calendar for a wall-mounted screen, edited from a
 - **Small and private.** It runs on your own network as one Node.js service (or one Docker container) with a SQLite file. No account and no cloud service of its own; screens, fonts and pictures all come from your own server.
 - **Safe for a family.** Screens are paired with a code; people sign in with a passkey or password + authenticator app; an admin console shows every sign-in, screen and change.
 
-![Chores on the board and on a phone: today's chores by person, with ticked-off ones crossed out](docs/images/chores.jpg)
+![The board on a tablet in its wooden frame, with the tools along the bottom: Draw, Month title, Border, photos, style and Add event](docs/images/tablet.jpg)
+
+![Chores on a tablet and on a phone: today's chores by person, with ticked-off ones crossed out](docs/images/chores.jpg)
 
 <p align="center"><img src="docs/images/backgrounds.jpg" alt="The same board on green chalkboard, cork, kraft paper and whiteboard backgrounds" width="49%"> <img src="docs/images/console.jpg" alt="The admin console on a phone: pairing a screen, and board settings" width="49%"></p>
 
@@ -38,7 +40,7 @@ git clone https://github.com/joshua-d-miller/family-chalk-planner.git /opt/famil
 sudo bash /opt/family-chalk-planner/deploy/install.sh
 ```
 
-The installer adds Node.js 22 if it's missing, a locked-down service user, a systemd service that runs straight from that folder, and the optional face finder for photo framing.
+The installer adds Node.js 22 (22.18 or newer) if it's missing, a locked-down service user, a systemd service that runs straight from that folder, and the optional face finder for photo framing.
 
 Either way, open `http://<server>:3002/admin`, enter the setup code to create the admin account, then use **⚙️ Board** in the console for your calendar (iCloud/CalDAV with "Find my calendars", or [Google](docs/google-calendar.md)), weather town and photo album. No files to edit. Pair the wall display and invite people from the same console.
 
@@ -69,7 +71,7 @@ Details: **[docs/docker.md](docs/docker.md)** and **[docs/install.md](docs/insta
 ```bash
 npm ci
 npm test                                   # starts the server against a fake calendar and photo album
-node test/mock-caldav.js 5232 &            # fake calendar for local work
+node test/mock-caldav.ts 5232 &            # fake calendar for local work
 DATA_DIR=./data npm start                  # setup code: see the log or data/setup-code.txt
 ```
 Then open `http://localhost:3002/admin`, create the admin, and point ⚙️ Board → Calendar at `http://127.0.0.1:5232/` (any username and password).

@@ -1,0 +1,11 @@
+# Template: deploy/install.sh fills in the @...@ values. Starts family-chalk-planner-update.service when
+# the admin console asks for an update.
+[Unit]
+Description=Family Chalk Planner: watch for "Update now"
+
+[Path]
+PathExists=@DATA_DIR@/update-request
+Unit=family-chalk-planner-update.service
+
+[Install]
+WantedBy=multi-user.target

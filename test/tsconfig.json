@@ -1,0 +1,13 @@
+{
+  // The tests: checked for mistakes (wrong names, wrong imports), but not held to the server's strictness,
+  // since most of what they handle is JSON from the server.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "strict": false,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "lib": ["es2023", "dom"]
+  },
+  "include": ["./**/*.ts", "../playwright.config.ts", "../vite.config.ts"]
+}

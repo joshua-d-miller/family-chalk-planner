@@ -1,7 +1,28 @@
 #!/usr/bin/env bash
-# setup-face.sh - optional face finder for photo framing (OpenCV YuNet).
-# Creates a Python venv in <app>/face/venv (~220 MB) and downloads the checksum-verified
-# model (~230 KB). Safe to re-run. Usage: setup-face.sh [APP_DIR]
+: <<'HEADER'
+===============================================================================
+ Family Chalk Planner | Deploy | setup-face.sh
+===============================================================================
+ Version:   0.1.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-10-11
+
+ Purpose:
+     Installs the optional face finder for photo framing (OpenCV YuNet): a
+     Python venv in <app>/face/venv (about 220 MB) and the
+     checksum-verified model (about 230 KB). Safe to run again.
+
+     setup-face.sh [APP_DIR]
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.1.0     2026-10-11   joshua    Standalone service, installer, updater,
+                        claude    tests.
+===============================================================================
+HEADER
+
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 APP_DIR="${1:-/opt/family-chalk-planner}"

@@ -9,3 +9,6 @@ face/__pycache__/
 *.db-wal
 *.db-shm
 .DS_Store
+test-results/
+playwright-report/
+web/dist/

@@ -1,0 +1,173 @@
+/*
+===============================================================================
+ Family Chalk Planner | Tests | mock-google.ts
+===============================================================================
+ Version:   0.13.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-07
+
+ Purpose:
+     A stand-in for Google's OAuth token endpoint, Calendar API (calendar
+     list) and CalDAV (/caldav/v2/<calendarId>/events/), for tests. Every
+     calendar call must carry a valid Bearer token; tokens expire quickly
+     (expiresIn) so refreshing gets exercised.
+
+     Usage:
+          const g = await (await import('./mock-google.ts'))
+              .start(port, { expiresIn: 2 })
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.13.0    2026-11-07   joshua    Server and tests are all TypeScript (ES
+                        claude    modules).
+                        colby
+                                  Google: several calendars at once, read-only
+                                  ones, and which calendar a new event goes
+                                  in.
+===============================================================================
+*/
+
+import http from 'node:http';
+import crypto from 'node:crypto';
+
+function start(port = 5994, opts: { expiresIn?: number } = {}): Promise<import('node:http').Server & { state: any }> {
+  const expiresIn = opts.expiresIn || 3600;
+  const state = {
+    codes: new Set(['GOOD-CODE']),
+    refresh: new Set(),
+    access: new Map(),
+    calls: [],
+    events: new Map(),
+    calEvents: new Map()
+  };
+  const cal = 'family@group.calendar.google.com';
+  const kidsCal = 'kids@group.calendar.google.com';
+  const roCal = 'school@group.calendar.google.com';
+  const ics = (uid, summary, start, end) =>
+    `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Google Inc//Google Calendar 70.9054//EN\r\nBEGIN:VEVENT\r\nUID:${uid}\r\nDTSTAMP:20261001T000000Z\r\nDTSTART;VALUE=DATE:${start}\r\nDTEND;VALUE=DATE:${end}\r\nSUMMARY:${summary}\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n`;
+  let etag = 1;
+  state.events.set('picnic.ics', {
+    text: ics('picnic-uid', 'Google picnic', '20261017', '20261018'),
+    etag: `"g${etag++}"`
+  });
+  state.calEvents.set(cal, state.events);
+  state.calEvents.set(
+    kidsCal,
+    new Map([['piano.ics', { text: ics('piano-uid', 'Piano recital', '20261019', '20261020'), etag: `"g${etag++}"` }]])
+  );
+  state.calEvents.set(
+    roCal,
+    new Map([
+      ['assembly.ics', { text: ics('assembly-uid', 'School assembly', '20261020', '20261021'), etag: `"g${etag++}"` }]
+    ])
+  );
+  const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const newToken = () => {
+    const t = crypto.randomBytes(8).toString('hex');
+    state.access.set(t, Date.now() + expiresIn * 1000);
+    return t;
+  };
+  const authed = req => {
+    const t = (req.headers.authorization || '').replace(/^Bearer /, '');
+    return state.access.get(t) > Date.now();
+  };
+
+  const srv = http.createServer((req, res) => {
+    let body = '';
+    req.on('data', d => (body += d));
+    req.on('end', () => {
+      const u = new URL(req.url, 'http://x');
+      state.calls.push(`${req.method} ${u.pathname}`);
+      const json = (code, o) => {
+        res.writeHead(code, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(o));
+      };
+      if (u.pathname === '/token') {
+        const f = new URLSearchParams(body);
+        if (f.get('client_id') !== 'test-client' || f.get('client_secret') !== 'test-secret')
+          return json(401, { error: 'invalid_client' });
+        if (f.get('grant_type') === 'authorization_code') {
+          if (!state.codes.has(f.get('code')) || !f.get('code_verifier')) return json(400, { error: 'invalid_grant' });
+          state.codes.delete(f.get('code'));
+          const r = 'refresh-' + crypto.randomBytes(4).toString('hex');
+          state.refresh.add(r);
+          return json(200, { access_token: newToken(), expires_in: expiresIn, refresh_token: r, token_type: 'Bearer' });
+        }
+        if (f.get('grant_type') === 'refresh_token') {
+          if (!state.refresh.has(f.get('refresh_token'))) return json(400, { error: 'invalid_grant' });
+          return json(200, { access_token: newToken(), expires_in: expiresIn, token_type: 'Bearer' });
+        }
+        return json(400, { error: 'unsupported_grant_type' });
+      }
+      if (!authed(req)) return json(401, { error: { message: 'Request had invalid authentication credentials.' } });
+      if (u.pathname === '/calendar/v3/users/me/calendarList') {
+        return json(200, {
+          items: [
+            { id: 'joe@example.com', summary: 'joe@example.com', primary: true, accessRole: 'owner' },
+            { id: cal, summary: 'Family', backgroundColor: '#9fe1e7', accessRole: 'writer' },
+            { id: kidsCal, summary: 'Kids', backgroundColor: '#a9d8a0', accessRole: 'writer' },
+            { id: roCal, summary: 'School', backgroundColor: '#f6b3cb', accessRole: 'reader' }
+          ]
+        });
+      }
+      const m = /^\/caldav\/v2\/([^/]+)\/events\/([^/]*)$/.exec(u.pathname);
+      const cid = m && decodeURIComponent(m[1]);
+      const store = cid && state.calEvents.get(cid);
+      if (!store) {
+        res.statusCode = 404;
+        return res.end();
+      }
+      const file = m[2];
+      if (!file && req.method === 'REPORT') {
+        res.writeHead(207, { 'Content-Type': 'application/xml' });
+        return res.end(
+          `<?xml version="1.0" encoding="UTF-8"?><D:multistatus xmlns:D="DAV:" xmlns:caldav="urn:ietf:params:xml:ns:caldav">${[
+            ...store
+          ]
+            .map(
+              ([k, v]) =>
+                `<D:response><D:href>/caldav/v2/${encodeURIComponent(cid)}/events/${k}</D:href><D:propstat><D:status>HTTP/1.1 200 OK</D:status><D:prop><D:getetag>${esc(v.etag)}</D:getetag><caldav:calendar-data>${esc(v.text)}</caldav:calendar-data></D:prop></D:propstat></D:response>`
+            )
+            .join('')}</D:multistatus>`
+        );
+      }
+      const cur = store.get(file);
+      if (req.method === 'GET') {
+        if (!cur) {
+          res.statusCode = 404;
+          return res.end();
+        }
+        res.writeHead(200, { ETag: cur.etag, 'Content-Type': 'text/calendar' });
+        return res.end(cur.text);
+      }
+      if (req.headers['if-match'] && (!cur || cur.etag !== req.headers['if-match'])) {
+        res.statusCode = 412;
+        return res.end();
+      }
+      if (req.method === 'PUT') {
+        store.set(file, { text: body, etag: `"g${etag++}"` });
+        res.writeHead(cur ? 204 : 201, { ETag: store.get(file).etag });
+        return res.end();
+      }
+      if (req.method === 'DELETE') {
+        if (!cur) {
+          res.statusCode = 404;
+          return res.end();
+        }
+        store.delete(file);
+        res.statusCode = 204;
+        return res.end();
+      }
+      res.statusCode = 405;
+      res.end();
+    });
+  });
+  return new Promise(r =>
+    srv.listen(port, '127.0.0.1', () => {
+      r(Object.assign(srv, { state }));
+    })
+  );
+}
+export { start };

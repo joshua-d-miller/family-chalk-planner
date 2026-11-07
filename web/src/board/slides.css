@@ -1,0 +1,333 @@
+/* the overnight slideshow, over the whole screen (screen pixels, not board pixels) */
+#slides {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #000;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 2.5s,
+    visibility 0s 2.5s;
+  overflow: hidden;
+  cursor: pointer;
+}
+#slides.on {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 2.5s;
+}
+#slides:not(.on) {
+  pointer-events: none; /* while it fades out, taps go to the calendar */
+}
+#slides .slarea {
+  position: absolute;
+  inset: 0;
+}
+#slides .sl {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 2s;
+}
+#slides .sl.on {
+  opacity: 1;
+}
+#slides .tile {
+  position: absolute;
+  overflow: hidden;
+  background: #0d0d0d;
+}
+#slides .bg {
+  position: absolute;
+  left: -5%;
+  top: -5%;
+  width: 110%;
+  height: 110%;
+  object-fit: cover;
+  filter: blur(28px) brightness(0.4);
+}
+#slides .fg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#slides .sl.on .fg {
+  animation: kenburns 40s ease-out forwards;
+}
+#slides .sl.on .tile:nth-child(2) .fg {
+  animation-duration: 46s;
+}
+#slides .sl.on .tile:nth-child(3) .fg {
+  animation-duration: 52s;
+}
+@keyframes kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.07);
+  }
+}
+#slides .dim {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  pointer-events: none;
+  transition: opacity 1s;
+  z-index: 1;
+}
+#slides .clock,
+#slides .sinfo {
+  position: absolute;
+  z-index: 2;
+  color: #f4f1e8;
+  font-family: 'Kalam', cursive;
+  border-radius: 24px;
+  background: rgba(10, 10, 10, 0.42);
+  -webkit-backdrop-filter: blur(12px) brightness(0.75);
+  backdrop-filter: blur(12px) brightness(0.75);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.85),
+    0 0 12px rgba(0, 0, 0, 0.5);
+}
+#slides .clock {
+  text-align: right;
+  padding: 12px 24px 10px;
+  transition: transform 2s;
+}
+#slides .clock.left {
+  text-align: left;
+}
+#slides .clock b {
+  display: block;
+  font-size: 80px;
+  line-height: 1;
+  font-weight: 700;
+}
+#slides .clock b small {
+  font-size: 30px;
+  margin-left: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+#slides .clock span {
+  font-size: 28px;
+}
+#slides .sinfo {
+  bottom: 30px;
+  left: 40px;
+  max-width: min(46vw, 560px);
+  text-align: left;
+  padding: 12px 24px;
+  pointer-events: none;
+}
+#slides .sinfo.right {
+  left: auto;
+  right: 40px;
+  text-align: right;
+}
+#slides .sinfo .sec + .sec {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(244, 241, 232, 0.22);
+}
+#slides .sinfo h4 {
+  margin: 0 0 2px;
+  font:
+    700 18px 'Kalam',
+    cursive;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+#slides .sinfo .temp b {
+  display: block;
+  font-size: 64px;
+  line-height: 1;
+  font-weight: 700;
+}
+#slides .sinfo .temp span {
+  font-size: 28px;
+}
+#slides .sinfo ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+#slides .sinfo li {
+  font-size: 28px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#slides .sinfo li small {
+  font-size: 0.75em;
+  opacity: 0.8;
+  margin-right: 8px;
+}
+#slides .sinfo.right li small {
+  margin-right: 0;
+  margin-left: 8px;
+}
+/* the panel down the left side (photos beside it, not under it) */
+#slides .slide-sidebar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 380px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px 26px 30px;
+  background: rgba(12, 12, 12, 0.75);
+  border-right: 1.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 4px 0 30px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  pointer-events: none;
+}
+#slides .slide-sidebar .clock,
+#slides .slide-sidebar .sinfo {
+  position: static;
+  max-width: none;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  text-align: left;
+  border-radius: 0;
+}
+#slides .slide-sidebar .sinfo li {
+  font-size: 22px;
+}
+#slides .slide-sidebar .sinfo .temp b {
+  font-size: 52px;
+}
+#slides .slide-sidebar .sinfo .temp span {
+  font-size: 22px;
+}
+@media (prefers-reduced-motion: reduce) {
+  #slides .sl.on .fg {
+    animation: none;
+  }
+}
+/* the day view, a reminder, a timer that's done */
+.daylist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.daylist button {
+  text-align: left;
+  min-height: 48px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(201, 180, 122, 0.45);
+  background: transparent;
+  color: var(--chalk, #edeae0);
+  font-family: 'Kalam', cursive;
+  font-size: 19px;
+  cursor: pointer;
+}
+.daylist button.allday {
+  color: var(--yellow, #f2d479);
+}
+.daylist button.holiday {
+  color: #9cc9e6;
+  font-style: italic;
+}
+.daylist.wall button {
+  pointer-events: none;
+  font-size: 22px;
+}
+.daylist button.ro {
+  cursor: default;
+  border-style: dashed;
+  opacity: 0.85;
+}
+.daylist .empty,
+.tapclose {
+  text-align: center;
+  color: rgba(237, 234, 224, 0.55);
+}
+.tapclose {
+  margin-top: 14px;
+  font-size: 15px;
+}
+.remalert {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.remalert .rpitem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(201, 180, 122, 0.45);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 22px;
+  text-align: left;
+  cursor: pointer;
+}
+.remalert .chbox {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 2px solid currentColor;
+  border-radius: 6px;
+}
+.remalert .ct {
+  flex: 1;
+}
+.remalert .rtag {
+  opacity: 0.7;
+  font-size: 17px;
+}
+.timerdone {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.timerdone button {
+  font:
+    700 30px 'Kalam',
+    cursive;
+  color: #141414;
+  background: #f2d479;
+  border: none;
+  border-radius: 18px;
+  padding: 10px 28px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  animation: tdpulse 1.6s ease-in-out infinite;
+}
+@keyframes tdpulse {
+  50% {
+    transform: scale(1.04);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .timerdone button {
+    animation: none;
+  }
+}

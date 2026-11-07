@@ -21,7 +21,7 @@
   --slate:#141414; --wood:#4A3320; --ink:237,234,224; --bartext:#C9D4B0; --barline:#A7B48C;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#1c130b;overflow:hidden;font-family:'Kalam',cursive;color:var(--chalk);
+html,body{margin:0;height:100%;background:#1c130b;overflow:hidden;font-family:'Kalam','Apple Color Emoji','Segoe UI Emoji','Board Emoji',cursive;color:var(--chalk);
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 body.display{cursor:none;background:#151615}
 /* Wall: the Apolosign already has a physical frame, so drop the wood and the (empty) cork strip */
@@ -264,7 +264,7 @@ body.display .bottom{touch-action:none}   /* swipes go to the switch, not the pa
 .bottom.photomode .bhead{display:flex;justify-content:center}
 .bslide:empty{display:none}
 
-.bslide button{position:relative;border:none;background:transparent;border-radius:12px;width:24px;height:22px;padding:0;font-size:13px;line-height:22px;cursor:pointer;opacity:.55;touch-action:manipulation;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif}
+.bslide button{position:relative;border:none;background:transparent;border-radius:12px;width:24px;height:22px;padding:0;font-size:13px;line-height:22px;cursor:pointer;opacity:.55;touch-action:manipulation;font-family:'Apple Color Emoji','Segoe UI Emoji','Board Emoji',sans-serif}
 .bslide button.on{background:rgba(201,180,122,.35);opacity:1}
 .bslide button::after{content:'';position:absolute;inset:-8px 0}   /* easier to hit */
 .upnext{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;max-height:150px;overflow:hidden}
@@ -456,7 +456,7 @@ body.edit #zoom{display:flex}
 .acctbtns{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 .arow{display:flex;align-items:center;gap:14px;width:100%;min-height:68px;padding:10px 16px;border-radius:16px;border:2px solid rgba(var(--ink),.28);background:rgba(255,255,255,.04);color:var(--chalk);text-align:left;text-decoration:none;font-family:'Kalam',cursive;cursor:pointer;touch-action:manipulation}
 .arow:active{background:rgba(255,255,255,.1)}.arow:disabled{opacity:.6}
-.arow .ai{flex:0 0 40px;height:40px;border-radius:12px;background:rgba(242,212,121,.14);display:flex;align-items:center;justify-content:center;font-size:21px;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif}
+.arow .ai{flex:0 0 40px;height:40px;border-radius:12px;background:rgba(242,212,121,.14);display:flex;align-items:center;justify-content:center;font-size:21px;font-family:'Apple Color Emoji','Segoe UI Emoji','Board Emoji',sans-serif}
 .arow .at{display:flex;flex-direction:column;min-width:0}.arow b{font-size:20px;line-height:1.2}.arow small{font-size:15px;line-height:1.25;color:rgba(var(--ink),.65);overflow-wrap:anywhere}
 .arow.out{border-color:rgba(247,161,161,.45)}.arow.out .ai{background:rgba(247,161,161,.14)}.arow.out b{color:#F7A1A1}
 /* family touch screen: events, meals, jars, and decorating (stamps, clipart, emoji, GIFs, words: move/resize/erase)
@@ -557,7 +557,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 .lscroll{max-height:58vh;overflow-y:auto;margin-top:8px;touch-action:pan-y}
 .emojis{display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:8px;margin-top:8px}
 .emojis button{height:62px;border-radius:12px;border:1.5px solid rgba(201,180,122,.35);background:#101010;font-size:36px;line-height:1;cursor:pointer;
-  font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;padding:0}
+  font-family:'Apple Color Emoji','Segoe UI Emoji','Board Emoji',sans-serif;padding:0}
 #eTabs .seg{min-width:auto;padding:0 12px;font-size:16px;height:38px}
 #fGrid button svg{width:40px;height:40px;stroke:var(--chalk);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 #fChips .seg{min-width:auto;padding:0 12px;font-size:15px;height:36px}
@@ -1103,8 +1103,8 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
 <script>
 (function () {
   'use strict';
-  var EDIT = location.pathname.replace(/\/+$/, '') === '/edit';
-  var CHORES_PAGE = location.pathname.replace(/\/+$/, '') === '/chores';   // the chores on their own (phones)
+  var EDIT = /\/edit$/.test(location.pathname.replace(/\/+$/, ''));   // /edit, or /classic/edit
+  var CHORES_PAGE = /\/chores$/.test(location.pathname.replace(/\/+$/, ''));   // the chores on their own (phones)
   // Test switches for display glitches on kiosk browsers: add ?noart, ?plain and/or ?csszoom to the address
   var Q = new URLSearchParams(location.search);
   var FLAG = { noart: Q.has('noart'), plain: Q.has('plain'), csszoom: Q.has('csszoom') && !EDIT };
@@ -1197,7 +1197,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
   // A family screen (paired touch screen) edits like a tablet but behaves like the wall:
   // no frame, photo frame on double tap, night slideshow, updates itself, back to this month when idle.
   function isFamily() { return document.body.classList.contains('family'); }
-  function onWall() { return !EDIT || isFamily(); }
+  function onWall() { return !CHORES_PAGE && (!EDIT || isFamily()); }   // never the phone chores page: no slideshow over it at night
   function framelessNow() { return FRAMELESS || isFamily(); }
   function baseScale() { return Math.min(window.innerWidth / BOARD_W, window.innerHeight / BOARD_H); }
   function clampView() {
@@ -4888,6 +4888,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
     $('pairpad').classList.remove('open');
     $('signWhy').textContent = why || '';
     $('signPk').hidden = !(state.who && state.who.passkeys && window.chalkPasskey && window.chalkPasskey.supported);
+    $('signCode').hidden = !!(state.who && state.who.homeSignin);   // home network sign-in: just a password
     $('signpad').classList.add('open');
   }
   $('signPkGo').addEventListener('click', function () {
@@ -4902,6 +4903,7 @@ body.display #dmodal .card::after{content:'Tap anywhere to close';display:block;
       .catch(function (e) { $('signErr').textContent = e.message; $('signCode').value = ''; }).then(function () { $('signGo').disabled = false; });
   });
   $('signCode').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('signGo').click(); });
+  $('signPw').addEventListener('keydown', function (e) { if (e.key === 'Enter' && $('signCode').hidden) $('signGo').click(); });
   $('signPair').addEventListener('click', function (e) { e.preventDefault(); $('signpad').classList.remove('open'); location.href = '/?pair'; });
   // 👤 account menu (signed-in people)
   $('acctBtn').addEventListener('click', function () {

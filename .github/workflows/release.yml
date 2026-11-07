@@ -12,7 +12,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -23,6 +23,15 @@ jobs:
           [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "Tag $GITHUB_REF_NAME but package.json says $v"; exit 1; }
       - run: npm ci
       - run: npm test
+      # The screens, built once here: servers fetch them as the git tag screens-vX.Y.Z (deploy/screens.sh),
+      # with the same access they use for the code, and never build anything themselves.
+      - run: npm run build
+      - name: Publish the built screens (tag screens-${{ github.ref_name }})
+        run: |
+          d="$(mktemp -d)"; cp -r web/dist/. "$d"; cd "$d"
+          git init -q -b screens && git add -A
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -qm "Screens for $GITHUB_REF_NAME"
+          git push -q "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "HEAD:refs/tags/screens-$GITHUB_REF_NAME"
       - name: Notes from CHANGELOG.md
         run: |
           v="${GITHUB_REF_NAME#v}"

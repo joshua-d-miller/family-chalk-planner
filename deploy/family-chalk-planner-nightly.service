@@ -1,0 +1,11 @@
+# Template: deploy/install.sh fills in the @...@ values. The nightly check: notes whether a newer version
+# is out (shown in the admin console) and, if automatic updates are on, installs a minor or patch release.
+[Unit]
+Description=Family Chalk Planner: nightly update check
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash @APP_DIR@/deploy/update.sh --nightly
+TimeoutStartSec=30min

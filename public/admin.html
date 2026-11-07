@@ -8,7 +8,7 @@
 <link rel="icon" href="/icons/icon-192.png">
 <link href="/fonts.css" rel="stylesheet">
 <style>
-:root{--ui:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;--bg:#191917;--card:#22221f;--line:rgba(201,180,122,.4);--chalk:#EDEAE0;--dim:rgba(237,234,224,.62);--pink:#F6B3CB;--yellow:#F2D479;--green:#A9D8A0;--red:#F7A1A1}
+:root{--ui:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Apple Color Emoji','Segoe UI Emoji','Board Emoji',sans-serif;--bg:#191917;--card:#22221f;--line:rgba(201,180,122,.4);--chalk:#EDEAE0;--dim:rgba(237,234,224,.62);--pink:#F6B3CB;--yellow:#F2D479;--green:#A9D8A0;--red:#F7A1A1}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--chalk);font:16px/1.5 var(--ui);font-variant-numeric:tabular-nums}
 main{max-width:760px;margin:0 auto;padding:22px 16px 60px}
@@ -291,6 +291,14 @@ button:disabled{opacity:.5;cursor:default}
         <h2>Photos</h2>
         <p class="dim">The share link of an iCloud Shared Album (with Public Website on) or a Google Photos shared album. Step-by-step: docs/photos.md.</p>
         <label for="bfAlbum">Album link</label><input id="bfAlbum" data-k="PHOTO_ALBUM_URL" autocomplete="off" spellcheck="false">
+        <p class="dim" style="margin-top:14px">Or photos from your own <b>Immich</b> server (used instead of the album link). In Immich: Account Settings → API Keys → New API Key, with album.read, asset.read, asset.view and person.read.</p>
+        <div class="row">
+          <div><label for="bfImUrl">Immich address</label><input id="bfImUrl" data-k="IMMICH_URL" autocomplete="off" spellcheck="false" placeholder="http://192.168.1.50:2283"></div>
+          <div><label for="bfImKey">API key</label><input id="bfImKey" type="password" data-k="IMMICH_API_KEY" autocomplete="new-password"></div>
+        </div>
+        <label for="bfImAlbum">Which photos</label>
+        <div class="row"><div><select id="bfImAlbum" data-k="IMMICH_ALBUM"><option value="">Favorites (else recent photos)</option><option value="favorites">Favorites</option><option value="all">Everything (most recent)</option><option value="thisday">On this day, other years</option></select></div><div style="flex:0 1 auto"><button id="bfImList">List my albums</button></div></div>
+        <div class="err" id="bfImErr"></div>
       </div>
       <div class="card">
         <h2>On your network</h2>
@@ -301,9 +309,20 @@ button:disabled{opacity:.5;cursor:default}
         <div class="row"><div><input id="bfProxy" data-k="TRUST_PROXY" autocomplete="off" spellcheck="false" placeholder="(any device on your local network)"></div><div style="flex:0 1 auto"><button id="bfProxyUse" hidden></button></div></div>
         <div class="row">
           <div><label for="bfOpen">Unpaired devices</label><select id="bfOpen" data-k="ALLOW_UNPAIRED_VIEW"><option value="">(default: must be paired)</option><option value="false">Must be paired</option><option value="true">May view the board (home network only!)</option></select></div>
+          <div><label for="bfHome">Board sign-in at home</label><select id="bfHome" data-k="HOME_SIGNIN"><option value="">(default: password + code)</option><option value="off">Password + code</option><option value="on">Just a password, when opened by IP address</option></select></div>
           <div><label for="bfUpd">Updates (deploy/update.sh)</label><select id="bfUpd" data-k="UPDATE_CHANNEL"><option value="">(default: releases)</option><option value="release">Releases only</option><option value="main">Every change on main (developers)</option></select></div>
         </div>
+        <p class="dim warnline" id="bfHomeWarn" hidden style="font-size:14px">⚠ With <b>just a password</b>, any device on your network — including smart plugs, TVs and anything on another VLAN that can reach the board — can sign in to the board with a password alone. It only applies when the board is opened by its IP address (like http://192.168.1.20:3002), never through your https:// address, and the admin console still asks for the code.</p>
         <label for="bfSrc">Source code link shown in the app (change it if you run your own copy)</label><input id="bfSrc" data-k="SOURCE_URL" autocomplete="off" spellcheck="false" placeholder="https://github.com/joshua-d-miller/family-chalk-planner">
+      </div>
+      <div class="card">
+        <h2>Updates</h2>
+        <p id="upNow" class="dim"></p>
+        <div class="actions"><button class="go" id="upGo" hidden>Update now</button></div>
+        <div class="err" id="upErr"></div>
+        <label for="bfAuto">Install updates by themselves</label>
+        <select id="bfAuto" data-k="AUTO_UPDATE"><option value="">(default: no, I’ll press Update now)</option><option value="off">No, I’ll press Update now</option><option value="on">Yes, overnight (small updates only; bigger ones wait for Update now)</option></select>
+        <p class="dim" style="font-size:14px;margin:4px 0 0">Every update backs up the board’s database first. If the new version doesn’t start properly, the board goes back to the version it had, with its database from before.</p>
       </div>
       <div class="card">
         <p class="dim">Saving restarts the board (a few seconds); screens reconnect by themselves. Everything here is kept in the board’s database; passwords, the calendar account, the album link and calendar links are stored encrypted. Passwords are never shown again.</p>
@@ -505,6 +524,8 @@ button:disabled{opacity:.5;cursor:default}
         $('bfTz').appendChild(new Option('(default: the server’s time zone)', ''));
         d.timezones.forEach(function (z) { $('bfTz').appendChild(new Option(z.replace(/_/g, ' '), z)); });
       }
+      var ima = F.IMMICH_ALBUM && F.IMMICH_ALBUM.value, ims = $('bfImAlbum');   // an album picked before: keep it listed
+      if (ima && !Array.prototype.some.call(ims.options, function (o) { return o.value === ima; })) ims.appendChild(new Option('Album: ' + ima, ima));
       Array.prototype.forEach.call(document.querySelectorAll('#tBoard [data-k]'), function (inp) {
         var f = F[inp.dataset.k]; if (!f) return;
         if (f.type === 'secret') {
@@ -537,7 +558,7 @@ button:disabled{opacity:.5;cursor:default}
       kb.lastChild.style.fontSize = '14px';
       $('bfImported').hidden = !d.imported;
       if (d.imported) $('bfImported').textContent = '✓ Your old .env settings were moved in here (' + d.imported.moved.length + ' settings). The .env file isn’t used any more.';
-      moreAvail = null; drawMore(); drawFeeds();
+      moreAvail = null; drawMore(); drawFeeds(); bfHomeWarn(); loadUpdates().catch(function () {});
     }).catch(function (e) { $('bfErr').textContent = e.message; });
   }
   Array.prototype.forEach.call(document.querySelectorAll('#bfProv button'), function (b) { b.addEventListener('click', function () { bfSetProv(b.dataset.p); }); });
@@ -570,6 +591,41 @@ button:disabled{opacity:.5;cursor:default}
         $('bfFindErr').innerHTML = ''; $('bfFindErr').appendChild(el('span', 'ok', '✓ Signed in. Calendars: ' + (r.calendars.join(', ') || 'none found')));
         if (r.calendars.length === 1 && !$('bfCal').value) $('bfCal').value = r.calendars[0];
       }).catch(function (e) { $('bfFindErr').textContent = e.message; });
+  });
+  // Immich: list the albums (with what's typed, else what's saved), so one can be picked
+  $('bfImList').addEventListener('click', function () {
+    busy($('bfImList'), api('/api/board-settings/immich-albums', { url: $('bfImUrl').value, apiKey: $('bfImKey').value || undefined }))
+      .then(function (r) {
+        var sel = $('bfImAlbum'), keep = sel.value;
+        Array.prototype.slice.call(sel.options, 4).forEach(function (o) { o.remove(); });
+        r.albums.forEach(function (a) { sel.appendChild(new Option('Album: ' + a.name + ' (' + a.count + ')', a.id)); });
+        sel.value = keep;
+        $('bfImErr').innerHTML = ''; $('bfImErr').appendChild(el('span', 'ok', '✓ Connected. ' + r.albums.length + ' album' + (r.albums.length === 1 ? '' : 's') + ' found.'));
+      }).catch(function (e) { $('bfImErr').textContent = e.message; });
+  });
+  function bfHomeWarn() { $('bfHomeWarn').hidden = $('bfHome').value !== 'on'; }
+  $('bfHome').addEventListener('change', bfHomeWarn);
+  // ---- updates ----
+  var upTimer = null;
+  var UP_STATE = { checking: 'Looking for a newer version…', running: 'Updating…', updated: '✓ ', current: '✓ ', available: '', failed: '⚠ ', rolledback: '⚠ ' };
+  function loadUpdates() {
+    return api('/api/updates').then(function (u) {
+      var st = u.status, busyNow = u.requested || (st && (st.state === 'running' || st.state === 'checking'));
+      var line = 'This board is running ' + u.version + '.';
+      if (st && st.message) line += ' ' + (UP_STATE[st.state] || '') + st.message + (st.at ? ' (' + new Date(st.at).toLocaleString() + ')' : '');
+      else if (u.can) line += ' Each night it checks for a newer version.';
+      if (!u.can) line += ' Updates: with Docker, pull the new image and restart the container; otherwise run sudo bash deploy/update.sh on the server.';
+      if (u.requested && !(st && st.state === 'running')) line += ' Starting the update…';
+      $('upNow').textContent = line;
+      $('upGo').hidden = !u.can; $('upGo').disabled = !!busyNow;
+      $('upGo').textContent = st && st.available ? 'Update now to ' + st.available : 'Update now';
+      clearTimeout(upTimer);
+      if (busyNow) upTimer = setTimeout(function () { loadUpdates().catch(function () { upTimer = setTimeout(loadUpdates, 4000); }); }, 4000);   // (the board restarts during an update)
+    });
+  }
+  $('upGo').addEventListener('click', function () {
+    if (!confirm('Update the board now? It restarts for a minute; screens reconnect by themselves.')) return;
+    busy($('upGo'), api('/api/updates/run', {})).then(loadUpdates).catch(function (e) { $('upErr').textContent = e.message; });
   });
   $('bfSave').addEventListener('click', function () {
     var values = {};

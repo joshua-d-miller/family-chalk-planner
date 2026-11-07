@@ -1,0 +1,55 @@
+.scard p {
+  margin: 0 0 8px;
+}
+.scard a {
+  color: var(--yellow);
+}
+.saved {
+  min-height: 1.4em;
+  font-size: 0.8em;
+}
+.cals {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+}
+.cals li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.cals .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  flex: none;
+}
+.cals small {
+  color: var(--dim);
+}
+.cals.pick input[type='color'] {
+  width: 44px;
+  height: 36px;
+  border: none;
+  background: none;
+  padding: 0;
+}
+.steps {
+  padding-left: 1.2em;
+}
+.steps li {
+  margin-bottom: 10px;
+}
+.hols .seg {
+  opacity: 0.55;
+}
+.hols .seg.on {
+  opacity: 1;
+}
+.about {
+  margin-top: 30px;
+}
+.about a {
+  color: var(--yellow);
+}

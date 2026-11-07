@@ -1,6 +1,26 @@
 #!/bin/sh
-# Container start: make /data writable by the board's user (PUID:PGID, default 1000:1000), then
-# drop root and run the board. Already running as a non-root user? Just run it.
+: <<'HEADER'
+===============================================================================
+ Family Chalk Planner | Deploy | docker-entrypoint.sh
+===============================================================================
+ Version:   0.5.0
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-10-14
+
+ Purpose:
+     The container's start: makes /data writable by the board's user (PUID
+     and PGID, default 1000:1000), then drops root and runs the board.
+     Already running as a non-root user? It just runs it.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 0.5.0     2026-10-14   joshua    Docker install and settings in the admin
+                        claude    console.
+===============================================================================
+HEADER
+
 set -eu
 if [ "$(id -u)" = 0 ]; then
   mkdir -p "${DATA_DIR:-/data}"

@@ -3,28 +3,77 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
-  test:
+  checks:
+    name: Code checks (types, lint, formatting, security audit, shell scripts)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - run: node --check server/chalkboard.js
-      - run: npm test
-      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run lint
+      - run: npm run format:check
+      - name: Known security problems in what the board ships
+        run: npm audit --omit=dev --audit-level=high
       - name: ShellCheck
         run: shellcheck -S warning deploy/*.sh test/*.sh
-      - name: Install and update scripts (fresh install, updates from every starting point, failed update undone)
-        run: sudo env "PATH=$PATH" bash test/deploy-scripts.sh
       - name: Python syntax
         run: python3 -m py_compile face/facefocus.py
-  docker:
+  server:
+    name: Server and API tests (accounts, calendars, lists, photos, updates)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build # some tests load the screens
+      - run: npm test
+  install:
+    name: Install and update scripts (fresh install, updates, a failed update undone)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: sudo env "PATH=$PATH" bash test/deploy-scripts.sh
+  screens:
+    name: Screens in a real browser (wall, tablet, family screen, kid's tablet, phone)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+  docker:
+    name: Docker image builds and starts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
       - name: Container image builds and starts
         run: |
           docker build -t fcp:ci .

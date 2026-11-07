@@ -1,0 +1,287 @@
+/* a tablet: the strip under the board, and the editors */
+#board.edit .slate .day,
+#board.edit .slate .ev,
+#board.edit .slate .bar {
+  cursor: pointer;
+}
+#board.edit .slate .bar {
+  pointer-events: auto;
+}
+#board.edit .slate .day .ev:active,
+#board.edit .slate .bar:active {
+  background: rgba(242, 212, 121, 0.15);
+  border-radius: 4px;
+}
+.slate .titlerow h1.hand.dashed {
+  outline: 2px dashed rgba(246, 179, 203, 0.28);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.cork {
+  height: 50px;
+  background-color: #b98d58;
+  background-image:
+    radial-gradient(rgba(90, 60, 30, 0.35) 1px, transparent 1.5px),
+    radial-gradient(rgba(255, 240, 210, 0.25) 1px, transparent 1.5px);
+  background-size:
+    7px 7px,
+    11px 11px;
+  background-position:
+    0 0,
+    3px 4px;
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+.cork .gap {
+  flex: 1;
+}
+.cork .pill {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 22px;
+  border: 2px solid rgba(237, 234, 224, 0.5);
+  background: #161616;
+  color: var(--chalk);
+  font-family: 'Kalam', cursive;
+  font-size: 17px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  flex: none;
+  text-decoration: none;
+}
+.cork .pill.on {
+  border-color: var(--pink);
+}
+.cork .pill.addev {
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+.cork .pill.fav {
+  padding: 0 12px;
+  font-size: 20px;
+}
+/* the editors */
+.sheet .sublbl {
+  font-size: 0.85em;
+  color: rgba(237, 234, 224, 0.7);
+  margin-top: 4px;
+}
+.sheet .err {
+  color: #ff8f8f;
+  min-height: 1.2em;
+}
+.sheet .err:empty {
+  min-height: 0;
+}
+.sheet .tick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  cursor: pointer;
+}
+.sheet .tick input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--yellow);
+}
+.evform {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fontpick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fontpick .seg {
+  font-size: 18px;
+}
+.surfaces {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+.surfaces button {
+  height: 70px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  background: #1d1e1d;
+  color: var(--chalk);
+}
+.surfaces button.on {
+  border-color: var(--yellow);
+}
+.surfaces .smp {
+  font:
+    700 22px 'Kalam',
+    cursive;
+}
+.surfaces .pn {
+  font-size: 13px;
+}
+.threl {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(237, 234, 224, 0.12);
+}
+.bpicks,
+.cgrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cgrid {
+  max-height: 220px;
+  overflow-y: auto;
+}
+.ctile {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(201, 180, 122, 0.45);
+  background: transparent;
+  padding: 6px;
+  cursor: pointer;
+}
+.ctile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.clipq {
+  width: 100%;
+  height: 42px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px dashed rgba(237, 234, 224, 0.6);
+  color: var(--chalk);
+  font-family: 'Kalam', cursive;
+  font-size: 19px;
+  outline: none;
+}
+#stage.framed {
+  background: #1c130b;
+}
+/* the style, title and border editors sit to one side, so the board shows the change as you pick */
+.scrim:has(#styleSheet),
+.scrim:has(#titleSheet),
+.scrim:has(#borderSheet) {
+  background: rgba(0, 0, 0, 0.15);
+  justify-content: flex-end;
+}
+.offline {
+  position: fixed;
+  right: 14px;
+  bottom: 12px;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 16px;
+  background: rgba(22, 22, 22, 0.85);
+  color: #f2d479;
+  font:
+    700 15px 'Kalam',
+    cursive;
+}
+.offline span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e8a35c;
+}
+.ppick {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.ppick button {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 3px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #111;
+  cursor: pointer;
+}
+.ppick button.on {
+  border-color: var(--yellow);
+}
+.ppick img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ppick b {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--yellow);
+  color: #141414;
+  line-height: 24px;
+}
+.sheet a {
+  color: var(--yellow);
+}
+#board.edit .slate .nslot.opens {
+  cursor: pointer;
+  border-radius: 8px;
+}
+#board.edit .slate .nslot.opens:active {
+  background: rgba(242, 212, 121, 0.08);
+}
+.zoom {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 30;
+  display: flex;
+  gap: 6px;
+}
+.zoom button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(237, 234, 224, 0.5);
+  background: rgba(22, 22, 22, 0.85);
+  color: #edeae0;
+  font:
+    700 22px 'Kalam',
+    cursive;
+  cursor: pointer;
+}
+.zoom button.fit {
+  font-size: 15px;
+}
+.zoom button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+#board.edit {
+  touch-action: none;
+}
