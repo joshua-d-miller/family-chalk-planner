@@ -272,14 +272,14 @@
   flex-direction: column;
   gap: 4px;
 }
+/* the group headings: hand-lettered in pink, like every other heading on the board */
 .menu h4 {
-  margin: 12px 8px 4px;
-  font-family: var(--serif);
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  font-size: 0.65em;
-  color: var(--gold);
+  margin: 14px 8px 2px;
+  font-family: var(--script);
+  font-weight: 700;
+  font-size: 1.15em;
+  line-height: 1.1;
+  color: var(--pink);
 }
 .menu .item {
   display: flex;
@@ -298,8 +298,8 @@
   text-align: left;
 }
 .menu .item.here {
-  background: rgba(242, 212, 121, 0.12);
-  color: var(--yellow);
+  background: rgba(246, 179, 203, 0.12);
+  color: var(--pink);
 }
 .menu .item .ic {
   flex: 0 0 30px;

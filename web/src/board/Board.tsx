@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.13.2
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -49,6 +49,9 @@
 
                                   ... and 2 more (the board rebuilt in React
                                   and TypeScript)
+
+ 0.13.2    2026-11-07   joshua    Every button on the bar has an icon and a
+                        claude    word.
 ===============================================================================
 */
 
@@ -596,37 +599,40 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
                 setDrawing(d => !d);
               }}
             >
-              ✎ {drawing ? (family ? 'Done' : 'Done drawing') : family ? 'Decorate' : 'Draw'}
+              <span className="ic" aria-hidden="true">
+                ✏️
+              </span>{' '}
+              {drawing ? (family ? 'Done' : 'Done drawing') : family ? 'Decorate' : 'Draw'}
             </button>
             {m && !drawing && (
               <>
                 {!family && (
                   <button type="button" className="pill" id="titleBtn" onClick={() => setEditing({ k: 'title' })}>
-                    ✎ Month title
+                    <span className="ic" aria-hidden="true">
+                      🔤
+                    </span>{' '}
+                    Month title
                   </button>
                 )}
                 <button type="button" className="pill" id="borderBtn" onClick={() => setEditing({ k: 'border' })}>
-                  🖼 Border
+                  <span className="ic" aria-hidden="true">
+                    🖼️
+                  </span>{' '}
+                  Border
                 </button>
                 {!!photos?.photos.length && (
-                  <button
-                    type="button"
-                    className="pill"
-                    id="photosBtn"
-                    aria-label="Photos"
-                    onClick={() => setEditing({ k: 'photos' })}
-                  >
-                    📷
+                  <button type="button" className="pill" id="photosBtn" onClick={() => setEditing({ k: 'photos' })}>
+                    <span className="ic" aria-hidden="true">
+                      📷
+                    </span>{' '}
+                    Photos
                   </button>
                 )}
-                <button
-                  type="button"
-                  className="pill"
-                  id="styleBtn"
-                  aria-label="Board style"
-                  onClick={() => setEditing({ k: 'style' })}
-                >
-                  🎨
+                <button type="button" className="pill" id="styleBtn" onClick={() => setEditing({ k: 'style' })}>
+                  <span className="ic" aria-hidden="true">
+                    🎨
+                  </span>{' '}
+                  Style
                 </button>
                 <button
                   type="button"
