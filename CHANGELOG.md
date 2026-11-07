@@ -4,7 +4,7 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
-## 0.14.0 — the bar at the bottom
+## 0.14.0 — the bar at the bottom, more fonts and clipart
 - **Pages switch in place:** going between the calendar and the other pages no longer loads a new page.
   The bar at the bottom stays put and only the middle changes; back, forward and reloading still work.
 - **Family screens (and computers):** the cork is on every page: **☰ Menu**, **📅 Calendar** and up to
@@ -16,12 +16,21 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   or iPad, Material on Android): 📅 Calendar, your 3 pins and **More** (every page, pinning, the admin
   console, signing out). The ☰ button at the top is gone, and the cork under the board is just its tools,
   with their names.
+- **43 new fonts** for month titles, words on the board and the board style, picked from groups:
+  Handwritten (Patrick Hand, Gochi Hand, Indie Flower…), Chalk & sketch (Cabin Sketch, Love Ya Like A
+  Sister…), Script (Sacramento, Great Vibes, Lobster…), Bold & bubbly (Chewy, Luckiest Guy, Fredoka…) and
+  Holidays (Creepster, Mountains of Christmas, Emilys Candy…). Served by the board, so they work offline.
+- **7 more clipart styles** in Stamps, about 20,000 more pictures: Streamline, Noto, OpenMoji, Twitter,
+  Firefox, EmojiOne and IconPark. Pick a style (or **All styles** to see every version side by side); the
+  groups and search work in each. The board unpacks them once, the first time it starts (a minute or so).
 - **📌 Pin** a page from ☰ Menu or More: pins belong to the person signed in, or to the screen when
   nobody is (up to 3, as ☆ favorites were up to 4).
 - The ☰ menu's headings are hand-lettered in pink like the rest of the board, and its one **📅 Calendar**
   entry takes each screen to its own board ("The board" and "Edit the board" are gone).
 - **A screen that crashes says so** instead of going blank, with Reload and Back to the board, and the
   error shows in the admin console (🛡 Activity) and the server log.
+- Security: the lint tools' copy of minimatch is updated past a denial-of-service bug (GHSA-g3hv-75wg-m249).
+  It's only used while developing; boards never run it.
 - Fixed: on the tablet, 📷 (the photos beside the month name) could open a blank page for a month whose
   photos were set by an older board.
 

@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | smoke.test.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-07
 
@@ -58,6 +58,9 @@
                         colby
                                   Settings (new screen), and an emoji font
                                   Chrome-based tablets can show.
+
+ 0.14.0    2026-11-07   joshua    The other picture styles are unpacked and
+                        claude    served.
 ===============================================================================
 */
 
@@ -189,6 +192,26 @@ test('chalk drawings and holiday borders', async () => {
   r = await api('/api/clip/gi-pumpkin--f2a35e.svg');
   assert.match(await r.text(), /color="#f2a35e"/, 'any color');
   assert.equal((await api('/api/clip/gi-guillotine.svg')).status, 404, 'only the hand-picked drawings');
+  // the other picture styles: unpacked in the background, then listed and served from disk
+  let styles: { prefix: string; count: number }[] = [];
+  for (let i = 0; i < 120 && !(styles.length && styles.every(s => s.count > 0)); i++) {
+    await new Promise(r => setTimeout(r, 500));
+    styles = await (await api('/api/clip/styles')).json();
+  }
+  assert.deepEqual(
+    styles.map(s => s.prefix),
+    ['se', 'no', 'om', 'tw', 'fx', 'eo', 'ip']
+  );
+  assert.ok(
+    styles.every(s => s.count > 500),
+    'every style unpacked'
+  );
+  const noto = await (await api('/api/clip/list?style=no')).json();
+  assert.ok(noto.includes('no-jack-o-lantern'));
+  r = await api('/api/clip/no-jack-o-lantern.svg');
+  assert.equal(r.status, 200);
+  assert.match(await r.text(), /^<svg /);
+  assert.equal((await api('/api/clip/no-..%2Fetc.svg')).status, 404);
   // a border every October, a different one just for 2026-10, and none in 2027-10
   const halloween = {
     items: ['jack-o-lantern', 'gi-bat', 'gi-mummy-head', 'gi-vampire-dracula', 'nope'],
