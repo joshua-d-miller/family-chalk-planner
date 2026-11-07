@@ -19,10 +19,23 @@ export interface GoogleConfig {
   dav: string;
 }
 
+// A Google calendar shown on the board. Read-only ones (subscribed, or shared to look at) show, but the
+// board doesn't offer to change them.
+export interface GoogleCalendar {
+  id: string;
+  name: string;
+  color: string;
+  readOnly: boolean;
+}
+export const PALETTE = ['#9CC9E6', '#A9D8A0', '#F2D479', '#E8A35C', '#B49CE0', '#F6B3CB', '#F26B6B', '#7FD1C7'];
+const hexOr = (c: unknown, fallback: string) =>
+  typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c) ? c.toUpperCase() : fallback;
+
 interface Stored {
   refresh?: string | null;
-  calendarId?: string | null;
+  calendarId?: string | null; // where new events go (the "main" calendar)
   calendarName?: string | null;
+  calendars?: GoogleCalendar[]; // every calendar shown (several: from Colby Way's board)
   problem?: string; // why the sign-in stopped working
   at?: number;
 }
@@ -32,6 +45,17 @@ interface TokenReply {
   expires_in?: number;
   error?: string;
   error_description?: string;
+}
+
+// Where new events go: the one asked for if it can be changed, else the first that can
+export function mainOf(list: GoogleCalendar[], want?: string | null) {
+  return (
+    list.find(c => c.id === want && !c.readOnly) ||
+    list.find(c => !c.readOnly) ||
+    list.find(c => c.id === want) ||
+    list[0] ||
+    null
+  );
 }
 
 export function createGoogle(config: GoogleConfig, dataDir: string) {
@@ -80,8 +104,30 @@ export function createGoogle(config: GoogleConfig, dataDir: string) {
 
   const calendarUrl = (id: string) => `${config.dav}/caldav/v2/${encodeURIComponent(id)}/events/`;
 
+  // The calendars shown: those picked (or, from before, the one), then the console's "more calendars"
+  function selected(extra: { id: string; name: string; color: string }[] = []): GoogleCalendar[] {
+    const st = load();
+    const picked: Partial<GoogleCalendar>[] = st.calendars?.length
+      ? st.calendars
+      : st.calendarId
+        ? [{ id: st.calendarId, name: st.calendarName || st.calendarId, readOnly: false }]
+        : [];
+    const out: GoogleCalendar[] = [];
+    for (const c of [...picked, ...extra] as Partial<GoogleCalendar>[]) {
+      if (!c || typeof c.id !== 'string' || !c.id || out.some(x => x.id === c.id)) continue;
+      out.push({
+        id: c.id,
+        name: String(c.name || c.id).slice(0, 100),
+        color: hexOr(c.color, PALETTE[out.length % PALETTE.length]),
+        readOnly: !!c.readOnly
+      });
+    }
+    return out;
+  }
+
   return {
     config,
+    selected,
     load,
     save,
     token,
@@ -161,6 +207,7 @@ export function registerGoogleRoutes(
       refresh: j.refresh_token,
       calendarId: st.calendarId || null,
       calendarName: st.calendarName || null,
+      ...(st.calendars ? { calendars: st.calendars } : {}),
       at: Date.now()
     });
     if (j.access_token) google.setAccess(j.access_token, j.expires_in);
@@ -210,7 +257,8 @@ export function registerGoogleRoutes(
 
   app.post('/api/google/calendars', async (_req, res) => {
     try {
-      const r = await fetch(`${G.api}/calendar/v3/users/me/calendarList?minAccessRole=writer`, {
+      // every calendar, including ones the family can only look at (school, holidays, shared to view)
+      const r = await fetch(`${G.api}/calendar/v3/users/me/calendarList`, {
         headers: { Authorization: `Bearer ${await google.token()}` },
         signal: AbortSignal.timeout(20000)
       });
@@ -221,6 +269,7 @@ export function registerGoogleRoutes(
           summaryOverride?: string;
           primary?: boolean;
           backgroundColor?: string;
+          accessRole?: string;
         }[];
         error?: { message?: string };
       };
@@ -230,7 +279,8 @@ export function registerGoogleRoutes(
           id: c.id,
           name: c.summaryOverride || c.summary || c.id,
           primary: !!c.primary,
-          color: c.backgroundColor || null
+          color: c.backgroundColor || null,
+          readOnly: c.accessRole === 'reader' || c.accessRole === 'freeBusyReader'
         }))
       );
     } catch (e) {
@@ -238,15 +288,32 @@ export function registerGoogleRoutes(
     }
   });
 
+  // Which calendars the board shows ({ calendars: [{ id, name, color, readOnly }], calendarId: where new
+  // events go }), or just one ({ id, name }, as before)
   app.post('/api/google/calendar', (req, res) => {
-    const { id, name } = req.body || {};
-    if (typeof id !== 'string' || !id || id.length > 300) return res.status(400).json({ error: 'bad calendar' });
     const st = google.load();
     if (!st.refresh) return res.status(400).json({ error: 'Connect Google first' });
-    google.save({ ...st, calendarId: id, calendarName: String(name || id).slice(0, 100) });
+    const b = req.body || {};
+    const sent: Record<string, unknown>[] = Array.isArray(b.calendars) ? b.calendars : [b];
+    if (sent.length > 12) return res.status(400).json({ error: 'Pick at most 12 calendars' });
+    const list: GoogleCalendar[] = [];
+    for (const raw of sent) {
+      const c = raw || {};
+      if (typeof c.id !== 'string' || !c.id || c.id.length > 300 || /\s/.test(c.id))
+        return res.status(400).json({ error: 'bad calendar' });
+      if (list.some(x => x.id === c.id)) continue;
+      list.push({
+        id: c.id,
+        name: String(c.name || c.id).slice(0, 100),
+        color: hexOr(c.color, PALETTE[list.length % PALETTE.length]),
+        readOnly: !!c.readOnly
+      });
+    }
+    const main = mainOf(list, typeof b.calendarId === 'string' ? b.calendarId : st.calendarId);
+    google.save({ ...st, calendarId: main?.id || null, calendarName: main?.name || null, calendars: list });
     calendarChanged();
     broadcast('calendar', { ym: 'any' });
-    res.json({ ok: true });
+    res.json({ ok: true, calendarId: main?.id || null, calendar: main?.name || null, calendars: list });
   });
 
   app.post('/api/google/disconnect', (_req, res) => {

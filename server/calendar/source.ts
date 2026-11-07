@@ -4,6 +4,7 @@
 import crypto from 'node:crypto';
 import { addDays, icsEscape, icsUtc, xmlUnescape } from '../dates.ts';
 import type { Clock } from '../dates.ts';
+import { mainOf } from './google.ts';
 import type { Google } from './google.ts';
 import { applyEventChange, makeIcal } from './ical.ts';
 import type { BoardEvent, EventChange, EventRef } from './ical.ts';
@@ -97,17 +98,22 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     return r.text();
   }
 
+  // Google: the calendars picked in ⚙️ (several, some read-only); the main one is where new events go
+  const googleCalendars = () => google.selected(cfg.extraCalendars);
+  const googleMain = () => mainOf(googleCalendars(), google.load().calendarId);
+
   async function findCalendar(): Promise<string> {
     if (mainUrl) return mainUrl;
     if (cfg.provider === 'google') {
       const st = google.load();
-      if (!st.calendarId)
+      const main = googleMain();
+      if (!main)
         throw new Error(
           st.refresh
             ? 'Pick which Google calendar to show in ⚙ Settings on the tablet'
             : st.problem || 'Google isn’t connected yet - connect it in ⚙ Settings on the tablet'
         );
-      return (mainUrl = google.calendarUrl(st.calendarId));
+      return (mainUrl = google.calendarUrl(main.id));
     }
     const found = (await caldavCalendars(cfg.caldavUrl, basicAuth)).find(c => c.name === cfg.calendarName);
     if (!found) throw new Error(`Calendar "${cfg.calendarName}" not found on the server`);
@@ -151,7 +157,30 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
       throw new Error('isn’t on the same calendar account');
     return url;
   }
-  const editableCalendars = async () => [await findCalendar(), ...cfg.extraCalendars.map(extraUrl)];
+  async function editableCalendars() {
+    if (cfg.provider === 'google')
+      return googleCalendars()
+        .filter(c => !c.readOnly)
+        .map(extraUrl);
+    return [await findCalendar(), ...cfg.extraCalendars.map(extraUrl)];
+  }
+  // The calendars a new event can go in, the main one first (the edit card offers them when there are several)
+  function writable(): { id: string; name: string; color: string | null; main: boolean }[] {
+    if (cfg.provider === 'google') {
+      const main = googleMain();
+      if (!google.load().refresh || !main) return [];
+      return googleCalendars()
+        .filter(c => !c.readOnly)
+        .map(c => ({ id: c.id, name: c.name, color: c.id === main.id ? null : c.color, main: c.id === main.id }))
+        .sort((a, b) => Number(b.main) - Number(a.main));
+    }
+    if (!cfg.user || !cfg.password || !cfg.calendarName) return [];
+    return [
+      { id: cfg.calendarName, name: cfg.calendarName, color: null, main: true },
+      ...cfg.extraCalendars.map(c => ({ id: c.id, name: c.name, color: c.color, main: false }))
+    ];
+  }
+  const readOnlyCopy = (e: BoardEvent): BoardEvent => ({ ...e, ref: undefined, readOnly: true });
 
   // Read-only iCal links: fetched at most every 15 minutes; the last good copy is kept if a fetch fails
   async function feedText(f: { url: string }): Promise<string> {
@@ -191,15 +220,20 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     const rangeStart = clock.fromZoned(sy, sm, sd, 0, 0);
     const rangeEnd = clock.fromZoned(ey, em, ed, 0, 0);
     const main = await findCalendar();
-    const out = await caldavRange(main, rangeStart, rangeEnd); // the main calendar: its problems show on the board
+    const gMain = cfg.provider === 'google' ? googleMain() : null;
+    // the main calendar: its problems show on the board
+    let out = await caldavRange(main, rangeStart, rangeEnd);
+    if (gMain?.readOnly) out = out.map(readOnlyCopy);
+    const others: { id: string; name: string; color: string; readOnly?: boolean }[] =
+      cfg.provider === 'google' ? googleCalendars().filter(c => c.id !== gMain?.id) : cfg.extraCalendars;
     const more = await Promise.all([
-      ...cfg.extraCalendars
+      ...others
         .filter(c => !sameUrl(extraUrl(c), main))
         .map(async c => {
           try {
             const ev = await caldavRange(await sameAccount(extraUrl(c)), rangeStart, rangeEnd);
             problems.delete(c.name);
-            return ev.map(e => ({ ...e, cal: c.name, calColor: c.color }));
+            return ev.map(e => ({ ...(c.readOnly ? readOnlyCopy(e) : e), cal: c.name, calColor: c.color }));
           } catch (e) {
             problems.set(c.name, (e as Error).message);
             console.error(`Chalkboard: calendar "${c.name}": ${(e as Error).message}`);
@@ -224,9 +258,22 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     return out;
   }
 
-  // A new event in the main calendar; returns where it lives
-  async function addEvent({ title, date, allDay, time, minutes, through }: EventChange): Promise<string> {
-    const url = await findCalendar();
+  // A new event, in the main calendar or the one picked on the edit card; returns where it lives
+  async function addEvent(
+    { title, date, allDay, time, minutes, through }: EventChange,
+    calendarId?: string
+  ): Promise<string> {
+    let url = await findCalendar();
+    if (cfg.provider === 'google') {
+      const target = (calendarId && googleCalendars().find(c => c.id === calendarId)) || googleMain();
+      if (!target || target.readOnly)
+        throw new Error('That calendar is read-only - pick a calendar you can change in ⚙ Settings');
+      url = extraUrl(target);
+    } else if (calendarId && calendarId !== cfg.calendarName) {
+      const extra = cfg.extraCalendars.find(c => c.id === calendarId);
+      if (!extra) throw new Error('That calendar isn’t on the board');
+      url = await sameAccount(extraUrl(extra));
+    }
     const uid = crypto.randomUUID();
     const lines = [
       'BEGIN:VCALENDAR',
@@ -301,6 +348,9 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
 
   return {
     eventsForMonth,
+    writable,
+    googleCalendars,
+    googleMain,
     addEvent,
     changeEvent,
     problems,

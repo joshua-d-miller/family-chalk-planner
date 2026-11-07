@@ -157,11 +157,15 @@ registerCalendarRoutes({
     const c = cfg.calendar;
     if (c.provider === 'google') {
       const st = google.load();
+      const main = calendar.googleMain();
       return {
         provider: 'google',
         configured: !!cfg.google.id,
         connected: !!st.refresh,
-        calendar: st.calendarName || null,
+        calendar: main?.name || st.calendarName || null,
+        calendarId: main?.id || st.calendarId || null,
+        calendars: calendar.googleCalendars(), // every calendar shown, with its color and whether it's read-only
+        problems: Object.fromEntries(calendar.problems),
         problem: st.refresh ? null : st.problem || null,
         paste: !/\/oauth\/google\/callback$/.test(cfg.google.redirect),
         redirect: cfg.google.redirect

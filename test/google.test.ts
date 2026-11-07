@@ -97,7 +97,8 @@ test('sign in by pasting the address back', async () => {
 
 test('pick a calendar and see its events', async () => {
   const cals = await (await post('/api/google/calendars', {})).json();
-  assert.ok(cals.find(c => c.name === 'Family'));
+  assert.ok(cals.find(c => c.name === 'Family' && !c.readOnly));
+  assert.ok(cals.find(c => c.name === 'School' && c.readOnly));
   assert.equal(
     (await post('/api/google/calendar', { id: 'family@group.calendar.google.com', name: 'Family' })).status,
     200
@@ -107,6 +108,60 @@ test('pick a calendar and see its events', async () => {
     m.events.find(e => e.title === 'Google picnic'),
     JSON.stringify(m)
   );
+});
+
+// from Colby Way's board
+test('several calendars (one read-only); new events go to the main one or the one picked', async () => {
+  const sel = [
+    { id: 'family@group.calendar.google.com', name: 'Family', color: '#9fe1e7', readOnly: false },
+    { id: 'kids@group.calendar.google.com', name: 'Kids', color: '#a9d8a0', readOnly: false },
+    { id: 'school@group.calendar.google.com', name: 'School', color: '#f6b3cb', readOnly: true }
+  ];
+  const r = await post('/api/google/calendar', { calendars: sel, calendarId: 'family@group.calendar.google.com' });
+  assert.equal(r.status, 200);
+  const st = await (await api('/api/calendar/status')).json();
+  assert.equal(st.calendar, 'Family');
+  assert.equal(st.calendars.length, 3);
+
+  const m = await month();
+  const picnic = m.events.find(e => e.title === 'Google picnic');
+  const piano = m.events.find(e => e.title === 'Piano recital');
+  const assembly = m.events.find(e => e.title === 'School assembly');
+  assert.ok(picnic && !picnic.calColor && !picnic.readOnly, 'the main calendar looks like the board');
+  assert.ok(piano && piano.cal === 'Kids' && piano.calColor === '#A9D8A0' && !piano.readOnly && piano.ref);
+  assert.ok(
+    assembly && assembly.cal === 'School' && assembly.readOnly && !assembly.ref,
+    'read-only: shown, not changeable'
+  );
+  assert.deepEqual(
+    m.calendars.map(c => [c.name, c.main]),
+    [
+      ['Family', true],
+      ['Kids', false]
+    ]
+  );
+  const kids = await (
+    await post('/api/events', {
+      title: 'Soccer practice',
+      date: '2026-10-23',
+      allDay: true,
+      calendarId: 'kids@group.calendar.google.com'
+    })
+  ).json();
+  assert.ok(kids.href.includes(encodeURIComponent('kids@group.calendar.google.com')));
+  const soccer = (await month()).events.find(e => e.title === 'Soccer practice');
+  assert.ok(soccer && soccer.cal === 'Kids');
+  const ro = await post('/api/events', {
+    title: 'Nope',
+    date: '2026-10-24',
+    allDay: true,
+    calendarId: 'school@group.calendar.google.com'
+  });
+  assert.equal(ro.status, 502);
+  assert.match((await ro.json()).error, /read-only/);
+  // a read-only event can't be changed even by sending its address
+  const roRef = { href: '/caldav/v2/school%40group.calendar.google.com/events/assembly.ics', etag: null };
+  assert.equal((await post('/api/events/delete', { ref: roRef, scope: 'all', origDate: '2026-10-20' })).status, 502);
 });
 
 test('add, edit and delete go to Google with a fresh token', async () => {

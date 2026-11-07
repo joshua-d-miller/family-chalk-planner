@@ -101,7 +101,7 @@ export function registerCalendarRoutes({
         };
       });
       const hol = showHolidays ? holidays.between(g.start, addDays(g.start, g.weeks * 7 - 1)) : [];
-      res.json({ ym, grid: g, events: [...hol, ...events], today: clock.today() });
+      res.json({ ym, grid: g, events: [...hol, ...events], calendars: source.writable(), today: clock.today() });
     } catch (err) {
       res.status(502).json({ error: (err as Error).message });
     }
@@ -125,7 +125,7 @@ export function registerCalendarRoutes({
             title: e.title,
             time: e.allDay ? null : e.time,
             sort: e.allDay ? -1 : e.sort,
-            color: (e.ref && forEvent(col, e.ref)) || null
+            color: (e.ref && forEvent(col, e.ref)) || e.calColor || null
           });
         }
       }
@@ -225,7 +225,8 @@ export function registerCalendarRoutes({
     const change = readChange(req.body || {});
     if (typeof change === 'string') return res.status(400).json({ error: change });
     try {
-      const href = await source.addEvent(change);
+      const calendarId = (req.body || {}).calendarId;
+      const href = await source.addEvent(change, typeof calendarId === 'string' ? calendarId : undefined);
       broadcast('calendar', { ym: change.date.slice(0, 7) });
       res.json({ ok: true, href });
     } catch (err) {
