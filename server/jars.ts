@@ -1,39 +1,51 @@
 // Reward jars (up to 4, one per kid): pieces go in from the tablet or a family screen; the wall shows
 // them filling up. Each jar remembers every piece in the order it went in (a kid can ask for a rainbow).
-//   kv 'jars'  [{ id, name, pieces: what + adds in turn, count, items: what's in it, goal }]
+// Saved in the jars table. Adding or taking out a piece changes just that jar (/api/jars/piece), so two
+// screens dropping pieces in at once both count; the whole set can still be sent at once.
 import type { Express } from 'express';
-import type { Kv } from './kv.ts';
+import type { DatabaseSync } from 'node:sqlite';
+import type { Jar, JarPiece } from '../shared/lists.ts';
 
-const PIECES = ['heart', 'rainbow', 'star', 'bolt', 'critter'];
-
-export interface Jar {
-  id: string;
-  name: string;
-  pieces: string[];
-  count: number;
-  items: string[];
-  goal: number;
-}
+const PIECES: JarPiece[] = ['heart', 'rainbow', 'star', 'bolt', 'critter'];
+const MAX_IN = 200;
+const isPiece = (p: unknown): p is JarPiece => PIECES.includes(p as JarPiece);
 
 // What's in the jar, kept as long as count: anything missing is filled in the jar's usual rotation
-function jarItems(items: unknown, count: number, pieces: string[]): string[] {
-  const out = (Array.isArray(items) ? items.filter((p): p is string => PIECES.includes(p)) : []).slice(0, count);
+function jarItems(items: unknown, count: number, pieces: JarPiece[]): JarPiece[] {
+  const out = (Array.isArray(items) ? items.filter(isPiece) : []).slice(0, count);
   while (out.length < count) out.push(pieces[out.length % pieces.length]);
   return out;
 }
 
 export function setup({
   app,
-  kv,
+  db,
   broadcast
 }: {
   app: Express;
-  kv: Kv;
+  db: DatabaseSync;
   broadcast: (event: string, data: unknown) => void;
 }) {
-  const getJars = () => kv.get<Jar[]>('jars') || []; // jars are optional; added from the tablet
+  type Row = { id: string; name: string; pieces: string; items: string; goal: number };
+  const toJar = (r: Row): Jar => {
+    const items = JSON.parse(r.items) as JarPiece[];
+    return { id: r.id, name: r.name, pieces: JSON.parse(r.pieces), count: items.length, items, goal: r.goal };
+  };
+  const q = {
+    all: db.prepare('SELECT id, name, pieces, items, goal FROM jars ORDER BY sort, rowid'),
+    one: db.prepare('SELECT id, name, pieces, items, goal FROM jars WHERE id = ?'),
+    setItems: db.prepare('UPDATE jars SET items = ? WHERE id = ?')
+  };
+  const getJars = () => (q.all.all() as Row[]).map(toJar); // jars are optional; added from the tablet
+  const changed = () => {
+    const jars = getJars();
+    broadcast('jars', { jars });
+    return jars;
+  };
 
   app.get('/api/jars', (_req, res) => res.json(getJars()));
+
+  // the whole set (adding, renaming or removing jars)
   app.post('/api/jars', (req, res) => {
     const list = (req.body || {}).jars;
     if (!Array.isArray(list)) return res.status(400).json({ error: 'bad jars' });
@@ -41,9 +53,9 @@ export function setup({
     const jars: Jar[] = list.slice(0, 4).map((raw: Record<string, unknown>, i: number) => {
       const j = raw || {};
       const id = typeof j.id === 'string' && /^[a-z0-9]{1,16}$/.test(j.id) ? j.id : `jar${i}`;
-      let pieces = (Array.isArray(j.pieces) ? j.pieces.filter((p): p is string => PIECES.includes(p)) : []).slice(0, 5);
+      let pieces = (Array.isArray(j.pieces) ? j.pieces.filter(isPiece) : []).slice(0, 5);
       if (!pieces.length) pieces = ['star'];
-      const count = Math.min(Math.max(Math.round(Number(j.count)) || 0, 0), 200);
+      const count = Math.min(Math.max(Math.round(Number(j.count)) || 0, 0), MAX_IN);
       // a page from before 0.9 doesn't send items: keep what was already in that jar
       const items = jarItems(Array.isArray(j.items) ? j.items : before[id]?.items, count, pieces);
       const name =
@@ -53,8 +65,30 @@ export function setup({
       const goal = Math.min(Math.max(Math.round(Number(j.goal)) || 20, 3), 100);
       return { id, name, pieces, count, items, goal };
     });
-    kv.set('jars', jars);
-    broadcast('jars', { jars });
-    res.json(jars);
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec('DELETE FROM jars');
+      const add = db.prepare('INSERT INTO jars (id, name, pieces, items, goal, sort) VALUES (?, ?, ?, ?, ?, ?)');
+      jars.forEach((j, i) => add.run(j.id, j.name, JSON.stringify(j.pieces), JSON.stringify(j.items), j.goal, i));
+      db.exec('COMMIT');
+    } catch (e) {
+      db.exec('ROLLBACK');
+      throw e;
+    }
+    res.json(changed());
+  });
+
+  // One piece in ({ id, piece? }: the jar's next piece unless one is picked), or out ({ id, out: true })
+  app.post('/api/jars/piece', (req, res) => {
+    const b = req.body || {};
+    const r = typeof b.id === 'string' ? (q.one.get(b.id) as Row | undefined) : undefined;
+    if (!r) return res.status(404).json({ error: 'That jar was removed' });
+    const jar = toJar(r);
+    const items = [...jar.items];
+    if (b.out) items.pop();
+    else if (items.length < MAX_IN)
+      items.push(isPiece(b.piece) ? b.piece : jar.pieces[items.length % jar.pieces.length]);
+    q.setItems.run(JSON.stringify(items), jar.id);
+    res.json(changed());
   });
 }

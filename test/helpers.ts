@@ -52,3 +52,50 @@ function client(base: string, getCookie?: string | null | (() => string | null |
   return { api, post };
 }
 export { makeAdmin, pairAdmin, client, totpNow, cookiesOf };
+
+// Start the board on a port with a data folder (made if not given); resolves once it answers.
+// Returns the process, its output so far and a stop().
+async function startServer(port: number, env: Record<string, string> = {}, dataDir?: string) {
+  const { spawn } = await import('node:child_process');
+  const os = await import('node:os');
+  const data = dataDir || fs.mkdtempSync(path.join(os.tmpdir(), 'fcp-'));
+  const proc = spawn(process.execPath, [path.join(import.meta.dirname, '..', 'server', 'chalkboard.js')], {
+    env: {
+      ...process.env,
+      NODE_ENV: 'test',
+      PORT: String(port),
+      BIND: '127.0.0.1',
+      DATA_DIR: data,
+      TIMEZONE: 'America/New_York',
+      ...env
+    },
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+  let out = '';
+  proc.stdout.on('data', d => (out += d));
+  proc.stderr.on('data', d => (out += d));
+  const exited = new Promise<number | null>(r => proc.on('exit', code => r(code)));
+  let up = false;
+  for (let i = 0; i < 75 && proc.exitCode === null; i++) {
+    try {
+      if ((await fetch(`http://127.0.0.1:${port}/api/today`)).ok) {
+        up = true;
+        break;
+      }
+    } catch {}
+    await new Promise(r => setTimeout(r, 200));
+  }
+  return {
+    data,
+    up,
+    exited,
+    output: () => out,
+    async stop() {
+      if (proc.exitCode === null) {
+        proc.kill();
+        await exited;
+      }
+    }
+  };
+}
+export { startServer };

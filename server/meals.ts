@@ -1,38 +1,112 @@
-// The meal plan: one simple list for the week, ticked off as you go.
-//   kv 'meals'  { items: [{ t: text, done }], updated }
+// The meal plan: meals for the week, each on a day of the week or on none, ticked off as you go.
+// Saved in the meals table, one meal at a time (/api/meals/item); the whole list can still be sent at
+// once (the old board's editor).
+// Meals by day of the week: from Colby Way's board.
+import crypto from 'node:crypto';
 import type { Express } from 'express';
-import type { Kv } from './kv.ts';
+import type { DatabaseSync } from 'node:sqlite';
+import type { Meal, MealDay, Meals } from '../shared/lists.ts';
 
-interface Meals {
-  items: { t: string; done: boolean }[];
-  updated?: number;
+const DAYS: MealDay[] = ['', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const MAX = 21;
+const isId = (v: unknown): v is string => typeof v === 'string' && /^[a-z0-9]{1,16}$/.test(v);
+const newId = () => 'm' + crypto.randomBytes(5).toString('hex');
+
+// A meal as sent by a screen. "[mon] Tacos" (how Colby's board first kept the day) still works.
+function cleanMeal(raw: unknown): Omit<Meal, 'id'> & { id?: string; hasDay: boolean } {
+  const it = (raw || {}) as Record<string, unknown>;
+  let t = String(it.t || '').trim();
+  let day = String(it.day ?? '').toLowerCase() as MealDay;
+  let hasDay = it.day !== undefined;
+  const m = /^\[(sun|mon|tue|wed|thu|fri|sat)\]\s*(.*)$/i.exec(t);
+  if (m) {
+    if (!day) day = m[1].toLowerCase() as MealDay;
+    t = m[2].trim();
+    hasDay = true;
+  }
+  if (!DAYS.includes(day)) day = '';
+  return { ...(isId(it.id) ? { id: it.id } : {}), t: t.slice(0, 60), day, done: !!it.done, hasDay };
 }
 
 export function setup({
   app,
-  kv,
+  db,
   broadcast
 }: {
   app: Express;
-  kv: Kv;
+  db: DatabaseSync;
   broadcast: (event: string, data: unknown) => void;
 }) {
-  app.get('/api/meals', (_req, res) => res.json(kv.get<Meals>('meals') || { items: [] }));
-  app.post('/api/meals', (req, res) => {
-    const list = (req.body || {}).items;
-    if (!Array.isArray(list)) return res.status(400).json({ error: 'bad list' });
-    const items = list
-      .slice(0, 14)
-      .map(it => ({
-        t: String(it?.t || '')
-          .trim()
-          .slice(0, 60),
-        done: !!it?.done
-      }))
-      .filter(it => it.t);
-    const meals: Meals = { items, updated: Date.now() };
-    kv.set('meals', meals);
+  const q = {
+    all: db.prepare('SELECT id, title, day, done FROM meals ORDER BY sort, rowid'),
+    count: db.prepare('SELECT COUNT(*) AS n FROM meals'),
+    put: db.prepare(
+      `INSERT INTO meals (id, title, day, done, sort) VALUES (?, ?, ?, ?, COALESCE((SELECT MAX(sort) + 1 FROM meals), 0))
+       ON CONFLICT(id) DO UPDATE SET title = excluded.title, day = excluded.day, done = excluded.done`
+    ),
+    del: db.prepare('DELETE FROM meals WHERE id = ?')
+  };
+  let updated = Date.now();
+  const list = (): Meals => ({
+    items: (q.all.all() as { id: string; title: string; day: MealDay; done: number }[]).map(r => ({
+      id: r.id,
+      t: r.title,
+      day: r.day,
+      done: !!r.done
+    })),
+    updated
+  });
+  const changed = () => {
+    updated = Date.now();
+    const meals = list();
     broadcast('meals', meals);
-    res.json(meals);
+    return meals;
+  };
+
+  app.get('/api/meals', (_req, res) => res.json(list()));
+
+  // The whole list (the old board): meals sent without a day keep the day they had
+  app.post('/api/meals', (req, res) => {
+    const sent = (req.body || {}).items;
+    if (!Array.isArray(sent)) return res.status(400).json({ error: 'bad list' });
+    const before = list().items;
+    const items = sent
+      .slice(0, MAX)
+      .map(cleanMeal)
+      .filter(m => m.t);
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec('DELETE FROM meals');
+      const add = db.prepare('INSERT INTO meals (id, title, day, done, sort) VALUES (?, ?, ?, ?, ?)');
+      const used = new Set<string>();
+      items.forEach((m, i) => {
+        const old = (m.id && before.find(b => b.id === m.id)) || before.find(b => b.t === m.t && !used.has(b.id));
+        let id = m.id || old?.id || newId();
+        if (used.has(id)) id = newId();
+        used.add(id);
+        add.run(id, m.t, m.hasDay ? m.day : old?.day || '', m.done ? 1 : 0, i);
+      });
+      db.exec('COMMIT');
+    } catch (e) {
+      db.exec('ROLLBACK');
+      throw e;
+    }
+    res.json(changed());
+  });
+
+  // One meal, added or changed
+  app.post('/api/meals/item', (req, res) => {
+    const m = cleanMeal((req.body || {}).meal);
+    if (!m.t) return res.status(400).json({ error: 'What’s the meal?' });
+    const exists = m.id && list().items.some(x => x.id === m.id);
+    if (!exists && (q.count.get() as { n: number }).n >= MAX)
+      return res.status(400).json({ error: `The plan holds ${MAX} meals - tick some off first` });
+    q.put.run(m.id || newId(), m.t, m.day, m.done ? 1 : 0);
+    res.json(changed());
+  });
+  app.post('/api/meals/item/delete', (req, res) => {
+    const id = (req.body || {}).id;
+    if (isId(id)) q.del.run(id);
+    res.json(changed());
   });
 }

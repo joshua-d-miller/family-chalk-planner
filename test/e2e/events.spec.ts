@@ -17,7 +17,9 @@ test('add, open from the day list, change and delete an event', async ({ as }) =
   await expect(day(page, date)).toContainText('Dentist for Nora');
 
   // tap the day: its events, with Add at the bottom; tap the event to change it
-  await day(page, date).click({ position: { x: 10, y: 60 } });
+  // (the bottom corner of the day, clear of its events)
+  const box = await day(page, date).boundingBox();
+  await day(page, date).click({ position: { x: 6, y: box!.height - 5 } });
   await expect(page.locator('#dmodal')).toHaveClass(/open/);
   await page.locator('#dList button', { hasText: 'Dentist for Nora' }).click();
   await expect(page.locator('#modal')).toHaveClass(/open/);

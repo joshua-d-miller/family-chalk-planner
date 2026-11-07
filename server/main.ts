@@ -11,6 +11,7 @@ import path from 'node:path';
 import express from 'express';
 import pkg from '../package.json' with { type: 'json' };
 import { openDatabase, prepareDatabase } from './db.ts';
+import { migrate } from './migrations.ts';
 import { readConfig } from './config.ts';
 import * as settings from './settings.ts';
 import { makeKv } from './kv.ts';
@@ -70,6 +71,12 @@ if (process.argv[2] === '--setting') {
 
 const cfg = readConfig(ENV, APP_DIR, DATA_DIR);
 prepareDatabase(db, DATA_DIR);
+try {
+  migrate(db);
+} catch (e) {
+  console.error(`Chalk Planner: ${(e as Error).message}`);
+  process.exit(1);
+}
 const kv = makeKv(db);
 const kvGet = kv.get;
 const kvSet = kv.set;
@@ -171,14 +178,13 @@ const pictures = clipart.setup({ app, cacheDir: path.join(DATA_DIR, 'clipart-cac
 const months = month.setup({ app, db, kv, broadcast, chalk: clipart.CHALK, pictureOk: pictures.pictureOk });
 art.setup({ app, db, month: months, broadcast });
 theme.setup({ app, kv, broadcast });
-meals.setup({ app, kv, broadcast });
-jars.setup({ app, kv, broadcast });
+meals.setup({ app, db, broadcast });
+jars.setup({ app, db, broadcast });
 chores.setup({
   app,
   broadcast,
   weekStart: cfg.weekStart,
-  kvGet,
-  kvSet,
+  db,
   today: clock.today,
   kidOf: req => who.kidOf(req),
   who: req => who.whoOf(req)

@@ -3,9 +3,9 @@
 // so the lists reset by themselves. A chore for several people is either shared (done once, by any
 // of them: "load the dishwasher") or "each" (everyone checks off their own: "make your bed").
 //
-//   kv 'chores'      { people, chores }
-//   kv 'chore_done'  { [choreId] or [choreId:personId]: { p: period key, n: count, by, at } }
+// Saved in the people, chores and chore_checks tables; the screens can change one chore at a time.
 import type { Express, Request } from 'express';
+import type { DatabaseSync } from 'node:sqlite';
 import type { Chore, ChoreList, ChoreProgress, ChoresView, Every, Periods, Person } from '../shared/chores.ts';
 
 const EVERY: Every[] = ['day', 'week', 'month'];
@@ -125,8 +125,7 @@ export function periods(today: string, weekStart: number): Periods {
 
 export interface ChoresDeps {
   app: Express;
-  kvGet: (key: string) => unknown;
-  kvSet: (key: string, value: unknown) => void;
+  db: DatabaseSync;
   broadcast: (event: string, data: unknown) => void;
   today: () => string;
   weekStart: number;
@@ -134,14 +133,132 @@ export interface ChoresDeps {
   who: (req: Request) => string | null; // a name for "done by"
 }
 
-export function setup({ app, kvGet, kvSet, broadcast, today, weekStart, kidOf, who }: ChoresDeps) {
-  const load = () => (kvGet('chores') as ChoreList | null) || { people: [], chores: [] };
-  const doneMap = () => (kvGet('chore_done') as DoneMap | null) || {};
+// The tables (server/migrations.ts): people, chores (who is a JSON list of person ids), chore_checks
+// (key = chore id, or "chore id:person id" for "each" chores; only the current period counts)
+function store(db: DatabaseSync) {
+  const q = {
+    people: db.prepare('SELECT id, name, kid FROM people ORDER BY sort, rowid'),
+    chores: db.prepare('SELECT id, title, who, every, times, each FROM chores ORDER BY sort, rowid'),
+    chore: db.prepare('SELECT id, title, who, every, times, each FROM chores WHERE id = ?'),
+    addChore: db.prepare(
+      `INSERT INTO chores (id, title, who, every, times, each, sort) VALUES (?, ?, ?, ?, ?, ?,
+         COALESCE((SELECT MAX(sort) + 1 FROM chores), 0))
+       ON CONFLICT(id) DO UPDATE SET title = excluded.title, who = excluded.who, every = excluded.every,
+         times = excluded.times, each = excluded.each`
+    ),
+    delChore: db.prepare('DELETE FROM chores WHERE id = ?'),
+    checks: db.prepare('SELECT key, period, n, by, at FROM chore_checks'),
+    check: db.prepare('SELECT key, period, n, by, at FROM chore_checks WHERE key = ?'),
+    setCheck: db.prepare(
+      `INSERT INTO chore_checks (key, period, n, by, at) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(key) DO UPDATE SET period = excluded.period, n = excluded.n, by = excluded.by, at = excluded.at`
+    ),
+    delChecksOf: db.prepare("DELETE FROM chore_checks WHERE key = ? OR key LIKE ? || ':%'")
+  };
+  type ChoreRow = { id: string; title: string; who: string; every: Every; times: number; each: number };
+  const toChore = (r: ChoreRow): Chore => ({
+    id: r.id,
+    title: r.title,
+    who: JSON.parse(r.who),
+    every: r.every,
+    times: r.times,
+    ...(r.each ? { each: true } : {})
+  });
+  const tx = (fn: () => void) => {
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      fn();
+      db.exec('COMMIT');
+    } catch (e) {
+      db.exec('ROLLBACK');
+      throw e;
+    }
+  };
+  return {
+    list(): ChoreList {
+      const people = (q.people.all() as { id: string; name: string; kid: number }[]).map(p => ({
+        id: p.id,
+        name: p.name,
+        ...(p.kid ? { kid: true } : {})
+      }));
+      return { people, chores: (q.chores.all() as ChoreRow[]).map(toChore) };
+    },
+    chore(id: string) {
+      const r = q.chore.get(id) as ChoreRow | undefined;
+      return r ? toChore(r) : null;
+    },
+    checks(): DoneMap {
+      const out: DoneMap = {};
+      for (const r of q.checks.all() as {
+        key: string;
+        period: string;
+        n: number;
+        by: string | null;
+        at: number | null;
+      }[])
+        out[r.key] = { p: r.period, n: r.n, by: r.by, at: r.at ?? undefined };
+      return out;
+    },
+    check(key: string) {
+      const r = q.check.get(key) as { period: string; n: number } | undefined;
+      return r ? { p: r.period, n: r.n } : null;
+    },
+    setCheck: (key: string, r: DoneRecord) => q.setCheck.run(key, r.p, r.n, r.by ?? null, r.at ?? null),
+    // the whole list at once (the old board's editor), in one transaction
+    replace(list: ChoreList) {
+      tx(() => {
+        db.exec('DELETE FROM people; DELETE FROM chores;');
+        const addP = db.prepare('INSERT INTO people (id, name, kid, sort) VALUES (?, ?, ?, ?)');
+        list.people.forEach((p, i) => addP.run(p.id, p.name, p.kid ? 1 : 0, i));
+        const addC = db.prepare(
+          'INSERT INTO chores (id, title, who, every, times, each, sort) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        );
+        list.chores.forEach((c, i) =>
+          addC.run(c.id, c.title, JSON.stringify(c.who), c.every, c.times, c.each ? 1 : 0, i)
+        );
+        const keep = new Set(list.chores.map(c => c.id));
+        for (const k of Object.keys(this.checks()))
+          if (!keep.has(k.split(':')[0])) db.prepare('DELETE FROM chore_checks WHERE key = ?').run(k);
+      });
+    },
+    // one chore, added or changed
+    saveChore: (c: Chore) => q.addChore.run(c.id, c.title, JSON.stringify(c.who), c.every, c.times, c.each ? 1 : 0),
+    removeChore(id: string) {
+      tx(() => {
+        q.delChore.run(id);
+        q.delChecksOf.run(id, id);
+      });
+    },
+    // the people (a short list, saved together); a removed person leaves their chores, and chores left
+    // with nobody are removed
+    savePeople(people: Person[]) {
+      tx(() => {
+        db.exec('DELETE FROM people');
+        const addP = db.prepare('INSERT INTO people (id, name, kid, sort) VALUES (?, ?, ?, ?)');
+        people.forEach((p, i) => addP.run(p.id, p.name, p.kid ? 1 : 0, i));
+        const ids = new Set(people.map(p => p.id));
+        for (const c of (q.chores.all() as ChoreRow[]).map(toChore)) {
+          const who = c.who.filter(id => ids.has(id));
+          if (!who.length) this.removeChoreInTx(c.id);
+          else if (who.length !== c.who.length)
+            q.addChore.run(c.id, c.title, JSON.stringify(who), c.every, c.times, c.each && who.length > 1 ? 1 : 0);
+        }
+      });
+    },
+    removeChoreInTx(id: string) {
+      q.delChore.run(id);
+      q.delChecksOf.run(id, id);
+    }
+  };
+}
+
+export function setup({ app, db, broadcast, today, weekStart, kidOf, who }: ChoresDeps) {
+  const st = store(db);
 
   function view(): Omit<ChoresView, 'mine'> {
-    const data = load();
+    const data = st.list();
     const per = periods(today(), weekStart);
-    const done = doneMap();
+    const done = st.checks();
     const current = (key: string, c: Chore) => {
       const r = done[key];
       return r && r.p === per[c.every] ? r : null;
@@ -169,7 +286,7 @@ export function setup({ app, kvGet, kvSet, broadcast, today, weekStart, kidOf, w
   // Tick one off (or undo): family screens and signed-in people, anyone's; a kid's tablet, only their own
   app.post('/api/chores/check', (req, res) => {
     const { id, undo, person } = (req.body || {}) as { id?: string; undo?: boolean; person?: string };
-    const c = load().chores.find(x => x.id === id);
+    const c = typeof id === 'string' ? st.chore(id) : null;
     if (!c) return res.status(404).json({ error: 'That chore was removed' });
     const kid = kidOf(req);
     if (kid && !c.who.includes(kid)) return res.status(403).json({ error: 'That one isn’t yours' });
@@ -180,13 +297,14 @@ export function setup({ app, kvGet, kvSet, broadcast, today, weekStart, kidOf, w
       key = c.id + ':' + whose;
     }
     const period = periods(today(), weekStart)[c.every];
-    const all = doneMap();
-    const r: DoneRecord = all[key] && all[key].p === period ? all[key] : { p: period, n: 0 };
-    r.n = undo ? Math.max(0, r.n - 1) : Math.min(c.times, r.n + 1);
-    r.by = who(req);
-    r.at = Date.now();
-    all[key] = r;
-    kvSet('chore_done', all);
+    const cur = st.check(key);
+    const n = cur && cur.p === period ? cur.n : 0;
+    st.setCheck(key, {
+      p: period,
+      n: undo ? Math.max(0, n - 1) : Math.min(c.times, n + 1),
+      by: who(req),
+      at: Date.now()
+    });
     changed();
     res.json(view());
   });
@@ -196,14 +314,34 @@ export function setup({ app, kvGet, kvSet, broadcast, today, weekStart, kidOf, w
     const body = (req.body || {}) as { example?: boolean };
     const { people, chores, errs } = clean(body.example ? EXAMPLE : body);
     if (errs.length) return res.status(400).json({ error: errs[0] });
-    kvSet('chores', { people, chores });
-    const all = doneMap();
-    const keep = new Set(chores.map(c => c.id));
-    for (const k of Object.keys(all)) if (!keep.has(k.split(':')[0])) delete all[k];
-    kvSet('chore_done', all);
+    st.replace({ people, chores });
     changed();
     res.json(view());
   });
 
-  return { people: () => load().people };
+  // One chore, added or changed (signed-in people only)
+  app.post('/api/chores/item', (req, res) => {
+    const { people } = st.list();
+    const { chores, errs } = clean({ people, chores: [(req.body || {}).chore] });
+    if (errs.length || !chores.length) return res.status(400).json({ error: errs[0] || 'bad chore' });
+    st.saveChore(chores[0]);
+    changed();
+    res.json(view());
+  });
+  app.post('/api/chores/item/delete', (req, res) => {
+    const id = (req.body || {}).id;
+    if (isId(id)) st.removeChore(id);
+    changed();
+    res.json(view());
+  });
+  // The people (signed-in people only)
+  app.post('/api/chores/people', (req, res) => {
+    const { people, errs } = clean({ people: (req.body || {}).people, chores: [] });
+    if (errs.length) return res.status(400).json({ error: errs[0] });
+    st.savePeople(people);
+    changed();
+    res.json(view());
+  });
+
+  return { people: () => st.list().people };
 }
