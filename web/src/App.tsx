@@ -16,6 +16,7 @@ import type { Who } from './lib/who.ts';
 
 const VIEWS: Record<string, (p: { who: Who | null }) => React.JSX.Element> = {
   board: Board,
+  edit: p => <Board {...p} edit />,
   chores: Chores,
   meals: Meals,
   reminders: Reminders,

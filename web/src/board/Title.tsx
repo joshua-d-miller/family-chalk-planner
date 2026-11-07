@@ -18,13 +18,15 @@ export function Title({
   year,
   style,
   hand,
-  bg
+  bg,
+  dashed = false
 }: {
   text: string;
   year?: number;
   style: TitleStyle;
   hand: boolean;
   bg: number;
+  dashed?: boolean; // a tablet: show where to hand-letter it
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [fit, setFit] = useState({ z: style.z, dy: 0 });
@@ -68,7 +70,7 @@ export function Title({
   return (
     <h1
       id="monthName"
-      className={(hand ? 'hand' : '') + (outline ? '' : ' noout')}
+      className={(hand ? 'hand' + (dashed ? ' dashed' : '') : '') + (outline ? '' : ' noout')}
       style={
         outline ? ({ '--tout': outline, '--toutw': Math.max(3, style.z / 15) + 'px' } as CSSProperties) : undefined
       }

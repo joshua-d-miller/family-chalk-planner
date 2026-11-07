@@ -265,6 +265,9 @@ test('the board (new screen, wall): a tap shows the day, the photo frame, the sl
   board
 }) => {
   const { date } = thisMonth();
+  // no reminders left from other tests popping up over the board
+  for (const r of (await (await board.admin.api('/api/reminders')).json()).items)
+    await board.admin.post('/api/reminders/item/delete', { id: r.id });
   const wall = await as('wall', { path: '/next/board' });
   // tap a day: everything on it, big; any tap closes it
   const href = (await (await board.admin.post('/api/events', { title: 'Dentist', date, allDay: true })).json())
@@ -316,4 +319,76 @@ test('the board (new screen, wall): the slideshow with today’s extras, in the 
   await expect(wall.locator('#slides .sl.on .tile').first()).toBeVisible();
   expect(wall.errors).toEqual([]);
   await board.admin.post('/api/photos/settings', { showTemp: false, showEvents: false, sidePanel: false });
+});
+
+test('the board (new screen, tablet): add an event, change it, delete it', async ({ as, board }) => {
+  const { date, ym } = thisMonth();
+  const t = await as('tablet', { path: '/next/edit' });
+  await t.locator('#addBtn').click();
+  await t.locator('#evTitle').fill('Field trip');
+  await t.locator('#evDate').fill(date);
+  await t.locator('#evAllDay').check();
+  await t.locator('#evSize').getByRole('radio', { name: 'Large', exact: true }).click();
+  await t.locator('#evSheet').getByRole('radio', { name: '#F6B3CB' }).click();
+  await t.locator('#evSave').click();
+  const ev = t.locator(`#grid [data-date="${date}"] .ev`, { hasText: 'Field trip' });
+  await expect(ev).toHaveClass(/sz-l/);
+  await expect(ev).toHaveClass(/allday/);
+  // change it: tap it on the board
+  await ev.click();
+  await expect(t.locator('#evTitle')).toHaveValue('Field trip');
+  await t.locator('#evTitle').fill('Field trip (zoo)');
+  await t.locator('#evSave').click();
+  await expect(t.locator(`#grid [data-date="${date}"]`)).toContainText('Field trip (zoo)');
+  // the day list: everything on the day; the event opens from it
+  const cell = await t.locator(`#grid [data-date="${date}"]`).boundingBox();
+  await t.mouse.click(cell!.x + 20, cell!.y + cell!.height - 6);
+  await t
+    .locator('#dayView')
+    .getByRole('button', { name: /Field trip \(zoo\)/ })
+    .click();
+  await t.locator('#evDelete').click();
+  await expect(t.locator(`#grid [data-date="${date}"]`)).not.toContainText('Field trip');
+  // the months go back and forth
+  await t.locator('#next').click();
+  await expect(t.locator('#monthName .mn')).not.toHaveText(thisMonth().name);
+  await t.locator('#prev').click();
+  await expect(t.locator('#monthName .mn')).toHaveText(thisMonth().name);
+  expect(t.errors).toEqual([]);
+  void board;
+  void ym;
+});
+
+test('the board (new screen, tablet): the month’s title, its border and the board style', async ({ as, board }) => {
+  const { ym } = thisMonth();
+  const t = await as('tablet', { path: '/next/edit' });
+  await t.locator('#titleBtn').click();
+  await t.locator('#titleSheet .fontpick .seg').nth(3).click(); // Pacifico, shown on the board at once
+  await expect
+    .poll(() => t.locator('#monthName .mn').evaluate(e => getComputedStyle(e).fontFamily))
+    .toContain('Pacifico');
+  await t.locator('#titleSheet').getByRole('button', { name: 'Save' }).click();
+  await expect.poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).title?.f).toBe(3);
+  await t.locator('#borderBtn').click();
+  await t
+    .locator('#borderSheet')
+    .getByRole('button', { name: /Thanksgiving/ })
+    .click();
+  await expect.poll(() => t.locator('.borderLayer img').count()).toBeGreaterThan(20);
+  await t.locator('#borderSheet').getByRole('button', { name: 'Save' }).click();
+  await expect
+    .poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).border?.items.length)
+    .toBeGreaterThan(0);
+  await t.locator('#styleBtn').click();
+  await t
+    .locator('#styleSheet')
+    .getByRole('button', { name: /Pastel/ })
+    .click();
+  await t.locator('#styleSheet').getByRole('button', { name: 'Save' }).click();
+  await expect.poll(async () => (await (await board.admin.api('/api/theme')).json()).p).toBe('pastel');
+  expect(t.errors).toEqual([]);
+  await board.admin.post('/api/theme', { p: 'classic', o: {} });
+  await board.admin.post('/api/border', { ym, border: null, yearly: true });
+  await board.admin.post('/api/border', { ym, border: null });
+  await board.admin.post('/api/meta', { ym, title: null });
 });

@@ -1,7 +1,7 @@
 // The month: its name, the weekdays, and a box per day with its events, multi-day bars, trash day and
 // holidays. Same layout as the board (1252 x 642 board pixels), so art drawn on a day stays on that day.
 import type { CSSProperties, ReactNode } from 'react';
-import { url } from '../lib/api.ts';
+import { clipSrc } from './clip.ts';
 import { hash } from './geom.ts';
 import { TODAY_MARKS } from './theme.ts';
 import { readable } from './color.ts';
@@ -18,10 +18,16 @@ export interface BoardEvent {
   calColor?: string;
   size?: 'l' | 'xl';
   readOnly?: boolean;
+  hm?: string | null; // 'HH:MM'
+  minutes?: number | null;
+  recurring?: boolean;
+  countdown?: boolean;
   cal?: string; // which calendar, when there are several
   ref?: { href: string; etag: string | null; rid?: string | null };
 }
+export type WritableCal = { id: string; name: string; color: string | null; main: boolean };
 export interface MonthData {
+  calendars?: WritableCal[];
   ym: string;
   today: string;
   grid: { start: string; weeks: number; y: number; m: number; weekStart?: number; time24?: boolean };
@@ -313,13 +319,7 @@ export type Border = { items: string[]; color: string; size: 's' | 'm' | 'l' };
 const BORDER_SZ = { s: 20, m: 26, l: 34 };
 const CAL_W = 1252 - 18 - 14 - 14 - 214; // the calendar box in board pixels: the slate less its padding, the gap and the notes
 const CAL_H = GRID_H + 28;
-export const borderSrc = (n: string, color: string) =>
-  url(
-    'api/clip/' +
-      n +
-      (n.startsWith('gi-') && color && color.toUpperCase() !== '#EDEAE0' ? '--' + color.slice(1).toLowerCase() : '') +
-      '.svg'
-  );
+export const borderSrc = (n: string, color: string) => clipSrc(n, color);
 function BorderLayer({ border: b }: { border: Border }) {
   const sz = BORDER_SZ[b.size] || 26;
   const half = (sz + 6) / 2;
