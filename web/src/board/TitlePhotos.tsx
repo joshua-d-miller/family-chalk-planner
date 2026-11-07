@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | TitlePhotos.tsx
 ===============================================================================
- Version:   0.13.2
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -29,7 +29,7 @@
                                   /chores are the React board; the old one
                                   stays at /classic.
 
- 0.13.2    2026-11-07   joshua    Copes with a month saved by an older board.
+ 0.14.0    2026-11-07   joshua    Copes with a month saved by an older board.
                         claude
 ===============================================================================
 */

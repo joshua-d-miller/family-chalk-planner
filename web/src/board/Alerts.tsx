@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Alerts.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -26,9 +26,13 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.14.0    2026-11-07   joshua    Hiding a holiday opens Settings in place.
+                        claude
 ===============================================================================
 */
 
+import { navigate } from '../lib/nav.ts';
 import { useEffect, useRef, useState } from 'react';
 import type { Reminder, RemindersView } from '../../../shared/lists.ts';
 import { post } from '../lib/api.ts';
@@ -187,7 +191,7 @@ export function DayView({
                 !onEvent
                   ? undefined
                   : e.holiday
-                    ? () => (location.href = new URL('settings#holidays', document.baseURI).href) // hide it every year
+                    ? () => navigate('settings#holidays') // hide it every year
                     : !e.readOnly
                       ? () => onEvent(e)
                       : undefined

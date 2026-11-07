@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Notes.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -30,9 +30,13 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.14.0    2026-11-07   joshua    Its pages open in place.
+                        claude
 ===============================================================================
 */
 
+import { navigate } from '../lib/nav.ts';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { ChoresView } from '../../../shared/chores.ts';
@@ -412,7 +416,7 @@ export function Notes({ time24, edit = false }: { time24: boolean; edit?: boolea
             key={p}
             className={'nslot nslot-' + p + (edit && OPENS[p] ? ' opens' : '')}
             role={edit && OPENS[p] ? 'link' : undefined}
-            onClick={edit && OPENS[p] ? () => (location.href = new URL(OPENS[p], document.baseURI).href) : undefined}
+            onClick={edit && OPENS[p] ? () => navigate(OPENS[p]) : undefined}
           >
             {i > 0 && <div className="rule" />}
             {p === 'info' && <Info x={x} />}

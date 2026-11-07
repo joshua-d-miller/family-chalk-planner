@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | favorites.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-07
 
@@ -11,7 +11,7 @@
      most, kept on the strip next to Add event and Draw; everything else
      is in the ☰ menu. Saved per person, or per screen when nobody is
      signed in on it.
-       kv 'favorites'  { 'p:<person id>' | 's:<screen id>': [up to 4 menu
+       kv 'favorites'  { 'p:<person id>' | 's:<screen id>': [up to 3 menu
            item ids] }
 ===============================================================================
  CHANGELOG
@@ -21,13 +21,16 @@
  0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
                         colby     plan, reminders, timers, pantry, jars and
                         claude    chores.
+
+ 0.14.0    2026-11-07   joshua    Up to 3 pinned pages (the bar holds 3).
+                        claude
 ===============================================================================
 */
 
 import type { Express, Request } from 'express';
 import type { Kv } from './kv.ts';
 
-const MAX = 4;
+const MAX = 3; // pinned to the bar (Home, 3 pages and More on a phone)
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------------------------- //

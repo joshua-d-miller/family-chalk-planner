@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | favorites.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-07
 
@@ -17,14 +17,17 @@
  0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
                         colby     plan, reminders, timers, pantry, jars and
                         claude    chores.
+
+ 0.14.0    2026-11-07   joshua    Up to 3 pinned pages.
+                        claude
 ===============================================================================
 */
 
 import { useCallback } from 'react';
 import { post } from './api.ts';
-import { useLive } from './live.ts';
+import { tellThisScreen, useLive } from './live.ts';
 
-export const MAX_FAVORITES = 4;
+export const MAX_FAVORITES = 3; // pinned to the bar: Home, 3 and More fill a phone's tab bar
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------- //
@@ -38,6 +41,7 @@ export function useFavorites() {
       const items = now.includes(id) ? now.filter(x => x !== id) : [...now, id].slice(-MAX_FAVORITES);
       f.set({ items, saved: true });
       f.set(await post('api/favorites', { items }));
+      tellThisScreen('favorites'); // the bar shows them too
     },
     [f]
   );

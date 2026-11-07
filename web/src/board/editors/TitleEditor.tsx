@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | TitleEditor.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -22,15 +22,18 @@
  0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
                         claude    events, the month's title and border, the
                                   board style.
+
+ 0.14.0    2026-11-07   joshua    The grouped font picker, with every font.
+                        claude
 ===============================================================================
 */
 
+import { FontPicker } from '../../ui/FontPicker.tsx';
 import { useEffect, useState } from 'react';
 import { post } from '../../lib/api.ts';
 import { Btn, Segs } from '../../ui/bits.tsx';
 import { Colors } from '../../ui/Colors.tsx';
 import { Sheet } from '../../ui/Sheet.tsx';
-import { fontCss } from '../Art.tsx';
 import type { MonthMeta } from '../Board.tsx';
 import { DEFAULT_TITLE } from '../Title.tsx';
 import type { TitleStyle } from '../Title.tsx';
@@ -39,7 +42,6 @@ import type { TitleStyle } from '../Title.tsx';
 // ------------------- //
 // | Fonts and sizes | //
 // ------------------- //
-export const FONT_NAMES = ['Kalam', 'Caveat', 'Marker', 'Pacifico', 'Chalk', 'Tall', 'Scratchy', 'Script'];
 const SIZES: [string, string][] = [
   ['56', 'S'],
   ['68', 'M'],
@@ -98,20 +100,7 @@ export function TitleEditor({
       ) : (
         <>
           <div className="sublbl">Font</div>
-          <div className="fontpick">
-            {FONT_NAMES.map((n, i) => (
-              <button
-                type="button"
-                key={n}
-                className={'seg' + (t.f === i ? ' on' : '')}
-                aria-pressed={t.f === i}
-                style={{ font: fontCss(i, 24) }}
-                onClick={() => setT({ ...t, f: i })}
-              >
-                {monthName}
-              </button>
-            ))}
-          </div>
+          <FontPicker value={t.f} onChange={f => setT({ ...t, f })} keyOf={(_, i) => i} sample={monthName} size={24} />
           <div className="sublbl">Color</div>
           <Colors value={t.c} onChange={c => c && setT({ ...t, c })} label="Title color" />
           <div className="sublbl">Outline</div>

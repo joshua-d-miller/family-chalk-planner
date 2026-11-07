@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | StyleEditor.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -22,9 +22,13 @@
  0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
                         claude    events, the month's title and border, the
                                   board style.
+
+ 0.14.0    2026-11-07   joshua    The grouped font picker, with every font.
+                        claude
 ===============================================================================
 */
 
+import { FontPicker } from '../../ui/FontPicker.tsx';
 import { useEffect, useState } from 'react';
 import { post } from '../../lib/api.ts';
 import { SURFACES } from '../../lib/surface.ts';
@@ -235,20 +239,15 @@ export function StyleEditor({
           <b>{r.label}</b>
           {r.parts.map(([k, kind]) =>
             kind === 'font' ? (
-              <div className="fontpick" key={k}>
-                {Object.entries(TFONTS).map(([fk, f]) => (
-                  <button
-                    type="button"
-                    key={fk}
-                    className={'seg' + (v[k] === fk ? ' on' : '')}
-                    aria-pressed={v[k] === fk}
-                    style={{ fontFamily: f.ff, fontWeight: f.w }}
-                    onClick={() => set(k, fk)}
-                  >
-                    {f.n}
-                  </button>
-                ))}
-              </div>
+              <FontPicker
+                key={k}
+                value={v[k]}
+                onChange={fk => set(k, fk)}
+                keyOf={b => b.id}
+                classic
+                size={18}
+                label={r.label}
+              />
             ) : kind === 'color' ? (
               <Colors key={k} value={v[k]} onChange={c => c && set(k, c)} label={r.label} />
             ) : (

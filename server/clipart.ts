@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | clipart.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
  Updated:   2026-11-06
@@ -39,6 +39,9 @@
  -------   ----------   -------   --------------------------------------------
  0.13.0    2026-11-06   joshua    Move clipart and media into their own
                         claude    TypeScript modules.
+
+ 0.14.0    2026-11-07   joshua    Serves the 7 other picture styles too.
+                        claude
 ===============================================================================
 */
 
@@ -46,6 +49,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import type { Express } from 'express';
+import { makeStyles } from './clipstyles.ts';
 
 const require = createRequire(import.meta.url);
 export const CHALK = '#EDEAE0';
@@ -89,6 +93,7 @@ interface IconSet {
 
 export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
   const animDir = path.join(cacheDir, 'anim');
+  const styles = makeStyles(cacheDir);
 
   // loaded on first use (the files are large)
   let fluent: { icons: IconSet['icons']; w: number; h: number; names: string[] } | null = null;
@@ -151,7 +156,14 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
   // ---------------------- //
   // | Every picture name | //
   // ---------------------- //
-  app.get('/api/clip/list', (_req, res) => {
+  app.get('/api/clip/styles', (_req, res) => res.set('Cache-Control', 'no-cache').json(styles.list()));
+  app.get('/api/clip/list', (req, res) => {
+    // one of the other styles: its names (once it's unpacked)
+    if (typeof req.query.style === 'string') {
+      const n = styles.names(req.query.style);
+      if (!n) return res.status(503).json({ error: 'These pictures are still being unpacked - try again in a minute' });
+      return res.set('Cache-Control', 'public, max-age=86400').json(n);
+    }
     try {
       res
         .set('Cache-Control', 'public, max-age=86400')
@@ -183,6 +195,14 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
       if (!svg) return res.sendStatus(404);
       return res.set('Cache-Control', FOREVER).type('image/svg+xml').send(svg);
     }
+    const file = styles.fileOf(name);
+    if (file)
+      return res
+        .set('Cache-Control', FOREVER)
+        .type('image/svg+xml')
+        .sendFile(file, err => {
+          if (err && !res.headersSent) res.sendStatus(404);
+        });
     let f: ReturnType<typeof fluentSet>;
     try {
       f = fluentSet();
@@ -336,8 +356,9 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
   // | Is this a picture the board has? | //
   // ------------------------------------ //
   // A clipart or chalk-drawing name the board has (for borders)             //
-  const pictureOk = (n: string) => (n.startsWith('gi-') ? drawingSet().ok.has(n.slice(3)) : !!fluentSet().icons[n]);
-  return { pictureOk };
+  const pictureOk = (n: string) =>
+    n.startsWith('gi-') ? drawingSet().ok.has(n.slice(3)) : !!styles.fileOf(n) || !!fluentSet().icons[n];
+  return { pictureOk, styles };
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

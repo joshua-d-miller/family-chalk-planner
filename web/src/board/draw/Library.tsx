@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Library.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -28,6 +28,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.14.0    2026-11-07   joshua    Clipart in 8 styles, or all of them side by
+                        claude    side.
 ===============================================================================
 */
 
@@ -158,9 +161,14 @@ export function Library({
 // ------------ //
 // | Clip art | //
 // ------------ //
+type ClipStyle = { prefix: string; name: string; credit: string; count: number };
+const FLUENT = { prefix: '', name: 'Fluent', credit: 'Fluent Emoji by Microsoft (MIT)', count: 1 };
 function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
   const [names, setNames] = useState<string[] | null>(null);
   const [groups, setGroups] = useState<Record<string, string[]>>({});
+  const [styles, setStyles] = useState<ClipStyle[]>([]);
+  const [style, setStyle] = useState(''); // '' Fluent (and the chalk drawings), a set's short name, or 'all'
+  const [others, setOthers] = useState<Record<string, string[]>>({}); // each style's names, once loaded
   const [err, setErr] = useState('');
   const [set, setSet] = useState(0);
   const [q, setQ] = useState('');
@@ -168,16 +176,52 @@ function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
   useEffect(() => {
     get<string[]>('api/clip/list').then(setNames, e => setErr('Couldn’t load clipart: ' + (e as Error).message));
     get<Record<string, string[]>>('api/clip/drawings').then(setGroups, () => {});
+    get<ClipStyle[]>('api/clip/styles').then(setStyles, () => {});
   }, []);
+  // a style's names, the first time it's chosen (or every style's, for All)
+  useEffect(() => {
+    const want = style === 'all' ? styles.map(s => s.prefix) : style ? [style] : [];
+    for (const p of want)
+      if (!others[p])
+        get<string[]>('api/clip/list?style=' + p).then(
+          l => setOthers(o => ({ ...o, [p]: l })),
+          e => setErr((e as Error).message)
+        );
+  }, [style, styles, others]);
   const sets = useMemo(
-    () => [...SETS, ...Object.entries(groups).map(([g, l]) => [g, l.join(' ')] as [string, string])],
-    [groups]
+    () => [...SETS, ...(style ? [] : Object.entries(groups).map(([g, l]) => [g, l.join(' ')] as [string, string]))],
+    [groups, style]
   );
-  const list = !names
-    ? []
-    : q.trim()
-      ? searchClip(names, q, 120)
-      : (sets[set]?.[1] || '').split(' ').filter(n => names.includes(n));
+  // the Fluent names in a group or search, as this style draws them (where it has one)
+  const inStyle = (base: string[], p: string) => {
+    const have = new Set(others[p] || []);
+    return base.map(n => p + '-' + n).filter(n => have.has(n));
+  };
+  const strip = (l: string[], p: string) => l.map(n => n.slice(p.length + 1));
+  let list: string[] = [];
+  if (names) {
+    const group = (sets[set]?.[1] || '').split(' ');
+    if (!style) list = q.trim() ? searchClip(names, q, 120) : group.filter(n => names.includes(n));
+    else {
+      const ps = style === 'all' ? ['', ...styles.map(s => s.prefix)] : [style];
+      const per = ps.map(p => {
+        if (!p) return q.trim() ? searchClip(names, q, 40) : group.filter(n => names.includes(n));
+        const mine = others[p] || [];
+        return q.trim()
+          ? searchClip(strip(mine, p), q, style === 'all' ? 30 : 120).map(n => p + '-' + n)
+          : inStyle(group, p);
+      });
+      // All: each picture in every style, side by side
+      const longest = Math.max(0, ...per.map(l => l.length));
+      for (let i = 0; i < longest; i++) for (const l of per) if (l[i]) list.push(l[i]);
+      list = list.slice(0, 160);
+    }
+  }
+  const credit =
+    style === 'all'
+      ? 'every style (choose one to see who made it; all are credited in NOTICE)'
+      : (styles.find(s => s.prefix === style) || FLUENT).credit +
+        (style ? '' : ' · Chalk drawings: game-icons.net (CC BY 3.0)');
   const place = (n: string) => {
     const s = clipSrc(n, color);
     pick({ name: clipLabel(n), items: [{ id: 0, k: 'g', x: 0, y: 0, w: 96, h: 96, src: s, still: s, mode: 'still' }] });
@@ -192,6 +236,27 @@ function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
         onChange={e => setQ(e.target.value)}
         aria-label="Search pictures"
       />
+      {styles.length > 0 && (
+        <div className="segs cstyles" role="radiogroup" aria-label="Picture style">
+          {[FLUENT, ...styles, { prefix: 'all', name: 'All styles', credit: '', count: 1 }].map(s => (
+            <button
+              type="button"
+              key={s.prefix || 'fluent'}
+              role="radio"
+              aria-checked={style === s.prefix}
+              className={'seg' + (style === s.prefix ? ' on' : '')}
+              disabled={!s.count}
+              title={s.count ? undefined : 'Still being unpacked on the board - try again in a minute'}
+              onClick={() => {
+                setStyle(s.prefix);
+                setSet(0);
+              }}
+            >
+              {s.name}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="segs">
         {sets.map(([label], i) => (
           <button
@@ -229,9 +294,7 @@ function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
           </button>
         ))}
       </div>
-      <div className="sublbl">
-        Clipart: Fluent Emoji by Microsoft (MIT) · Chalk drawings: game-icons.net (CC BY 3.0)
-      </div>
+      <div className="sublbl">Clipart: {credit}</div>
     </>
   );
 }

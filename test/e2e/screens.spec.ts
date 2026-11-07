@@ -81,6 +81,7 @@ test('a family screen edits on the board but has no settings, account or freehan
   await expect(fam.locator('body')).toHaveClass(/family/);
   await expect(fam.locator('#drawBtn')).toContainText('Decorate');
   await expect(fam.locator('#titleBtn')).toHaveCount(0);
+  await fam.locator('#editBtn').click(); // the tools are in the drawer on the cork
   await fam.locator('#drawBtn').click();
   await expect(fam.locator('#chalkBtn')).toBeHidden();
   await expect(fam.locator('#poscaBtn')).toBeHidden();

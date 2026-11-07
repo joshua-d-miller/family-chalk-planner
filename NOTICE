@@ -6,13 +6,19 @@ Third-party components (fetched or installed separately, not part of this reposi
 - Express (MIT), ical.js (MPL-2.0), @simplewebauthn/server (MIT), qrcode (MIT): npm dependencies.
 - Fluent Emoji (MIT, Microsoft), https://github.com/microsoft/fluentui-emoji: the Clipart pictures,
   installed with the board from npm (@iconify-json/fluent-emoji-flat).
+- More clipart styles, installed with the board from npm (@iconify-json/...) and unpacked into its
+  data folder: Streamline Emojis (CC BY 4.0, Streamline, https://streamlinehq.com),
+  Noto Emoji (Apache-2.0, Google), OpenMoji (CC BY-SA 4.0, https://openmoji.org), Twemoji
+  (CC BY 4.0, Twitter), Firefox OS Emoji (Apache-2.0, Mozilla), EmojiOne 2 (CC BY 4.0, Emoji One) and
+  IconPark (Apache-2.0, ByteDance). Shown in Stamps as they come; the pictures are not changed.
 - Game Icons (CC BY 3.0), https://game-icons.net: the ✏️ chalk drawings (a hand-picked part of the set),
   installed with the board from npm (@iconify-json/game-icons). By Lorc, Delapouite and contributors.
 - Tabler Icons (MIT), https://tabler.io/icons: downloaded on first "Find more" clipart search.
 - Noto Animated Emoji (CC BY 4.0, Google), https://googlefonts.github.io/noto-emoji-animation/:
   fetched on first use and cached locally.
 - Google Fonts (SIL Open Font License): Dancing Script, Cormorant Garamond, Kalam, Caveat,
-  Permanent Marker, Pacifico, Fredericka the Great, Amatic SC, Rock Salt; and Noto Color Emoji (Google),
+  Permanent Marker, Pacifico, Fredericka the Great, Amatic SC, Rock Salt, and the 43 others listed in
+  shared/fonts.ts (Patrick Hand to Butcherman); and Noto Color Emoji (Google),
   used only where a screen has no emoji of its own. Installed from npm (@fontsource; the emoji in the COLRv1
   format from @infolektuell/noto-color-emoji).
 - React (MIT, Meta Platforms) for the screens, built with Vite (MIT).

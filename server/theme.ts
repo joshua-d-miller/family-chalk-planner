@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | theme.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-07
 
@@ -22,17 +22,21 @@
 
                                   Immich photos, slideshow extras, a filled-in
                                   today, and the frame's thickness.
+
+ 0.14.0    2026-11-07   joshua    The board style can use any of the fonts.
+                        claude
 ===============================================================================
 */
 
 import type { Express } from 'express';
 import type { Kv } from './kv.ts';
+import { BOARD_FONTS, CLASSIC_FONT } from '../shared/fonts.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------------- //
 // | What a style may hold | //
 // ------------------------- //
-const FONTS = ['kalam', 'caveat', 'marker', 'pacifico', 'chalk', 'tall', 'scratchy', 'script', 'classic'];
+const FONTS = [...BOARD_FONTS.map(b => b.id), CLASSIC_FONT.id];
 // each tweak: a color, a font, or one of a few choices
 const TWEAKS: Record<string, 'color' | 'font' | string[]> = {
   numF: 'font',

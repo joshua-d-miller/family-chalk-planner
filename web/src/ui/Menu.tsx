@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Menu.tsx
 ===============================================================================
- Version:   0.13.2
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -23,48 +23,67 @@
                         colby     plan, reminders, timers, pantry, jars and
                         claude    chores.
 
- 0.13.2    2026-11-07   joshua    One Chalkboard entry instead of The board
+ 0.14.0    2026-11-07   joshua    One Calendar entry instead of The board
                         claude    and Edit the board.
+
+                                  📌 pins, and More as a sheet from the bottom.
 ===============================================================================
 */
 
 import { post } from '../lib/api.ts';
 import { MAX_FAVORITES, useFavorites } from '../lib/favorites.ts';
-import { RANK } from '../lib/who.ts';
 import type { Who } from '../lib/who.ts';
-import { PAGES } from '../routes.ts';
+import { PAGES, homeHref, isHome } from '../routes.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // -------------- //
 // | The ☰ menu | //
 // -------------- //
-// Every page this screen may open, in groups; ☆ keeps up to 4 on the strip. //
-// Signed in: who, and Sign out.                                             //
+// Every page this screen may open, in groups; pins up to 3 to the bar.      //
+// Signed in: who, and Sign out. `up`: a sheet from the bottom (More, on a   //
+// phone or tablet) instead of a panel from the left.                        //
 const GROUPS: [string, string][] = [
   ['pages', 'Pages'],
   ['account', 'Account']
 ];
 
-export function Menu({ who, here, onClose }: { who: Who | null; here: string; onClose: () => void }) {
+export function Menu({
+  who,
+  here,
+  up = false,
+  onClose
+}: {
+  who: Who | null;
+  here: string;
+  up?: boolean;
+  onClose: () => void;
+}) {
   const fav = useFavorites();
   const rank = who?.rank || 0;
   const admin = who?.user?.role === 'admin';
   const mayOpen = (need: number, id: string) => (id === 'admin' ? admin : rank >= need);
-  const onBoard = here === 'board' || here === 'edit';
+  const onBoard = isHome(here, who);
+  // pinned for whom: this screen when nobody is signed in on it, else the person
+  const forScreen = !who?.user;
   return (
     <>
       <div className="menuScrim" onClick={onClose} />
-      <nav className="menu" aria-label="Menu" id="menuPanel">
-        {/* the chalkboard: the one this screen uses (to change it if it may, else to look at it) */}
+      <nav
+        className={'menu' + (up ? ' up' : '')}
+        aria-label="Menu"
+        id="menuPanel"
+        onClick={e => (e.target as Element).closest('a') && onClose()}
+      >
+        {/* the Calendar: the board this screen uses (to change it if it may, else to look at it) */}
         <a
           className={'item board' + (onBoard ? ' here' : '')}
-          href={rank >= RANK.family ? 'edit' : './'}
+          href={homeHref(who)}
           aria-current={onBoard ? 'page' : undefined}
         >
           <span className="ic" aria-hidden="true">
-            🗓️
+            📅
           </span>
-          <span className="lbl">Chalkboard</span>
+          <span className="lbl">Calendar</span>
         </a>
         {GROUPS.map(([g, title]) => {
           const items = PAGES.filter(p => p.group === g && mayOpen(p.need, p.id));
@@ -89,19 +108,23 @@ export function Menu({ who, here, onClose }: { who: Who | null; here: string; on
                     {fav.canSave && p.group === 'pages' && (
                       <button
                         type="button"
-                        className={'star' + (on ? ' on' : '')}
+                        className={'pin' + (on ? ' on' : '')}
                         aria-pressed={on}
-                        aria-label={on ? `Take ${p.title} off the strip` : `Keep ${p.title} on the strip`}
+                        aria-label={on ? `Unpin ${p.title}` : `Pin ${p.title}`}
                         title={
                           on
-                            ? 'On the strip'
+                            ? forScreen
+                              ? 'Pinned to this screen'
+                              : 'Pinned for you'
                             : fav.items.length >= MAX_FAVORITES
-                              ? `Keep on the strip (up to ${MAX_FAVORITES})`
-                              : 'Keep on the strip'
+                              ? `Pin (up to ${MAX_FAVORITES}: the oldest comes off)`
+                              : forScreen
+                                ? 'Pin to this screen'
+                                : 'Pin for you'
                         }
                         onClick={() => fav.toggle(p.id)}
                       >
-                        {on ? '★' : '☆'}
+                        📌
                       </button>
                     )}
                   </div>

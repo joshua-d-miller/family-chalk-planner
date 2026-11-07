@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | theme.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -24,9 +24,13 @@
  0.13.0    2026-11-07   joshua    The new board: the family's style, each
                         colby     month's title and holiday border, polaroids,
                         claude    drawn jars.
+
+ 0.14.0    2026-11-07   joshua    The fonts come from shared/fonts.ts.
+                        claude
 ===============================================================================
 */
 
+import { BOARD_FONTS, CLASSIC_FONT, fontStack } from '../../../shared/fonts.ts';
 import { lum, readable } from './color.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -36,17 +40,12 @@ import { lum, readable } from './color.ts';
 export type Theme = { p: string; o?: Record<string, string>; s?: string; z?: 1 };
 export type ThemeVals = Record<string, string>;
 
-export const TFONTS: Record<string, { n: string; ff: string; w: number; z: number }> = {
-  kalam: { n: 'Kalam', ff: "'Kalam', cursive", w: 700, z: 1 },
-  caveat: { n: 'Caveat', ff: "'Caveat', cursive", w: 600, z: 1.15 },
-  marker: { n: 'Marker', ff: "'Permanent Marker', cursive", w: 400, z: 0.92 },
-  pacifico: { n: 'Pacifico', ff: "'Pacifico', cursive", w: 400, z: 0.88 },
-  chalk: { n: 'Chalk', ff: "'Fredericka the Great', serif", w: 400, z: 1 },
-  tall: { n: 'Tall', ff: "'Amatic SC', cursive", w: 700, z: 1.3 },
-  scratchy: { n: 'Scratchy', ff: "'Rock Salt', cursive", w: 400, z: 0.78 },
-  script: { n: 'Script', ff: "'Dancing Script', cursive", w: 700, z: 1.1 },
-  classic: { n: 'Classic', ff: "'Cormorant Garamond', serif", w: 600, z: 1.05 }
-};
+export const TFONTS: Record<string, { n: string; ff: string; w: number; z: number; g: string }> = Object.fromEntries(
+  [...BOARD_FONTS, CLASSIC_FONT].map(b => [
+    b.id,
+    { n: b.name, ff: b.id === 'classic' ? `'${b.family}', serif` : fontStack(b), w: b.weight, z: b.z, g: b.group }
+  ])
+);
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------ //

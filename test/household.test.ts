@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | household.test.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-07
 
@@ -21,6 +21,9 @@
                                   The new screens (React + TypeScript): meal
                                   plan, reminders, timers, pantry, jars and
                                   chores.
+
+ 0.14.0    2026-11-07   joshua    Up to 3 pinned pages.
+                        claude
 ===============================================================================
 */
 
@@ -154,13 +157,13 @@ test('the right-hand column: up to 3 pages; older boards keep what they showed',
   assert.deepEqual(x.notes.pages, ['info', 'meals', 'upnext']);
 });
 
-test('favorites: kept per person and per screen, up to 4', async () => {
+test('pinned pages: kept per person and per screen, up to 3', async () => {
   let f = await (
     await fam.post('/api/favorites', { items: ['meals', 'timers', 'meals', 'x y', 'pantry', 'jars', 'chores'] })
   ).json();
-  assert.deepEqual(f.items, ['meals', 'timers', 'pantry', 'jars']);
+  assert.deepEqual(f.items, ['meals', 'timers', 'pantry']);
   f = await (await ed.api('/api/favorites')).json();
   assert.deepEqual(f.items, [], 'the admin has their own');
-  assert.deepEqual((await (await fam.api('/api/favorites')).json()).items, ['meals', 'timers', 'pantry', 'jars']);
-  assert.equal((await wall.post('/api/favorites', { items: ['meals'] })).status, 403, 'the wall has no strip');
+  assert.deepEqual((await (await fam.api('/api/favorites')).json()).items, ['meals', 'timers', 'pantry']);
+  assert.equal((await wall.post('/api/favorites', { items: ['meals'] })).status, 403, 'the wall has no bar');
 });

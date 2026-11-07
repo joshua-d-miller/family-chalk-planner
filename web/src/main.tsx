@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | main.tsx
 ===============================================================================
- Version:   0.13.2
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-07
 
@@ -18,7 +18,7 @@
                         colby     plan, reminders, timers, pantry, jars and
                         claude    chores.
 
- 0.13.2    2026-11-07   joshua    A crash shows a message instead of a blank
+ 0.14.0    2026-11-07   joshua    A crash shows a message instead of a blank
                         claude    page.
 ===============================================================================
 */

@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | clip.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Claude
  Updated:   2026-11-07
 
@@ -18,6 +18,9 @@
  0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
                         claude    events, the month's title and border, the
                                   board style.
+
+ 0.14.0    2026-11-07   joshua    Names of the other styles show without their
+                        claude    prefix.
 ===============================================================================
 */
 
@@ -81,6 +84,8 @@ export function searchClip(names: string[], q: string, max = 60) {
     for (const n of (CLIP_SYN[t] || '').split(' ')) if (n && have.has(n) && !syn.includes(n)) syn.push(n);
   return [...syn, ...names.filter(n => !syn.includes(n) && terms.every(t => n.includes(t)))].slice(0, max);
 }
-export const clipLabel = (n: string) => n.replace(/^(gi|tb)-/, '').replace(/-/g, ' ');
+// a picture's name without its set's short name (gi- chalk drawings, tb- line drawings, se- no- om- tw- fx- eo- ip-
+// the other styles)
+export const clipLabel = (n: string) => n.replace(/^(gi|tb|se|no|om|tw|fx|eo|ip)-/, '').replace(/-/g, ' ');
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

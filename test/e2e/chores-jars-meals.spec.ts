@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | chores-jars-meals.spec.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-07
 
@@ -23,6 +23,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.14.0    2026-11-07   joshua    Back to the calendar from the tab bar.
+                        claude
 ===============================================================================
 */
 
@@ -57,7 +60,7 @@ test('chores from the tablet: swipe across the board, tick one off, back to the 
   await expect.poll(() => doneOf(board, 'Wipe kitchen counters')).toBe(1);
   await page.locator('#chTabs button', { hasText: 'This week' }).click();
   await expect(page.locator('.chitem', { hasText: 'Fold laundry' })).toContainText('0 of 3');
-  await page.locator('#chBack').click();
+  await page.locator('#tabbar a', { hasText: 'Calendar' }).click(); // a tablet: the tab bar
   await expect(page).toHaveURL(/\/edit$/);
 });
 

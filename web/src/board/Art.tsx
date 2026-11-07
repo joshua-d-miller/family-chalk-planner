@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Art.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
  Updated:   2026-11-07
@@ -37,9 +37,13 @@
                                   The new board: drawing on a tablet (chalk,
                                   Posca, writing, eraser, select, stamps,
                                   GIFs).
+
+ 0.14.0    2026-11-07   joshua    The fonts come from shared/fonts.ts.
+                        claude
 ===============================================================================
 */
 
+import { fontShorthand } from '../../../shared/fonts.ts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { url } from '../lib/api.ts';
 import { readable } from './color.ts';
@@ -74,17 +78,8 @@ export type ArtItem = {
 // | Colors and fonts | //
 // -------------------- //
 export const CHALK = ['#EDEAE0', '#F6B3CB', '#F2D479', '#9CC9E6', '#A9D8A0', '#E8A35C', '#B49CE0'];
-const FONTS = [
-  "700 {z}px 'Kalam', cursive",
-  "600 {z}px 'Caveat', cursive",
-  "400 {z}px 'Permanent Marker', cursive",
-  "400 {z}px 'Pacifico', cursive",
-  "400 {z}px 'Fredericka the Great', serif",
-  "700 {z}px 'Amatic SC', cursive",
-  "400 {z}px 'Rock Salt', cursive",
-  "700 {z}px 'Dancing Script', cursive"
-];
-export const fontCss = (f = 0, z = 40) => (FONTS[f] || FONTS[0]).replace('{z}', String(z));
+// the fonts are numbered in shared/fonts.ts (words and month titles keep the number)
+export const fontCss = (f = 0, z = 40) => fontShorthand(f, z);
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------------- //
