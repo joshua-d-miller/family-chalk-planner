@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | fixtures.ts
 ===============================================================================
- Version:   0.14.1
+ Version:   0.14.2
  Author:    Joshua D. Miller, Claude
  Updated:   2026-11-08
 
@@ -20,6 +20,9 @@
 
  0.14.1    2026-11-08   joshua    A pop-up left by another test is closed as a
                         claude    screen opens.
+
+ 0.14.2    2026-11-08   joshua    Waits for a screen to finish loading, not a
+                        claude    fixed second.
 ===============================================================================
 */
 
@@ -220,8 +223,27 @@ const test = base.test.extend<{ as: OpenAs }, { board: Board }>({
             ? '/chores'
             : '/');
       await page.goto(board.url + path);
-      await page.waitForFunction(() => document.fonts && document.fonts.status === 'loaded');
-      if (opts.settle !== false) await page.waitForTimeout(1200); // month, art, photos and weather arrive
+      // the fonts on the screen have loaded (at most 10 seconds: one slow emoji piece mustn't fail a test)
+      await page
+        .waitForFunction(() => document.fonts && document.fonts.status === 'loaded', null, { timeout: 10_000 })
+        .catch(() => {});
+      // month, art, photos and weather arrive: no request on its way for a moment (<html data-busy> is gone)
+      if (opts.settle !== false)
+        await page.waitForFunction(
+          () =>
+            new Promise<boolean>(done => {
+              let quiet = 0;
+              const t = setInterval(() => {
+                quiet = document.documentElement.dataset.busy ? 0 : quiet + 1;
+                if (quiet >= 3) {
+                  clearInterval(t);
+                  done(true);
+                }
+              }, 50);
+            }),
+          null,
+          { timeout: 10_000 }
+        );
       // a reminder or timer left by another test can pop up as the screen opens: close it, so it doesn't
       // sit over what this test taps (tests that want one make it after opening the screen)
       for (let i = 0; i < 3 && (await page.locator('.scrim').count()); i++) await page.keyboard.press('Escape');

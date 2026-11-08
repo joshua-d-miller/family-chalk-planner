@@ -275,3 +275,24 @@ body:has(.scrim) .tabbar,
 body:has(.menuScrim) .tabbar {
   visibility: hidden;
 }
+
+/* drawing or zoomed in: the tab bar is one small button in the corner, out of the board's way */
+.tabbar.mini {
+  left: auto;
+  right: calc(14px + env(safe-area-inset-right, 0px));
+  transform: none;
+  padding: 5px;
+}
+.tabbar.mini .tab {
+  min-width: 0;
+  padding: 8px 12px;
+}
+html.os-android .tabbar.mini {
+  left: auto;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  height: auto;
+  padding: 6px;
+  border-radius: 18px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}

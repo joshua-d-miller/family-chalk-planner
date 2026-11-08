@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   0.14.1
+ Version:   0.14.2
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-08
@@ -58,6 +58,9 @@
 
  0.14.1    2026-11-08   joshua    Tells the pages how big its cork is.
                         claude
+
+ 0.14.2    2026-11-08   joshua    Fits into what's visible; tells the tab bar
+                        claude    while drawing or zoomed in.
 ===============================================================================
 */
 
@@ -88,7 +91,7 @@ import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
 import { Strip } from './Strip.tsx';
 import { navigate } from '../lib/nav.ts';
-import { useShell } from '../ui/Shell.tsx';
+import { useShell, visibleHeight } from '../ui/Shell.tsx';
 import { DrawLayer, firstPen, isPosca, recolor, touches } from './draw/Draw.tsx';
 import type { Pen } from './draw/Draw.tsx';
 import { Library } from './draw/Library.tsx';
@@ -134,7 +137,7 @@ export type MonthMeta = {
 function useFit(pad: number, h: number, below = 0) {
   // below: the tab bar's height on a phone or tablet (the board fits above it)
   const calc = () => {
-    const scale = Math.min(innerWidth / (W + 2 * pad), (innerHeight - below) / (h + 2 * pad));
+    const scale = Math.min(innerWidth / (W + 2 * pad), (visibleHeight() - below) / (h + 2 * pad));
     return { scale, res: Math.max(1, Math.min(4, Math.round(scale * (devicePixelRatio || 1) * 2) / 2)) };
   };
   const [fit, setFit] = useState(calc);
@@ -142,7 +145,11 @@ function useFit(pad: number, h: number, below = 0) {
     const on = () => setFit(calc());
     on();
     addEventListener('resize', on);
-    return () => removeEventListener('resize', on);
+    window.visualViewport?.addEventListener('resize', on);
+    return () => {
+      removeEventListener('resize', on);
+      window.visualViewport?.removeEventListener('resize', on);
+    };
   }, [pad, h, below]);
   return fit;
 }
@@ -202,7 +209,7 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   const shell = useShell();
   const fit = useFit(pad, bh, shell.navH);
   // the pages' cork is drawn the same size as this one
-  const { kind: shellKind, setCorkZ } = shell;
+  const { kind: shellKind, setCorkZ, setBusyBoard } = shell;
   useEffect(() => {
     if (edit && shellKind === 'cork') setCorkZ(fit.scale);
   }, [edit, shellKind, setCorkZ, fit.scale]);
@@ -387,6 +394,11 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   // ----------- //
   // The pen, what is picked, and a stamp being placed.                      //
   const [drawing, setDrawing] = useState(false);
+  // drawing or zoomed in on a phone or tablet: the tab bar shrinks to a button in the corner
+  useEffect(() => {
+    setBusyBoard(drawing || zoom.z > 1.01);
+    return () => setBusyBoard(false);
+  }, [drawing, zoom.z, setBusyBoard]);
   const [pen, setPen] = useState<Pen>(firstPen);
   const [selection, setSelection] = useState<number[]>([]);
   const [hidden, setHidden] = useState<number[]>([]);
@@ -510,7 +522,10 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
     <div
       id="stage"
       className={(sf.lum > 0.18 ? 'light' : '') + (pad ? ' framed' : '')}
-      style={{ ...(pad ? {} : { backgroundImage: bg }), bottom: shell.navH || undefined }}
+      style={{
+        ...(pad ? {} : { backgroundImage: bg }),
+        ...(shell.navH ? { bottom: 'auto', height: visibleHeight() - shell.navH } : {})
+      }}
       onPointerDown={e => (swipe.current = e.isPrimary ? [e.clientX, e.clientY] : null)}
       onPointerUp={tap}
       {...touchHandlers}
