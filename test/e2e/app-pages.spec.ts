@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | app-pages.spec.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.14.1
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      The new screens (React): the meal plan, reminders, timers, the
@@ -37,6 +37,9 @@
                         claude    drawer on a family screen.
 
                                   A month title in one of the new fonts.
+
+ 0.14.1    2026-11-08   joshua    Clipart in two styles is saved and still
+                        claude    there after a reload.
 ===============================================================================
 */
 
@@ -530,6 +533,22 @@ test('the board (new screen, tablet): draw, undo and redo, erase, write, select,
   await expect(t.locator('.slate .status')).toContainText('Tap the board');
   await t.mouse.click(...at(800, 300));
   await expect.poll(async () => (await artOf()).find(x => x.k === 't')?.s).toBe('🎂');
+  // clipart, in two styles: saved on the board (not only drawn on this screen), and still there after a reload
+  for (const style of ['Fluent', 'Noto']) {
+    await t.locator('#stampsBtn').click();
+    await t.locator('#libSheet').getByRole('radio', { name: 'Clipart' }).click();
+    await t.locator('#libSheet .cstyles').getByRole('radio', { name: style, exact: true }).click();
+    await t.locator('#libSheet .ctile').first().click();
+    await t.mouse.click(...at(style === 'Fluent' ? 500 : 650, 450));
+  }
+  type Pic = { k?: string; src?: string };
+  await expect.poll(async () => ((await artOf()) as Pic[]).filter(x => x.k === 'g').length).toBe(2);
+  const pics = ((await artOf()) as Pic[]).filter(x => x.k === 'g').map(x => x.src);
+  expect(pics.every(p => /^\/api\/clip\/[a-z0-9-]+\.svg$/.test(p!))).toBe(true);
+  expect(pics.some(p => p!.startsWith('/api/clip/no-'))).toBe(true);
+  await t.reload();
+  await expect(t.locator('.slate img[src*="/api/clip/"]')).toHaveCount(2);
+  await t.locator('#drawBtn').click();
   await t.locator('#drawBtn').click(); // done drawing
   await expect(t.locator('#addBtn')).toBeVisible();
   expect(t.errors).toEqual([]);

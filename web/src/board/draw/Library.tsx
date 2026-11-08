@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Library.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   0.14.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      ★ Stamps: clipart and chalk drawings, emoji, GIFs (her own and
@@ -31,6 +31,9 @@
 
  0.14.0    2026-11-07   joshua    Clipart in 8 styles, or all of them side by
                         claude    side.
+
+ 0.14.1    2026-11-08   joshua    Clipart is placed with its path, so the
+                        claude    board saves it.
 ===============================================================================
 */
 
@@ -41,7 +44,7 @@ import { CHALK, Colors } from '../../ui/Colors.tsx';
 import { Sheet } from '../../ui/Sheet.tsx';
 import { Art } from '../Art.tsx';
 import type { ArtItem } from '../Art.tsx';
-import { clipLabel, clipSrc, searchClip } from '../clip.ts';
+import { clipLabel, clipPath, clipSrc, searchClip } from '../clip.ts';
 import { unionBox } from '../geom.ts';
 import { FindPane } from './Find.tsx';
 
@@ -223,7 +226,7 @@ function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
       : (styles.find(s => s.prefix === style) || FLUENT).credit +
         (style ? '' : ' · Chalk drawings: game-icons.net (CC BY 3.0)');
   const place = (n: string) => {
-    const s = clipSrc(n, color);
+    const s = clipPath(n, color); // the board keeps the path; the full address only works on this screen
     pick({ name: clipLabel(n), items: [{ id: 0, k: 'g', x: 0, y: 0, w: 96, h: 96, src: s, still: s, mode: 'still' }] });
   };
   return (

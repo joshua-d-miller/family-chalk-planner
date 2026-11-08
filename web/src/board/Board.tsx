@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   0.14.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -55,6 +55,9 @@
 
                                   Fits above the tab bar; + Add event on its
                                   own; a swipe to chores in place.
+
+ 0.14.1    2026-11-08   joshua    Tells the pages how big its cork is.
+                        claude
 ===============================================================================
 */
 
@@ -198,6 +201,11 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   const bh = H + (edit ? CORK : 0);
   const shell = useShell();
   const fit = useFit(pad, bh, shell.navH);
+  // the pages' cork is drawn the same size as this one
+  const { kind: shellKind, setCorkZ } = shell;
+  useEffect(() => {
+    if (edit && shellKind === 'cork') setCorkZ(fit.scale);
+  }, [edit, shellKind, setCorkZ, fit.scale]);
   // ---------------------- //
   // | Zooming in to draw | //
   // ---------------------- //

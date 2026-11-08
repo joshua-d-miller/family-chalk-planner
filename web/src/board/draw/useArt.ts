@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | useArt.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.1
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      The month's art as this tablet changes it: shown at once, saved to
@@ -23,6 +23,9 @@
  0.13.0    2026-11-07   joshua    The new board: drawing on a tablet (chalk,
                         claude    Posca, writing, eraser, select, stamps,
                                   GIFs).
+
+ 0.14.1    2026-11-08   joshua    Art the board refuses comes off again, with
+                        claude    Couldn't add that.
 ===============================================================================
 */
 
@@ -102,16 +105,24 @@ export function useArt(
       const out = list.map(it => ({ ...it, g: it.g ? (regroup[it.g] ||= newGroup()) : solo, id: temp-- }));
       set([...now.current, ...out]);
       try {
-        const r = await post<{ ids: number[] }>('api/art/bulk', {
+        const r = await post<{ ids: (number | null)[] }>('api/art/bulk', {
           ym,
           items: out.map(x => ({ ...x, id: undefined })),
           from: CLIENT
         });
-        const saved = out.map((x, i) => ({ ...x, id: r.ids[i] }));
-        const m = byId(out);
-        set(now.current.map(x => (m.has(x.id) ? saved[out.findIndex(o => o.id === x.id)] : x)));
-        record({ t: 'add', items: saved.map(snap) });
-        return r.ids;
+        // anything the board refused comes off again (it was never saved), and says so
+        const now2 = new Map<number, ArtItem | null>(
+          out.map((x, i) => {
+            const id = r.ids[i];
+            return [x.id, id == null ? null : { ...x, id }];
+          })
+        );
+        const saved = [...now2.values()].filter((x): x is ArtItem => x !== null);
+        const refused = saved.length < out.length;
+        set(now.current.flatMap(x => (now2.has(x.id) ? (now2.get(x.id) ? [now2.get(x.id)!] : []) : [x])));
+        if (refused) failed('Couldn’t add that')();
+        if (saved.length) record({ t: 'add', items: saved.map(snap) });
+        return saved.map(x => x.id);
       } catch {
         failed('Couldn’t add that')();
         return [];

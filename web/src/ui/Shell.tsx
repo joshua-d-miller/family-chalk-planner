@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Shell.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   0.14.1
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      The bar that stays at the bottom while the pages change. A family
@@ -27,10 +27,13 @@
  -------   ----------   -------   --------------------------------------------
  0.14.0    2026-11-07   joshua    New file.
                         claude
+
+ 0.14.1    2026-11-08   joshua    The pages' cork is as big as the calendar's,
+                        claude    and doesn't change with height.
 ===============================================================================
 */
 
-import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useFavorites } from '../lib/favorites.ts';
 import type { Who } from '../lib/who.ts';
@@ -71,14 +74,40 @@ interface ShellState {
   here: string;
   slot: HTMLElement | null;
   navH: number;
+  corkZ: number | null; // how big the board drew its cork on this screen (the pages' cork matches it)
+  setCorkZ: (z: number) => void;
 }
-const Ctx = createContext<ShellState>({ kind: 'none', who: null, here: 'board', slot: null, navH: 0 });
+const Ctx = createContext<ShellState>({
+  kind: 'none',
+  who: null,
+  here: 'board',
+  slot: null,
+  navH: 0,
+  corkZ: null,
+  setCorkZ: () => {}
+});
 export const useShell = () => useContext(Ctx);
 
 export function Shell({ who, here, children }: { who: Who | null; here: string; children: ReactNode }) {
   const kind = shellKind(who);
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [navH, setNavH] = useState(0);
+  const [corkZ, setCorkZState] = useState<number | null>(() => {
+    try {
+      const v = JSON.parse(sessionStorage.getItem('chalkCorkZ') || 'null') as { z: number; w: number } | null;
+      return v && v.w === innerWidth ? v.z : null; // only for a screen this wide
+    } catch {
+      return null;
+    }
+  });
+  const setCorkZ = useCallback((z: number) => {
+    setCorkZState(z);
+    try {
+      sessionStorage.setItem('chalkCorkZ', JSON.stringify({ z, w: innerWidth }));
+    } catch {
+      /* fine: the pages work it out */
+    }
+  }, []);
   const onBoard = here === 'board' || here === 'edit';
   useEffect(() => {
     const c = document.documentElement.classList;
@@ -91,7 +120,7 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
     if (kind !== 'tabs') setNavH(0);
   }, [kind]);
   return (
-    <Ctx.Provider value={{ kind, who, here, slot: kind === 'cork' && !onBoard ? slot : null, navH }}>
+    <Ctx.Provider value={{ kind, who, here, slot: kind === 'cork' && !onBoard ? slot : null, navH, corkZ, setCorkZ }}>
       {children}
       {kind === 'cork' && !onBoard && <CorkBar onSlot={setSlot} />}
       {kind === 'tabs' && <TabBar onHeight={setNavH} />}
@@ -182,12 +211,22 @@ function corkZoom() {
   return Math.max(0.6, Math.min(innerWidth / BOARD_W, innerHeight / BOARD_H));
 }
 function CorkBar({ onSlot }: { onSlot: (el: HTMLElement | null) => void }) {
-  const [z, setZ] = useState(corkZoom);
+  const { corkZ } = useShell();
+  // the board's own size for it, when the board has been shown on this screen; else worked out the same way.
+  // Only a change of width counts: a phone's address bar coming and going changes the height as a page
+  // scrolls, and the cork mustn't grow and shrink with it
+  const [own, setOwn] = useState(corkZoom);
   useEffect(() => {
-    const on = () => setZ(corkZoom());
+    let w = innerWidth;
+    const on = () => {
+      if (innerWidth === w) return;
+      w = innerWidth;
+      setOwn(corkZoom());
+    };
     addEventListener('resize', on);
     return () => removeEventListener('resize', on);
   }, []);
+  const z = corkZ ?? own;
   useEffect(() => {
     document.documentElement.style.setProperty('--corkh', 50 * z + 'px');
   }, [z]);
