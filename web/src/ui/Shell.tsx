@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Shell.tsx
 ===============================================================================
- Version:   0.14.1
+ Version:   0.14.2
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
  Updated:   2026-11-08
@@ -30,6 +30,10 @@
 
  0.14.1    2026-11-08   joshua    The pages' cork is as big as the calendar's,
                         claude    and doesn't change with height.
+
+ 0.14.2    2026-11-08   joshua    The tab bar is measured against what Safari
+                        claude    shows, keeps a gap, and shrinks while
+                                  drawing.
 ===============================================================================
 */
 
@@ -76,6 +80,7 @@ interface ShellState {
   navH: number;
   corkZ: number | null; // how big the board drew its cork on this screen (the pages' cork matches it)
   setCorkZ: (z: number) => void;
+  setBusyBoard: (busy: boolean) => void; // drawing or zoomed in: the tab bar shrinks out of the way
 }
 const Ctx = createContext<ShellState>({
   kind: 'none',
@@ -84,7 +89,8 @@ const Ctx = createContext<ShellState>({
   slot: null,
   navH: 0,
   corkZ: null,
-  setCorkZ: () => {}
+  setCorkZ: () => {},
+  setBusyBoard: () => {}
 });
 export const useShell = () => useContext(Ctx);
 
@@ -92,6 +98,7 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
   const kind = shellKind(who);
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [navH, setNavH] = useState(0);
+  const [busyBoard, setBusyBoard] = useState(false);
   const [corkZ, setCorkZState] = useState<number | null>(() => {
     try {
       const v = JSON.parse(sessionStorage.getItem('chalkCorkZ') || 'null') as { z: number; w: number } | null;
@@ -120,10 +127,12 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
     if (kind !== 'tabs') setNavH(0);
   }, [kind]);
   return (
-    <Ctx.Provider value={{ kind, who, here, slot: kind === 'cork' && !onBoard ? slot : null, navH, corkZ, setCorkZ }}>
+    <Ctx.Provider
+      value={{ kind, who, here, slot: kind === 'cork' && !onBoard ? slot : null, navH, corkZ, setCorkZ, setBusyBoard }}
+    >
       {children}
       {kind === 'cork' && !onBoard && <CorkBar onSlot={setSlot} />}
-      {kind === 'tabs' && <TabBar onHeight={setNavH} />}
+      {kind === 'tabs' && <TabBar onHeight={setNavH} mini={busyBoard && onBoard} />}
     </Ctx.Provider>
   );
 }
@@ -246,28 +255,39 @@ function CorkBar({ onSlot }: { onSlot: (el: HTMLElement | null) => void }) {
 // --------------- //
 // Calendar, the pinned pages and More (every other page, pinning, the admin //
 // console and signing out), styled like the phone's own apps.               //
-function TabBar({ onHeight }: { onHeight: (h: number) => void }) {
+// the height of what's visible (Safari's own bars can cover part of the window)
+export const visibleHeight = () => window.visualViewport?.height ?? innerHeight;
+const GAP = 10; // between the board's cork and the tab bar, so neither covers the other
+function TabBar({ onHeight, mini }: { onHeight: (h: number) => void; mini: boolean }) {
   const { who, here } = useShell();
   const pins = usePins();
   const [more, setMore] = useState(false);
+  // drawing or zoomed in: just a small button in the corner, until it's tapped
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (mini) setOpen(false);
+  }, [mini]);
+  const small = mini && !open;
   const ref = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || small) return; // the board keeps its size while the bar is small
     const measure = () => {
-      const r = el.getBoundingClientRect();
-      onHeight(Math.max(0, innerHeight - r.top));
-      document.documentElement.style.setProperty('--navh', Math.max(0, innerHeight - r.top) + 'px');
+      const h = Math.max(0, visibleHeight() - el.getBoundingClientRect().top) + GAP;
+      onHeight(h);
+      document.documentElement.style.setProperty('--navh', h + 'px');
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     addEventListener('resize', measure);
+    window.visualViewport?.addEventListener('resize', measure);
     return () => {
       ro.disconnect();
       removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
     };
-  }, [onHeight]);
+  }, [onHeight, small]);
   const home = isHome(here, who);
   const onMore = !home && !pins.some(p => p.id === here);
   const tab = (key: string, href: string, icon: string, label: string, on: boolean) => (
@@ -278,6 +298,16 @@ function TabBar({ onHeight }: { onHeight: (h: number) => void }) {
       <span className="tl">{label}</span>
     </a>
   );
+  if (small)
+    return (
+      <nav className="tabbar mini" id="tabbar" aria-label="Pages">
+        <button type="button" className="tab on" id="tabsBtn" aria-label="Show the pages" onClick={() => setOpen(true)}>
+          <span className="ti" aria-hidden="true">
+            📅
+          </span>
+        </button>
+      </nav>
+    );
   return (
     <>
       <nav className="tabbar" id="tabbar" aria-label="Pages" ref={ref}>

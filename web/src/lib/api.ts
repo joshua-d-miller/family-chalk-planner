@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | api.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.14.2
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      Talking to the board's server. Every address is relative to the
@@ -23,6 +23,9 @@
                                   The new board: drawing on a tablet (chalk,
                                   Posca, writing, eraser, select, stamps,
                                   GIFs).
+
+ 0.14.2    2026-11-08   joshua    <html data-busy> while requests are on their
+                        claude    way (the tests wait for it).
 ===============================================================================
 */
 
@@ -56,12 +59,23 @@ export const url = (path: string) => new URL(path.replace(/^\//, ''), document.b
 // -------------------- //
 // | Asking the board | //
 // -------------------- //
+// how many requests are still on their way: <html data-busy> while there are any (the browser tests wait for
+// it to go, instead of guessing how long a screen takes to fill in)
+let busy = 0;
+const track = (d: number) => {
+  busy += d;
+  if (busy) document.documentElement.dataset.busy = String(busy);
+  else delete document.documentElement.dataset.busy;
+};
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   let r: Response;
+  track(1);
   try {
     r = await fetch(url(path), { credentials: 'same-origin', ...init });
   } catch {
     throw new ApiError('Can’t reach the board - check the Wi-Fi', 0, {});
+  } finally {
+    track(-1);
   }
   const body = (await r.json().catch(() => ({}))) as Record<string, unknown>;
   if (!r.ok) throw new ApiError(String(body.error || `The board answered ${r.status}`), r.status, body);

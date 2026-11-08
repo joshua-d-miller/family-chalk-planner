@@ -4,6 +4,16 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.14.2 — the iPad's tab bar
+- Fixed: on an iPad the tab bar could sit over the cork under the board, making its buttons hard to tap.
+  The board now fits into the part of the screen Safari really shows, with a little room above the tab
+  bar. While drawing or zoomed in, the tab bar shrinks to one small 📅 button in the corner (tap it for
+  the pages), like the bars in iOS and Android apps that tuck away while you work.
+- The browser tests take about half as long: they wait for a screen to finish loading instead of a fixed
+  second, run two at a time, and CI keeps its copy of the browser between runs.
+- Releasing is one step: merging a pull request that raises the version tags and publishes it, with no
+  tag to make and push by hand.
+
 ## 0.14.1 — clipart that stays put
 - Fixed: clipart placed on the board disappeared. The screen sent the picture's full address and the
   board only keeps its own path, so it didn't save it; it now saves either. Anything the board can't
