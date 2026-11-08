@@ -117,9 +117,10 @@ never builds anything. Following main, they're built on the server instead (with
 
 ## Releasing (maintainers)
 Bump `version` in `package.json` (and `package-lock.json`), move the notes into a `## x.y.z` section of
-`CHANGELOG.md`, merge, then tag the merge commit `vx.y.z` and push the tag. The Release workflow
-checks the tag, runs the tests and publishes the GitHub Release; boards pick it up with
-`deploy/update.sh`.
+`CHANGELOG.md`, and merge the pull request into main. That's all: the Release workflow sees the new
+version, runs the tests, tags the merge `vx.y.z` and publishes the GitHub Release and the Docker image;
+boards pick it up with `deploy/update.sh`. A merge that keeps the same version releases nothing.
+(Tagging a commit `vx.y.z` by hand and pushing the tag still works too.)
 
 ## Reporting security problems
 Please don't open a public issue — see [SECURITY.md](SECURITY.md).

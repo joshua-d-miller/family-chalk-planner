@@ -11,6 +11,8 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   the pages), like the bars in iOS and Android apps that tuck away while you work.
 - The browser tests take about half as long: they wait for a screen to finish loading instead of a fixed
   second, run two at a time, and CI keeps its copy of the browser between runs.
+- Releasing is one step: merging a pull request that raises the version tags and publishes it, with no
+  tag to make and push by hand.
 
 ## 0.14.1 — clipart that stays put
 - Fixed: clipart placed on the board disappeared. The screen sent the picture's full address and the
