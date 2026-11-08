@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | art.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.14.1
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
- Updated:   2026-11-06
+ Updated:   2026-11-08
 
  Purpose:
      The art layer: chalk and Posca drawings, words, clipart, GIFs and
@@ -47,6 +47,9 @@
 
  0.14.0    2026-11-07   joshua    Words on the board can use any of the fonts.
                         claude
+
+ 0.14.1    2026-11-08   joshua    A picture's full address or a relative one
+                        claude    is kept as its path.
 ===============================================================================
 */
 
@@ -84,6 +87,11 @@ export function cleanItem(raw: unknown): ArtItem | null {
   const x = Number(it.x);
   const y = Number(it.y);
   if (it.k === 'g') {
+    // the board keeps a path (/api/clip/x.svg); a screen that sends the full address or a relative one means the same
+    const toPath = (v: unknown) =>
+      typeof v === 'string' ? v.replace(/^https?:\/\/[^/]+(?=\/)/, '').replace(/^(?=api\/)/, '/') : v;
+    it.src = toPath(it.src);
+    it.still = toPath(it.still);
     const okSrc = (v: unknown): v is string => typeof v === 'string' && MEDIA_SRC.test(v);
     if (!okSrc(it.src) || !Number.isFinite(x) || !Number.isFinite(y)) return null;
     const size = (v: unknown) => Math.min(Math.max(Math.round(Number(v)) || 80, 16), 700);

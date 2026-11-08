@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | clip.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.14.1
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      Clipart: the pictures the board has (Fluent emoji, Game Icons "gi-",
@@ -21,6 +21,9 @@
 
  0.14.0    2026-11-07   joshua    Names of the other styles show without their
                         claude    prefix.
+
+ 0.14.1    2026-11-08   joshua    clipPath: the path the board keeps for a
+                        claude    picture.
 ===============================================================================
 */
 
@@ -31,13 +34,14 @@ import { url } from '../lib/api.ts';
 // | A picture | //
 // ------------- //
 // A picture's address; one-color Game Icons drawings take a chalk color     //
-export const clipSrc = (n: string, color?: string | null) =>
-  url(
-    'api/clip/' +
-      n +
-      (n.startsWith('gi-') && color && color.toUpperCase() !== '#EDEAE0' ? '--' + color.slice(1).toLowerCase() : '') +
-      '.svg'
-  );
+// as the board keeps it in a piece of art (from the board's own address)
+export const clipPath = (n: string, color?: string | null) =>
+  '/api/clip/' +
+  n +
+  (n.startsWith('gi-') && color && color.toUpperCase() !== '#EDEAE0' ? '--' + color.slice(1).toLowerCase() : '') +
+  '.svg';
+// for showing it on this screen
+export const clipSrc = (n: string, color?: string | null) => url(clipPath(n, color));
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------------- //

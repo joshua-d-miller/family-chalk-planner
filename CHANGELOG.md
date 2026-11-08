@@ -4,6 +4,14 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.14.1 — clipart that stays put
+- Fixed: clipart placed on the board disappeared. The screen sent the picture's full address and the
+  board only keeps its own path, so it didn't save it; it now saves either. Anything the board can't
+  save now comes off again with "Couldn't add that", instead of staying on that one screen until a reload.
+- Fixed: on a family screen the cork changed size when switching between the calendar and the other pages
+  (and on some screens while a page scrolled). The pages' cork is now drawn exactly as big as the
+  calendar's.
+
 ## 0.14.0 — the bar at the bottom, more fonts and clipart
 - **Pages switch in place:** going between the calendar and the other pages no longer loads a new page.
   The bar at the bottom stays put and only the middle changes; back, forward and reloading still work.
