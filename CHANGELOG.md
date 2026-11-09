@@ -4,6 +4,30 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.15.0 — a week at a time
+- **🗓️ Week:** a new page (in ☰ Menu or More, and you can pin it) that shows just this week, in the
+  whole height of the board with bigger writing; the arrows go a week at a time. 📅 Calendar stays the
+  month. Each week has its own drawings and stamps (Decorate works there), separate from the month's. A
+  wall can show the week too: open the board's address with `/week`.
+- **Up next is back:** the bottom of the Notes column has its little switch again (🫙 jars, ☀️ today,
+  📅 up next, 📷 photos; tap it or swipe across), as the board had before 0.13. It goes back to the
+  chosen one after 3 minutes.
+- **Per screen:** 🗒️ Notes on the cork picks what the bottom of the Notes column shows on that screen
+  and what its switch can flip to (tick just one for no switch). The wall's is set in the admin
+  console, under 📺 Screens.
+- **Regular fonts:** a new Regular group with plain serif and sans fonts: Times (Tinos), Baskerville,
+  Merriweather, Lora, Garamond, Crimson Text, Playfair, Arial (Arimo), Open Sans, Lato, Nunito and
+  Roboto. 63 fonts in all.
+- **The cork:** smaller buttons that stay on the cork instead of reaching up into the board, and pinned
+  pages wear a big push pin you can actually see.
+- Fixed: a family screen could get stuck on a sign-in card (Photos → the overnight slideshow's
+  ⚙️ Settings link): Settings needs a parent signed in. The Photos card now says where to find it, and
+  a screen that lands on a page it can't open keeps its cork and gets ← Back to the calendar.
+- Fixed: picking things further down a card (fonts in 🎨 Style) could jump the card back to the top.
+  A card now closes only on a tap outside it, not a drag that ends there.
+- The "ResizeObserver loop" browser notice is no longer logged as a screen crash in 🛡 Activity (it was
+  harmless), and the two places that caused it now wait a frame.
+
 ## 0.14.2 — the iPad's tab bar
 - Fixed: on an iPad the tab bar could sit over the cork under the board, making its buttons hard to tap.
   The board now fits into the part of the screen Safari really shows, with a little room above the tab

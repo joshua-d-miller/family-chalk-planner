@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | app-pages.spec.ts
 ===============================================================================
- Version:   0.14.1
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-08
 
@@ -40,6 +40,9 @@
 
  0.14.1    2026-11-08   joshua    Clipart in two styles is saved and still
                         claude    there after a reload.
+
+ 0.15.0    2026-11-08   joshua    A family screen sent to Settings gets back to
+                        claude    the calendar.
 ===============================================================================
 */
 
@@ -588,4 +591,19 @@ test('the board (new screen, tablet): zoom in to draw, back to fit; the Notes op
   await t.locator('.nslot-meals').click();
   await expect(t).toHaveURL(/\/meals$/);
   expect(t.errors).toEqual([]);
+});
+
+test('a family screen sent to Settings can get back (it needs a parent signed in)', async ({ as }) => {
+  const page = await as('family');
+  await page.locator('#editBtn').click();
+  await page.locator('#photosBtn').click();
+  await expect(page.locator('#photosSheet')).toContainText('on a parent’s phone or tablet');
+  await expect(page.locator('#photosSheet a[href="settings"]')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.goto(page.url().replace(/edit$/, 'settings'));
+  await expect(page.locator('#signpad')).toBeVisible();
+  await expect(page.locator('.cork')).toBeVisible(); // its bar stays
+  await page.locator('#signBack').click();
+  await expect(page).toHaveURL(/\/edit$/);
+  await expect(page.locator('#grid')).toBeVisible();
 });

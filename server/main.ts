@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | main.ts (the start)
 ===============================================================================
- Version:   0.13.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      Family Chalk Planner: a chalkboard-style family wall calendar. This
@@ -57,6 +57,9 @@
 
                                   ... and 3 more (the board rebuilt in React
                                   and TypeScript)
+
+ 0.15.0    2026-11-08   joshua    Favorites get the live updates (a screen's
+                        claude    Notes bottom).
 ===============================================================================
 */
 
@@ -332,6 +335,7 @@ pantry.setup({ app, db, today: clock.today, broadcast });
 favorites.setup({
   app,
   kv,
+  broadcast,
   whose: req => {
     const u = who.userOf(req);
     if (u) return 'p:' + u.id;

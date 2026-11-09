@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | pages.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      The pages themselves: the board page (wall, tablet and phone chores),
@@ -55,6 +55,9 @@
                         claude    and chores fall back to the board as it was.
 
  0.14.0    2026-11-07   joshua    Serves every font in shared/fonts.ts.
+                        claude
+
+ 0.15.0    2026-11-08   joshua    /week, and its app.
                         claude
 ===============================================================================
 */
@@ -119,7 +122,7 @@ const fontsMissing = () =>
 // Each screen can be installed as an app (a home-screen icon): the wall     //
 // opens full-screen at "/", the iPad at "/edit", and each page at its own   //
 // address.                                                                  //
-type Kind = 'wall' | 'edit' | 'chores' | 'meals' | 'reminders' | 'timers' | 'pantry' | 'jars' | 'settings';
+type Kind = 'wall' | 'edit' | 'week' | 'chores' | 'meals' | 'reminders' | 'timers' | 'pantry' | 'jars' | 'settings';
 const app = (name: string, path: string) => ({
   name,
   short_name: name,
@@ -129,8 +132,9 @@ const app = (name: string, path: string) => ({
   orientation: 'any'
 });
 // the screens (React). The board as it was before them stays at classic/ for a while, just in case.
-export const APP_PAGES = ['meals', 'reminders', 'timers', 'pantry', 'jars', 'settings'];
+export const APP_PAGES = ['week', 'meals', 'reminders', 'timers', 'pantry', 'jars', 'settings'];
 const manifests = (title: string): Record<Kind, Record<string, string>> => ({
+  week: app('Week', 'week'),
   meals: app('Meal plan', 'meals'),
   reminders: app('Reminders', 'reminders'),
   timers: app('Timers', 'timers'),

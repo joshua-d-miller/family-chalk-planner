@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Shell.tsx
 ===============================================================================
- Version:   0.14.2
+ Version:   0.15.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
  Updated:   2026-11-08
@@ -34,6 +34,12 @@
  0.14.2    2026-11-08   joshua    The tab bar is measured against what Safari
                         claude    shows, keeps a gap, and shrinks while
                                   drawing.
+
+ 0.15.0    2026-11-08   joshua    Measures the tab bar a frame later (no
+                        claude    ResizeObserver loop).
+
+                                  The Week page draws its own cork, like the
+                                  calendar.
 ===============================================================================
 */
 
@@ -115,7 +121,7 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
       /* fine: the pages work it out */
     }
   }, []);
-  const onBoard = here === 'board' || here === 'edit';
+  const onBoard = here === 'board' || here === 'edit' || here === 'week';
   useEffect(() => {
     const c = document.documentElement.classList;
     c.toggle('shell-cork', kind === 'cork');
@@ -278,11 +284,16 @@ function TabBar({ onHeight, mini }: { onHeight: (h: number) => void; mini: boole
       document.documentElement.style.setProperty('--navh', h + 'px');
     };
     measure();
-    const ro = new ResizeObserver(measure);
+    let raf = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measure);
+    });
     ro.observe(el);
     addEventListener('resize', measure);
     window.visualViewport?.addEventListener('resize', measure);
     return () => {
+      cancelAnimationFrame(raf);
       ro.disconnect();
       removeEventListener('resize', measure);
       window.visualViewport?.removeEventListener('resize', measure);

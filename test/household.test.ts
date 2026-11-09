@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | household.test.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      Reminders, timers, the pantry and the right-hand column's pages (from
@@ -24,6 +24,9 @@
 
  0.14.0    2026-11-07   joshua    Up to 3 pinned pages.
                         claude
+
+ 0.15.0    2026-11-08   joshua    A week's own art; the bottom of Notes per
+                        claude    screen.
 ===============================================================================
 */
 
@@ -166,4 +169,36 @@ test('pinned pages: kept per person and per screen, up to 3', async () => {
   assert.deepEqual(f.items, [], 'the admin has their own');
   assert.deepEqual((await (await fam.api('/api/favorites')).json()).items, ['meals', 'timers', 'pantry']);
   assert.equal((await wall.post('/api/favorites', { items: ['meals'] })).status, 403, 'the wall has no bar');
+});
+
+test('a week drawn in the week view keeps its own art', async () => {
+  const bulk = (ym: string, s: string) => fam.post('/api/art/bulk', { ym, items: [{ k: 't', s, x: 10, y: 10 }] });
+  assert.equal((await bulk('2026-11-08', 'Week')).status, 200);
+  assert.equal((await bulk('2026-11', 'Month')).status, 200);
+  const week = await (await wall.api('/api/art?ym=2026-11-08')).json();
+  const month = await (await wall.api('/api/art?ym=2026-11')).json();
+  assert.deepEqual(
+    week.map((x: { s: string }) => x.s),
+    ['Week']
+  );
+  assert.ok(!month.some((x: { s: string }) => x.s === 'Week'));
+  assert.equal((await fam.post('/api/art/bulk', { ym: '2026-1-8', items: [] })).status, 400);
+});
+
+test('the bottom of Notes: each screen its own, the wall’s from the admin console', async () => {
+  assert.equal((await (await fam.api('/api/notesbottom')).json()).bottom, null);
+  let r = await fam.post('/api/notesbottom', { bottom: { def: 'upnext', can: ['photos', 'bogus'] } });
+  assert.deepEqual((await r.json()).bottom, { def: 'upnext', can: ['upnext', 'photos'] });
+  assert.equal((await fam.post('/api/notesbottom', { bottom: { def: 'nope' } })).status, 400);
+  assert.equal((await wall.post('/api/notesbottom', { bottom: { def: 'today' } })).status, 403, 'the wall can’t');
+  // the admin console sets the wall's
+  const devs = (await (await ed.api('/api/devices')).json()).devices as { id: string; role: string }[];
+  const wallId = devs.find(d => d.role === 'view')!.id;
+  r = await ed.post('/api/devices/notes-bottom', { id: wallId, bottom: { def: 'today', can: ['today'] } });
+  assert.equal(r.status, 200);
+  assert.deepEqual((await (await wall.api('/api/notesbottom')).json()).bottom, { def: 'today', can: ['today'] });
+  assert.equal((await fam.post('/api/devices/notes-bottom', { id: wallId, bottom: null })).status, 403);
+  await ed.post('/api/devices/notes-bottom', { id: wallId, bottom: null });
+  assert.equal((await (await wall.api('/api/notesbottom')).json()).bottom, null);
+  await fam.post('/api/notesbottom', { bottom: null });
 });

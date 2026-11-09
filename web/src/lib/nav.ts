@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | nav.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      Moving between the pages without loading a new one: the address
@@ -17,6 +17,9 @@
  -------   ----------   -------   --------------------------------------------
  0.14.0    2026-11-07   joshua    New file.
                         claude
+
+ 0.15.0    2026-11-08   joshua    /week.
+                        claude
 ===============================================================================
 */
 
@@ -26,6 +29,7 @@ import { useSyncExternalStore } from 'react';
 export const APP_IDS = new Set([
   'board',
   'edit',
+  'week',
   'chores',
   'meals',
   'reminders',

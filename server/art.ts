@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | art.ts
 ===============================================================================
- Version:   0.14.1
+ Version:   0.15.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
  Updated:   2026-11-08
@@ -50,12 +50,18 @@
 
  0.14.1    2026-11-08   joshua    A picture's full address or a relative one
                         claude    is kept as its path.
+
+ 0.15.0    2026-11-08   joshua    A week drawn in the week view keeps its own
+                        claude    art (under its first day).
 ===============================================================================
 */
 
 import type { Express } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
-import { isYm } from './dates.ts';
+import { isDate, isYm } from './dates.ts';
+
+// art belongs to a month ('2026-11'), or a week drawn in the week view (its first day, '2026-11-08')
+const isKey = (s: unknown): s is string => isYm(s) || isDate(s);
 import type { Month } from './month.ts';
 import { BOARD_FONTS } from '../shared/fonts.ts';
 
@@ -177,6 +183,7 @@ export function setup({
   // ----------------------------------- //
   // The first art of a month is placed on the layout the month has now      //
   function noteLayout(ym: string) {
+    if (!isYm(ym)) return; // a week's art isn't moved by a border
     const cur = month.stored(ym);
     if (cur.artPad !== undefined || (q.count.get(ym) as { n: number }).n) return;
     month.store(ym, { ...cur, artPad: month.padOf(month.metaFor(ym)) });
@@ -186,7 +193,7 @@ export function setup({
   // | A month's art | //
   // ----------------- //
   app.get('/api/art', (req, res) => {
-    if (!isYm(req.query.ym)) return res.status(400).json({ error: 'bad month' });
+    if (!isKey(req.query.ym)) return res.status(400).json({ error: 'bad month' });
     res.json(
       (q.list.all(req.query.ym) as { id: number; data: string }[]).map(r => ({ id: r.id, ...JSON.parse(r.data) }))
     );
@@ -200,7 +207,7 @@ export function setup({
   app.post('/api/art', (req, res) => {
     const { ym, stroke, from } = req.body || {};
     const item = cleanItem(stroke);
-    if (!isYm(ym) || !item) return res.status(400).json({ error: 'bad stroke' });
+    if (!isKey(ym) || !item) return res.status(400).json({ error: 'bad stroke' });
     noteLayout(ym);
     const id = add(ym, item);
     broadcast('stroke', { ym, from, stroke: { id, ...item } });
@@ -216,7 +223,7 @@ export function setup({
     const { ym, from } = req.body || {};
     let list = req.body?.items;
     if (!list && req.body?.stroke) list = [{ ...req.body.stroke, id: req.body.id }];
-    if (!isYm(ym) || !Array.isArray(list)) return res.status(400).json({ error: 'bad update' });
+    if (!isKey(ym) || !Array.isArray(list)) return res.status(400).json({ error: 'bad update' });
     const done = [];
     for (const it of list.slice(0, 5000)) {
       const item = cleanItem(it);
@@ -234,7 +241,7 @@ export function setup({
   // Several new items at once (placing a stamp, copying)                    //
   app.post('/api/art/bulk', (req, res) => {
     const { ym, items, from } = req.body || {};
-    if (!isYm(ym) || !Array.isArray(items) || items.length > 5000) return res.status(400).json({ error: 'bad items' });
+    if (!isKey(ym) || !Array.isArray(items) || items.length > 5000) return res.status(400).json({ error: 'bad items' });
     noteLayout(ym);
     const ids: (number | null)[] = [];
     const added = [];
@@ -259,7 +266,7 @@ export function setup({
   // they keep their layering)                                               //
   app.post('/api/art/restore', (req, res) => {
     const { ym, items, from } = req.body || {};
-    if (!isYm(ym) || !Array.isArray(items)) return res.status(400).json({ error: 'bad restore' });
+    if (!isKey(ym) || !Array.isArray(items)) return res.status(400).json({ error: 'bad restore' });
     noteLayout(ym);
     const back = [];
     for (const it of items.slice(0, 5000)) {
@@ -278,7 +285,7 @@ export function setup({
   // The eraser: whole strokes, words or pictures                            //
   app.post('/api/art/delete', (req, res) => {
     const { ym, ids } = req.body || {};
-    if (!isYm(ym) || !Array.isArray(ids)) return res.status(400).json({ error: 'bad delete' });
+    if (!isKey(ym) || !Array.isArray(ids)) return res.status(400).json({ error: 'bad delete' });
     const list = ids.filter(Number.isInteger).slice(0, 5000);
     for (const id of list) q.deleteIn.run(id, ym);
     broadcast('remove', { ym, ids: list });
@@ -290,7 +297,7 @@ export function setup({
   // ------------------------ //
   app.post('/api/art/undo', (req, res) => {
     const ym = req.body?.ym;
-    if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
+    if (!isKey(ym)) return res.status(400).json({ error: 'bad month' });
     const row = q.lastId.get(ym) as { id: number | null } | undefined;
     if (row?.id) {
       q.delete.run(row.id);
@@ -306,10 +313,10 @@ export function setup({
   // then                                                                    //
   app.post('/api/art/clear', (req, res) => {
     const ym = req.body?.ym;
-    if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
+    if (!isKey(ym)) return res.status(400).json({ error: 'bad month' });
     q.clear.run(ym);
-    const cur = month.stored(ym);
-    if (cur.artPad !== undefined) {
+    const cur = isYm(ym) ? month.stored(ym) : {};
+    if (isYm(ym) && cur.artPad !== undefined) {
       delete cur.artPad;
       month.store(ym, cur);
     }

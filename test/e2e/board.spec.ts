@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-06
+ Updated:   2026-11-08
 
  Purpose:
      The board itself: this month on the tablet, moving between months,
@@ -22,6 +22,12 @@
 
  0.14.0    2026-11-07   joshua    A family screen's cork fits, drawer open or
                         claude    closed.
+
+ 0.15.0    2026-11-08   joshua    Week view; the switch at the bottom of Notes.
+                        claude
+
+                                  Decorating a week; the bottom of Notes on
+                                  this screen.
 ===============================================================================
 */
 
@@ -76,4 +82,89 @@ test('a family screen: the pages and the calendar tools both fit on the cork', a
   await page.locator('#editBtn').click();
   await page.waitForTimeout(400);
   expect(await off('.cork .drawer > *')).toEqual([]);
+});
+
+test('🗓️ Week: its own page in the menu, pinnable; the wall shows it at /week', async ({ as }) => {
+  const { day } = thisMonth();
+  const page = await as('family', { context: { viewport: { width: 1280, height: 800 } } });
+  await page.locator('#menuBtn').click();
+  await page.locator('#menuPanel').getByRole('button', { name: 'Pin Week' }).click();
+  await page.locator('#menuPanel').getByRole('link', { name: 'Calendar' }).click(); // closes the menu
+  const cork = page.locator('.cork .corknav');
+  await cork.locator('a.pill', { hasText: 'Week' }).click();
+  await expect(page).toHaveURL(/\/week$/);
+  await expect(page.locator('#grid .week')).toHaveCount(1);
+  await expect(cork.locator('a.pill', { hasText: 'Week' })).toHaveAttribute('aria-current', 'page');
+  expect(await page.locator('#grid .day .num').allInnerTexts()).toContain(String(day));
+  // the arrows go a week at a time
+  const first = await page.locator('#grid .day').first().getAttribute('data-date');
+  await page.locator('.titlerow button').last().click();
+  await expect
+    .poll(() => page.locator('#grid .day').first().getAttribute('data-date'))
+    .toBe(new Date(Date.parse(first + 'T12:00:00Z') + 7 * 864e5).toISOString().slice(0, 10));
+  // 📅 Calendar is still the month
+  await cork.locator('a.pill', { hasText: 'Calendar' }).click();
+  await expect(page).toHaveURL(/\/edit$/);
+  await expect.poll(() => page.locator('#grid .week').count()).toBeGreaterThan(3);
+  expect(page.errors).toEqual([]);
+
+  const wall = await as('wall', { path: '/week' });
+  await expect(wall.locator('#grid .week')).toHaveCount(1);
+  await expect(wall.locator('.cork')).toHaveCount(0); // the wall changes nothing
+});
+
+test('the bottom of Notes: a switch between today, up next and photos', async ({ as }) => {
+  const wall = await as('wall');
+  const sw = wall.locator('.notes .bslide');
+  await expect(sw).toBeVisible();
+  await sw.getByRole('tab', { name: 'Up next' }).click();
+  await expect(wall.locator('.notes .hasswitch .mh')).toHaveText('Up Next');
+  await expect(sw.getByRole('tab', { name: 'Up next' })).toHaveAttribute('aria-selected', 'true');
+  await sw.getByRole('tab', { name: 'Today' }).click();
+  await expect(wall.locator('.notes .hasswitch .mh')).toHaveText('Today');
+  await wall.waitForTimeout(600);
+  await expect(wall.locator('#slides.on')).toHaveCount(0); // two taps on the switch aren't a double tap
+});
+
+test('the bottom of Notes on this screen: what it shows and what the switch can flip to', async ({ as }) => {
+  const page = await as('family');
+  await page.locator('#editBtn').click();
+  await page.locator('#notesBtn').click();
+  await page.locator('#notesSheet').getByRole('radio', { name: '📅 Up next' }).click();
+  for (const name of ['🫙 Jars', '📷 Photos'])
+    await page.locator('#notesSheet .tick', { hasText: name }).locator('input').uncheck();
+  await page.locator('#notesSheet').getByRole('button', { name: 'Save' }).click();
+  await expect(page.locator('.notes .hasswitch .mh')).toHaveText('Up Next');
+  await expect(page.locator('.notes .bslide button')).toHaveCount(2); // up next and today
+  // just one: no switch
+  await page.locator('#notesBtn').click();
+  await page.locator('#notesSheet .tick', { hasText: '☀️ Today' }).locator('input').uncheck();
+  await page.locator('#notesSheet').getByRole('button', { name: 'Save' }).click();
+  await expect(page.locator('.notes .bslide')).toHaveCount(0);
+  await expect(page.locator('.notes .nslot').last().locator('.mh')).toHaveText('Up Next');
+  await page.locator('#notesBtn').click();
+  await page.locator('#notesSheet').getByRole('button', { name: 'Like the rest of the board' }).click();
+  await expect(page.locator('.notes .bslide')).toBeVisible();
+});
+
+test('week view: decorating a week keeps it to that week', async ({ as }) => {
+  const page = await as('family', { context: { viewport: { width: 1280, height: 800 } } });
+  await page.goto(page.url().replace(/edit$/, 'week'));
+  await expect(page.locator('#grid .week')).toHaveCount(1);
+  await page.locator('#editBtn').click();
+  await expect(page.locator('#drawBtn')).toBeVisible();
+  await page.evaluate(async () => {
+    const wk = document.querySelector('#grid .day')!.getAttribute('data-date');
+    await fetch('api/art/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+      body: JSON.stringify({ ym: wk, items: [{ k: 't', s: 'Busy week!', x: 300, y: 300, z: 30, c: '#ffffff' }] })
+    });
+  });
+  await page.reload();
+  await expect.poll(() => page.locator('#grid .week').count()).toBe(1);
+  await expect.poll(() => page.locator('#slate').evaluate(e => e.innerHTML.includes('Busy week!'))).toBe(true);
+  await page.goto(page.url().replace(/week$/, 'edit'));
+  await expect.poll(() => page.locator('#grid .week').count()).toBeGreaterThan(3);
+  expect(await page.locator('#slate').evaluate(e => e.innerHTML.includes('Busy week!'))).toBe(false);
 });

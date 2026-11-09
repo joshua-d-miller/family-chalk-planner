@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Month.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      The month: its name, the weekdays, and a box per day with its events,
@@ -42,6 +42,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.15.0    2026-11-08   joshua    One week in the whole height, with bigger
+                        claude    writing.
 ===============================================================================
 */
 
@@ -118,6 +121,9 @@ export const addDays = (ds: string, n: number) => {
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 };
 // how an event reads in a day box: holidays get their emoji, birthdays a cake
+// the first day of the week a date is in (weekStart: 0 Sunday, 1 Monday)
+export const weekOf = (ds: string, weekStart: number) =>
+  addDays(ds, -((new Date(ds + 'T12:00:00Z').getUTCDay() - weekStart + 7) % 7));
 export function evText(ev: BoardEvent) {
   let t = ev.holiday ? `${ev.icon} ${ev.title}` : ev.title;
   if (!ev.holiday && /birthday|bday/i.test(t) && !t.includes('🎂')) t = '🎂 ' + t;
@@ -187,7 +193,8 @@ export function Month({
   title,
   today = { shape: 'ring', color: '#F6B3CB' },
   border = null,
-  nav
+  nav,
+  week = null
 }: {
   data: MonthData;
   bins: Bins | null;
@@ -195,6 +202,7 @@ export function Month({
   today?: { shape: string; color: string };
   border?: Border | null;
   nav?: { prev: () => void; next: () => void };
+  week?: string | null; // just this week (its first day), in the whole height
   onDay?: (date: string) => void;
   onEvent?: (ev: BoardEvent) => void;
   title?: ReactNode;
@@ -202,12 +210,16 @@ export function Month({
   const g = data.grid;
   const ws = g.weekStart || 0;
   const pad = border ? BORDER_SZ[border.size] + 6 : 0;
-  const cellH = (GRID_H - 2 * pad) / g.weeks;
+  // the weeks shown: the month's, or one of them
+  const w0 = week ? Math.max(0, Math.round((Date.parse(week) - Date.parse(g.start)) / (7 * 864e5))) : 0;
+  const nWeeks = week ? 1 : g.weeks;
+  const cellH = (GRID_H - 2 * pad) / nWeeks;
+  const big = week ? 1.35 : 1; // a week has the room for bigger writing
   const single = data.events.filter(e => e.start === e.end);
   const multi = data.events.filter(e => e.start !== e.end);
   const color = (e: BoardEvent) => (e.color || e.calColor ? readable((e.color || e.calColor)!, bg) : undefined);
   const weeks: ReactNode[] = [];
-  for (let w = 0; w < g.weeks; w++) {
+  for (let w = w0; w < w0 + nWeeks; w++) {
     const weekStart = addDays(g.start, w * 7);
     const weekEnd = addDays(weekStart, 6);
     const lanes: [number, number][][] = [];
@@ -242,7 +254,7 @@ export function Month({
     let ring: ReactNode = null;
     for (let d = 0; d < 7; d++) {
       const ds = addDays(weekStart, d);
-      const inMonth = ds.slice(0, 7) === data.ym;
+      const inMonth = week ? true : ds.slice(0, 7) === data.ym;
       const isToday = ds === data.today;
       const filled = today.shape === 'box' ? ' todaybox' : today.shape === 'bg' ? ' todaybg' : '';
       if (isToday && !filled)
@@ -257,7 +269,8 @@ export function Month({
       const list = single.filter(e => e.start === ds);
       // room for events, in pixels: a normal line is 15px; Large / Extra large ones take more
       const room = cellH - 5 - 24 - lanesHere * 24 - 4;
-      const need = (e: BoardEvent) => 15 * (e.size ? EV_SIZE[e.size] : 1) * (e.size && evText(e).length > 12 ? 2 : 1);
+      const need = (e: BoardEvent) =>
+        15 * big * (e.size ? EV_SIZE[e.size] : 1) * (e.size && evText(e).length > 12 ? 2 : 1);
       let show = 0;
       let used = 0;
       for (let k = 0; k < list.length; k++) {
@@ -300,7 +313,10 @@ export function Month({
                   (ev.size ? ' sz-' + ev.size : '')
                 }
                 title={full}
-                style={{ color: color(ev), fontSize: ev.size ? 13 * EV_SIZE[ev.size] : undefined }}
+                style={{
+                  color: color(ev),
+                  fontSize: ev.size ? 13 * big * EV_SIZE[ev.size] : week ? 13 * big : undefined
+                }}
                 onClick={
                   onEvent &&
                   ((e: React.MouseEvent) => {
@@ -350,7 +366,11 @@ export function Month({
             <div key={i}>{WEEKDAYS[(i + ws) % 7]}</div>
           ))}
         </div>
-        <div id="grid" style={{ gridTemplateRows: `repeat(${g.weeks}, minmax(0, 1fr))` }}>
+        <div
+          id="grid"
+          className={week ? 'oneweek' : undefined}
+          style={{ gridTemplateRows: `repeat(${nWeeks}, minmax(0, 1fr))` }}
+        >
           {weeks}
         </div>
         {border && <BorderLayer border={border} />}

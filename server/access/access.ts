@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | access.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      Who may do what.
@@ -76,6 +76,11 @@
 
  0.14.0    2026-11-07   joshua    Screens report a crash (shown in Activity).
                         claude
+
+ 0.15.0    2026-11-08   joshua    A screen sets the bottom of its own Notes
+                        claude    column.
+
+                                  /week is one of the screens' pages.
 ===============================================================================
 */
 
@@ -470,7 +475,7 @@ export function setup(
   // the new screens (React): no inline scripts at all
   const CSP_APP =
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
-  const APP_PATHS = /^\/(|edit|chores|settings|meals|reminders|timers|pantry|jars|next\/[a-z-]+)$/;
+  const APP_PATHS = /^\/(|edit|week|chores|settings|meals|reminders|timers|pantry|jars|next\/[a-z-]+)$/;
   const CSP_OTHER = "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'";
   app.use((req, res, next) => {
     res.set({
@@ -582,7 +587,8 @@ export function setup(
     '/pantry/item',
     '/pantry/item/delete',
     '/right-pages',
-    '/favorites' // a view-only screen (the wall) has no strip, so it never sends any
+    '/favorites', // a view-only screen (the wall) has no strip, so it never sends any
+    '/notesbottom' // (the wall's is set in the admin console)
   ]);
   const ADMIN = [
     /^\/board-settings/,

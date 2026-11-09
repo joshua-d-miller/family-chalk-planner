@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | App.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      Which page this is, and whether this screen may see it (else: sign
@@ -46,13 +46,19 @@
 
  0.14.0    2026-11-07   joshua    Pages switch in place, with the bar at the
                         claude    bottom around them.
+
+ 0.15.0    2026-11-08   joshua    A screen that can't open a page keeps its bar
+                        claude    and gets a way back.
+
+                                  🗓️ Week, its own page (changes the week where
+                                  the screen may).
 ===============================================================================
 */
 
 import { useEffect } from 'react';
 import { paintSurface, surfaceOf } from './lib/surface.ts';
-import { kidOf, useWho } from './lib/who.ts';
-import { PAGES } from './routes.ts';
+import { RANK, kidOf, useWho } from './lib/who.ts';
+import { PAGES, homeHref } from './routes.ts';
 import { navigate, useHere } from './lib/nav.ts';
 import { Shell } from './ui/Shell.tsx';
 import { Board } from './board/Board.tsx';
@@ -74,6 +80,8 @@ import type { Who } from './lib/who.ts';
 const VIEWS: Record<string, (p: { who: Who | null }) => React.JSX.Element> = {
   board: Board,
   edit: p => <Board {...p} edit />,
+  // the week: changes it where this screen may change the calendar
+  week: p => <Board {...p} edit={(p.who?.rank || 0) >= RANK.family && !kidOf(p.who)} weekly />,
   chores: Chores,
   meals: Meals,
   reminders: Reminders,
@@ -140,10 +148,16 @@ export function App() {
         onDone={() => location.reload()}
       />
     );
-  if (w.rank < def.need)
+  if (w.rank < def.need) {
+    const why = `Sign in to see the ${def.title.toLowerCase()}.`;
+    if (!w.rank) return <SignIn who={w} why={why} onDone={() => location.reload()} />;
+    // a paired screen (a family screen, the wall) or a kid: its own bar stays, with a way back
     return (
-      <SignIn who={who.data} why={`Sign in to see the ${def.title.toLowerCase()}.`} onDone={() => location.reload()} />
+      <Shell who={w} here={here}>
+        <SignIn who={w} why={why} onDone={() => location.reload()} back={homeHref(w)} />
+      </Shell>
     );
+  }
   return (
     <Shell who={w} here={here}>
       <View key={here} who={w} />
