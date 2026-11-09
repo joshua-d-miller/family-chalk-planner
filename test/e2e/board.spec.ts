@@ -84,15 +84,17 @@ test('a family screen: the pages and the calendar tools both fit on the cork', a
   expect(await off('.cork .drawer > *')).toEqual([]);
 });
 
-test('week view: a family screen switches to this week and back; the wall by tapping the month name', async ({
-  as
-}) => {
+test('🗓️ Week: its own page in the menu, pinnable; the wall shows it at /week', async ({ as }) => {
   const { day } = thisMonth();
   const page = await as('family', { context: { viewport: { width: 1280, height: 800 } } });
-  await page.locator('#editBtn').click();
-  await page.locator('#viewBtn').click();
+  await page.locator('#menuBtn').click();
+  await page.locator('#menuPanel').getByRole('button', { name: 'Pin Week' }).click();
+  await page.locator('#menuPanel').getByRole('link', { name: 'Calendar' }).click(); // closes the menu
+  const cork = page.locator('.cork .corknav');
+  await cork.locator('a.pill', { hasText: 'Week' }).click();
+  await expect(page).toHaveURL(/\/week$/);
   await expect(page.locator('#grid .week')).toHaveCount(1);
-  await expect(page.locator('#grid .day.todaybox, #grid .ringAt').first()).toBeVisible();
+  await expect(cork.locator('a.pill', { hasText: 'Week' })).toHaveAttribute('aria-current', 'page');
   expect(await page.locator('#grid .day .num').allInnerTexts()).toContain(String(day));
   // the arrows go a week at a time
   const first = await page.locator('#grid .day').first().getAttribute('data-date');
@@ -100,16 +102,15 @@ test('week view: a family screen switches to this week and back; the wall by tap
   await expect
     .poll(() => page.locator('#grid .day').first().getAttribute('data-date'))
     .toBe(new Date(Date.parse(first + 'T12:00:00Z') + 7 * 864e5).toISOString().slice(0, 10));
-  await page.locator('#viewBtn').click();
+  // 📅 Calendar is still the month
+  await cork.locator('a.pill', { hasText: 'Calendar' }).click();
+  await expect(page).toHaveURL(/\/edit$/);
   await expect.poll(() => page.locator('#grid .week').count()).toBeGreaterThan(3);
+  expect(page.errors).toEqual([]);
 
-  const wall = await as('wall');
-  await wall.locator('#monthName').click();
+  const wall = await as('wall', { path: '/week' });
   await expect(wall.locator('#grid .week')).toHaveCount(1);
-  await wall.reload();
-  await expect(wall.locator('#grid .week')).toHaveCount(1); // kept for this screen
-  await wall.locator('#monthName').click();
-  await expect.poll(() => wall.locator('#grid .week').count()).toBeGreaterThan(3);
+  await expect(wall.locator('.cork')).toHaveCount(0); // the wall changes nothing
 });
 
 test('the bottom of Notes: a switch between today, up next and photos', async ({ as }) => {
@@ -148,9 +149,9 @@ test('the bottom of Notes on this screen: what it shows and what the switch can 
 
 test('week view: decorating a week keeps it to that week', async ({ as }) => {
   const page = await as('family', { context: { viewport: { width: 1280, height: 800 } } });
-  await page.locator('#editBtn').click();
-  await page.locator('#viewBtn').click();
+  await page.goto(page.url().replace(/edit$/, 'week'));
   await expect(page.locator('#grid .week')).toHaveCount(1);
+  await page.locator('#editBtn').click();
   await expect(page.locator('#drawBtn')).toBeVisible();
   await page.evaluate(async () => {
     const wk = document.querySelector('#grid .day')!.getAttribute('data-date');
@@ -163,8 +164,7 @@ test('week view: decorating a week keeps it to that week', async ({ as }) => {
   await page.reload();
   await expect.poll(() => page.locator('#grid .week').count()).toBe(1);
   await expect.poll(() => page.locator('#slate').evaluate(e => e.innerHTML.includes('Busy week!'))).toBe(true);
-  await page.locator('#editBtn').click();
-  await page.locator('#viewBtn').click();
+  await page.goto(page.url().replace(/week$/, 'edit'));
   await expect.poll(() => page.locator('#grid .week').count()).toBeGreaterThan(3);
   expect(await page.locator('#slate').evaluate(e => e.innerHTML.includes('Busy week!'))).toBe(false);
 });

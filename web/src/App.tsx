@@ -49,12 +49,15 @@
 
  0.15.0    2026-11-08   joshua    A screen that can't open a page keeps its bar
                         claude    and gets a way back.
+
+                                  🗓️ Week, its own page (changes the week where
+                                  the screen may).
 ===============================================================================
 */
 
 import { useEffect } from 'react';
 import { paintSurface, surfaceOf } from './lib/surface.ts';
-import { kidOf, useWho } from './lib/who.ts';
+import { RANK, kidOf, useWho } from './lib/who.ts';
 import { PAGES, homeHref } from './routes.ts';
 import { navigate, useHere } from './lib/nav.ts';
 import { Shell } from './ui/Shell.tsx';
@@ -77,6 +80,8 @@ import type { Who } from './lib/who.ts';
 const VIEWS: Record<string, (p: { who: Who | null }) => React.JSX.Element> = {
   board: Board,
   edit: p => <Board {...p} edit />,
+  // the week: changes it where this screen may change the calendar
+  week: p => <Board {...p} edit={(p.who?.rank || 0) >= RANK.family && !kidOf(p.who)} weekly />,
   chores: Chores,
   meals: Meals,
   reminders: Reminders,

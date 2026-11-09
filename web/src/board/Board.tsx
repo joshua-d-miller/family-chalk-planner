@@ -187,7 +187,15 @@ type Editing =
 // ------------- //
 // | The board | //
 // ------------- //
-export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }) {
+export function Board({
+  who,
+  edit = false,
+  weekly = false
+}: {
+  who: Who | null;
+  edit?: boolean;
+  weekly?: boolean; // the Week page: one week at a time
+}) {
   // --------------------------------- //
   // | Wall, tablet or family screen | //
   // --------------------------------- //
@@ -202,19 +210,12 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   // ------------------- //
   // | Month or a week | //
   // ------------------- //
-  // Each screen shows the month, or one week (its first day in wk; null is  //
-  // this week). A week belongs to the month of its middle day.              //
-  const boardView = useLive<{ view: 'month' | 'week' }>('api/boardview', []);
-  const weekView = boardView.data?.view === 'week';
+  // 📅 Calendar shows the month; 🗓️ Week (its own page) one week: its      //
+  // first day in wk (null is this week). A week belongs to the month of its //
+  // middle day.                                                             //
   const [wk, setWk] = useState<string | null>(null);
   const thisWeek = today?.today ? weekOf(today.today, today.weekStart || 0) : null;
-  const week = weekView ? wk || thisWeek : null;
-  const setView = (v: 'month' | 'week') => {
-    setWk(null);
-    setYm(null);
-    boardView.set({ view: v });
-    post('api/boardview', { view: v }).catch(() => boardView.reload());
-  };
+  const week = weekly ? wk || thisWeek : null;
   const shown = week ? addDays(week, 3).slice(0, 7) : ym || today?.ym || null;
   const month = useLive<MonthData>(shown ? `api/month?ym=${shown}` : 'api/today', ['calendar']);
   // the art: the month's, or in the week view the week's own (kept under its first day)
@@ -384,7 +385,7 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
       const dy = e.clientY - s0[1];
       if (Math.abs(dx) > 120 && Math.abs(dy) < Math.abs(dx) / 2) {
         try {
-          sessionStorage.setItem('chalkFromBoard', edit ? 'edit' : './');
+          sessionStorage.setItem('chalkFromBoard', weekly ? 'week' : edit ? 'edit' : './');
         } catch {
           /* fine: no way back but the menu */
         }
@@ -605,7 +606,6 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
                   hand={hand && !week}
                   dashed={edit}
                   bg={sf.lum}
-                  onTap={edit ? undefined : () => setView(weekView ? 'month' : 'week')}
                 />
               }
             />
@@ -720,17 +720,6 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
                     Photos
                   </button>
                 )}
-                <button
-                  type="button"
-                  className="pill"
-                  id="viewBtn"
-                  onClick={() => setView(weekView ? 'month' : 'week')}
-                >
-                  <span className="ic" aria-hidden="true">
-                    {weekView ? '🗓️' : '📆'}
-                  </span>{' '}
-                  {weekView ? 'Month' : 'Week'}
-                </button>
                 <button type="button" className="pill" id="notesBtn" onClick={() => setEditing({ k: 'notes' })}>
                   <span className="ic" aria-hidden="true">
                     🗒️

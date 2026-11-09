@@ -77,11 +77,10 @@
  0.14.0    2026-11-07   joshua    Screens report a crash (shown in Activity).
                         claude
 
- 0.15.0    2026-11-08   joshua    Each screen may switch between month and week
-                        claude    (the wall too).
+ 0.15.0    2026-11-08   joshua    A screen sets the bottom of its own Notes
+                        claude    column.
 
-                                  A screen sets the bottom of its own Notes
-                                  column.
+                                  /week is one of the screens' pages.
 ===============================================================================
 */
 
@@ -476,7 +475,7 @@ export function setup(
   // the new screens (React): no inline scripts at all
   const CSP_APP =
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
-  const APP_PATHS = /^\/(|edit|chores|settings|meals|reminders|timers|pantry|jars|next\/[a-z-]+)$/;
+  const APP_PATHS = /^\/(|edit|week|chores|settings|meals|reminders|timers|pantry|jars|next\/[a-z-]+)$/;
   const CSP_OTHER = "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'";
   app.use((req, res, next) => {
     res.set({
@@ -618,7 +617,7 @@ export function setup(
         ? RANK.view
         : FAMILY_POSTS.has(req.path)
           ? RANK.family
-          : req.path === '/screen-error' || req.path === '/boardview'
+          : req.path === '/screen-error'
             ? RANK.view
             : RANK.editor;
     const have = rankOf(req);

@@ -37,6 +37,9 @@
 
  0.15.0    2026-11-08   joshua    Measures the tab bar a frame later (no
                         claude    ResizeObserver loop).
+
+                                  The Week page draws its own cork, like the
+                                  calendar.
 ===============================================================================
 */
 
@@ -118,7 +121,7 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
       /* fine: the pages work it out */
     }
   }, []);
-  const onBoard = here === 'board' || here === 'edit';
+  const onBoard = here === 'board' || here === 'edit' || here === 'week';
   useEffect(() => {
     const c = document.documentElement.classList;
     c.toggle('shell-cork', kind === 'cork');

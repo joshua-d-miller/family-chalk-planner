@@ -5,10 +5,10 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 (while below 1.0, a new minor version can change how things work).
 
 ## 0.15.0 — a week at a time
-- **Week view:** 📆 Week on the cork shows just this week, in the whole height of the board with bigger
-  writing; the arrows go a week at a time and 🗓️ Month goes back. On the wall, tap the month name. Each
-  screen remembers its own choice. Each week has its own drawings and stamps (Decorate works there),
-  separate from the month's.
+- **🗓️ Week:** a new page (in ☰ Menu or More, and you can pin it) that shows just this week, in the
+  whole height of the board with bigger writing; the arrows go a week at a time. 📅 Calendar stays the
+  month. Each week has its own drawings and stamps (Decorate works there), separate from the month's. A
+  wall can show the week too: open the board's address with `/week`.
 - **Up next is back:** the bottom of the Notes column has its little switch again (🫙 jars, ☀️ today,
   📅 up next, 📷 photos; tap it or swipe across), as the board had before 0.13. It goes back to the
   chosen one after 3 minutes.

@@ -13,9 +13,6 @@
      signed in on it.
        kv 'favorites'  { 'p:<person id>' | 's:<screen id>': [up to 3 menu
            item ids] }
-     And how each screen shows the calendar: the whole month, or one
-     week at a time.
-       kv 'boardview'  { 'p:<person id>' | 's:<screen id>': 'week' }
      And what the bottom of its Notes column shows, and what its little
      switch can flip to (set on the screen, or for the wall in the admin
      console):
@@ -33,11 +30,8 @@
  0.14.0    2026-11-07   joshua    Up to 3 pinned pages (the bar holds 3).
                         claude
 
- 0.15.0    2026-11-08   joshua    Month or week, per screen.
-                        claude
-
-                                  What the bottom of each screen's Notes column
-                                  shows and can switch to (the admin console
+ 0.15.0    2026-11-08   joshua    What the bottom of each screen's Notes column
+                        claude    shows and can switch to (the admin console
                                   sets the wall's).
 ===============================================================================
 */
@@ -93,27 +87,6 @@ export function setup({
     map[k] = items;
     kv.set('favorites', map);
     res.json({ items, saved: true });
-  });
-
-  // ---------------------- //
-  // | Month or week view | //
-  // ---------------------- //
-  // Every screen may change its own (the wall too: a tap on the month name) //
-  const views = () => kv.get<Record<string, string>>('boardview') || {};
-  app.get('/api/boardview', (req, res) => {
-    const k = whose(req);
-    res.json({ view: (k && views()[k]) || 'month' });
-  });
-  app.post('/api/boardview', (req, res) => {
-    const k = whose(req);
-    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
-    const view = (req.body || {}).view;
-    if (view !== 'month' && view !== 'week') return res.status(400).json({ error: 'bad view' });
-    const map = views();
-    if (view === 'month') delete map[k];
-    else map[k] = view;
-    kv.set('boardview', map);
-    res.json({ view });
   });
 
   // ----------------------- //

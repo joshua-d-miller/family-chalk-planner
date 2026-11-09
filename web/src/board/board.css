@@ -671,8 +671,3 @@ body.boardpage {
 .slate .hasswitch .bphoto {
   margin-top: 30px;
 }
-/* the wall: a tap on the month name switches between the month and this week */
-.slate .titlerow h1.taps {
-  cursor: pointer;
-  pointer-events: auto;
-}
