@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Shared types | fonts.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      The board's fonts, for the server (which serves them, from npm, so
@@ -28,6 +28,10 @@
  -------   ----------   -------   --------------------------------------------
  0.14.0    2026-11-07   joshua    New file.
                         claude
+
+ 0.15.0    2026-11-08   joshua    A Regular group: plain serif and sans (Times-
+                        claude    like Tinos, Baskerville, Garamond, Arial-like
+                                  Arimo, Lato and more).
 ===============================================================================
 */
 
@@ -35,8 +39,15 @@
 // ---------- //
 // | Groups | //
 // ---------- //
-export type FontGroup = 'Handwritten' | 'Chalk & sketch' | 'Script' | 'Bold & bubbly' | 'Holidays';
-export const FONT_GROUPS: FontGroup[] = ['Handwritten', 'Chalk & sketch', 'Script', 'Bold & bubbly', 'Holidays'];
+export type FontGroup = 'Handwritten' | 'Regular' | 'Chalk & sketch' | 'Script' | 'Bold & bubbly' | 'Holidays';
+export const FONT_GROUPS: FontGroup[] = [
+  'Handwritten',
+  'Regular',
+  'Chalk & sketch',
+  'Script',
+  'Bold & bubbly',
+  'Holidays'
+];
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ---------- //
@@ -51,6 +62,7 @@ export interface BoardFont {
   z: number; // how big it looks next to Kalam at the same size (the board style evens them out)
   pkg: string; // @fontsource/<pkg>
   tag?: string; // a season it suits
+  fb?: 'serif' | 'sans-serif'; // what the screen falls back to (else a handwriting font)
 }
 
 const f = (
@@ -59,7 +71,7 @@ const f = (
   weight: number,
   group: FontGroup,
   z = 1,
-  opts: { name?: string; tag?: string; pkg?: string } = {}
+  opts: { name?: string; tag?: string; pkg?: string; fb?: 'serif' | 'sans-serif' } = {}
 ): BoardFont => ({
   id,
   name: opts.name || family,
@@ -68,7 +80,8 @@ const f = (
   group,
   z,
   pkg: opts.pkg || family.toLowerCase().replace(/ /g, '-'),
-  ...(opts.tag ? { tag: opts.tag } : {})
+  ...(opts.tag ? { tag: opts.tag } : {}),
+  ...(opts.fb ? { fb: opts.fb } : {})
 });
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -134,7 +147,21 @@ export const BOARD_FONTS: BoardFont[] = [
   f('rye', 'Rye', 400, 'Holidays', 0.85, { tag: 'Thanksgiving' }),
   f('elite', 'Special Elite', 400, 'Holidays', 0.9, { tag: 'Back to school' }),
   f('swanky', 'Fontdiner Swanky', 400, 'Holidays', 0.8, { tag: 'Birthdays' }),
-  f('butcherman', 'Butcherman', 400, 'Holidays', 0.8, { tag: 'Halloween' })
+  f('butcherman', 'Butcherman', 400, 'Holidays', 0.8, { tag: 'Halloween' }),
+  // regular type, for a board that wants to look printed: serif first (Tinos is shaped like Times New
+  // Roman, Arimo like Arial), then plain sans
+  f('tinos', 'Tinos', 400, 'Regular', 0.95, { name: 'Times (Tinos)', fb: 'serif' }),
+  f('baskerville', 'Libre Baskerville', 400, 'Regular', 0.85, { name: 'Baskerville', fb: 'serif' }),
+  f('merriweather', 'Merriweather', 400, 'Regular', 0.85, { fb: 'serif' }),
+  f('lora', 'Lora', 500, 'Regular', 0.95, { fb: 'serif' }),
+  f('garamond', 'EB Garamond', 500, 'Regular', 1.05, { name: 'Garamond', fb: 'serif' }),
+  f('crimson', 'Crimson Text', 600, 'Regular', 1.05, { fb: 'serif' }),
+  f('playfair', 'Playfair Display', 700, 'Regular', 0.9, { name: 'Playfair', fb: 'serif' }),
+  f('arimo', 'Arimo', 400, 'Regular', 0.9, { name: 'Arial (Arimo)', fb: 'sans-serif' }),
+  f('opensans', 'Open Sans', 400, 'Regular', 0.9, { fb: 'sans-serif' }),
+  f('lato', 'Lato', 400, 'Regular', 0.95, { fb: 'sans-serif' }),
+  f('nunito', 'Nunito', 600, 'Regular', 0.95, { fb: 'sans-serif' }),
+  f('roboto', 'Roboto', 400, 'Regular', 0.9, { fb: 'sans-serif' })
 ];
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -150,8 +177,7 @@ export const CLASSIC_FONT = f('classic', 'Cormorant Garamond', 600, 'Script', 1.
 // | Using one | //
 // ------------- //
 export const fontAt = (n: number | undefined) => BOARD_FONTS[n || 0] || BOARD_FONTS[0];
-export const fontStack = (b: BoardFont) =>
-  `'${b.family}', ${b.group === 'Chalk & sketch' && b.id === 'chalk' ? 'serif' : 'cursive'}`;
+export const fontStack = (b: BoardFont) => `'${b.family}', ${b.fb || (b.id === 'chalk' ? 'serif' : 'cursive')}`;
 // the CSS `font` shorthand for writing at a size
 export const fontShorthand = (n: number | undefined, px: number) => {
   const b = fontAt(n);

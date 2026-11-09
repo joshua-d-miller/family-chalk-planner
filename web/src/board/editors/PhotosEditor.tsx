@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | PhotosEditor.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      📷 Beside the month name: the family's photos (a random few, or ones
@@ -25,6 +25,9 @@
 
  0.14.0    2026-11-07   joshua    Opens for a month saved by an older board
                         claude    (no picked photos).
+
+ 0.15.0    2026-11-08   joshua    A family screen isn't sent to Settings.
+                        claude
 ===============================================================================
 */
 
@@ -46,12 +49,14 @@ export function PhotosEditor({
   monthName,
   meta,
   photos,
+  family = false,
   onClose
 }: {
   ym: string;
   monthName: string;
   meta: MonthMeta | null;
   photos: Photos | null;
+  family?: boolean; // a family screen can't open Settings (it needs a parent signed in)
   onClose: () => void;
 }) {
   const sd = meta?.side;
@@ -116,7 +121,13 @@ export function PhotosEditor({
         </div>
       )}
       <div className="sublbl">
-        The overnight slideshow: <a href="settings">⚙️ Settings</a>
+        {family ? (
+          'The overnight slideshow is in ⚙️ Settings, on a parent’s phone or tablet.'
+        ) : (
+          <>
+            The overnight slideshow: <a href="settings">⚙️ Settings</a>
+          </>
+        )}
       </div>
       <div className="err">{err}</div>
       <div className="actions">

@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-06
+ Updated:   2026-11-08
 
  Purpose:
      The board itself: this month on the tablet, moving between months,
@@ -22,6 +22,9 @@
 
  0.14.0    2026-11-07   joshua    A family screen's cork fits, drawer open or
                         claude    closed.
+
+ 0.15.0    2026-11-08   joshua    Week view; the switch at the bottom of Notes.
+                        claude
 ===============================================================================
 */
 
@@ -76,4 +79,46 @@ test('a family screen: the pages and the calendar tools both fit on the cork', a
   await page.locator('#editBtn').click();
   await page.waitForTimeout(400);
   expect(await off('.cork .drawer > *')).toEqual([]);
+});
+
+test('week view: a family screen switches to this week and back; the wall by tapping the month name', async ({
+  as
+}) => {
+  const { day } = thisMonth();
+  const page = await as('family', { context: { viewport: { width: 1280, height: 800 } } });
+  await page.locator('#editBtn').click();
+  await page.locator('#viewBtn').click();
+  await expect(page.locator('#grid .week')).toHaveCount(1);
+  await expect(page.locator('#grid .day.todaybox, #grid .ringAt').first()).toBeVisible();
+  expect(await page.locator('#grid .day .num').allInnerTexts()).toContain(String(day));
+  await expect(page.locator('#drawBtn')).toHaveCount(0); // the art is laid out on the month
+  // the arrows go a week at a time
+  const first = await page.locator('#grid .day').first().getAttribute('data-date');
+  await page.locator('.titlerow button').last().click();
+  await expect
+    .poll(() => page.locator('#grid .day').first().getAttribute('data-date'))
+    .toBe(new Date(Date.parse(first + 'T12:00:00Z') + 7 * 864e5).toISOString().slice(0, 10));
+  await page.locator('#viewBtn').click();
+  await expect.poll(() => page.locator('#grid .week').count()).toBeGreaterThan(3);
+
+  const wall = await as('wall');
+  await wall.locator('#monthName').click();
+  await expect(wall.locator('#grid .week')).toHaveCount(1);
+  await wall.reload();
+  await expect(wall.locator('#grid .week')).toHaveCount(1); // kept for this screen
+  await wall.locator('#monthName').click();
+  await expect.poll(() => wall.locator('#grid .week').count()).toBeGreaterThan(3);
+});
+
+test('the bottom of Notes: a switch between today, up next and photos', async ({ as }) => {
+  const wall = await as('wall');
+  const sw = wall.locator('.notes .bslide');
+  await expect(sw).toBeVisible();
+  await sw.getByRole('tab', { name: 'Up next' }).click();
+  await expect(wall.locator('.notes .hasswitch .mh')).toHaveText('Up Next');
+  await expect(sw.getByRole('tab', { name: 'Up next' })).toHaveAttribute('aria-selected', 'true');
+  await sw.getByRole('tab', { name: 'Today' }).click();
+  await expect(wall.locator('.notes .hasswitch .mh')).toHaveText('Today');
+  await wall.waitForTimeout(600);
+  await expect(wall.locator('#slides.on')).toHaveCount(0); // two taps on the switch aren't a double tap
 });

@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | household.test.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      Reminders, timers, the pantry and the right-hand column's pages (from
@@ -23,6 +23,9 @@
                                   chores.
 
  0.14.0    2026-11-07   joshua    Up to 3 pinned pages.
+                        claude
+
+ 0.15.0    2026-11-08   joshua    Month or week, per screen.
                         claude
 ===============================================================================
 */
@@ -166,4 +169,14 @@ test('pinned pages: kept per person and per screen, up to 3', async () => {
   assert.deepEqual(f.items, [], 'the admin has their own');
   assert.deepEqual((await (await fam.api('/api/favorites')).json()).items, ['meals', 'timers', 'pantry']);
   assert.equal((await wall.post('/api/favorites', { items: ['meals'] })).status, 403, 'the wall has no bar');
+});
+
+test('month or week: kept per screen (the wall too)', async () => {
+  assert.equal((await (await wall.api('/api/boardview')).json()).view, 'month');
+  assert.equal((await wall.post('/api/boardview', { view: 'week' })).status, 200);
+  assert.equal((await (await wall.api('/api/boardview')).json()).view, 'week');
+  assert.equal((await (await fam.api('/api/boardview')).json()).view, 'month', 'each screen its own');
+  assert.equal((await fam.post('/api/boardview', { view: 'year' })).status, 400);
+  await wall.post('/api/boardview', { view: 'month' });
+  assert.equal((await (await wall.api('/api/boardview')).json()).view, 'month');
 });

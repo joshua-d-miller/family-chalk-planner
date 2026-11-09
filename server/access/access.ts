@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | access.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      Who may do what.
@@ -76,6 +76,9 @@
 
  0.14.0    2026-11-07   joshua    Screens report a crash (shown in Activity).
                         claude
+
+ 0.15.0    2026-11-08   joshua    Each screen may switch between month and week
+                        claude    (the wall too).
 ===============================================================================
 */
 
@@ -611,7 +614,7 @@ export function setup(
         ? RANK.view
         : FAMILY_POSTS.has(req.path)
           ? RANK.family
-          : req.path === '/screen-error'
+          : req.path === '/screen-error' || req.path === '/boardview'
             ? RANK.view
             : RANK.editor;
     const have = rankOf(req);

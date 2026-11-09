@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Oops.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      When a screen hits an error it can't recover from: a message and a
@@ -18,6 +18,9 @@
  -------   ----------   -------   --------------------------------------------
  0.14.0    2026-11-07   joshua    New file.
                         claude
+
+ 0.15.0    2026-11-08   joshua    The browser's ResizeObserver notice isn't
+                        claude    reported as a crash.
 ===============================================================================
 */
 
@@ -41,8 +44,13 @@ export function reportError(e: unknown, extra = '') {
   }).catch(() => {});
 }
 
-// errors outside React's drawing (a click handler, a timer): reported, the screen carries on
-addEventListener('error', e => reportError(e.error || e.message));
+// errors outside React's drawing (a click handler, a timer): reported, the screen carries on. Not the
+// browser's "ResizeObserver loop" notice: that's a warning (a size changed twice in one frame), the
+// screen is fine, and it isn't a crash.
+addEventListener('error', e => {
+  if (!e.error && /ResizeObserver loop/.test(e.message || '')) return;
+  reportError(e.error || e.message);
+});
 addEventListener('unhandledrejection', e => {
   if (!(e.reason && (e.reason as { name?: string }).name === 'ApiError')) reportError(e.reason);
 });

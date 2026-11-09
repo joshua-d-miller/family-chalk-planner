@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | SignIn.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      Signing in on a phone or tablet: a passkey (Face ID, fingerprint), or
@@ -26,6 +26,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.15.0    2026-11-08   joshua    Back to the calendar, for a paired screen.
+                        claude
 ===============================================================================
 */
 
@@ -34,6 +37,7 @@ import { post } from '../lib/api.ts';
 import { passkeysSupported, signInWithPasskey } from '../lib/passkey.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn, Field } from './bits.tsx';
+import { navigate } from '../lib/nav.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // -------------- //
@@ -42,7 +46,17 @@ import { Btn, Field } from './bits.tsx';
 // A passkey where the device has one, or username, password and the code    //
 // from the authenticator app (just the password at home, if home sign-in is //
 // on).                                                                      //
-export function SignIn({ who, why, onDone }: { who: Who | null; why?: string; onDone: () => void }) {
+export function SignIn({
+  who,
+  why,
+  onDone,
+  back
+}: {
+  who: Who | null;
+  why?: string;
+  onDone: () => void;
+  back?: string; // where "Back to the calendar" goes (a paired screen that can't open this page)
+}) {
   const [user, setUser] = useState('');
   const [pw, setPw] = useState('');
   const [code, setCode] = useState('');
@@ -132,13 +146,20 @@ export function SignIn({ who, why, onDone }: { who: Who | null; why?: string; on
             Sign in
           </Btn>
         </form>
-        <p className="dim small">
-          A wall or shared touch screen?{' '}
-          <a href="./?pair" id="toPair" style={{ color: 'var(--yellow)' }}>
-            Pair it
-          </a>{' '}
-          instead.
-        </p>
+        {back && (
+          <Btn id="signBack" onClick={() => navigate(back)}>
+            ← Back to the calendar
+          </Btn>
+        )}
+        {!who?.device && (
+          <p className="dim small">
+            A wall or shared touch screen?{' '}
+            <a href="./?pair" id="toPair" style={{ color: 'var(--yellow)' }}>
+              Pair it
+            </a>{' '}
+            instead.
+          </p>
+        )}
       </div>
     </div>
   );

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Title.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      The month's name above the calendar, in the month's own style (font,
@@ -31,6 +31,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.15.0    2026-11-08   joshua    A tap on the wall's month name switches month
+                        claude    and week.
 ===============================================================================
 */
 
@@ -61,7 +64,8 @@ export function Title({
   style,
   hand,
   bg,
-  dashed = false
+  dashed = false,
+  onTap
 }: {
   text: string;
   year?: number;
@@ -69,6 +73,7 @@ export function Title({
   hand: boolean;
   bg: number;
   dashed?: boolean; // a tablet: show where to hand-letter it
+  onTap?: () => void; // the wall: a tap switches between the month and this week
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [fit, setFit] = useState({ z: style.z, dy: 0 });
@@ -121,7 +126,9 @@ export function Title({
   return (
     <h1
       id="monthName"
-      className={(hand ? 'hand' + (dashed ? ' dashed' : '') : '') + (outline ? '' : ' noout')}
+      className={(hand ? 'hand' + (dashed ? ' dashed' : '') : '') + (outline ? '' : ' noout') + (onTap ? ' taps' : '')}
+      onClick={onTap}
+      onPointerUp={onTap ? e => e.stopPropagation() : undefined}
       style={
         outline ? ({ '--tout': outline, '--toutw': Math.max(3, style.z / 15) + 'px' } as CSSProperties) : undefined
       }

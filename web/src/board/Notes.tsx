@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Notes.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      The right-hand column: up to 3 pages, chosen in ⚙️ Settings (weather,
@@ -33,6 +33,9 @@
 
  0.14.0    2026-11-07   joshua    Its pages open in place.
                         claude
+
+ 0.15.0    2026-11-08   joshua    The switch at the bottom (jars, today, up
+                        claude    next, photos) is back.
 ===============================================================================
 */
 
@@ -188,12 +191,20 @@ function MealsPage() {
       }
     };
     fit();
-    const ro = new ResizeObserver(fit);
+    // refitting changes the list's size, so it waits for the next frame (refitting inside the
+    // ResizeObserver's own callback is what Chrome and Safari call a "ResizeObserver loop")
+    let raf = 0;
+    const later = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(fit);
+    };
+    const ro = new ResizeObserver(later);
     ro.observe(el);
-    document.fonts?.addEventListener('loadingdone', fit);
+    document.fonts?.addEventListener('loadingdone', later);
     return () => {
+      cancelAnimationFrame(raf);
       ro.disconnect();
-      document.fonts?.removeEventListener('loadingdone', fit);
+      document.fonts?.removeEventListener('loadingdone', later);
     };
   }, [items.map(it => it.id + (it.done ? '1' : '') + it.t + (it.day || '')).join('|')]);
   return (
@@ -404,33 +415,112 @@ const OPENS: Record<string, string> = {
   pantry: 'pantry',
   chores: 'chores'
 };
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------------------- //
+// | The switch at the bottom of the column | //
+// ------------------------------------------- //
+// The last page, when it's jars, today, up next or photos, has a little     //
+// switch beside its heading (tap, or swipe across it) to show one of the    //
+// others for a while; it goes back to the chosen one after 3 minutes, as    //
+// the board before 0.13 did.                                                //
+const SWITCH: [string, string, string][] = [
+  ['jars', '🫙', 'Reward jars'],
+  ['today', '☀️', 'Today'],
+  ['upnext', '📅', 'Up next'],
+  ['photos', '📷', 'Photos']
+];
+function useSwitch(def: string, others: string[]) {
+  const jars = useLive<Jar[]>('api/jars', ['jars']).data;
+  const ph = useLive<Photos>('api/photos', ['photos']).data;
+  // no jars yet: the jars page shows today instead, so the switch says Today
+  if (def === 'jars' && jars && !jars.length) def = 'today';
+  const modes = SWITCH.filter(
+    ([m]) => !others.includes(m) && (m !== 'jars' || !!jars?.length) && (m !== 'photos' || !!ph?.photos.length)
+  );
+  const [view, setView] = useState<string | null>(null);
+  const back = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => clearTimeout(back.current!), []);
+  const show = (m: string) => {
+    clearTimeout(back.current!);
+    setView(m === def ? null : m);
+    if (m !== def) back.current = setTimeout(() => setView(null), 3 * 60 * 1000);
+  };
+  const cur = view && modes.some(([m]) => m === view) ? view : def;
+  return { modes: modes.length > 1 && modes.some(([m]) => m === def) ? modes : [], cur, show };
+}
+function Switch({ sw }: { sw: ReturnType<typeof useSwitch> }) {
+  // taps here are the switch's own: not a tap on the board (edit, double tap, swipe to chores)
+  const mine = (e: React.SyntheticEvent) => e.stopPropagation();
+  return (
+    <div className="bslide" role="tablist" aria-label="Show here" onClick={mine} onPointerUp={mine}>
+      {sw.modes.map(([m, icon, label]) => (
+        <button
+          type="button"
+          key={m}
+          role="tab"
+          className={m === sw.cur ? 'on' : ''}
+          aria-selected={m === sw.cur}
+          aria-label={label}
+          title={label}
+          onClick={() => sw.show(m)}
+        >
+          {icon}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function Notes({ time24, edit = false }: { time24: boolean; edit?: boolean }) {
   const x = useLive<Extras>('api/extras', ['extras']).data;
   const pages = x?.notes?.pages || ['info', 'meals', 'jars'];
+  const last = pages[pages.length - 1];
+  const sw = useSwitch(SWITCH.some(([m]) => m === last) ? last : '', pages.slice(0, -1));
+  const swipe = useRef<number | null>(null);
   return (
     <aside className="notes">
       <h2 className="chalk">Notes</h2>
       {x &&
-        pages.map((p, i) => (
-          <div
-            key={p}
-            className={'nslot nslot-' + p + (edit && OPENS[p] ? ' opens' : '')}
-            role={edit && OPENS[p] ? 'link' : undefined}
-            onClick={edit && OPENS[p] ? () => navigate(OPENS[p]) : undefined}
-          >
-            {i > 0 && <div className="rule" />}
-            {p === 'info' && <Info x={x} />}
-            {p === 'meals' && <MealsPage />}
-            {p === 'jars' && <JarsPage />}
-            {p === 'upnext' && <UpNext />}
-            {p === 'today' && <UpNext todayOnly />}
-            {p === 'photos' && <PhotoPage />}
-            {p === 'chores' && <ChoresPage />}
-            {p === 'pantry' && <PantryPage />}
-            {p === 'reminders' && <RemindersPage time24={time24} />}
-            {p === 'timers' && <TimersPage />}
-          </div>
-        ))}
+        pages.map((p0, i) => {
+          const switching = i === pages.length - 1 && sw.modes.length > 0;
+          const p = switching ? sw.cur : p0;
+          return (
+            <div
+              key={p0}
+              className={'nslot nslot-' + p + (edit && OPENS[p] ? ' opens' : '') + (switching ? ' hasswitch' : '')}
+              style={switching ? ({ '--swn': sw.modes.length } as React.CSSProperties) : undefined}
+              role={edit && OPENS[p] ? 'link' : undefined}
+              onClick={edit && OPENS[p] ? () => navigate(OPENS[p]) : undefined}
+              onPointerDown={switching ? e => (swipe.current = e.isPrimary ? e.clientX : null) : undefined}
+              onPointerUp={
+                switching
+                  ? e => {
+                      const s0 = swipe.current;
+                      swipe.current = null;
+                      if (s0 === null || Math.abs(e.clientX - s0) < 50) return;
+                      e.stopPropagation(); // the switch's swipe, not the board's
+                      const i = sw.modes.findIndex(([m]) => m === sw.cur);
+                      const n = sw.modes.length;
+                      sw.show(sw.modes[(i + (e.clientX < s0 ? 1 : n - 1)) % n][0]);
+                    }
+                  : undefined
+              }
+            >
+              {i > 0 && <div className="rule" />}
+              {switching && <Switch sw={sw} />}
+              {p === 'info' && <Info x={x} />}
+              {p === 'meals' && <MealsPage />}
+              {p === 'jars' && <JarsPage />}
+              {p === 'upnext' && <UpNext />}
+              {p === 'today' && <UpNext todayOnly />}
+              {p === 'photos' && <PhotoPage />}
+              {p === 'chores' && <ChoresPage />}
+              {p === 'pantry' && <PantryPage />}
+              {p === 'reminders' && <RemindersPage time24={time24} />}
+              {p === 'timers' && <TimersPage />}
+            </div>
+          );
+        })}
     </aside>
   );
 }

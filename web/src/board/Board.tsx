@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   0.14.2
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-08
@@ -61,6 +61,9 @@
 
  0.14.2    2026-11-08   joshua    Fits into what's visible; tells the tab bar
                         claude    while drawing or zoomed in.
+
+ 0.15.0    2026-11-08   joshua    Week view (a button on the cork; on the wall,
+                        claude    a tap on the month name).
 ===============================================================================
 */
 
@@ -71,7 +74,7 @@ import { paintSurface, seasonOf, surfaceOf } from '../lib/surface.ts';
 import type { Who } from '../lib/who.ts';
 import { Art } from './Art.tsx';
 import type { ArtItem } from './Art.tsx';
-import { MONTHS, Month } from './Month.tsx';
+import { MONTHS, Month, addDays, weekOf } from './Month.tsx';
 import type { Bins, Border, MonthData } from './Month.tsx';
 import type { Photos } from './photos.ts';
 import { DEFAULT_TITLE, Title } from './Title.tsx';
@@ -187,9 +190,27 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   // adds events, frameless, with the wall's photo frame and slideshow; the  //
   // month's title and the board's look are set from a tablet                //
   const family = edit && !who?.user && who?.device?.role === 'family';
-  const today = useLive<{ ym: string; time24: boolean }>('api/today', ['calendar']).data;
+  const today = useLive<{ today: string; ym: string; weekStart?: number; time24: boolean }>('api/today', [
+    'calendar'
+  ]).data;
   const [ym, setYm] = useState<string | null>(null);
-  const shown = ym || today?.ym || null;
+  // ------------------- //
+  // | Month or a week | //
+  // ------------------- //
+  // Each screen shows the month, or one week (its first day in wk; null is  //
+  // this week). A week belongs to the month of its middle day.              //
+  const boardView = useLive<{ view: 'month' | 'week' }>('api/boardview', []);
+  const weekView = boardView.data?.view === 'week';
+  const [wk, setWk] = useState<string | null>(null);
+  const thisWeek = today?.today ? weekOf(today.today, today.weekStart || 0) : null;
+  const week = weekView ? wk || thisWeek : null;
+  const setView = (v: 'month' | 'week') => {
+    setWk(null);
+    setYm(null);
+    boardView.set({ view: v });
+    post('api/boardview', { view: v }).catch(() => boardView.reload());
+  };
+  const shown = week ? addDays(week, 3).slice(0, 7) : ym || today?.ym || null;
   const month = useLive<MonthData>(shown ? `api/month?ym=${shown}` : 'api/today', ['calendar']);
   const art = useLive<ArtItem[]>(shown ? `api/art?ym=${shown}` : 'api/today', [
     'stroke',
@@ -316,13 +337,20 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   // the wall follows the current month; a tablet goes back to it after 3 minutes untouched
   useEffect(() => {
     if (!edit && today && ym && ym !== today.ym) setYm(null);
-  }, [today, ym, edit]);
+    if (!edit && wk) setWk(null);
+  }, [today, ym, wk, edit]);
   const [touched, setTouched] = useState(0);
   useEffect(() => {
-    if (!edit || !ym || editing) return;
-    const t = setTimeout(() => setYm(null), 3 * 60 * 1000);
+    if (!edit || !(ym || wk) || editing) return;
+    const t = setTimeout(
+      () => {
+        setYm(null);
+        setWk(null);
+      },
+      3 * 60 * 1000
+    );
     return () => clearTimeout(t);
-  }, [edit, ym, touched, editing]);
+  }, [edit, ym, wk, touched, editing]);
 
   const tv = useMemo(() => themeVals(theme), [theme]);
   const css = useMemo(() => themeCss(tv, sf.lum), [tv, sf.lum]);
@@ -476,7 +504,7 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
   const titleStyle = titleDraft?.style || mm?.title || mm?.defaultTitle || DEFAULT_TITLE;
   const hand = titleDraft ? titleDraft.hand : !!mm?.hideTitle;
   const border = borderDraft !== undefined ? borderDraft : mm?.border || null;
-  const go = (n: number) => shown && setYm(addMonths(shown, n));
+  const go = (n: number) => (week ? setWk(addDays(week, 7 * n)) : shown && setYm(addMonths(shown, n)));
   // ----------------------- //
   // | Tapping on a tablet | //
   // ----------------------- //
@@ -506,7 +534,7 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
     (dates: string[]) => {
       setEditing(null);
       const other = dates.find(d => d && d.slice(0, 7) !== shown);
-      if (other && !dates.some(d => d?.slice(0, 7) === shown)) setYm(other.slice(0, 7));
+      if (other && !dates.some(d => d?.slice(0, 7) === shown) && !week) setYm(other.slice(0, 7));
       month.reload();
     },
     [shown, month]
@@ -553,14 +581,16 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
               onDay={onDay}
               onEvent={onEvent}
               nav={edit ? { prev: () => go(-1), next: () => go(1) } : undefined}
+              week={week}
               title={
                 <Title
                   text={monthName}
                   year={m.grid.y !== Number(m.today.slice(0, 4)) ? m.grid.y : undefined}
                   style={titleStyle}
-                  hand={hand}
+                  hand={hand && !week}
                   dashed={edit}
                   bg={sf.lum}
+                  onTap={edit ? undefined : () => setView(weekView ? 'month' : 'week')}
                 />
               }
             />
@@ -574,7 +604,7 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
           )}
           <Notes time24={!!today?.time24} edit={edit} />
           <WeatherMotion wall={!edit} />
-          <Art items={items} bg={sf.lum} res={res} gifsPlay />
+          {!week && <Art items={items} bg={sf.lum} res={res} gifsPlay />}
           {edit && drawing && (
             <DrawLayer
               art={ed}
@@ -634,20 +664,22 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
               ) : undefined
             }
           >
-            <button
-              type="button"
-              className={'pill' + (drawing ? ' on' : '')}
-              id="drawBtn"
-              onClick={() => {
-                if (family && !drawing) setPen(p => ({ ...p, tool: 'select' }));
-                setDrawing(d => !d);
-              }}
-            >
-              <span className="ic" aria-hidden="true">
-                ✏️
-              </span>{' '}
-              {drawing ? (family ? 'Done' : 'Done drawing') : family ? 'Decorate' : 'Draw'}
-            </button>
+            {!week && (
+              <button
+                type="button"
+                className={'pill' + (drawing ? ' on' : '')}
+                id="drawBtn"
+                onClick={() => {
+                  if (family && !drawing) setPen(p => ({ ...p, tool: 'select' }));
+                  setDrawing(d => !d);
+                }}
+              >
+                <span className="ic" aria-hidden="true">
+                  ✏️
+                </span>{' '}
+                {drawing ? (family ? 'Done' : 'Done drawing') : family ? 'Decorate' : 'Draw'}
+              </button>
+            )}
             {m && !drawing && (
               <>
                 {!family && (
@@ -672,6 +704,17 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
                     Photos
                   </button>
                 )}
+                <button
+                  type="button"
+                  className="pill"
+                  id="viewBtn"
+                  onClick={() => setView(weekView ? 'month' : 'week')}
+                >
+                  <span className="ic" aria-hidden="true">
+                    {weekView ? '🗓️' : '📆'}
+                  </span>{' '}
+                  {weekView ? 'Month' : 'Week'}
+                </button>
                 <button type="button" className="pill" id="styleBtn" onClick={() => setEditing({ k: 'style' })}>
                   <span className="ic" aria-hidden="true">
                     🎨
@@ -792,7 +835,14 @@ export function Board({ who, edit = false }: { who: Who | null; edit?: boolean }
         />
       )}
       {editing?.k === 'photos' && shown && (
-        <PhotosEditor ym={shown} monthName={monthName} meta={mm} photos={photos} onClose={closeEditor} />
+        <PhotosEditor
+          ym={shown}
+          monthName={monthName}
+          meta={mm}
+          photos={photos}
+          family={family}
+          onClose={closeEditor}
+        />
       )}
       {editing?.k === 'style' && <StyleEditor theme={savedTheme} onPreview={setThemeDraft} onClose={closeEditor} />}
     </div>

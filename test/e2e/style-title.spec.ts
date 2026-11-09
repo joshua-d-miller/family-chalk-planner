@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | style-title.spec.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      Board style (background, presets) and the month title card.
@@ -22,6 +22,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.15.0    2026-11-08   joshua    The Regular fonts.
+                        claude
 ===============================================================================
 */
 
@@ -73,4 +76,15 @@ test('month title: typed style with a size, then hand-lettered', async ({ as, bo
   await page.locator('#titleSheet').getByRole('button', { name: 'Save' }).click();
   await expect(page.locator('#monthName')).toHaveClass(/hand/);
   await board.admin.post('/api/meta', { ym, hideTitle: false });
+});
+
+test('fonts: a Regular group with plain serif and sans (like Times and Arial)', async ({ as }) => {
+  const t = await as('tablet', { path: '/edit' });
+  await t.locator('#titleBtn').click();
+  await t.locator('#titleSheet .fgroups button', { hasText: 'Regular' }).click();
+  await t.locator('#titleSheet .fontpick .seg[title^="Times"]').click();
+  await expect.poll(() => t.locator('#monthName .mn').evaluate(e => getComputedStyle(e).fontFamily)).toContain('Tinos');
+  expect(await t.locator('#monthName .mn').evaluate(e => getComputedStyle(e).fontFamily)).toContain('serif');
+  // the font itself arrives from the board (no fallback)
+  await expect.poll(() => t.evaluate(() => document.fonts.check('400 20px Tinos'))).toBe(true);
 });

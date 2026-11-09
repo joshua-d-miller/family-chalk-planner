@@ -39,18 +39,19 @@
   flex: 1;
 }
 .cork .pill {
-  height: 44px;
-  padding: 0 16px;
-  border-radius: 22px;
+  /* 6px of cork above and below, so a button (and the pink ring) stays on the cork, off the board */
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 19px;
   border: 2px solid rgba(237, 234, 224, 0.5);
   background: #161616;
   color: var(--chalk);
   font-family: 'Kalam', cursive;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
   white-space: nowrap;
@@ -65,8 +66,8 @@
   color: var(--yellow);
 }
 .cork .pill.fav {
-  padding: 0 12px;
-  font-size: 20px;
+  padding: 0 11px;
+  font-size: 18px;
 }
 /* the editors */
 .sheet .sublbl {

@@ -17,8 +17,8 @@ Third-party components (fetched or installed separately, not part of this reposi
 - Noto Animated Emoji (CC BY 4.0, Google), https://googlefonts.github.io/noto-emoji-animation/:
   fetched on first use and cached locally.
 - Google Fonts (SIL Open Font License): Dancing Script, Cormorant Garamond, Kalam, Caveat,
-  Permanent Marker, Pacifico, Fredericka the Great, Amatic SC, Rock Salt, and the 43 others listed in
-  shared/fonts.ts (Patrick Hand to Butcherman); and Noto Color Emoji (Google),
+  Permanent Marker, Pacifico, Fredericka the Great, Amatic SC, Rock Salt, and the 55 others listed in
+  shared/fonts.ts (Patrick Hand to Roboto); and Noto Color Emoji (Google),
   used only where a screen has no emoji of its own. Installed from npm (@fontsource; the emoji in the COLRv1
   format from @infolektuell/noto-color-emoji).
 - React (MIT, Meta Platforms) for the screens, built with Vite (MIT).

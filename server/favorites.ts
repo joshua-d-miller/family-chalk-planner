@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Server | favorites.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-08
 
  Purpose:
      Favorites: the few things each person (and each family screen) uses
@@ -13,6 +13,9 @@
      signed in on it.
        kv 'favorites'  { 'p:<person id>' | 's:<screen id>': [up to 3 menu
            item ids] }
+     And how each screen shows the calendar: the whole month, or one
+     week at a time.
+       kv 'boardview'  { 'p:<person id>' | 's:<screen id>': 'week' }
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -23,6 +26,9 @@
                         claude    chores.
 
  0.14.0    2026-11-07   joshua    Up to 3 pinned pages (the bar holds 3).
+                        claude
+
+ 0.15.0    2026-11-08   joshua    Month or week, per screen.
                         claude
 ===============================================================================
 */
@@ -63,6 +69,27 @@ export function setup({
     map[k] = items;
     kv.set('favorites', map);
     res.json({ items, saved: true });
+  });
+
+  // ---------------------- //
+  // | Month or week view | //
+  // ---------------------- //
+  // Every screen may change its own (the wall too: a tap on the month name) //
+  const views = () => kv.get<Record<string, string>>('boardview') || {};
+  app.get('/api/boardview', (req, res) => {
+    const k = whose(req);
+    res.json({ view: (k && views()[k]) || 'month' });
+  });
+  app.post('/api/boardview', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const view = (req.body || {}).view;
+    if (view !== 'month' && view !== 'week') return res.status(400).json({ error: 'bad view' });
+    const map = views();
+    if (view === 'month') delete map[k];
+    else map[k] = view;
+    kv.set('boardview', map);
+    res.json({ view });
   });
 }
 
