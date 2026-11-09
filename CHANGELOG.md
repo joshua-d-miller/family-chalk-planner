@@ -25,6 +25,8 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   a screen that lands on a page it can't open keeps its cork and gets ← Back to the calendar.
 - Fixed: picking things further down a card (fonts in 🎨 Style) could jump the card back to the top.
   A card now closes only on a tap outside it, not a drag that ends there.
+- **New guide: [docs/cloud.md](docs/cloud.md).** No server at home? Run the board on a small cloud server (or
+  any always-on machine at home) and reach it through a free Cloudflare Tunnel, with Cloudflare Access in front.
 - The "ResizeObserver loop" browser notice is no longer logged as a screen crash in 🛡 Activity (it was
   harmless), and the two places that caused it now wait a frame.
 

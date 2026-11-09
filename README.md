@@ -13,7 +13,7 @@ A chalkboard-style family wall calendar for a wall-mounted screen, edited from a
 - **More than one calendar.** Show several calendars from the same account and read-only calendar links (school, sports teams), each in its own color. A Week page shows one week at a time, with its own decorations. Weeks can start on Monday, times can be 24-hour, holidays for the US, Canada or the UK.
 - **Make it yours.** Backgrounds (black, green or blue chalkboard, cork, kraft paper, whiteboard, dark wood, black glass, linen paper, pegboard, with an optional seasonal pattern), board styles (presets plus per-part fonts and colors), per-event colors, and a today marker that can be a chalk ring, circle, heart, star or box.
 - **Live.** Changes made on the tablet appear on the wall within a second. The wall updates itself when you install a new version.
-- **Small and private.** It runs on your own network as one Node.js service (or one Docker container) with a SQLite file. No account and no cloud service of its own; screens, fonts and pictures all come from your own server.
+- **Small and private.** It runs on your own network as one Node.js service (or one Docker container) with a SQLite file. No account and no cloud service of its own; screens, fonts and pictures all come from your own server. No server at home? It also runs on a small cloud server behind a free Cloudflare Tunnel ([docs/cloud.md](docs/cloud.md)).
 - **Safe for a family.** Screens are paired with a code; people sign in with a passkey or password + authenticator app; an admin console shows every sign-in, screen and change.
 
 ![The board on a tablet in its wooden frame, with the tools along the bottom: Draw, Month title, Border, photos, style and Add event](docs/images/tablet.jpg)
