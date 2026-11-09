@@ -7,11 +7,14 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 ## 0.15.0 — a week at a time
 - **Week view:** 📆 Week on the cork shows just this week, in the whole height of the board with bigger
   writing; the arrows go a week at a time and 🗓️ Month goes back. On the wall, tap the month name. Each
-  screen remembers its own choice. (The month's art is laid out on the month, so it shows in the month
-  view.)
+  screen remembers its own choice. Each week has its own drawings and stamps (Decorate works there),
+  separate from the month's.
 - **Up next is back:** the bottom of the Notes column has its little switch again (🫙 jars, ☀️ today,
   📅 up next, 📷 photos; tap it or swipe across), as the board had before 0.13. It goes back to the
   chosen one after 3 minutes.
+- **Per screen:** 🗒️ Notes on the cork picks what the bottom of the Notes column shows on that screen
+  and what its switch can flip to (tick just one for no switch). The wall's is set in the admin
+  console, under 📺 Screens.
 - **Regular fonts:** a new Regular group with plain serif and sans fonts: Times (Tinos), Baskerville,
   Merriweather, Lora, Garamond, Crimson Text, Playfair, Arial (Arimo), Open Sans, Lato, Nunito and
   Roboto. 63 fonts in all.

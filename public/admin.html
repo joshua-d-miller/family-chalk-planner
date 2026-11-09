@@ -39,6 +39,10 @@ button:disabled{opacity:.5;cursor:default}
 .item .line input{flex:1 1 160px;height:38px}
 .item .line select{flex:0 0 150px;height:38px}
 .item .meta{font-size:13px;color:var(--dim);margin-top:4px}
+.item .nbot{display:flex;gap:6px 12px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:14px}
+.item .nbot select{height:34px;width:auto;flex:0 0 auto}
+.item .nbot label{display:flex;gap:5px;align-items:center;white-space:nowrap}
+.item .nbot input[type=checkbox]{width:18px;height:18px;min-height:0;flex:none;margin:0;padding:0}
 .seg{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .seg button.on{background:rgba(242,212,121,.18);border-color:var(--yellow);color:var(--yellow)}
 .qr{background:#fff;border-radius:12px;padding:10px;width:220px;max-width:70vw;margin:10px auto}
@@ -702,8 +706,47 @@ button:disabled{opacity:.5;cursor:default}
   var PEOPLE_ROLES = { editor: '🎨 Editor', admin: '🔑 Admin' };
   var ivRole = segs('ivRole', 'ivHelp', { editor: 'Can do everything on the board: events, drawing, board style, photos.', admin: 'Editor, plus this console: screens, people, calendar and board settings.' });
 
+  // the bottom of a screen's Notes column: the board's choice, or its own (and what its switch can flip to)
+  var BOTTOMS = { jars: '🫙 Jars', today: '☀️ Today', upnext: '📅 Up next', photos: '📷 Photos' };
+  function bottomLine(x, cur) {
+    var box = el('div', 'nbot');
+    box.appendChild(el('span', 'dim', 'Bottom of Notes:'));
+    var sel = el('select'); sel.setAttribute('aria-label', 'Bottom of Notes on ' + x.name);
+    var o = el('option', null, 'Like the rest of the board'); o.value = ''; sel.appendChild(o);
+    Object.keys(BOTTOMS).forEach(function (m) { var o = el('option', null, BOTTOMS[m]); o.value = m; sel.appendChild(o); });
+    sel.value = cur ? cur.def : '';
+    box.appendChild(sel);
+    var ticks = el('span'); ticks.style.display = 'contents';
+    var lbl = el('span', 'dim', 'switch to:');
+    function save() {
+      var b = null;
+      if (sel.value) {
+        b = { def: sel.value, can: [] };
+        Array.prototype.forEach.call(ticks.querySelectorAll('input'), function (i) { if (i.checked) b.can.push(i.value); });
+      }
+      api('/api/devices/notes-bottom', { id: x.id, bottom: b }).then(function (r) { cur = r.bottom; draw(); }).catch(function (e) { $('dvErr').textContent = e.message; });
+    }
+    function draw() {
+      ticks.innerHTML = '';
+      lbl.hidden = !sel.value;
+      if (!sel.value) return;
+      Object.keys(BOTTOMS).forEach(function (m) {
+        var l = el('label'), i = el('input'); i.type = 'checkbox'; i.value = m;
+        i.checked = m === sel.value || !cur || cur.can.indexOf(m) >= 0; i.disabled = m === sel.value;
+        i.addEventListener('change', save);
+        l.appendChild(i); l.appendChild(document.createTextNode(BOTTOMS[m])); ticks.appendChild(l);
+      });
+    }
+    sel.addEventListener('change', function () {
+      if (sel.value) cur = { def: sel.value, can: cur ? cur.can : Object.keys(BOTTOMS) };   // new: the switch can flip to all of them
+      draw(); save();
+    });
+    box.appendChild(lbl); box.appendChild(ticks); draw();
+    return box;
+  }
   function loadScreens() {
-    return loadChorePeople().then(function () { return api('/api/devices'); }).then(function (d) {
+    var bottoms = {};
+    return loadChorePeople().then(function () { return api('/api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('/api/devices'); }).then(function (d) {
       var w = $('dvWaiting'); w.innerHTML = '';
       d.waiting.forEach(function (p) { w.appendChild(el('p', 'dim', '⏳ ' + p.agent + ' is showing a code (' + ago(p.created) + ') - type it above.')); });
       var list = $('dvList'); list.innerHTML = '';
@@ -721,6 +764,7 @@ button:disabled{opacity:.5;cursor:default}
         rm.addEventListener('click', function () { if (confirm('Remove “' + x.name + '”? It stops showing the board until it’s paired again.')) api('/api/devices/remove', { id: x.id }).then(loadScreens).catch(function (e) { $('dvErr').textContent = e.message; }); });
         line.appendChild(nm); line.appendChild(sel); line.appendChild(rm); it.appendChild(line);
         it.appendChild(el('div', 'meta', x.agent + ' · paired ' + new Date(x.created).toLocaleDateString() + ' · last seen ' + ago(x.last_seen)));
+        if (!/^kid:/.test(x.role)) it.appendChild(bottomLine(x, bottoms[x.id] || null));
         list.appendChild(it);
       });
     }).catch(function (e) { if (!(e.body && e.body.admin)) $('dvErr').textContent = e.message; });
@@ -732,7 +776,7 @@ button:disabled{opacity:.5;cursor:default}
       .then(function () { $('dvCode').value = ''; $('dvName').value = ''; loadScreens(); })
       .catch(function (e) { $('dvErr').textContent = e.message; });
   });
-  setInterval(function () { if (!$('vConsole').hidden && !$('tScreens').hidden) loadScreens(); }, 10000);
+  setInterval(function () { if (!$('vConsole').hidden && !$('tScreens').hidden && !$('dvList').contains(document.activeElement)) loadScreens(); }, 10000);   // not while something in the list is being changed
 
   function loadPeople() {
     return api('/api/users').then(function (d) {

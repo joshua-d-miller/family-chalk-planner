@@ -79,6 +79,9 @@
 
  0.15.0    2026-11-08   joshua    Each screen may switch between month and week
                         claude    (the wall too).
+
+                                  A screen sets the bottom of its own Notes
+                                  column.
 ===============================================================================
 */
 
@@ -585,7 +588,8 @@ export function setup(
     '/pantry/item',
     '/pantry/item/delete',
     '/right-pages',
-    '/favorites' // a view-only screen (the wall) has no strip, so it never sends any
+    '/favorites', // a view-only screen (the wall) has no strip, so it never sends any
+    '/notesbottom' // (the wall's is set in the admin console)
   ]);
   const ADMIN = [
     /^\/board-settings/,

@@ -36,6 +36,9 @@
 
  0.15.0    2026-11-08   joshua    The switch at the bottom (jars, today, up
                         claude    next, photos) is back.
+
+                                  Each screen can pick its own bottom and what
+                                  the switch flips to.
 ===============================================================================
 */
 
@@ -429,13 +432,17 @@ const SWITCH: [string, string, string][] = [
   ['upnext', '📅', 'Up next'],
   ['photos', '📷', 'Photos']
 ];
-function useSwitch(def: string, others: string[]) {
+function useSwitch(def: string, others: string[], can: string[] | null) {
   const jars = useLive<Jar[]>('api/jars', ['jars']).data;
   const ph = useLive<Photos>('api/photos', ['photos']).data;
   // no jars yet: the jars page shows today instead, so the switch says Today
   if (def === 'jars' && jars && !jars.length) def = 'today';
   const modes = SWITCH.filter(
-    ([m]) => !others.includes(m) && (m !== 'jars' || !!jars?.length) && (m !== 'photos' || !!ph?.photos.length)
+    ([m]) =>
+      !others.includes(m) &&
+      (!can || can.includes(m) || m === def) &&
+      (m !== 'jars' || !!jars?.length) &&
+      (m !== 'photos' || !!ph?.photos.length)
   );
   const [view, setView] = useState<string | null>(null);
   const back = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -474,8 +481,11 @@ function Switch({ sw }: { sw: ReturnType<typeof useSwitch> }) {
 export function Notes({ time24, edit = false }: { time24: boolean; edit?: boolean }) {
   const x = useLive<Extras>('api/extras', ['extras']).data;
   const pages = x?.notes?.pages || ['info', 'meals', 'jars'];
-  const last = pages[pages.length - 1];
-  const sw = useSwitch(SWITCH.some(([m]) => m === last) ? last : '', pages.slice(0, -1));
+  // this screen's own choice for the bottom (if it has one), else the board's
+  const mine = useLive<{ bottom: { def: string; can: string[] } | null }>('api/notesbottom', ['notesbottom']).data
+    ?.bottom;
+  const last = mine?.def || pages[pages.length - 1];
+  const sw = useSwitch(SWITCH.some(([m]) => m === last) ? last : '', pages.slice(0, -1), mine?.can || null);
   const swipe = useRef<number | null>(null);
   return (
     <aside className="notes">
@@ -483,7 +493,7 @@ export function Notes({ time24, edit = false }: { time24: boolean; edit?: boolea
       {x &&
         pages.map((p0, i) => {
           const switching = i === pages.length - 1 && sw.modes.length > 0;
-          const p = switching ? sw.cur : p0;
+          const p = switching ? sw.cur : i === pages.length - 1 ? last : p0;
           return (
             <div
               key={p0}

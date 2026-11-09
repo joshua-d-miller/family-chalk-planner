@@ -4,7 +4,7 @@ The wall display only shows the board; everything is edited from a tablet or pho
 
 ## The tablet (editor)
 
-**Getting around.** On a family touch screen the cork at the bottom is on every page: **☰ Menu** (every page and Settings), **📅 Calendar**, and up to 3 pages pinned with 📌 in the menu (they wear a big push pin); the page you're on has a pink ring. On the calendar, **✏️ Edit the calendar** slides out the tools (**✏️ Draw**, **🔤 Month title**, **🖼️ Border**, **📷 Photos**, **📆 Week**, **🎨 Style**) until **✕ Done**, and **+ Add event** is always there. On a phone or tablet the pages are in the tab bar at the bottom (📅 Calendar, your pins and **More**), and the cork under the board has the tools. Zoom with **− / + / Fit** at the top right (or pinch). Everything saved shows on the wall within a second or two.
+**Getting around.** On a family touch screen the cork at the bottom is on every page: **☰ Menu** (every page and Settings), **📅 Calendar**, and up to 3 pages pinned with 📌 in the menu (they wear a big push pin); the page you're on has a pink ring. On the calendar, **✏️ Edit the calendar** slides out the tools (**✏️ Draw**, **🔤 Month title**, **🖼️ Border**, **📷 Photos**, **📆 Week**, **🗒️ Notes**, **🎨 Style**) until **✕ Done**, and **+ Add event** is always there. On a phone or tablet the pages are in the tab bar at the bottom (📅 Calendar, your pins and **More**), and the cork under the board has the tools. Zoom with **− / + / Fit** at the top right (or pinch). Everything saved shows on the wall within a second or two.
 
 ### More than one calendar
 The admin can add **more calendars from the same account** (kids' activities, work) and **read-only calendar links** (school, a sports team) in the admin console → ⚙️ Board. Each shows in its own color. Events from the extra calendars can be changed like any other; new events go to the main calendar. Events from links are read-only: tapping one shows that day with the calendar's name.
@@ -20,7 +20,10 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 - Adds, edits and deletes go to your real calendar (iCloud, Google, Nextcloud, …), so they show on everyone's phones too.
 
 ### 📆 Month or week
-**📆 Week** on the cork shows just this week, in the whole height of the board, with bigger writing (handy when the days are busy); the arrows go a week at a time and **🗓️ Month** goes back. On the wall, **tap the month name** to switch. Each screen remembers its own choice, so the kitchen screen can show the week while the hallway wall shows the month. The month's drawings and stamps are laid out on the month, so they only show in the month view (Draw is there too).
+**📆 Week** on the cork shows just this week, in the whole height of the board, with bigger writing (handy when the days are busy); the arrows go a week at a time and **🗓️ Month** goes back. On the wall, **tap the month name** to switch. Each screen remembers its own choice, so the kitchen screen can show the week while the hallway wall shows the month. Each week has its own drawings and stamps: **Draw / Decorate** in the week view decorates that week, and the month's art stays with the month view.
+
+### 🗒️ The bottom of Notes, per screen
+**🗒️ Notes** on the cork picks what the bottom of the Notes column shows **on this screen** (🫙 jars, ☀️ today, 📅 up next or 📷 photos) and what its little switch can flip to. Tick just one for no switch; **Like the rest of the board** goes back to the board's choice. The wall can't change anything, so its choice is in the admin console: **📺 Screens → Bottom of Notes** on its row.
 
 ### Automatic on the calendar (nothing to do)
 - **US holidays** appear in light blue italics with an icon (board only, never written to your calendar). **Tap a holiday** to see the whole list and hide the ones you don't want (every year, from the calendar and the countdowns); tap a hidden one to bring it back. Family screens can do this too. When no holiday is showing to tap, open the same list from ⚙️ Settings → **Holidays** (everyone signed in on a tablet has ⚙️; the calendar, trash and Notes settings in it are for admins).

@@ -25,6 +25,9 @@
 
  0.15.0    2026-11-08   joshua    Week view; the switch at the bottom of Notes.
                         claude
+
+                                  Decorating a week; the bottom of Notes on
+                                  this screen.
 ===============================================================================
 */
 
@@ -91,7 +94,6 @@ test('week view: a family screen switches to this week and back; the wall by tap
   await expect(page.locator('#grid .week')).toHaveCount(1);
   await expect(page.locator('#grid .day.todaybox, #grid .ringAt').first()).toBeVisible();
   expect(await page.locator('#grid .day .num').allInnerTexts()).toContain(String(day));
-  await expect(page.locator('#drawBtn')).toHaveCount(0); // the art is laid out on the month
   // the arrows go a week at a time
   const first = await page.locator('#grid .day').first().getAttribute('data-date');
   await page.locator('.titlerow button').last().click();
@@ -121,4 +123,48 @@ test('the bottom of Notes: a switch between today, up next and photos', async ({
   await expect(wall.locator('.notes .hasswitch .mh')).toHaveText('Today');
   await wall.waitForTimeout(600);
   await expect(wall.locator('#slides.on')).toHaveCount(0); // two taps on the switch aren't a double tap
+});
+
+test('the bottom of Notes on this screen: what it shows and what the switch can flip to', async ({ as }) => {
+  const page = await as('family');
+  await page.locator('#editBtn').click();
+  await page.locator('#notesBtn').click();
+  await page.locator('#notesSheet').getByRole('radio', { name: '📅 Up next' }).click();
+  for (const name of ['🫙 Jars', '📷 Photos'])
+    await page.locator('#notesSheet .tick', { hasText: name }).locator('input').uncheck();
+  await page.locator('#notesSheet').getByRole('button', { name: 'Save' }).click();
+  await expect(page.locator('.notes .hasswitch .mh')).toHaveText('Up Next');
+  await expect(page.locator('.notes .bslide button')).toHaveCount(2); // up next and today
+  // just one: no switch
+  await page.locator('#notesBtn').click();
+  await page.locator('#notesSheet .tick', { hasText: '☀️ Today' }).locator('input').uncheck();
+  await page.locator('#notesSheet').getByRole('button', { name: 'Save' }).click();
+  await expect(page.locator('.notes .bslide')).toHaveCount(0);
+  await expect(page.locator('.notes .nslot').last().locator('.mh')).toHaveText('Up Next');
+  await page.locator('#notesBtn').click();
+  await page.locator('#notesSheet').getByRole('button', { name: 'Like the rest of the board' }).click();
+  await expect(page.locator('.notes .bslide')).toBeVisible();
+});
+
+test('week view: decorating a week keeps it to that week', async ({ as }) => {
+  const page = await as('family', { context: { viewport: { width: 1280, height: 800 } } });
+  await page.locator('#editBtn').click();
+  await page.locator('#viewBtn').click();
+  await expect(page.locator('#grid .week')).toHaveCount(1);
+  await expect(page.locator('#drawBtn')).toBeVisible();
+  await page.evaluate(async () => {
+    const wk = document.querySelector('#grid .day')!.getAttribute('data-date');
+    await fetch('api/art/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+      body: JSON.stringify({ ym: wk, items: [{ k: 't', s: 'Busy week!', x: 300, y: 300, z: 30, c: '#ffffff' }] })
+    });
+  });
+  await page.reload();
+  await expect.poll(() => page.locator('#grid .week').count()).toBe(1);
+  await expect.poll(() => page.locator('#slate').evaluate(e => e.innerHTML.includes('Busy week!'))).toBe(true);
+  await page.locator('#editBtn').click();
+  await page.locator('#viewBtn').click();
+  await expect.poll(() => page.locator('#grid .week').count()).toBeGreaterThan(3);
+  expect(await page.locator('#slate').evaluate(e => e.innerHTML.includes('Busy week!'))).toBe(false);
 });
