@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | smoke.test.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.1
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-10
 
  Purpose:
      End-to-end smoke test: real server + mock CalDAV + mock photo album,
@@ -61,6 +61,9 @@
 
  0.14.0    2026-11-07   joshua    The other picture styles are unpacked and
                         claude    served.
+
+ 0.15.1    2026-11-10   joshua    The month without its calendar.
+                        claude
 ===============================================================================
 */
 
@@ -439,4 +442,18 @@ test('holidays can be hidden (every year) and brought back', async () => {
   assert.equal(d.holidays.find(h => h.title === "Indigenous Peoples' Day").off, true);
   await post('/api/holidays', { off: [] });
   assert.ok(await has('2026-10', "Indigenous Peoples' Day"), 'back again');
+});
+
+test('the calendar can’t be reached: the month still shows, with its holidays and the problem', async () => {
+  dav.close();
+  (dav as unknown as { closeAllConnections?: () => void }).closeAllConnections?.();
+  const r = await api('/api/month?ym=2027-03');
+  assert.equal(r.status, 200);
+  const m = await r.json();
+  assert.equal(m.grid.weeks >= 4, true);
+  assert.ok(m.problem, 'says what went wrong');
+  assert.ok(
+    m.events.some((e: { title: string }) => /Patrick/.test(e.title)),
+    'holidays still show'
+  );
 });

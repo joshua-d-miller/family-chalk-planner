@@ -4,6 +4,12 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.15.1 — the month stays up
+- Fixed: when the calendar couldn't be reached (iCloud or Google slow or down, a changed password), the
+  board showed no month at all, just the Notes column and the art. Now the month always shows: with the
+  events it had last time, or at least the holidays, and a note at the bottom says the calendar can't be
+  reached right now. It catches up by itself once the calendar answers again.
+
 ## 0.15.0 — a week at a time
 - **🗓️ Week:** a new page (in ☰ Menu or More, and you can pin it) that shows just this week, in the
   whole height of the board with bigger writing; the arrows go a week at a time. 📅 Calendar stays the

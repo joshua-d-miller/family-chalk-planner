@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Calendar | source.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.15.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-10
 
  Purpose:
      The family's calendar: any CalDAV server (iCloud, Nextcloud,
@@ -30,6 +30,10 @@
                                   Google: several calendars at once, read-only
                                   ones, and which calendar a new event goes
                                   in.
+
+ 0.15.1    2026-11-10   joshua    When the calendar can't be reached, the month
+                        claude    still shows (holidays and the events it had),
+                                  with the problem.
 ===============================================================================
 */
 
@@ -291,9 +295,23 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
   // ---------------------------------- //
   // Every event shown in a month's weeks, from every calendar and link      //
   // (cached for a minute)                                                   //
+  let down: string | null = null; // the main calendar couldn't be reached last time: why
   async function eventsForMonth(ym: string): Promise<BoardEvent[]> {
     const cached = monthCache.get(ym);
     if (cached && Date.now() - cached.at < 60 * 1000) return cached.events;
+    try {
+      const ev = await fetchMonth(ym);
+      down = null;
+      return ev;
+    } catch (e) {
+      // the calendar can't be reached: the events it had last time (if any), and the problem is noted
+      down = (e as Error).message;
+      if (!cached) throw e;
+      console.error(`Chalkboard: calendar: ${down} (showing what it had)`);
+      return cached.events;
+    }
+  }
+  async function fetchMonth(ym: string): Promise<BoardEvent[]> {
     const g = clock.monthGrid(ym);
     const [sy, sm, sd] = g.start.split('-').map(Number);
     const [ey, em, ed] = g.end.split('-').map(Number);
@@ -442,6 +460,7 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     addEvent,
     changeEvent,
     problems,
+    down: () => down,
     // the calendar or the sign-in changed: find it again, and fetch every month afresh
     reset() {
       mainUrl = null;

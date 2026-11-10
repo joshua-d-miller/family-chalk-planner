@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Calendar | routes.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.15.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-10
 
  Purpose:
      What the screens ask the calendar for: a month (with holidays and the
@@ -44,6 +44,10 @@
                                   Google: several calendars at once, read-only
                                   ones, and which calendar a new event goes
                                   in.
+
+ 0.15.1    2026-11-10   joshua    When the calendar can't be reached, the month
+                        claude    still shows (holidays and the events it had),
+                                  with the problem.
 ===============================================================================
 */
 
@@ -167,9 +171,25 @@ export function registerCalendarRoutes({
         };
       });
       const hol = showHolidays ? holidays.between(g.start, addDays(g.start, g.weeks * 7 - 1)) : [];
-      res.json({ ym, grid: g, events: [...hol, ...events], calendars: source.writable(), today: clock.today() });
+      const down = source.down();
+      res.json({
+        ym,
+        grid: g,
+        events: [...hol, ...events],
+        calendars: source.writable(),
+        today: clock.today(),
+        ...(down ? { problem: down } : {})
+      });
     } catch (err) {
-      res.status(502).json({ error: (err as Error).message });
+      // the calendar can't be reached and there's nothing saved yet: the month still shows (with its
+      // holidays), and the board says what's wrong, instead of a board with no calendar on it
+      try {
+        const g = clock.monthGrid(ym);
+        const hol = showHolidays ? holidays.between(g.start, addDays(g.start, g.weeks * 7 - 1)) : [];
+        res.json({ ym, grid: g, events: hol, calendars: [], today: clock.today(), problem: (err as Error).message });
+      } catch {
+        res.status(502).json({ error: (err as Error).message });
+      }
     }
   });
 

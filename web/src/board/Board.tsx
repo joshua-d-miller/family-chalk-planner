@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   0.15.0
+ Version:   0.15.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-08
+ Updated:   2026-11-10
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -67,6 +67,9 @@
 
                                   A week keeps its own drawings; 🗒️ Notes on
                                   the cork.
+
+ 0.15.1    2026-11-10   joshua    Says when the calendar can't be reached.
+                        claude
 ===============================================================================
 */
 
@@ -635,6 +638,11 @@ export function Board({
               onPlace={place}
               onHide={setHidden}
             />
+          )}
+          {m?.problem && !(note || ed.err || placing) && (
+            <div className="status calproblem" role="status" title={m.problem}>
+              The calendar can’t be reached right now: showing what the board had
+            </div>
           )}
           {(note || ed.err || placing) && (
             <div className="status" role="status">
