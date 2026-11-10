@@ -301,13 +301,16 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     if (cached && Date.now() - cached.at < 60 * 1000) return cached.events;
     try {
       const ev = await fetchMonth(ym);
+      if (down) console.error('Chalkboard: calendar: back');
       down = null;
       return ev;
     } catch (e) {
       // the calendar can't be reached: the events it had last time (if any), and the problem is noted
+      // in the server log (once, not on every screen's every request)
+      const was = down;
       down = (e as Error).message;
+      if (down !== was) console.error(`Chalkboard: calendar: ${down}${cached ? ' (showing what it had)' : ''}`);
       if (!cached) throw e;
-      console.error(`Chalkboard: calendar: ${down} (showing what it had)`);
       return cached.events;
     }
   }
