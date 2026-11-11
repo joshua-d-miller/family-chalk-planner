@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Library.tsx
 ===============================================================================
- Version:   0.16.0
+ Version:   0.16.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-11
@@ -37,6 +37,10 @@
 
  0.16.0    2026-11-11   joshua    A picture goes up in its own shape (a garland
                         claude    long and thin).
+
+ 0.16.1    2026-11-11   joshua    Garland & trims is a group in the everyday
+                        claude    clipart (right after Favorites) and found by
+                                  searching; picking its style shows all of it.
 ===============================================================================
 */
 
@@ -167,7 +171,8 @@ export function Library({
 // ------------ //
 // | Clip art | //
 // ------------ //
-type ClipStyle = { prefix: string; name: string; credit: string; count: number };
+// own: pictures of its own (the garland set), not the everyday ones redrawn
+type ClipStyle = { prefix: string; name: string; credit: string; count: number; own?: boolean };
 const FLUENT = { prefix: '', name: 'Fluent', credit: 'Fluent Emoji by Microsoft (MIT)', count: 1 };
 function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
   const [names, setNames] = useState<string[] | null>(null);
@@ -186,7 +191,9 @@ function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
   }, []);
   // a style's names, the first time it's chosen (or every style's, for All)
   useEffect(() => {
-    const want = style === 'all' ? styles.map(s => s.prefix) : style ? [style] : [];
+    // (the sets with pictures of their own are wanted from the start: they're in the everyday view too)
+    const own = styles.filter(s => s.own && s.count).map(s => s.prefix);
+    const want = [...own, ...(style === 'all' ? styles.map(s => s.prefix) : style ? [style] : [])];
     for (const p of want)
       if (!others[p])
         get<string[]>('api/clip/list?style=' + p).then(
@@ -195,8 +202,23 @@ function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
         );
   }, [style, styles, others]);
   const sets = useMemo(
-    () => [...SETS, ...(style ? [] : Object.entries(groups).map(([g, l]) => [g, l.join(' ')] as [string, string]))],
-    [groups, style]
+    () => [
+      ...SETS.slice(0, 1),
+      // a set of its own pictures (Garland & trims) as a group, right after Favorites
+      ...(style
+        ? []
+        : styles
+            .filter(s => s.own && others[s.prefix]?.length)
+            .map(s => ['🎄 ' + s.name, others[s.prefix].join(' ')] as [string, string])),
+      ...SETS.slice(1),
+      ...(style ? [] : Object.entries(groups).map(([g, l]) => [g, l.join(' ')] as [string, string]))
+    ],
+    [groups, style, styles, others]
+  );
+  // the everyday view: Fluent, the chalk drawings, and the sets with pictures of their own
+  const everyday = useMemo(
+    () => (names ? names.concat(...styles.filter(s => s.own).map(s => others[s.prefix] || [])) : null),
+    [names, styles, others]
   );
   // the Fluent names in a group or search, as this style draws them (where it has one)
   const inStyle = (base: string[], p: string) => {
@@ -205,9 +227,12 @@ function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
   };
   const strip = (l: string[], p: string) => l.map(n => n.slice(p.length + 1));
   let list: string[] = [];
-  if (names) {
+  if (names && everyday) {
     const group = (sets[set]?.[1] || '').split(' ');
-    if (!style) list = q.trim() ? searchClip(names, q, 120) : group.filter(n => names.includes(n));
+    const own = styles.find(s => s.prefix === style)?.own;
+    if (!style) list = q.trim() ? searchClip(everyday, q, 120) : group.filter(n => everyday.includes(n));
+    // a set of its own pictures: all of them (it has few of the everyday ones)
+    else if (own && !q.trim()) list = others[style] || [];
     else {
       const ps = style === 'all' ? ['', ...styles.map(s => s.prefix)] : [style];
       const per = ps.map(p => {

@@ -49,6 +49,8 @@
 
  0.16.1    2026-11-11   joshua    A style just for this month.
                         claude
+
+                                  The garland set in the clipart.
 ===============================================================================
 */
 
@@ -570,6 +572,27 @@ test('the board (new screen, tablet): draw, undo and redo, erase, write, select,
   await expect(t.locator('#addBtn')).toBeVisible();
   expect(t.errors).toEqual([]);
   await board.admin.post('/api/art/clear', { ym });
+});
+
+test('clipart: the garland set is a group of its own, found by searching, and all there in its style', async ({
+  as
+}) => {
+  const t = await as('tablet', { path: '/edit' });
+  await t.locator('#drawBtn').click();
+  await t.locator('#stampsBtn').click();
+  await t.locator('#libSheet').getByRole('radio', { name: 'Clipart' }).click();
+  const lib = t.locator('#libSheet');
+  // its own group in the everyday view
+  await lib.getByRole('button', { name: '🎄 Garland & trims' }).click();
+  await expect(lib.locator('.ctile img[src*="/api/clip/cp-garland-lights"]').first()).toBeVisible();
+  // found by searching
+  await lib.locator('.clipq').fill('garland');
+  await expect(lib.locator('.ctile img[src*="/api/clip/cp-garland"]').first()).toBeVisible();
+  // its style: every picture in it
+  await lib.locator('.clipq').fill('');
+  await lib.locator('.cstyles').getByRole('radio', { name: 'Garland & trims' }).click();
+  await expect.poll(() => lib.locator('.ctile').count()).toBeGreaterThan(40);
+  expect(t.errors).toEqual([]);
 });
 
 test('the board (new screen): a border moves the art on the calendar with the days (saved once)', async ({
