@@ -51,6 +51,9 @@
 
  0.16.0    2026-11-11   joshua    A cake on birthdays only when ⚙️ Settings
                         claude    says so.
+
+                                  A border of light bulbs is a string of
+                                  lights: on a wire, pointing out, twinkling.
 ===============================================================================
 */
 
@@ -431,18 +434,47 @@ function BorderLayer({ border: b }: { border: Border }) {
   const half = (sz + 6) / 2;
   const gap = sz * 0.45;
   const pts: [number, number][] = [];
-  const side = (x0: number, y0: number, x1: number, y1: number) => {
+  const turn: number[] = []; // which way each one faces (a string of lights: out from the calendar)
+  const side = (x0: number, y0: number, x1: number, y1: number, deg: number) => {
     const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / (sz + gap)));
-    for (let i = 0; i < n; i++) pts.push([x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n]);
+    for (let i = 0; i < n; i++) {
+      pts.push([x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n]);
+      turn.push(deg);
+    }
   };
+  // a border of only light bulbs is a string of lights: on a wire, every bulb pointing out
+  const lights = b.items.every(n => n.startsWith('cp-bulb-'));
   const W = CAL_W;
   const H = CAL_H;
-  side(half, half, W - half, half);
-  side(W - half, half, W - half, H - half);
-  side(W - half, H - half, half, H - half);
-  side(half, H - half, half, half);
+  side(half, half, W - half, half, 180);
+  side(W - half, half, W - half, H - half, -90);
+  side(W - half, H - half, half, H - half, 0);
+  side(half, H - half, half, half, 90);
+  // the wire: through each bulb's socket (the end that faces the calendar), sagging a little between them
+  const sock = pts.map(([x, y], i): [number, number] => {
+    const a = (turn[i] * Math.PI) / 180;
+    return [x + Math.sin(a) * sz * 0.42, y - Math.cos(a) * sz * 0.42];
+  });
+  const wire = lights
+    ? sock
+        .map(([x, y], i) => {
+          const [px, py] = sock[(i + sock.length - 1) % sock.length];
+          const mx = (x + px) / 2;
+          const my = (y + py) / 2;
+          return (
+            (i ? `Q${mx.toFixed(1)} ${(my + 3).toFixed(1)} ` : `M${x.toFixed(1)} ${y.toFixed(1)} `) +
+            `${x.toFixed(1)} ${y.toFixed(1)}`
+          );
+        })
+        .join(' ') + ' Z'
+    : '';
   return (
     <div className="borderLayer" id="borderLayer" aria-hidden="true">
+      {lights && (
+        <svg className="lightWire" width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+          <path d={wire} fill="none" stroke="#2E4A2E" strokeWidth={2} />
+        </svg>
+      )}
       {pts.map((p, i) => (
         <img
           key={i}
@@ -453,7 +485,7 @@ function BorderLayer({ border: b }: { border: Border }) {
             height: sz,
             left: +(p[0] - sz / 2).toFixed(1),
             top: +(p[1] - sz / 2).toFixed(1),
-            transform: `rotate(${Math.round((hash(i + 1, 7) - 0.5) * 24)}deg)`
+            transform: `rotate(${lights ? turn[i] : Math.round((hash(i + 1, 7) - 0.5) * 24)}deg)`
           }}
         />
       ))}

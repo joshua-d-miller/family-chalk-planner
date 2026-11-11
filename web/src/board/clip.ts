@@ -55,10 +55,16 @@ export const CLIP_SYN: Record<string, string> = {
   halloween:
     'jack-o-lantern ghost bat spider-web candy gi-pumpkin-lantern gi-witch-face gi-mummy-head gi-vampire-dracula gi-bat gi-cauldron',
   christmas:
-    'cp-garland-lights cp-garland-pine cp-wreath cp-ornament-red cp-bow cp-stocking christmas-tree santa-claus wrapped-gift snowman',
+    'cp-garland-lights-twinkle cp-garland-pine cp-wreath cp-christmas-tree cp-ornament-red cp-poinsettia cp-santa-hat cp-stocking cp-jingle-bells cp-snowman cp-reindeer cp-hot-cocoa cp-candy-cane cp-gingerbread-man cp-star-twinkle cp-present cp-mittens cp-sugar-cookie christmas-tree santa-claus wrapped-gift snowman',
   garland:
     'cp-garland-lights cp-garland-pine cp-garland-holly cp-garland-tinsel cp-garland-beads cp-garland-bunting cp-garland-candy-cane cp-string-lights',
-  lights: 'cp-garland-lights cp-string-lights',
+  lights: 'cp-garland-lights-twinkle cp-string-lights-twinkle cp-garland-lights cp-string-lights cp-bulb-red',
+  twinkle: 'cp-garland-lights-twinkle cp-string-lights-twinkle cp-star-twinkle cp-candle',
+  snowflake: 'cp-snowflake-1 cp-snowflake-2 cp-snowflake-3',
+  tree: 'cp-christmas-tree',
+  santa: 'cp-santa-hat cp-north-pole',
+  cocoa: 'cp-hot-cocoa',
+  cookie: 'cp-sugar-cookie cp-gingerbread-man',
   ornament: 'cp-ornament-red cp-ornament-gold cp-ornament-blue',
   wreath: 'cp-wreath',
   thanksgiving: 'turkey gi-cornucopia gi-corn gi-pumpkin gi-pilgrim-hat gi-wheat gi-acorn pie fallen-leaf',

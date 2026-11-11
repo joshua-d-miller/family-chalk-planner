@@ -9,7 +9,8 @@
 
  Purpose:
      Draws the board's own Christmas pictures (garlands, lights, a wreath,
-     ornaments, a bow...) and writes them to clipart/garland.json, in the
+     ornaments, a tree, snowflakes, a bow...; the lights, a star and a
+     candle twinkle) and writes them to clipart/garland.json, in the
      same format as the other picture sets (Iconify JSON), so Stamps shows
      them as the "Garland & trims" style. Drawn for the board and free for
      anyone to use (CC0).
@@ -329,6 +330,274 @@ def gingerbread():
 
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #
+# ----------------------- #
+# | Lights that twinkle | #
+# ----------------------- #
+# Animated (SVG's own animation, so they twinkle on any screen): a bulb
+# brightens and dims, each color at its own pace, so a row of them never
+# blinks all at once. A border made only of bulbs is strung on a wire
+# around the calendar (web/src/board/Month.tsx).
+def twinkle(dur, begin, low=0.35):
+    return (f'<animate attributeName="opacity" values="1;{low};1" dur="{dur}s" begin="{begin}s" '
+            f'repeatCount="indefinite"/>')
+
+
+def tw_bulb(x, y, color, dur, begin, k=1.0):
+    """A bulb hanging from (x, y), glowing and twinkling."""
+    return (
+        f'<g transform="translate({f(x)} {f(y)}) scale({f(k)})">'
+        f'<ellipse cx="0" cy="11" rx="8" ry="10" fill="{color}" opacity=".22">{twinkle(dur, begin, 0)}</ellipse>'
+        '<rect x="-2.6" y="-1" width="5.2" height="5" rx="1" fill="#3A3A36"/>'
+        f'<g>{twinkle(dur, begin)}'
+        f'<ellipse cx="0" cy="11" rx="5" ry="7.6" fill="{color}"/>'
+        '<ellipse cx="-1.6" cy="8.4" rx="1.4" ry="2.8" fill="#fff" opacity=".6"/></g>'
+        "</g>"
+    )
+
+
+BULB_PACE = {"red": (1.9, -0.2), "gold": (2.3, -1.1), "green": (1.7, -0.7), "blue": (2.1, -1.5), "pink": (2.5, -0.4)}
+BULB_COLOR = {"red": RED, "gold": GOLD, "green": GREEN, "blue": BLUE, "pink": PINK}
+
+
+def border_bulb(name):
+    dur, begin = BULB_PACE[name]
+    return tw_bulb(15, 6, BULB_COLOR[name], dur, begin, 1.25), 30, 36
+
+
+def garland_lights_twinkle():
+    at, path = swag(dip=60, top=8)
+    body = f'<path d="{path}" fill="none" stroke="#2E4A2E" stroke-width="2.4"/>'
+    n = 15
+    names = list(BULB_PACE)
+    for i in range(1, n):
+        x, y, _ = at(i / n)
+        dur, begin = BULB_PACE[names[i % 5]]
+        body += tw_bulb(x, y, BULB_COLOR[names[i % 5]], dur, begin - i * 0.13)
+    return body, 240, 80
+
+
+def string_lights_twinkle():
+    body = '<path d="M0 8 Q30 14 60 8 T120 8 T180 8 T240 8" fill="none" stroke="#2E4A2E" stroke-width="2.4"/>'
+    names = list(BULB_PACE)
+    for i in range(12):
+        dur, begin = BULB_PACE[names[i % 5]]
+        body += tw_bulb(10 + i * 20, 8 + (3 if i % 2 else 0), BULB_COLOR[names[i % 5]], dur, begin - i * 0.17)
+    return body, 240, 40
+
+
+def star_points(cx, cy, r1, r2, n=5, rot=-90):
+    pts = []
+    for i in range(n * 2):
+        r = r1 if i % 2 == 0 else r2
+        a = math.radians(rot + i * 180 / n)
+        pts.append(f"{f(cx + math.cos(a) * r)},{f(cy + math.sin(a) * r)}")
+    return " ".join(pts)
+
+
+def star_twinkle():
+    body = (f'<polygon points="{star_points(40, 41, 30, 13)}" fill="{GOLD}" stroke="{DGOLD}" stroke-width="2" stroke-linejoin="round"/>'
+            f'<polygon points="{star_points(40, 41, 30, 13)}" fill="#FFF3B8" opacity="0">'
+            '<animate attributeName="opacity" values="0;.7;0" dur="2.2s" repeatCount="indefinite"/></polygon>')
+    for x, y, b in [(14, 12, -0.3), (68, 18, -1.2), (66, 66, -0.8)]:
+        body += (f'<path d="M{x} {y - 6} L{x + 1.5} {y - 1.5} L{x + 6} {y} L{x + 1.5} {y + 1.5} L{x} {y + 6} '
+                 f'L{x - 1.5} {y + 1.5} L{x - 6} {y} L{x - 1.5} {y - 1.5}Z" fill="#fff">{twinkle(1.6, b, 0)}</path>')
+    return body, 80, 80
+
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #
+# --------------------- #
+# | More for December | #
+# --------------------- #
+def tree():
+    body = (f'<rect x="34" y="78" width="12" height="14" fill="#7A4E2A"/>'
+            f'<path d="M40 8 L66 46 L56 46 L74 80 L6 80 L24 46 L14 46 Z" fill="{MGREEN}" stroke="{DGREEN}" stroke-width="2" stroke-linejoin="round"/>'
+            f'<path d="M22 60 Q40 68 60 56 M18 74 Q42 82 66 70" stroke="{GOLD}" stroke-width="2" fill="none"/>')
+    for x, y, c in [(32, 40, RED), (48, 50, BLUE), (30, 64, GOLD), (52, 70, RED), (42, 60, PINK), (22, 76, BLUE), (60, 78, GOLD)]:
+        body += f'<circle cx="{x}" cy="{y}" r="3.2" fill="{c}"/>'
+    body += f'<polygon points="{star_points(40, 10, 9, 4)}" fill="{GOLD}" stroke="{DGOLD}" stroke-width="1"/>'
+    return body, 80, 94
+
+
+def gold_star():
+    return (f'<polygon points="{star_points(40, 42, 34, 15)}" fill="{GOLD}" stroke="{DGOLD}" stroke-width="2.5" stroke-linejoin="round"/>'
+            f'<polygon points="{star_points(40, 42, 18, 8)}" fill="#FFE9A0" opacity=".6"/>'), 80, 80
+
+
+def snowflake(kind):
+    arms = ""
+    for i in range(6):
+        a = i * 60
+        if kind == 1:
+            arm = "M0 0 L0 -32 M0 -14 L-8 -22 M0 -14 L8 -22 M0 -24 L-6 -30 M0 -24 L6 -30"
+        elif kind == 2:
+            arm = "M0 0 L0 -32 M0 -20 L-10 -26 M0 -20 L10 -26 M0 -10 L-6 -14 M0 -10 L6 -14"
+        else:
+            arm = "M0 0 L0 -30 M-6 -18 L0 -24 L6 -18 M-4 -28 L0 -33 L4 -28"
+        arms += f'<path d="{arm}" transform="translate(40 40) rotate({a})"/>'
+    return (f'<g fill="none" stroke="#DDEEFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">{arms}</g>'
+            f'<circle cx="40" cy="40" r="4" fill="#DDEEFF"/>'), 80, 80
+
+
+def poinsettia():
+    body = ""
+    for i in range(8):
+        body += (f'<path d="M0 0 C6 -10 4 -24 0 -32 C-4 -24 -6 -10 0 0Z" fill="{"#C62828" if i % 2 else RED}" stroke="{DRED}" '
+                 f'stroke-width="1" transform="translate(40 40) rotate({i * 45 + 22})"/>')
+    for i in range(3):
+        body += (f'<path d="M0 0 C5 -8 3 -18 0 -24 C-3 -18 -5 -8 0 0Z" fill="{MGREEN}" stroke="{DGREEN}" stroke-width="1" '
+                 f'transform="translate(40 40) rotate({i * 120 + 70})" opacity=".9"/>')
+    for x, y in [(37, 38), (43, 37), (40, 43), (36, 43), (44, 43)]:
+        body += f'<circle cx="{x}" cy="{y}" r="2.4" fill="{GOLD}" stroke="{DGOLD}" stroke-width=".6"/>'
+    return body, 80, 80
+
+
+def santa_hat():
+    return (f'<path d="M12 62 C14 30 34 10 58 18 C70 22 74 38 70 48 L64 46 C64 36 58 30 50 32 C42 34 40 48 44 62 Z" '
+            f'fill="{RED}" stroke="{DRED}" stroke-width="2"/>'
+            f'<rect x="6" y="58" width="56" height="16" rx="8" fill="{WHITE}" stroke="#c9c4b4" stroke-width="1.5"/>'
+            f'<circle cx="68" cy="52" r="8" fill="{WHITE}" stroke="#c9c4b4" stroke-width="1.5"/>'), 80, 80
+
+
+def mittens():
+    def m(x, c, flip):
+        d = "M0 0 L0 -26 C0 -40 26 -40 26 -24 L26 0 Z"
+        th = "M0 -16 C-10 -16 -12 -6 -4 -4"
+        sx = -1 if flip else 1
+        return (f'<g transform="translate({x} 70) scale({sx} 1)">'
+                f'<path d="{d}" fill="{c}" stroke="#5a1a1a" stroke-width="1.5"/>'
+                f'<path d="{th}" fill="none" stroke="#5a1a1a" stroke-width="1.5"/>'
+                f'<path d="M0 -24 C-12 -24 -14 -10 -4 -8 L0 -8 Z" fill="{c}" stroke="#5a1a1a" stroke-width="1.5"/>'
+                f'<rect x="-1" y="0" width="28" height="9" rx="3" fill="{WHITE}" stroke="#c9c4b4" stroke-width="1"/>'
+                f'<path d="M6 -22 l4 4 l4 -4 l4 4" stroke="#fff" stroke-width="1.6" fill="none"/></g>')
+    body = m(16, RED, False) + m(70, GREEN, True)
+    body += f'<path d="M30 46 C40 30 48 30 56 46" stroke="{GOLD}" stroke-width="1.6" fill="none"/>'
+    return body, 86, 84
+
+
+def cocoa():
+    return (f'<path d="M26 22 C22 14 30 10 26 4 M38 22 C34 14 42 10 38 4" stroke="#E8E2D6" stroke-width="2.2" fill="none" stroke-linecap="round"/>'
+            f'<path d="M12 26 L58 26 L54 72 C53 76 50 78 46 78 L24 78 C20 78 17 76 16 72 Z" fill="{RED}" stroke="{DRED}" stroke-width="2"/>'
+            f'<path d="M57 34 C70 34 70 54 55 56" fill="none" stroke="{DRED}" stroke-width="5"/>'
+            f'<ellipse cx="35" cy="27" rx="22" ry="5" fill="#6B3E22"/>'
+            f'<circle cx="28" cy="25" r="4" fill="#fff"/><circle cx="37" cy="23" r="4" fill="#fff"/><circle cx="44" cy="26" r="3.5" fill="#fff"/>'
+            f'<path d="M20 48 L50 48 M22 58 L48 58" stroke="#fff" stroke-width="3" stroke-dasharray="4 4"/>'), 74, 82
+
+
+def jingle_bells():
+    def bell(x, y, a):
+        return (f'<g transform="translate({x} {y}) rotate({a})">'
+                f'<path d="M-14 12 C-14 -4 -10 -14 0 -14 C10 -14 14 -4 14 12 Z" fill="{GOLD}" stroke="{DGOLD}" stroke-width="2"/>'
+                f'<rect x="-16" y="10" width="32" height="5" rx="2.5" fill="{DGOLD}"/>'
+                f'<circle cx="0" cy="17" r="4" fill="{DGOLD}"/><ellipse cx="-5" cy="-3" rx="2.4" ry="5" fill="#fff" opacity=".5"/></g>')
+    return bell(28, 46, 18) + bell(52, 46, -18) + bow_at(40, 22, 0.55), 80, 74
+
+
+def snowman():
+    return (f'<circle cx="40" cy="70" r="20" fill="{WHITE}" stroke="#c9c4b4" stroke-width="2"/>'
+            f'<circle cx="40" cy="38" r="14" fill="{WHITE}" stroke="#c9c4b4" stroke-width="2"/>'
+            f'<rect x="28" y="10" width="24" height="16" fill="#2a2a2a"/><rect x="22" y="24" width="36" height="4" fill="#2a2a2a"/>'
+            f'<rect x="28" y="20" width="24" height="3" fill="{RED}"/>'
+            f'<circle cx="35" cy="35" r="1.8" fill="#2a2a2a"/><circle cx="45" cy="35" r="1.8" fill="#2a2a2a"/>'
+            f'<path d="M40 39 L52 42 L40 42 Z" fill="#F08A2C"/>'
+            f'<path d="M28 50 Q40 56 52 50 L52 56 L46 66 L42 56 Q40 56 28 54 Z" fill="{RED}"/>'
+            f'<circle cx="40" cy="64" r="2" fill="#2a2a2a"/><circle cx="40" cy="74" r="2" fill="#2a2a2a"/>'
+            f'<path d="M21 62 L6 52 M10 55 L6 60 M59 62 L74 52 M70 55 L74 60" stroke="#7A4E2A" stroke-width="2.4" stroke-linecap="round"/>'), 80, 92
+
+
+def reindeer():
+    a = "#7A4E2A"
+    return (f'<path d="M26 22 C18 12 20 4 24 2 M24 12 L14 8 M30 24 C26 12 32 6 34 4" stroke="{a}" stroke-width="3" fill="none" stroke-linecap="round"/>'
+            f'<path d="M54 22 C62 12 60 4 56 2 M56 12 L66 8 M50 24 C54 12 48 6 46 4" stroke="{a}" stroke-width="3" fill="none" stroke-linecap="round"/>'
+            f'<ellipse cx="18" cy="34" rx="8" ry="4" fill="#A0693A" transform="rotate(-25 18 34)"/>'
+            f'<ellipse cx="62" cy="34" rx="8" ry="4" fill="#A0693A" transform="rotate(25 62 34)"/>'
+            f'<path d="M24 32 C24 18 56 18 56 32 C56 48 50 66 40 66 C30 66 24 48 24 32Z" fill="#A0693A" stroke="#7A4E2A" stroke-width="2"/>'
+            f'<circle cx="33" cy="36" r="3" fill="#2a2a2a"/><circle cx="47" cy="36" r="3" fill="#2a2a2a"/>'
+            f'<circle cx="40" cy="62" r="7" fill="{RED}"/><circle cx="38" cy="60" r="2" fill="#fff" opacity=".6"/>'), 80, 72
+
+
+def gift_tag():
+    return (f'<path d="M20 10 L70 10 L70 50 L20 50 L6 30 Z" fill="#F4E6C8" stroke="#B89A62" stroke-width="2" stroke-linejoin="round"/>'
+            f'<circle cx="18" cy="30" r="3.5" fill="#1d1d1c" stroke="#B89A62" stroke-width="1.5"/>'
+            f'<path d="M15 30 C8 30 2 38 2 46" stroke="{RED}" stroke-width="2" fill="none"/>'
+            f'<path d="M30 22 L62 22 M30 30 L58 30 M30 38 L50 38" stroke="#B89A62" stroke-width="1.6" stroke-dasharray="3 3"/>'), 76, 56
+
+
+def candle():
+    return (f'<ellipse cx="30" cy="12" rx="5" ry="9" fill="{GOLD}">{twinkle(1.3, -0.4, 0.75)}</ellipse>'
+            f'<ellipse cx="30" cy="15" rx="2.4" ry="5" fill="#fff" opacity=".8"/>'
+            f'<line x1="30" y1="20" x2="30" y2="26" stroke="#3a3a3a" stroke-width="1.6"/>'
+            f'<rect x="20" y="26" width="20" height="44" rx="3" fill="{RED}" stroke="{DRED}" stroke-width="2"/>'
+            f'<path d="M24 26 L24 34 Q26 38 28 34 L28 26" fill="#fff" opacity=".35"/>'
+            + leaf(16, 74, 200, 1.0) + leaf(44, 74, -20, 1.0) + berries(30, 72, 3, 3)), 60, 84
+
+
+def sugar_cookie():
+    return (f'<polygon points="{star_points(40, 42, 34, 17)}" fill="#E2B074" stroke="#B9773F" stroke-width="2" stroke-linejoin="round"/>'
+            f'<polygon points="{star_points(40, 42, 26, 12)}" fill="{WHITE}" opacity=".9"/>'
+            f'<circle cx="40" cy="42" r="3" fill="{RED}"/><circle cx="32" cy="34" r="2" fill="{GREEN}"/><circle cx="48" cy="34" r="2" fill="{BLUE}"/>'
+            f'<circle cx="34" cy="52" r="2" fill="{PINK}"/><circle cx="47" cy="51" r="2" fill="{GOLD}"/>'), 80, 80
+
+
+def pine_sprig():
+    rng = random.Random(5)
+    body = '<path d="M8 64 Q40 44 74 16" stroke="#6b4a2a" stroke-width="2.4" fill="none"/>'
+    for i in range(16):
+        t = i / 15
+        x, y = 8 + 66 * t, 64 - 48 * t + 8 * math.sin(t * math.pi)
+        body += tuft(x, y, rng, 0.8)
+    body += f'<ellipse cx="30" cy="66" rx="7" ry="10" fill="#8A5A2B" stroke="#5e3a1a" stroke-width="1.5" transform="rotate(-20 30 66)"/>'
+    body += f'<path d="M25 60 l9 3 M24 66 l10 3 M26 72 l8 2" stroke="#5e3a1a" stroke-width="1.2"/>'
+    return body, 80, 80
+
+
+def ornament_striped():
+    body, w, h = ornament(PINK, "#a8366c", "pink")
+    body += (f'<path d="M10 52 Q30 46 50 52" stroke="{WHITE}" stroke-width="4" fill="none"/>'
+             f'<path d="M12 62 Q30 70 48 62" stroke="{WHITE}" stroke-width="4" fill="none"/>')
+    return body, w, h
+
+
+def north_pole():
+    return (f'<rect x="36" y="20" width="8" height="66" fill="{WHITE}" stroke="#c9c4b4" stroke-width="1"/>'
+            + "".join(f'<path d="M36 {24 + i * 12} L44 {30 + i * 12} L44 {34 + i * 12} L36 {28 + i * 12} Z" fill="{RED}"/>' for i in range(5))
+            + f'<circle cx="40" cy="16" r="6" fill="{GOLD}"/>'
+            f'<path d="M44 30 L76 26 L80 34 L76 42 L44 40 Z" fill="#8A5A2B" stroke="#5e3a1a" stroke-width="1.5"/>'
+            f'<path d="M50 32 h20 M50 37 h16" stroke="#F4E6C8" stroke-width="2"/>'), 82, 90
+
+
+TWINKLE = {
+    "bulb-red": lambda: border_bulb("red"),
+    "bulb-gold": lambda: border_bulb("gold"),
+    "bulb-green": lambda: border_bulb("green"),
+    "bulb-blue": lambda: border_bulb("blue"),
+    "bulb-pink": lambda: border_bulb("pink"),
+    "garland-lights-twinkle": garland_lights_twinkle,
+    "string-lights-twinkle": string_lights_twinkle,
+    "star-twinkle": star_twinkle,
+    "candle": candle,
+}
+MORE = {
+    "christmas-tree": tree,
+    "star": gold_star,
+    "snowflake-1": lambda: snowflake(1),
+    "snowflake-2": lambda: snowflake(2),
+    "snowflake-3": lambda: snowflake(3),
+    "poinsettia": poinsettia,
+    "santa-hat": santa_hat,
+    "mittens": mittens,
+    "hot-cocoa": cocoa,
+    "jingle-bells": jingle_bells,
+    "snowman": snowman,
+    "reindeer": reindeer,
+    "gift-tag": gift_tag,
+    "sugar-cookie": sugar_cookie,
+    "pine-sprig": pine_sprig,
+    "ornament-striped": ornament_striped,
+    "north-pole": north_pole,
+}
+
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #
 # ------------------ #
 # | Writing it out | #
 # ------------------ #
@@ -357,7 +626,7 @@ PICTURES = {
 
 def main():
     icons = {}
-    for name, draw in PICTURES.items():
+    for name, draw in {**PICTURES, **TWINKLE, **MORE}.items():
         body, w, h = draw()
         icons[name] = {"body": body, "width": w, "height": h}
     with open(OUT, "w") as fh:
