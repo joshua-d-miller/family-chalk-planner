@@ -213,7 +213,7 @@ test('chalk drawings and holiday borders', async () => {
     'every style unpacked'
   );
   // the board's own: garlands and trims, a garland long and thin
-  assert.equal(styles.find(s => s.prefix === 'cp')!.count, 45);
+  assert.equal(styles.find(s => s.prefix === 'cp')!.count, 46);
   assert.match(await (await api('/api/clip/cp-bulb-red.svg')).text(), /<animate /, 'the lights twinkle');
   const garland = await (await api('/api/clip/cp-garland-lights.svg')).text();
   assert.match(garland, /width="256" height="\d+"/);

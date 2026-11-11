@@ -40,7 +40,8 @@ RED, DRED = "#D7342F", "#9E1F1C"
 GOLD, DGOLD = "#F2C14E", "#C99528"
 GREEN, MGREEN, DGREEN = "#3C8D40", "#2E7D32", "#1B5E20"
 BLUE, PINK, WHITE = "#2F7FD6", "#E35D9C", "#FAFAF5"
-BULBS = [RED, GOLD, GREEN, BLUE, PINK]
+PURPLE = "#A97BF2"
+BULBS = [RED, GOLD, GREEN, BLUE, PINK, PURPLE]
 
 
 def f(v):
@@ -355,8 +356,9 @@ def tw_bulb(x, y, color, dur, begin, k=1.0):
     )
 
 
-BULB_PACE = {"red": (1.9, -0.2), "gold": (2.3, -1.1), "green": (1.7, -0.7), "blue": (2.1, -1.5), "pink": (2.5, -0.4)}
-BULB_COLOR = {"red": RED, "gold": GOLD, "green": GREEN, "blue": BLUE, "pink": PINK}
+BULB_PACE = {"red": (1.9, -0.2), "gold": (2.3, -1.1), "green": (1.7, -0.7), "blue": (2.1, -1.5), "pink": (2.5, -0.4),
+              "purple": (2.0, -0.9)}
+BULB_COLOR = {"red": RED, "gold": GOLD, "green": GREEN, "blue": BLUE, "pink": PINK, "purple": PURPLE}
 
 
 def border_bulb(name):
@@ -371,8 +373,8 @@ def garland_lights_twinkle():
     names = list(BULB_PACE)
     for i in range(1, n):
         x, y, _ = at(i / n)
-        dur, begin = BULB_PACE[names[i % 5]]
-        body += tw_bulb(x, y, BULB_COLOR[names[i % 5]], dur, begin - i * 0.13)
+        dur, begin = BULB_PACE[names[i % len(names)]]
+        body += tw_bulb(x, y, BULB_COLOR[names[i % len(names)]], dur, begin - i * 0.13)
     return body, 240, 80
 
 
@@ -380,8 +382,8 @@ def string_lights_twinkle():
     body = '<path d="M0 8 Q30 14 60 8 T120 8 T180 8 T240 8" fill="none" stroke="#2E4A2E" stroke-width="2.4"/>'
     names = list(BULB_PACE)
     for i in range(12):
-        dur, begin = BULB_PACE[names[i % 5]]
-        body += tw_bulb(10 + i * 20, 8 + (3 if i % 2 else 0), BULB_COLOR[names[i % 5]], dur, begin - i * 0.17)
+        dur, begin = BULB_PACE[names[i % len(names)]]
+        body += tw_bulb(10 + i * 20, 8 + (3 if i % 2 else 0), BULB_COLOR[names[i % len(names)]], dur, begin - i * 0.17)
     return body, 240, 40
 
 
@@ -571,6 +573,7 @@ TWINKLE = {
     "bulb-green": lambda: border_bulb("green"),
     "bulb-blue": lambda: border_bulb("blue"),
     "bulb-pink": lambda: border_bulb("pink"),
+    "bulb-purple": lambda: border_bulb("purple"),
     "garland-lights-twinkle": garland_lights_twinkle,
     "string-lights-twinkle": string_lights_twinkle,
     "star-twinkle": star_twinkle,

@@ -8,11 +8,11 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **A month's own colors:** 🎨 Style has **Every month** and **Colors just for November** (whichever
   month you're on). Pick the day boxes' lines, the day numbers, today's mark and the other colors just for
   this month; everything else comes from the board style. **Like every month** takes them away again.
-- **Garland & trims:** 45 Christmas pictures drawn for the board, in Stamps:
+- **Garland & trims:** 46 Christmas pictures drawn for the board, in Stamps:
   - garlands: lights, pine with ornaments, holly, gold tinsel, beads, bunting and a candy-cane swag, and
     a string of lights
   - **twinkling** (they animate on every screen): a garland of lights, a string of lights, a star, a
-    candle, and single bulbs in five colors
+    candle, and single bulbs in six colors (purple too)
   - a tree, a star, three snowflakes, a wreath, holly, a pine sprig, a poinsettia, ornaments (red, gold,
     blue, striped), a bow, a stocking, a candy cane, mistletoe, a present, a gift tag, a Santa hat,
     mittens, hot cocoa, jingle bells, a snowman, a reindeer, a gingerbread man, a sugar cookie and a North
@@ -20,7 +20,7 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 
   Garlands go up long and thin (240 wide), for along the top or bottom of the calendar. Search
   "garland", "lights", "twinkle", "snowflake", "ornament" or "wreath".
-- **✨ Twinkling lights border:** a string of colored bulbs on a wire all the way around the calendar,
+- **✨ Twinkling lights border:** a string of red, gold, green, blue, pink and purple bulbs on a wire all the way around the calendar,
   each bulb pointing out and twinkling at its own pace. Also a new 🎀 Holly & bows border.
 - **Turning:** in Select, drag the blue handle above what's picked to turn it (it snaps to straight), or
   use ↺ ↻ to turn 15° at a time. Clipart, stamps, words and drawings all turn.
