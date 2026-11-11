@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Library.tsx
 ===============================================================================
- Version:   0.16.1
+ Version:   0.16.2
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-11
@@ -38,7 +38,7 @@
  0.16.0    2026-11-11   joshua    A picture goes up in its own shape (a garland
                         claude    long and thin).
 
- 0.16.1    2026-11-11   joshua    Garland & trims is a group in the everyday
+ 0.16.2    2026-11-11   joshua    Garland & trims is a group in the everyday
                         claude    clipart (right after Favorites) and found by
                                   searching; picking its style shows all of it.
 ===============================================================================

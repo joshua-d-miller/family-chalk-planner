@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | clipstyles.ts
 ===============================================================================
- Version:   0.16.1
+ Version:   0.16.2
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
  Updated:   2026-11-11
@@ -34,7 +34,7 @@
                         claude    from a file in the repository; each picture
                                   keeps its shape.
 
- 0.16.1    2026-11-11   joshua    Says which styles have pictures of their own
+ 0.16.2    2026-11-11   joshua    Says which styles have pictures of their own
                         claude    (the garland set).
 ===============================================================================
 */
