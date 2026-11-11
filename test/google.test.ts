@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | google.test.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.15.1
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-10
 
  Purpose:
      Google Calendar end to end against a fake Google: sign in (paste
@@ -27,6 +27,9 @@
                                   Google: several calendars at once, read-only
                                   ones, and which calendar a new event goes
                                   in.
+
+ 0.15.1    2026-11-10   joshua    Without Google, the month still shows and
+                        claude    says why.
 ===============================================================================
 */
 
@@ -90,7 +93,7 @@ test.after(() => {
 test('before connecting, the board says how to connect', async () => {
   const s = await (await api('/api/calendar/status')).json();
   assert.deepEqual([s.provider, s.configured, s.connected, s.paste], ['google', true, false, true]);
-  assert.match((await month()).error, /connect it in ⚙ Settings/);
+  assert.match((await month()).problem, /connect it in ⚙ Settings/); // (the month still shows, holidays and all)
 });
 
 test('sign-in needs an admin device', async () => {
@@ -227,7 +230,7 @@ test('a revoked sign-in tells the tablet to reconnect', async () => {
   google.state.refresh.clear();
   await new Promise(r => setTimeout(r, 2200));
   const m = await (await api('/api/month?ym=2026-11')).json();
-  assert.match(m.error || '', /reconnect/i);
+  assert.match(m.problem || '', /reconnect/i);
   const s = await (await api('/api/calendar/status')).json();
   assert.equal(s.connected, false);
   assert.match(s.problem, /reconnect/);

@@ -9,6 +9,10 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   board showed no month at all, just the Notes column and the art. Now the month always shows: with the
   events it had last time, or at least the holidays, and a note at the bottom says the calendar can't be
   reached right now. It catches up by itself once the calendar answers again.
+- The server log now says when the calendar can't be reached, and when it's back. When iCloud won't open
+  the photo album, the message says iCloud may be down (it used to only say the album isn't shared).
+- **New guide: [docs/cloud.md](docs/cloud.md).** No server at home? Run the board on a small cloud server (or
+  any always-on machine at home) and reach it through a free Cloudflare Tunnel, with Cloudflare Access in front.
 
 ## 0.15.0 — a week at a time
 - **🗓️ Week:** a new page (in ☰ Menu or More, and you can pin it) that shows just this week, in the
@@ -31,8 +35,6 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   a screen that lands on a page it can't open keeps its cork and gets ← Back to the calendar.
 - Fixed: picking things further down a card (fonts in 🎨 Style) could jump the card back to the top.
   A card now closes only on a tap outside it, not a drag that ends there.
-- **New guide: [docs/cloud.md](docs/cloud.md).** No server at home? Run the board on a small cloud server (or
-  any always-on machine at home) and reach it through a free Cloudflare Tunnel, with Cloudflare Access in front.
 - The "ResizeObserver loop" browser notice is no longer logged as a screen crash in 🛡 Activity (it was
   harmless), and the two places that caused it now wait a frame.
 

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Photos | albums.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.15.1
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
- Updated:   2026-11-06
+ Updated:   2026-11-10
 
  Purpose:
      Reading a shared photo album, the way the album's own web page reads
@@ -26,6 +26,9 @@
  -------   ----------   -------   --------------------------------------------
  0.13.0    2026-11-06   joshua    Move photos, pages and the console's board
                         claude    settings into TypeScript modules.
+
+ 0.15.1    2026-11-10   joshua    When iCloud won't open the album, says iCloud
+                        claude    may be down (and passes on iCloud's reason).
 ===============================================================================
 */
 
@@ -172,7 +175,11 @@ async function icloudAlbum(cfg: AlbumConfig) {
       shortGUIDs: [{ value: guid, shouldFetchRootRecord: true }]
     })
   ).results[0];
-  if (!res || !res.anonymousPublicAccess) throw new Error('album isn’t shared by link (set “anyone with the link”)');
+  // iCloud says why when it can (an outage looks like this too, so the message says both)
+  if (!res || !res.anonymousPublicAccess)
+    throw new Error(
+      `iCloud didn’t open the album${res?.serverErrorCode ? ` (${res.serverErrorCode}${res.reason ? ': ' + res.reason : ''})` : ''}: iCloud may be down, or the album isn’t shared by link (set “anyone with the link”)`
+    );
   const part = String(res.anonymousPublicAccess.databasePartition || '');
   const host = /^https:\/\/[a-z0-9-]+\.icloud\.com(:443)?$/.test(part) ? part.replace(/:443$/, '') : ckHost;
   const qs = `?remapEnums=true&sharing_url_key=${encodeURIComponent(guid)}&publicAccessAuthToken=${encodeURIComponent(res.anonymousPublicAccess.token)}`;
