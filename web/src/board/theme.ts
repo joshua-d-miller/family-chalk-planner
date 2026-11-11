@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | theme.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.16.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-11
 
  Purpose:
      The board's style ("theme"): a preset plus the family's tweaks
@@ -27,6 +27,9 @@
 
  0.14.0    2026-11-07   joshua    The fonts come from shared/fonts.ts.
                         claude
+
+ 0.16.1    2026-11-11   joshua    A month's look: its own style, or the
+                        claude    board's, with its tweaks.
 ===============================================================================
 */
 
@@ -214,6 +217,14 @@ export const PRESETS: { id: string; name: string; v: ThemeVals }[] = [
 export function themeVals(t: Theme | null | undefined): ThemeVals {
   const pr = PRESETS.find(x => x.id === t?.p) || PRESETS[0];
   return { ...BASE, ...pr.v, ...(t?.o || {}) };
+}
+
+// A month's look: its own style (p) with its tweaks, or the board style    //
+// with its tweaks (the board's tweaks belong to the board's style)        //
+export function monthVals(t: Theme | null | undefined, look?: Record<string, string> | null): ThemeVals {
+  if (!look) return themeVals(t);
+  const { p, ...o } = look;
+  return p ? { ...themeVals({ p, o: {} }), ...o } : { ...themeVals(t), ...o };
 }
 
 const rgba = (hex: string, a: number) => {

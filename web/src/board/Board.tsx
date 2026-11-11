@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   0.16.0
+ Version:   0.16.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-11
@@ -80,6 +80,9 @@
                         claude    day view.
 
                                   Tells the pages where its cork is.
+
+ 0.16.1    2026-11-11   joshua    Draws a month in its own style when it has
+                        claude    one.
 ===============================================================================
 */
 
@@ -125,7 +128,7 @@ import { post } from '../lib/api.ts';
 import { CLIENT } from './draw/useArt.ts';
 import { RANK } from '../lib/who.ts';
 import type { ArtItem as Item } from './Art.tsx';
-import { themeCss, themeVals } from './theme.ts';
+import { monthVals, themeCss } from './theme.ts';
 import type { Theme } from './theme.ts';
 import './board.css';
 import './edit.css';
@@ -399,9 +402,9 @@ export function Board({
     return () => clearTimeout(t);
   }, [edit, ym, wk, touched, editing]);
 
-  // the board style, with this month's own colors over it
+  // the board style, or this month's own style, with its tweaks
   const monthLook = lookDraft || (meta && 'artPad' in meta ? meta.look : undefined);
-  const tv = useMemo(() => ({ ...themeVals(theme), ...(monthLook || {}) }), [theme, monthLook]);
+  const tv = useMemo(() => monthVals(theme, monthLook), [theme, monthLook]);
   const css = useMemo(() => themeCss(tv, sf.lum), [tv, sf.lum]);
   const m = month.data && 'grid' in month.data ? month.data : null;
   const slides = useSlides(photos, !edit || family);

@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | StyleEditor.tsx
 ===============================================================================
- Version:   0.16.0
+ Version:   0.16.1
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
  Updated:   2026-11-11
@@ -28,6 +28,9 @@
 
  0.16.0    2026-11-11   joshua    Colors just for this month, or the style for
                         claude    every month.
+
+ 0.16.1    2026-11-11   joshua    Opens on just this month, which can pick a
+                        claude    style of its own; every month is a tap away.
 ===============================================================================
 */
 
@@ -38,7 +41,7 @@ import { SURFACES } from '../../lib/surface.ts';
 import { Btn, Segs } from '../../ui/bits.tsx';
 import { Colors } from '../../ui/Colors.tsx';
 import { Sheet } from '../../ui/Sheet.tsx';
-import { PRESETS, TFONTS, themeVals } from '../theme.ts';
+import { PRESETS, TFONTS, monthVals, themeVals } from '../theme.ts';
 import type { Theme } from '../theme.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -150,31 +153,50 @@ export function StyleEditor({
   onPreview: (t: Theme | null) => void;
   ym: string;
   monthName: string;
-  look: Record<string, string> | null; // this month's own colors
+  look: Record<string, string> | null; // this month's own style (p) and tweaks
   onPreviewLook: (l: Record<string, string> | null) => void;
   onClose: () => void;
 }) {
   const [d, setD] = useState<Theme>(() => JSON.parse(JSON.stringify(theme || { p: 'classic', o: {} })));
   const [err, setErr] = useState('');
-  // every month (the board style), or just this month's colors
-  const [scope, setScope] = useState<'all' | 'month'>(look ? 'month' : 'all');
+  // every month (the board style), or just this month's style and tweaks
+  // just this month unless asked: a change can't reach every month by accident
+  const [scope, setScope] = useState<'all' | 'month'>('month');
   const [lk, setLk] = useState<Record<string, string>>(() => ({ ...(look || {}) }));
   useEffect(() => onPreview(d), [d, onPreview]);
   useEffect(() => onPreviewLook(lk), [lk, onPreviewLook]);
   const base = themeVals(d);
-  const v = scope === 'month' ? { ...base, ...lk } : base;
+  // what this month starts from: its own style, or the board style
+  const mBase = monthVals(d, lk.p ? { p: lk.p } : null);
+  const v = scope === 'month' ? monthVals(d, lk) : base;
+  const style = scope === 'month' ? lk.p || d.p : d.p;
   const close = () => {
     onPreview(null);
     onPreviewLook(null);
     onClose();
   };
-  // a color just for this month: picking the board style's own takes it away
+  // a tweak just for this month: picking what its style has takes it away
   const setMonth = (k: string, val: string) => {
     const o = { ...lk };
-    if (base[k] === val) delete o[k];
+    if (mBase[k] === val) delete o[k];
     else o[k] = val;
     setLk(o);
   };
+  // a style just for this month (its tweaks start over); the board's own: none
+  const pickMonth = (id: string) => {
+    const tweaks = Object.keys(lk).filter(k => k !== 'p').length;
+    const name = PRESETS.find(x => x.id === id)?.name;
+    if (tweaks && !confirm(`Switch ${monthName} to ${name}? Its own tweaks will be cleared.`)) return;
+    setLk(id === d.p ? {} : { p: id });
+  };
+  const pick = (id: string) => {
+    if (scope === 'month') return pickMonth(id);
+    const name = PRESETS.find(x => x.id === id)?.name;
+    if (Object.keys(d.o || {}).length && !confirm(`Switch to ${name}? Your tweaks will be cleared.`)) return;
+    setD({ p: id, o: {}, ...(d.s ? { s: d.s } : {}), ...(d.z ? { z: 1 } : {}) });
+  };
+  // a tweak: to every month, or just this one
+  const tweak = (k: string, val: string) => (scope === 'month' ? setMonth(k, val) : set(k, val));
   // only real tweaks are kept: picking the preset's own value takes the tweak away
   const set = (k: string, val: string) => {
     const o = { ...(d.o || {}) };
@@ -199,15 +221,15 @@ export function StyleEditor({
         value={scope}
         onChange={setScope}
         options={[
-          ['all', 'Every month'],
-          ['month', `Colors just for ${monthName}`]
+          ['month', `Just ${monthName}`],
+          ['all', 'Every month']
         ]}
         label="What to change"
       />
       {scope === 'month' && (
         <div className="sublbl">
-          Colors picked here are only for {monthName}; everything else comes from the board style. Picking the board
-          style’s own color takes this month’s away.
+          A style, fonts and colors just for {monthName}; every other month keeps the board style. The background stays
+          the same for every month.
         </div>
       )}
       {scope === 'all' && (
@@ -254,61 +276,48 @@ export function StyleEditor({
           </label>
         </>
       )}
-      {scope === 'all' && <div className="sublbl">Style</div>}
-      {scope === 'all' && (
-        <div className="surfaces presets">
-          {PRESETS.map(pr => {
-            const pv = themeVals({ p: pr.id, o: {} });
-            const f = TFONTS[pv.numF];
-            return (
-              <button
-                type="button"
-                key={pr.id}
-                className={pr.id === d.p ? 'on' : ''}
-                aria-pressed={pr.id === d.p}
-                style={{ borderBottom: `3px ${pv.lineS} ${pv.lineC}` }}
-                onClick={() => {
-                  if (Object.keys(d.o || {}).length && !confirm(`Switch to ${pr.name}? Your tweaks will be cleared.`))
-                    return;
-                  setD({ p: pr.id, o: {}, ...(d.s ? { s: d.s } : {}), ...(d.z ? { z: 1 } : {}) });
-                }}
-              >
-                <span className="smp" style={{ fontFamily: f.ff, fontWeight: f.w, color: pv.numC }}>
-                  9
-                </span>
-                <span className="pn">{pr.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-      {ROWS.filter(r => scope === 'all' || r.parts.some(([, kind]) => kind === 'color')).map(r => (
+      <div className="sublbl">Style</div>
+      <div className="surfaces presets">
+        {PRESETS.map(pr => {
+          const pv = themeVals({ p: pr.id, o: {} });
+          const f = TFONTS[pv.numF];
+          return (
+            <button
+              type="button"
+              key={pr.id}
+              className={pr.id === style ? 'on' : ''}
+              aria-pressed={pr.id === style}
+              style={{ borderBottom: `3px ${pv.lineS} ${pv.lineC}` }}
+              onClick={() => pick(pr.id)}
+            >
+              <span className="smp" style={{ fontFamily: f.ff, fontWeight: f.w, color: pv.numC }}>
+                9
+              </span>
+              <span className="pn">{pr.name}</span>
+            </button>
+          );
+        })}
+      </div>
+      {ROWS.map(r => (
         <div className="threl" key={r.label}>
           <b>{r.label}</b>
-          {r.parts
-            .filter(([, kind]) => scope === 'all' || kind === 'color')
-            .map(([k, kind]) =>
-              kind === 'font' ? (
-                <FontPicker
-                  key={k}
-                  value={v[k]}
-                  onChange={fk => set(k, fk)}
-                  keyOf={b => b.id}
-                  classic
-                  size={18}
-                  label={r.label}
-                />
-              ) : kind === 'color' ? (
-                <Colors
-                  key={k}
-                  value={v[k]}
-                  onChange={c => c && (scope === 'month' ? setMonth(k, c) : set(k, c))}
-                  label={r.label}
-                />
-              ) : (
-                <Segs key={k} value={v[k]} onChange={val => set(k, val)} options={kind} label={r.label} />
-              )
-            )}
+          {r.parts.map(([k, kind]) =>
+            kind === 'font' ? (
+              <FontPicker
+                key={k}
+                value={v[k]}
+                onChange={fk => tweak(k, fk)}
+                keyOf={b => b.id}
+                classic
+                size={18}
+                label={r.label}
+              />
+            ) : kind === 'color' ? (
+              <Colors key={k} value={v[k]} onChange={c => c && tweak(k, c)} label={r.label} />
+            ) : (
+              <Segs key={k} value={v[k]} onChange={val => tweak(k, val)} options={kind} label={r.label} />
+            )
+          )}
         </div>
       ))}
       <div className="err">{err}</div>

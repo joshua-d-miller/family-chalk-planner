@@ -4,6 +4,14 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.16.1 — a month's own style
+- **A month's own style:** 🎨 Style now opens on **Just December** (whichever month you're on), so a
+  change can't reach every month by accident. A month can have a **style of its own** (Holiday for
+  December while the rest stay as they are), and its own fonts and lines as well as colors. **Every
+  month** is a tap away for the board style and the background.
+- Fixed: the **✨ Twinkling lights** and **🎀 Holly & bows** borders didn't show up in 🖼 Border (their
+  pictures weren't in the list the border looks in).
+
 ## 0.16.0 — garland, turning and a month's own colors
 - **A month's own colors:** 🎨 Style has **Every month** and **Colors just for November** (whichever
   month you're on). Pick the day boxes' lines, the day numbers, today's mark and the other colors just for

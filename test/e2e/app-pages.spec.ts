@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | app-pages.spec.ts
 ===============================================================================
- Version:   0.16.0
+ Version:   0.16.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-11
 
@@ -45,6 +45,9 @@
                         claude    the calendar.
 
  0.16.0    2026-11-11   joshua    Turning; colors just for this month.
+                        claude
+
+ 0.16.1    2026-11-11   joshua    A style just for this month.
                         claude
 ===============================================================================
 */
@@ -474,6 +477,7 @@ test('the board (new screen, tablet): the month’s title, its border and the bo
     .poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).border?.items.length)
     .toBeGreaterThan(0);
   await t.locator('#styleBtn').click();
+  await t.locator('#styleSheet').getByRole('radio', { name: 'Every month' }).click();
   await t
     .locator('#styleSheet')
     .getByRole('button', { name: /Pastel/ })
@@ -618,23 +622,28 @@ test('a family screen sent to Settings can get back (it needs a parent signed in
   await expect(page.locator('#grid')).toBeVisible();
 });
 
-test('board style: colors just for this month', async ({ as, board }) => {
+test('board style: a style and colors just for this month', async ({ as, board }) => {
   const { ym, name } = thisMonth();
   const t = await as('tablet', { path: '/edit' });
   await t.locator('#styleBtn').click();
   await t
     .locator('#styleSheet')
-    .getByRole('radio', { name: `Colors just for ${name}` })
+    .getByRole('radio', { name: `Just ${name}` })
     .click();
-  await expect(t.locator('#styleSheet .presets')).toHaveCount(0); // just the colors
+  // a style of its own (December in Holiday, the rest as they were)
+  await t.locator('#styleSheet .presets button', { hasText: 'Holiday' }).click();
   const lines = t.locator('#styleSheet .threl', { hasText: 'Calendar lines' }).locator('.colors button');
   await lines.nth(2).click();
   const picked = await lines.nth(2).getAttribute('aria-label');
   await t.locator('#styleSheet').getByRole('button', { name: 'Save' }).click();
   await expect
-    .poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).look?.lineC?.toLowerCase())
-    .toBe(picked!.toLowerCase());
+    .poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).look)
+    .toMatchObject({ p: 'holiday' });
+  const look = (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).look;
+  expect(look.lineC?.toLowerCase()).toBe(picked!.toLowerCase());
   // every other month keeps the board style
-  expect((await (await board.admin.api('/api/theme')).json()).o?.lineC).toBeUndefined();
+  const theme = await (await board.admin.api('/api/theme')).json();
+  expect(theme.p).not.toBe('holiday');
+  expect(theme.o?.lineC).toBeUndefined();
   await board.admin.post('/api/meta', { ym, look: null });
 });

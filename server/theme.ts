@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | theme.ts
 ===============================================================================
- Version:   0.16.0
+ Version:   0.16.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-11
 
@@ -28,6 +28,9 @@
 
  0.16.0    2026-11-11   joshua    The names of its colors, for a month's own.
                         claude
+
+ 0.16.1    2026-11-11   joshua    Checks a tweak or a style's name for a
+                        claude    month's own look too.
 ===============================================================================
 */
 
@@ -62,8 +65,14 @@ const TWEAKS: Record<string, 'color' | 'font' | string[]> = {
   lineS: ['solid', 'dashed', 'dotted'],
   lineW: ['thin', 'normal', 'bold']
 };
-// the colors (a month can have its own: server/month.ts)
-export const COLOR_KEYS = Object.keys(TWEAKS).filter(k => TWEAKS[k] === 'color');
+// a tweak a style may hold: a known part, with a value that part can take
+// (a month can have its own style and tweaks too: server/month.ts)
+export function okTweak(k: string, v: unknown): v is string {
+  const kind = TWEAKS[k];
+  if (typeof v !== 'string' || !kind) return false;
+  return kind === 'color' ? /^#[0-9a-fA-F]{6}$/.test(v) : kind === 'font' ? FONTS.includes(v) : kind.includes(v);
+}
+export const okPreset = (v: unknown): v is string => typeof v === 'string' && /^[a-z]{2,20}$/.test(v);
 const SURFACES = ['slate', 'green', 'blue', 'cork', 'kraft', 'white', 'wood', 'glass', 'linen', 'peg'];
 
 export interface Theme {
@@ -79,15 +88,10 @@ export interface Theme {
 // -------------------------------- //
 export function cleanTheme(input: unknown): Theme {
   const t = (input || {}) as Record<string, unknown>;
-  const out: Theme = { p: typeof t.p === 'string' && /^[a-z]{2,20}$/.test(t.p) ? t.p : 'classic', o: {} };
+  const out: Theme = { p: okPreset(t.p) ? t.p : 'classic', o: {} };
   if (typeof t.s === 'string' && SURFACES.includes(t.s) && t.s !== 'slate') out.s = t.s;
   if (t.z === 1 || t.z === true) out.z = 1; // "change with the season" (off unless turned on)
-  for (const [k, v] of Object.entries((t.o || {}) as Record<string, unknown>)) {
-    const kind = TWEAKS[k];
-    if (typeof v !== 'string' || !kind) continue;
-    const ok = kind === 'color' ? /^#[0-9a-fA-F]{6}$/.test(v) : kind === 'font' ? FONTS.includes(v) : kind.includes(v);
-    if (ok) out.o[k] = v;
-  }
+  for (const [k, v] of Object.entries((t.o || {}) as Record<string, unknown>)) if (okTweak(k, v)) out.o[k] = v;
   return out;
 }
 
