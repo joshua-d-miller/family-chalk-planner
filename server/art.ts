@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | art.ts
 ===============================================================================
- Version:   0.15.0
+ Version:   0.15.1
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
- Updated:   2026-11-08
+ Updated:   2026-11-10
 
  Purpose:
      The art layer: chalk and Posca drawings, words, clipart, GIFs and
@@ -53,6 +53,9 @@
 
  0.15.0    2026-11-08   joshua    A week drawn in the week view keeps its own
                         claude    art (under its first day).
+
+ 0.15.1    2026-11-10   joshua    A piece of art keeps her choice about the
+                        claude    events under it (cv).
 ===============================================================================
 */
 
@@ -90,6 +93,8 @@ export function cleanItem(raw: unknown): ArtItem | null {
   const it = raw as Record<string, unknown>;
   const c = typeof it.c === 'string' && HEX.test(it.c) ? it.c : '#EDEAE0';
   const group = typeof it.g === 'string' && GROUP.test(it.g) ? { g: it.g } : {};
+  // over events: 'hide' hides the events under it, 'under' draws it behind the writing (none: not asked yet)
+  const cover = it.cv === 'hide' || it.cv === 'under' ? { cv: it.cv } : {};
   const x = Number(it.x);
   const y = Number(it.y);
   if (it.k === 'g') {
@@ -110,7 +115,8 @@ export function cleanItem(raw: unknown): ArtItem | null {
       w: size(it.w),
       h: size(it.h),
       mode: ['gentle', 'loop', 'still'].includes(it.mode as string) ? it.mode : 'gentle',
-      ...group
+      ...group,
+      ...cover
     };
   }
   if (it.k === 't') {
@@ -127,7 +133,8 @@ export function cleanItem(raw: unknown): ArtItem | null {
       f: Math.min(Math.max(Math.trunc(Number(it.f)) || 0, 0), BOARD_FONTS.length - 1),
       z: Math.min(Math.max(Math.round(Number(it.z)) || 40, 12), 120),
       ...(it.m ? { m: true } : {}),
-      ...group
+      ...group,
+      ...cover
     };
   }
   if (!Array.isArray(it.p) || it.p.length < 2 || it.p.length > 20000) return null;
@@ -138,7 +145,8 @@ export function cleanItem(raw: unknown): ArtItem | null {
     p: it.p.map(n => Math.round((Number(n) || 0) * 2) / 2),
     ...(it.m ? { m: true } : {}),
     ...(typeof it.fc === 'string' && HEX.test(it.fc) ? { fc: it.fc } : {}),
-    ...group
+    ...group,
+    ...cover
   };
 }
 

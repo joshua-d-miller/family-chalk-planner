@@ -89,7 +89,7 @@ Passkeys only work over **HTTPS on a name** (not an IP address), which a reverse
 ### Nobody can sign in any more
 On the server: `sudo /opt/family-chalk-planner/deploy/reset-admin.sh`. It removes **every** account, sign-in and paired screen (the calendar, drawings, meals, jars, photos and settings stay) and prints a new setup code. Create the admin again in `/admin` and re-pair the screens.
 
-**On the internet:** don't expose the board directly. Use Tailscale, Cloudflare Access, or a reverse proxy with its own login in front of it, keep `ALLOW_UNPAIRED_VIEW` off, and use HTTPS so every cookie is marked Secure.
+**On the internet:** don't expose the board directly. Use Tailscale, Cloudflare Access, or a reverse proxy with its own login in front of it, keep `ALLOW_UNPAIRED_VIEW` off, and use HTTPS so every cookie is marked Secure. [cloud.md](cloud.md) walks through a Cloudflare Tunnel with Access, at home or on a small cloud server.
 
 ## 4. The wall display
 - **Android screen or tablet:** [Fully Kiosk Browser](https://www.fully-kiosk.com/). Set the Start URL to `http://<server>:3002/`, turn on "Keep screen on", and turn on start-on-boot.

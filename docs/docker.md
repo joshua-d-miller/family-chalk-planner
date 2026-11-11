@@ -21,6 +21,9 @@ Building from the source instead (for example while the repository is private, o
 ## 3. HTTPS (recommended)
 Put the board behind your reverse proxy (Nginx Proxy Manager, Caddy, Traefik) with WebSockets on and response buffering off (see [install.md](install.md#5-https-and-a-nice-name-recommended)). Then in the admin console → ⚙️ Board → **On your network**, enter the https address and your proxy's address (the console shows the one it sees, with a button to use it). That turns on passkeys (Face ID, Touch ID, fingerprint) and makes invite links use that address.
 
+No machine at home that's always on, or want to reach the board from outside without opening ports? See
+[cloud.md](cloud.md) (a Cloudflare Tunnel, on a home machine or a small cloud server).
+
 ## Your data
 Everything the board keeps is in `./data`: the database, the key for passwords saved in the console (`secret.key`), uploaded GIFs and nightly backups (`data/backup`, 14 days). Back up that folder: it has everything, including `secret.key` (also copied to `data/backup/`). That key only unlocks the saved calendar password, account name, album link and calendar links; if it's ever lost, nothing else is affected and ⚙️ Board asks you to type those again ([details](install.md#the-encryption-key-datasecretkey)). The container runs as user `1000:1000`; set `PUID`/`PGID` if `./data` should belong to someone else.
 

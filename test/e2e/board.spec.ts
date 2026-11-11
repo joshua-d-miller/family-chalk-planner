@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   0.15.0
+ Version:   0.15.1
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-08
+ Updated:   2026-11-10
 
  Purpose:
      The board itself: this month on the tablet, moving between months,
@@ -28,6 +28,9 @@
 
                                   Decorating a week; the bottom of Notes on
                                   this screen.
+
+ 0.15.1    2026-11-10   joshua    Art over events: the question, and leftover
+                        claude    days.
 ===============================================================================
 */
 
@@ -167,4 +170,56 @@ test('week view: decorating a week keeps it to that week', async ({ as }) => {
   await page.goto(page.url().replace(/week$/, 'edit'));
   await expect.poll(() => page.locator('#grid .week').count()).toBeGreaterThan(3);
   expect(await page.locator('#slate').evaluate(e => e.innerHTML.includes('Busy week!'))).toBe(false);
+});
+
+test('art over events: asks once, then hides them; leftover days hide on their own', async ({ as, board }) => {
+  const { ym } = thisMonth();
+  const page = await as('family', { context: { viewport: { width: 1280, height: 800 } } });
+  // where an event of this month and one on a leftover day are, in board pixels
+  const spots = await page.evaluate(() => {
+    const s = document.querySelector('#slate')!.getBoundingClientRect();
+    const z = s.width / 1252;
+    const at = (sel: string) => {
+      const el = [...document.querySelectorAll<HTMLElement>(sel)].find(e => e.textContent!.trim());
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { x: (r.left + r.width / 2 - s.left) / z, y: (r.top + r.height / 2 - s.top) / z, text: el.textContent };
+    };
+    return { mine: at('.day:not(.other) .ev'), other: at('.day.other .ev') };
+  });
+  expect(spots.mine).toBeTruthy();
+  const pic = (p: { x: number; y: number }) => ({
+    k: 'g',
+    src: '/api/clip/gi-mummy-head.svg',
+    x: p.x,
+    y: p.y,
+    w: 150,
+    h: 150
+  });
+  const items = [pic(spots.mine!), ...(spots.other ? [pic(spots.other)] : [])];
+  const r = await (await board.admin.post('/api/art/bulk', { ym, items })).json();
+  try {
+    await page.reload();
+    const hidden = (t: string) =>
+      page.evaluate(
+        t =>
+          [...document.querySelectorAll('.day .ev')]
+            .filter(e => e.textContent === t)
+            .some(e => e.classList.contains('underart')),
+        t
+      );
+    if (spots.other) await expect.poll(() => hidden(spots.other!.text!)).toBe(true); // a leftover day: no question
+    expect(await hidden(spots.mine!.text!)).toBe(false); // this month's: not until she says so
+    await page.locator('#editBtn').click();
+    await page.locator('#drawBtn').click();
+    await expect(page.locator('.status.ask')).toContainText('This covers');
+    await page.locator('#coverHide').click();
+    await expect.poll(() => hidden(spots.mine!.text!)).toBe(true);
+    await expect(page.locator('.status.ask')).toHaveCount(0);
+    // saved with the art, for every screen
+    const art = await (await board.admin.api(`/api/art?ym=${ym}`)).json();
+    expect(art.filter((x: { cv?: string }) => x.cv === 'hide').length).toBeGreaterThan(0);
+  } finally {
+    await board.admin.post('/api/art/delete', { ym, ids: r.ids });
+  }
 });

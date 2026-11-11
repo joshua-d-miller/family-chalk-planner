@@ -4,6 +4,28 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.15.1 — the month stays up, and art that knows about events
+- **Art over events:** when a piece of art (a stamp, clipart, words, a drawing) blanks out events, the
+  board asks once while decorating: **Hide them** (the art wins and those events disappear from the
+  board under it) or **Keep showing them** (the art sits behind the writing). Art that only touches the
+  writing, like a pumpkin in a day's corner or a chalk circle around an event, never asks. Picking the
+  piece later in Select can change its mind. Hidden events are still in the calendar: tapping the day,
+  Up next and the countdowns still show them, and saving an event that lands under art says so.
+- Art over the grid's leftover days (the next or last month's, at the start and end of the month)
+  hides their events by itself, no question asked.
+- Fixed: when the calendar couldn't be reached (iCloud or Google slow or down, a changed password), the
+  board showed no month at all, just the Notes column and the art. Now the month always shows, with a
+  note at the bottom that the calendar can't be reached right now, and it catches up by itself once the
+  calendar answers again.
+- **A saved copy of the calendar:** every calendar the board shows (iCloud and other CalDAV calendars,
+  Google, more calendars on the account, calendar links) keeps its last good copy of each month in the
+  board's database, like the photos keep theirs. When one can't be reached, the board shows that copy:
+  after a restart or an update too. (Changing the calendar or the account forgets the old copies.)
+- The server log now says when the calendar can't be reached, and when it's back. When iCloud won't open
+  the photo album, the message says iCloud may be down (it used to only say the album isn't shared).
+- **New guide: [docs/cloud.md](docs/cloud.md).** No server at home? Run the board on a small cloud server (or
+  any always-on machine at home) and reach it through a free Cloudflare Tunnel, with Cloudflare Access in front.
+
 ## 0.15.0 — a week at a time
 - **🗓️ Week:** a new page (in ☰ Menu or More, and you can pin it) that shows just this week, in the
   whole height of the board with bigger writing; the arrows go a week at a time. 📅 Calendar stays the

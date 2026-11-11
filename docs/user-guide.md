@@ -39,6 +39,9 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 - The drawing covers the whole board, so you can write or draw across several days ("Grandma visiting" over a week) or anywhere in the margins.
 - Art is saved per month, so each month starts fresh.
 
+### Art over events
+When a stamp, clipart, words or a drawing blanks out events, the board asks once while you decorate: **Hide them** (the art wins: those events don't show on the board under it) or **Keep showing them** (the art sits behind the writing, and the events read on top). Art that only touches the writing (a pumpkin in the corner of a day, a chalk circle around an event) never asks. To change your mind later, pick the piece in Select: the note at the bottom offers the other choice. Hidden events are still in your calendar: tap the day to see everything on it, and they still count in Up next and the countdowns. Art over the leftover days at the start or end of the month (the next or last month's) hides their events without asking.
+
 ### Month title
 - Tap **🔤 Month title** on the cork at the bottom (on a family screen, after **✏️ Edit the calendar**). **Typed:** choose a font (63 of them, in groups: Handwritten, Regular — plain serif and sans like Times and Arial —, Chalk & sketch, Script, Bold & bubbly and Holidays — Creepster for October, Mountains of Christmas for December…), color, outline and size (**S, M, L** or **XL** — in tall fonts like Pacifico, XL is made just small enough to fit above the calendar); tick **Use this style for every month** to make it the default. **I'll hand-letter it:** hides the typed title so you can draw your own.
 

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Art.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   0.15.1
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-10
 
  Purpose:
      The art on a month: chalk and Posca lines, fills, words, clipart and
@@ -40,6 +40,9 @@
 
  0.14.0    2026-11-07   joshua    The fonts come from shared/fonts.ts.
                         claude
+
+ 0.15.1    2026-11-10   joshua    Art she put behind the writing is drawn under
+                        claude    the calendar.
 ===============================================================================
 */
 
@@ -71,6 +74,7 @@ export type ArtItem = {
   still?: string;
   mode?: string;
   g?: string; // things added together (a stamp, a copy) move as one
+  cv?: 'hide' | 'under'; // over events: hide them, or sit behind the writing (none: not asked yet)
 };
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -180,7 +184,19 @@ function useGentle(items: ArtItem[], on: boolean) {
 // Stored addresses are /api/...; shown relative to the board's address      //
 const src = (s?: string) => (s ? url(s) : '');
 
-export function Art({ items, bg, res, gifsPlay }: { items: ArtItem[]; bg: number; res: number; gifsPlay: boolean }) {
+export function Art({
+  items,
+  bg,
+  res,
+  gifsPlay,
+  under = false
+}: {
+  items: ArtItem[];
+  bg: number;
+  res: number;
+  gifsPlay: boolean;
+  under?: boolean; // the art she put behind the writing (drawn under the calendar's words)
+}) {
   const colors = useMemo(() => {
     const set = new Set<string>();
     for (const it of items) {
@@ -194,7 +210,13 @@ export function Art({ items, bg, res, gifsPlay }: { items: ArtItem[]; bg: number
   const paint = (c: string, chalk: boolean) => (chalk ? `url(#${pid(c)})` : c);
   return (
     <>
-      <svg className="artSvg" width="1252" height="642" viewBox="0 0 1252 642" aria-hidden="true">
+      <svg
+        className={'artSvg' + (under ? ' under' : '')}
+        width="1252"
+        height="642"
+        viewBox="0 0 1252 642"
+        aria-hidden="true"
+      >
         <defs>
           {colors.map(c => (
             <pattern key={c} id={pid(c)} patternUnits="userSpaceOnUse" width="64" height="64">
@@ -266,7 +288,7 @@ export function Art({ items, bg, res, gifsPlay }: { items: ArtItem[]; bg: number
           })}
         </g>
       </svg>
-      <div className="gifLayer">
+      <div className={'gifLayer' + (under ? ' under' : '')}>
         {items
           .filter(it => it.k === 'g')
           .map(it => (

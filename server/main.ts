@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | main.ts (the start)
 ===============================================================================
- Version:   0.15.0
+ Version:   0.15.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-08
+ Updated:   2026-11-10
 
  Purpose:
      Family Chalk Planner: a chalkboard-style family wall calendar. This
@@ -60,6 +60,9 @@
 
  0.15.0    2026-11-08   joshua    Favorites get the live updates (a screen's
                         claude    Notes bottom).
+
+ 0.15.1    2026-11-10   joshua    The calendar's saved copies.
+                        claude
 ===============================================================================
 */
 
@@ -79,6 +82,7 @@ import * as extras from './extras.ts';
 import * as holidays from './holidays.ts';
 import { createGoogle, registerGoogleRoutes } from './calendar/google.ts';
 import { createCalendarSource } from './calendar/source.ts';
+import { makeCalendarCache } from './calendar/cache.ts';
 import { registerCalendarRoutes } from './calendar/routes.ts';
 import * as clipart from './clipart.ts';
 import * as month from './month.ts';
@@ -253,7 +257,8 @@ const holidayList = holidays.setup({ app, country: cfg.holidays, broadcast, toda
 // The status is what the admin console shows (connected, which calendars,   //
 // anything wrong).                                                          //
 const google = createGoogle(cfg.google, DATA_DIR);
-const calendar = createCalendarSource(cfg.calendar, clock, google);
+// the last good copy of each calendar's months, for when one can't be reached (server/calendar/cache.ts)
+const calendar = createCalendarSource(cfg.calendar, clock, google, makeCalendarCache(db));
 registerGoogleRoutes(app, {
   google,
   enabled: cfg.calendar.provider === 'google',

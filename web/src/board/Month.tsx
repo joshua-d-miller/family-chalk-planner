@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Month.tsx
 ===============================================================================
- Version:   0.15.0
+ Version:   0.15.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-08
+ Updated:   2026-11-10
 
  Purpose:
      The month: its name, the weekdays, and a box per day with its events,
@@ -45,6 +45,9 @@
 
  0.15.0    2026-11-08   joshua    One week in the whole height, with bigger
                         claude    writing.
+
+ 0.15.1    2026-11-10   joshua    The month knows when the calendar couldn't be
+                        claude    reached.
 ===============================================================================
 */
 
@@ -84,6 +87,7 @@ export interface MonthData {
   today: string;
   grid: { start: string; weeks: number; y: number; m: number; weekStart?: number; time24?: boolean };
   events: BoardEvent[];
+  problem?: string; // the calendar couldn't be reached (the board shows holidays and what it had)
 }
 export interface Bins {
   day: number | null;

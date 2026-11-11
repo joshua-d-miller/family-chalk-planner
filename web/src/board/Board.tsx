@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   0.15.0
+ Version:   0.15.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-08
+ Updated:   2026-11-10
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -67,10 +67,18 @@
 
                                   A week keeps its own drawings; 🗒️ Notes on
                                   the cork.
+
+ 0.15.1    2026-11-10   joshua    Says when the calendar can't be reached.
+                        claude
+
+                                  Art over events: she's asked once whether it
+                                  hides them or sits behind the writing; art
+                                  over the grid's leftover days hides their
+                                  events by itself.
 ===============================================================================
 */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent } from 'react';
 import { useLive, useOnline } from '../lib/live.ts';
 import { paintSurface, seasonOf, surfaceOf } from '../lib/surface.ts';
@@ -105,6 +113,8 @@ import { Library } from './draw/Library.tsx';
 import type { Stamp } from './draw/Library.tsx';
 import { RecolorSheet, SaveStampSheet, TextSheet, Tools } from './draw/Tools.tsx';
 import { useArt } from './draw/useArt.ts';
+import { coveredBy, writingOn } from './cover.ts';
+import type { Writing } from './cover.ts';
 import { BORDER_PAD, relayout, unionBox, xform } from './geom.ts';
 import { post } from '../lib/api.ts';
 import { CLIENT } from './draw/useArt.ts';
@@ -160,6 +170,10 @@ function useFit(pad: number, h: number, below = 0) {
   }, [pad, h, below]);
   return fit;
 }
+
+const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// '2026-12-03' as "Dec 3" (a bar across several days has no one day)
+const dayName = (d: string) => (d ? `${MON3[+d.slice(5, 7) - 1]} ${+d.slice(8)}` : 'several days');
 
 const addMonths = (ym: string, n: number) => {
   const d = new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1));
@@ -549,12 +563,116 @@ export function Board({
   const saved = useCallback(
     (dates: string[]) => {
       setEditing(null);
+      justSaved.current = dates;
       const other = dates.find(d => d && d.slice(0, 7) !== shown);
       if (other && !dates.some(d => d?.slice(0, 7) === shown) && !week) setYm(other.slice(0, 7));
       month.reload();
     },
     [shown, month]
   );
+  // ------------------------ //
+  // | Art over the writing | //
+  // ------------------------ //
+  // A piece of art over events either hides them ('hide') or sits behind    //
+  // the writing ('under'); she's asked which when she puts one there. Art   //
+  // over the grid's leftover days (the next or last month's) hides their    //
+  // events without asking. Art that covers no writing never asks.           //
+  const slateRef = useRef<HTMLDivElement>(null);
+  const hiddenOn = useRef(new Set<string>()); // days with writing hidden under art
+  const justSaved = useRef<string[] | null>(null); // an event just saved: say if it's under art
+  const behind = items.filter(x => x.cv === 'under');
+  const front = items.filter(x => x.cv !== 'under');
+  useLayoutEffect(() => {
+    const slate = slateRef.current;
+    if (!slate || !m) return;
+    const run = () => {
+      const all = writingOn(slate);
+      for (const w of all) w.el.classList.remove('underart');
+      const hide = new Set<Writing>([
+        ...coveredBy(
+          items.filter(x => x.cv === 'hide'),
+          all.filter(w => !w.other)
+        ),
+        ...coveredBy(
+          items.filter(x => !x.e),
+          all.filter(w => w.other)
+        )
+      ]);
+      for (const w of hide) w.el.classList.add('underart');
+      hiddenOn.current = new Set([...hide].map(w => w.date).filter(Boolean));
+      const js = justSaved.current;
+      if (js && js.some(d => hiddenOn.current.has(d))) {
+        const d = js.find(x => hiddenOn.current.has(x))!;
+        setNote(`Saved. On the board it’s under art on ${dayName(d)}: tap the day to see it`);
+      }
+      justSaved.current = null;
+    };
+    run();
+    const t = setTimeout(run, 500); // again once the writing's fonts have settled
+    return () => clearTimeout(t);
+  }, [items, m, week]);
+  // the question, while decorating: what should this piece do to the events under it?
+  const [ask, setAsk] = useState<{ ids: number[]; what: string } | null>(null);
+  const answered = useRef<'hide' | 'under' | null>(null); // this time's answer, for the next pieces
+  useEffect(() => {
+    if (!drawing) {
+      answered.current = null;
+      setAsk(null);
+    }
+  }, [drawing]);
+  const setCover = (ids: number[], cv: 'hide' | 'under') => {
+    const before = ed.items.filter(x => ids.includes(x.id));
+    if (before.length)
+      ed.update(
+        before,
+        before.map(x => ({ ...x, cv }))
+      );
+  };
+  useEffect(() => {
+    const slate = slateRef.current;
+    if (!edit || !drawing || !m || ask || placing || hidden.length) return;
+    // a moment after she stops moving things
+    const t = setTimeout(() => {
+      const writing = writingOn(slate!).filter(w => !w.other);
+      const groups = new Map<string, ArtItem[]>();
+      for (const x of ed.items)
+        if (x.id >= 0 && !x.cv && !x.e) groups.set(x.g || 'i' + x.id, [...(groups.get(x.g || 'i' + x.id) || []), x]);
+      const ids: number[] = [];
+      const hit = new Set<Writing>();
+      for (const list of groups.values()) {
+        const c = coveredBy(list, writing);
+        if (!c.length) continue;
+        ids.push(...list.map(x => x.id));
+        for (const w of c) hit.add(w);
+      }
+      if (!ids.length) return;
+      if (answered.current) {
+        setCover(ids, answered.current);
+        setNote(
+          answered.current === 'hide'
+            ? 'The events under it are hidden, like before'
+            : 'It’s behind the writing, like before'
+        );
+        return;
+      }
+      const ws = [...hit];
+      const names = ws.slice(0, 4).map(w => `${w.text} (${dayName(w.date)})`);
+      const what =
+        `This covers ${ws.length === 1 ? 'an event' : ws.length + ' events'}: ` +
+        names.join(', ') +
+        (ws.length > 4 ? ` and ${ws.length - 4} more` : '') +
+        '. Hide them on the board?';
+      setAsk({ ids, what });
+    }, 700);
+    return () => clearTimeout(t);
+  }, [edit, drawing, m, ed.items, ask, placing, hidden]);
+  const answer = (cv: 'hide' | 'under') => {
+    if (ask) setCover(ask.ids, cv);
+    answered.current = cv;
+    setAsk(null);
+  };
+  // Select: the pieces picked over events can change their mind
+  const selCover = selItems.length && selItems.every(x => x.cv) ? (selItems[0].cv as 'hide' | 'under') : null;
   const photosOn = mm?.side ? mm.side.mode === 'photos' : !!photos?.cfg?.frame;
   const pool = photos?.photos && photosOn ? titlePool(photos.photos, mm?.side) : [];
   const monthName = m ? MONTHS[m.grid.m - 1] : '';
@@ -585,7 +703,13 @@ export function Board({
           background: pad ? sf.frame || 'var(--wood)' : undefined
         }}
       >
-        <div className="slate" id="slate" data-surface={sf.id} style={pad ? { backgroundImage: bg } : undefined}>
+        <div
+          className="slate"
+          id="slate"
+          ref={slateRef}
+          data-surface={sf.id}
+          style={pad ? { backgroundImage: bg } : undefined}
+        >
           <style>{css}</style>
           {m && (
             <Month
@@ -619,7 +743,8 @@ export function Board({
           )}
           <Notes time24={!!today?.time24} edit={edit} />
           <WeatherMotion wall={!edit} />
-          <Art items={items} bg={sf.lum} res={res} gifsPlay />
+          {behind.length > 0 && <Art items={behind} bg={sf.lum} res={res} gifsPlay under />}
+          <Art items={front} bg={sf.lum} res={res} gifsPlay />
           {edit && drawing && (
             <DrawLayer
               art={ed}
@@ -636,7 +761,43 @@ export function Board({
               onHide={setHidden}
             />
           )}
-          {(note || ed.err || placing) && (
+          {m?.problem && !(note || ed.err || placing) && (
+            <div className="status calproblem" role="status" title={m.problem}>
+              The calendar can’t be reached right now: showing what the board had
+            </div>
+          )}
+          {ask && !placing && (
+            <div
+              className="status ask"
+              role="alertdialog"
+              aria-label="Art over events"
+              onPointerDown={e => e.stopPropagation()}
+              onPointerUp={e => e.stopPropagation()}
+            >
+              <span className="why">{ask.what}</span>
+              <button type="button" className="go" id="coverHide" onClick={() => answer('hide')}>
+                Hide them
+              </button>
+              <button type="button" id="coverKeep" onClick={() => answer('under')}>
+                Keep showing them
+              </button>
+            </div>
+          )}
+          {!ask && drawing && selCover && !placing && !note && (
+            <div className="status ask" onPointerDown={e => e.stopPropagation()} onPointerUp={e => e.stopPropagation()}>
+              <span className="why">
+                {selCover === 'hide' ? 'The events under this are hidden on the board' : 'This is behind the writing'}
+              </span>
+              <button
+                type="button"
+                id="coverSwap"
+                onClick={() => setCover(selection, selCover === 'hide' ? 'under' : 'hide')}
+              >
+                {selCover === 'hide' ? 'Show them over it' : 'Hide the events under it'}
+              </button>
+            </div>
+          )}
+          {!ask && (note || ed.err || placing) && (
             <div className="status" role="status">
               {placing ? `Tap the board where “${placing.st.name}” should go` : note || ed.err}
             </div>
