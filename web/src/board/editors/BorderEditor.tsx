@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | BorderEditor.tsx
 ===============================================================================
- Version:   0.16.0
+ Version:   0.16.1
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
  Updated:   2026-11-11
@@ -27,6 +27,10 @@
                         claude
 
                                   A Twinkling lights border.
+
+ 0.16.1    2026-11-11   joshua    The Twinkling lights and Holly & bows borders
+                        claude    show up (their pictures are in the garland
+                                  set).
 ===============================================================================
 */
 
@@ -59,6 +63,9 @@ const PRESETS: [string, string, string][] = [
   ['🎂 Birthday', 'birthday-cake balloon party-popper wrapped-gift', '#F6B3CB'],
   ['🎒 Back to school', 'school-bus books pencil backpack red-apple', '#EDEAE0']
 ];
+// the picture styles those use besides the everyday ones (cp: the garland
+// set, "cp-bulb-red"), whose names come from their own list
+const STYLED = ['cp'];
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ---------------------- //
@@ -86,7 +93,14 @@ export function BorderEditor({
   const [q, setQ] = useState('');
   const [err, setErr] = useState('');
   useEffect(() => {
-    get<string[]>('api/clip/list').then(setNames, e => setErr('Couldn’t load the pictures: ' + (e as Error).message));
+    // the everyday pictures, plus the other styles the ready-made borders
+    // use (the garland set: lights, holly, bows), which aren't in that list
+    const lists = [get<string[]>('api/clip/list'), ...STYLED.map(p => get<string[]>('api/clip/list?style=' + p))];
+    Promise.allSettled(lists).then(rs => {
+      const ok = rs.flatMap(r => (r.status === 'fulfilled' ? r.value : []));
+      if (rs[0].status === 'rejected') setErr('Couldn’t load the pictures: ' + (rs[0].reason as Error).message);
+      setNames(ok);
+    });
   }, []);
   useEffect(() => onPreview(b.items.length ? b : null), [b, onPreview]);
   const close = () => {

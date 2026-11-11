@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | month.ts
 ===============================================================================
- Version:   0.16.0
+ Version:   0.16.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
  Updated:   2026-11-11
@@ -45,6 +45,9 @@
 
  0.16.0    2026-11-11   joshua    A month's own colors (look) over the board
                         claude    style's.
+
+ 0.16.1    2026-11-11   joshua    A month can have a style of its own, and its
+                        claude    own fonts and lines, not just colors.
 ===============================================================================
 */
 
@@ -53,7 +56,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { isYm } from './dates.ts';
 import type { Kv } from './kv.ts';
 import { BOARD_FONTS } from '../shared/fonts.ts';
-import { COLOR_KEYS } from './theme.ts';
+import { okPreset, okTweak } from './theme.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //
@@ -81,14 +84,15 @@ interface Stored {
   side?: Side;
   border?: Border | { off: true }; // off: none this year, even if there's a yearly one
   artPad?: number;
-  look?: Record<string, string>; // this month's own colors (day boxes, numbers...) over the board style's
+  look?: Record<string, string>; // this month's own style (p) and tweaks over the board style's
 }
-// a month's own colors: board-style color names to #rrggbb (anything else left out)
+// a month's own look: a style of its own (p: 'holiday') and tweaks to it
+// or to the board style (colors, fonts, lines); anything else left out
 function cleanLook(v: unknown): Record<string, string> | undefined {
   if (!v || typeof v !== 'object') return undefined;
   const out: Record<string, string> = {};
   for (const [k, c] of Object.entries(v as Record<string, unknown>))
-    if (COLOR_KEYS.includes(k) && typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)) out[k] = c;
+    if (typeof c === 'string' && (k === 'p' ? okPreset(c) : okTweak(k, c))) out[k] = c;
   return Object.keys(out).length ? out : undefined;
 }
 export interface MonthMeta extends Omit<Stored, 'border'> {

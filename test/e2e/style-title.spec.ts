@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | style-title.spec.ts
 ===============================================================================
- Version:   0.15.0
+ Version:   0.16.1
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-08
+ Updated:   2026-11-11
 
  Purpose:
      Board style (background, presets) and the month title card.
@@ -25,6 +25,9 @@
 
  0.15.0    2026-11-08   joshua    The Regular fonts.
                         claude
+
+ 0.16.1    2026-11-11   joshua    The style opens on just this month.
+                        claude
 ===============================================================================
 */
 
@@ -39,6 +42,9 @@ test('board style: a different background and preset, saved and sent to the wall
   const wall = await as('wall');
   await page.locator('#styleBtn').click();
   await expect(page.locator('#styleSheet')).toBeVisible();
+  // it opens on just this month: every month is asked for
+  await expect(page.locator('#styleSheet .surfaces:not(.presets)')).toHaveCount(0);
+  await page.locator('#styleSheet').getByRole('radio', { name: 'Every month' }).click();
   await page.locator('#styleSheet .surfaces:not(.presets) button').nth(3).click(); // cork
   await page.locator('#styleSheet .presets button').filter({ hasText: 'Pastel' }).click();
   await page.locator('#styleSheet').getByRole('button', { name: 'Save' }).click();
@@ -54,6 +60,7 @@ test('board style: Cancel puts the board back', async ({ as, board }) => {
   await expect.poll(() => surfaceOf(page)).toBe('slate');
   const before = 'slate';
   await page.locator('#styleBtn').click();
+  await page.locator('#styleSheet').getByRole('radio', { name: 'Every month' }).click();
   await page.locator('#styleSheet .surfaces:not(.presets) button').nth(2).click();
   await expect.poll(() => surfaceOf(page)).not.toBe(before); // shown as she picks
   await page.locator('#styleSheet').getByRole('button', { name: 'Cancel' }).click();

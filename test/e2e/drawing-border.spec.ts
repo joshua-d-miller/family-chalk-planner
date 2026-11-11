@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | drawing-border.spec.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.16.1
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-11
 
  Purpose:
      Drawing on the board, and a holiday border that moves the art onto
@@ -23,6 +23,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.16.1    2026-11-11   joshua    The lights and holly borders are there.
+                        claude
 ===============================================================================
 */
 
@@ -132,4 +135,17 @@ test('the border popup: pick a ready-made set, see it, cancel puts it back', asy
   await expect(page.locator('#borderLayer img').first()).toBeVisible(); // shown while picking
   await page.locator('#borderSheet').getByRole('button', { name: 'Cancel' }).click();
   await expect(page.locator('#borderLayer img')).toHaveCount(0);
+});
+
+test('the border popup: the lights and holly borders are there', async ({ as, board }) => {
+  const page = await as('tablet');
+  const ym = await shownYm(page);
+  await board.admin.post('/api/border', { ym, border: null });
+  await page.reload();
+  await page.waitForTimeout(1200);
+  await page.locator('#borderBtn').click();
+  await expect(page.locator('#borderSheet .seg', { hasText: 'Holly & bows' })).toBeVisible();
+  await page.locator('#borderSheet .seg', { hasText: 'Twinkling lights' }).click();
+  await expect(page.locator('#borderLayer img').first()).toBeVisible();
+  await page.locator('#borderSheet').getByRole('button', { name: 'Cancel' }).click();
 });
