@@ -78,6 +78,8 @@
 
  0.16.0    2026-11-11   joshua    A month's own colors; the cake setting in the
                         claude    day view.
+
+                                  Tells the pages where its cork is.
 ===============================================================================
 */
 
@@ -257,8 +259,26 @@ export function Board({
   const fit = useFit(pad, bh, shell.navH);
   // the pages' cork is drawn the same size as this one
   const { kind: shellKind, setCorkZ, setBusyBoard } = shell;
-  useEffect(() => {
-    if (edit && shellKind === 'cork') setCorkZ(fit.scale);
+  // (and where it is: a board that doesn't fill the screen leaves its cork above the bottom or in from the sides,
+  // and the pages' cork goes in exactly the same place, so moving between them only the middle changes)
+  useLayoutEffect(() => {
+    if (!edit || shellKind !== 'cork') return;
+    const tell = () => {
+      const r = document.querySelector('#board > .cork, #board .cork:not(.corkbar)')?.getBoundingClientRect();
+      setCorkZ(
+        fit.scale,
+        r && r.width
+          ? {
+              left: Math.round(r.left),
+              width: Math.round(r.width),
+              bottom: Math.max(0, Math.round(innerHeight - r.bottom))
+            }
+          : undefined
+      );
+    };
+    tell();
+    const t = setTimeout(tell, 300); // once the board has settled (fonts, the first layout)
+    return () => clearTimeout(t);
   }, [edit, shellKind, setCorkZ, fit.scale]);
   // ---------------------- //
   // | Zooming in to draw | //

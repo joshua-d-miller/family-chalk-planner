@@ -15,6 +15,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   "garland", "lights", "ornament" or "wreath". A new 🎀 Holly & bows border uses them too.
 - **Turning:** in Select, drag the blue handle above what's picked to turn it (it snaps to straight), or
   use ↺ ↻ to turn 15° at a time. Clipart, stamps, words and drawings all turn.
+- Fixed: on a family screen the cork jumped a little going from the calendar to a page (Chores, Pantry...)
+  and back. On a screen the board doesn't fill exactly, the calendar's cork sits a little above the
+  bottom or in from the sides; the pages' cork now goes in exactly the same place, buttons and all.
 - **Birthdays:** a 🎂 on birthdays is now a setting, off unless turned on (⚙️ Settings → Birthdays). So is
   counting down to every birthday: with it off, a birthday counts down only when it's starred for a
   countdown, like any other event.
