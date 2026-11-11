@@ -245,6 +245,12 @@ test('a family screen: the cork stays put going from the calendar to a page and 
     await page.locator('#menuPanel').getByRole('link', { name: 'Pantry' }).click();
     await expect(page).toHaveURL(/\/pantry$/);
     const onPage = await where();
-    for (let i = 0; i < onBoard.length; i++) expect(Math.abs(onPage[i] - onBoard[i])).toBeLessThanOrEqual(1);
+    // within 2 pixels: the board's cork is scaled as a picture, the page's is laid out at that size, and the
+    // two round a button's width differently by a pixel or so (nothing anyone sees)
+    for (let i = 0; i < onBoard.length; i++)
+      expect(
+        Math.abs(onPage[i] - onBoard[i]),
+        `${['left', 'top', 'width', 'height', 'button left', 'button top', 'button height'][i]}: ${onBoard} → ${onPage}`
+      ).toBeLessThanOrEqual(2);
   }
 });

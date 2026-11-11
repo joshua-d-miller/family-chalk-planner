@@ -72,9 +72,10 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps chromium
+      # (once more after a pause if it fails: the runner's package mirror is sometimes briefly unreachable)
+      - run: npx playwright install --with-deps chromium || (sleep 30 && npx playwright install --with-deps chromium)
         if: steps.pw.outputs.cache-hit != 'true'
-      - run: npx playwright install-deps chromium
+      - run: npx playwright install-deps chromium || (sleep 30 && npx playwright install-deps chromium)
         if: steps.pw.outputs.cache-hit == 'true'
       - run: npm run build
       - run: npm run test:e2e
