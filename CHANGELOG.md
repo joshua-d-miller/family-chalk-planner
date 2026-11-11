@@ -6,9 +6,13 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 
 ## 0.15.1 — the month stays up
 - Fixed: when the calendar couldn't be reached (iCloud or Google slow or down, a changed password), the
-  board showed no month at all, just the Notes column and the art. Now the month always shows: with the
-  events it had last time, or at least the holidays, and a note at the bottom says the calendar can't be
-  reached right now. It catches up by itself once the calendar answers again.
+  board showed no month at all, just the Notes column and the art. Now the month always shows, with a
+  note at the bottom that the calendar can't be reached right now, and it catches up by itself once the
+  calendar answers again.
+- **A saved copy of the calendar:** every calendar the board shows (iCloud and other CalDAV calendars,
+  Google, more calendars on the account, calendar links) keeps its last good copy of each month in the
+  board's database, like the photos keep theirs. When one can't be reached, the board shows that copy:
+  after a restart or an update too. (Changing the calendar or the account forgets the old copies.)
 - The server log now says when the calendar can't be reached, and when it's back. When iCloud won't open
   the photo album, the message says iCloud may be down (it used to only say the album isn't shared).
 - **New guide: [docs/cloud.md](docs/cloud.md).** No server at home? Run the board on a small cloud server (or

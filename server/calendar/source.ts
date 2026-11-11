@@ -12,7 +12,8 @@
      Fastmail...) with a password, or Google Calendar (Google's CalDAV
      with a Google sign-in). Plus more calendars on the same account, each
      with its own color, and read-only calendar links (iCal: school,
-     sports teams).
+     sports teams). Each keeps a saved copy of every month it fetched
+     (server/calendar/cache.ts), shown when it can't be reached.
 
  Used by:
      server/calendar/routes.ts
@@ -34,9 +35,15 @@
  0.15.1    2026-11-10   joshua    When the calendar can't be reached, the month
                         claude    still shows (holidays and the events it had),
                                   with the problem.
+
+                                  Each calendar (the family's, others on the
+                                  account, calendar links; CalDAV or Google)
+                                  keeps a saved copy of each month in the
+                                  database, shown when it can't be reached.
 ===============================================================================
 */
 
+import type { CalendarCache } from './cache.ts';
 import crypto from 'node:crypto';
 import { addDays, icsEscape, icsUtc, xmlUnescape } from '../dates.ts';
 import type { Clock } from '../dates.ts';
@@ -131,11 +138,18 @@ export async function caldavCalendars(base: string, auth: string) {
 // ------------------------------- //
 // | The calendar the board uses | //
 // ------------------------------- //
-export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: Google) {
+export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: Google, saved?: CalendarCache) {
   const ical = makeIcal(clock);
   const basicAuth = 'Basic ' + Buffer.from(`${cfg.user}:${cfg.password}`).toString('base64');
   const authHeader = async () => (cfg.provider === 'google' ? `Bearer ${await google.token()}` : basicAuth);
 
+  // the saved copies are of this calendar: a different server, account or calendar starts afresh
+  saved?.belongsTo(
+    crypto
+      .createHash('sha256')
+      .update(JSON.stringify([cfg.provider, cfg.caldavUrl, cfg.user || '', cfg.calendarName || '']))
+      .digest('hex')
+  );
   let mainUrl: string | null = null; // found once, then remembered
   const monthCache = new Map<string, { at: number; events: BoardEvent[] }>();
   const problems = new Map<string, string>(); // calendar name -> what went wrong (shown in ⚙️)
@@ -295,67 +309,100 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
   // ---------------------------------- //
   // Every event shown in a month's weeks, from every calendar and link      //
   // (cached for a minute)                                                   //
-  let down: string | null = null; // the main calendar couldn't be reached last time: why
+  let down: string | null = null; // why a calendar couldn't be reached last time (null: all fine)
   async function eventsForMonth(ym: string): Promise<BoardEvent[]> {
     const cached = monthCache.get(ym);
     if (cached && Date.now() - cached.at < 60 * 1000) return cached.events;
+    const failed: string[] = [];
+    const events = await fetchMonth(ym, failed);
+    // noted in the server log once, not on every screen's every request
+    const was = down;
+    down = failed.length ? failed.join(' · ') : null;
+    if (down !== was) console.error(down ? `Chalkboard: calendar: ${down}` : 'Chalkboard: calendar: back');
+    monthCache.set(ym, { at: Date.now(), events }); // (a minute, then it tries again)
+    return events;
+  }
+
+  // ------------------------------------- //
+  // | One calendar, and its saved copy | //
+  // ------------------------------------- //
+  // A calendar's events for a month: fetched and saved; when it can't be    //
+  // reached, the copy saved last time (from before a restart too), or none. //
+  async function kept(
+    ym: string,
+    src: string,
+    get: () => Promise<BoardEvent[]>,
+    failed: string[],
+    label = ''
+  ): Promise<BoardEvent[]> {
     try {
-      const ev = await fetchMonth(ym);
-      if (down) console.error('Chalkboard: calendar: back');
-      down = null;
+      const ev = await get();
+      saved?.set(ym, src, ev);
       return ev;
     } catch (e) {
-      // the calendar can't be reached: the events it had last time (if any), and the problem is noted
-      // in the server log (once, not on every screen's every request)
-      const was = down;
-      down = (e as Error).message;
-      if (down !== was) console.error(`Chalkboard: calendar: ${down}${cached ? ' (showing what it had)' : ''}`);
-      if (!cached) throw e;
-      return cached.events;
+      const old = saved?.get<BoardEvent>(ym, src);
+      failed.push(`${label}${(e as Error).message}${old ? ' (showing the copy it had)' : ''}`);
+      return old ? old.events : [];
     }
   }
-  async function fetchMonth(ym: string): Promise<BoardEvent[]> {
+
+  async function fetchMonth(ym: string, failed: string[]): Promise<BoardEvent[]> {
     const g = clock.monthGrid(ym);
     const [sy, sm, sd] = g.start.split('-').map(Number);
     const [ey, em, ed] = g.end.split('-').map(Number);
     const rangeStart = clock.fromZoned(sy, sm, sd, 0, 0);
     const rangeEnd = clock.fromZoned(ey, em, ed, 0, 0);
-    const main = await findCalendar();
     const gMain = cfg.provider === 'google' ? googleMain() : null;
     // the main calendar: its problems show on the board
-    let out = await caldavRange(main, rangeStart, rangeEnd);
-    if (gMain?.readOnly) out = out.map(readOnlyCopy);
+    let out = await kept(
+      ym,
+      'main',
+      async () => {
+        const ev = await caldavRange(await findCalendar(), rangeStart, rangeEnd);
+        return gMain?.readOnly ? ev.map(readOnlyCopy) : ev;
+      },
+      failed
+    );
     const others: { id: string; name: string; color: string; readOnly?: boolean }[] =
       cfg.provider === 'google' ? googleCalendars().filter(c => c.id !== gMain?.id) : cfg.extraCalendars;
     const more = await Promise.all([
       ...others
-        .filter(c => !sameUrl(extraUrl(c), main))
+        .filter(c => !mainUrl || !sameUrl(extraUrl(c), mainUrl))
         .map(async c => {
-          try {
-            const ev = await caldavRange(await sameAccount(extraUrl(c)), rangeStart, rangeEnd);
-            problems.delete(c.name);
-            return ev.map(e => ({ ...(c.readOnly ? readOnlyCopy(e) : e), cal: c.name, calColor: c.color }));
-          } catch (e) {
-            problems.set(c.name, (e as Error).message);
-            console.error(`Chalkboard: calendar "${c.name}": ${(e as Error).message}`);
-            return [];
-          }
+          const n = failed.length;
+          const ev = await kept(
+            ym,
+            'cal:' + c.name,
+            async () => {
+              const list = await caldavRange(await sameAccount(extraUrl(c)), rangeStart, rangeEnd);
+              return list.map(e => ({ ...(c.readOnly ? readOnlyCopy(e) : e), cal: c.name, calColor: c.color }));
+            },
+            failed,
+            `“${c.name}”: `
+          );
+          if (failed.length > n) problems.set(c.name, failed[failed.length - 1]);
+          else problems.delete(c.name);
+          return ev;
         }),
       ...cfg.feeds.map(async f => {
-        try {
-          const ev = ical.eventsFromIcs(await feedText(f), null, rangeStart, rangeEnd, []);
-          problems.delete(f.name);
-          return ev.map(e => ({ ...e, cal: f.name, calColor: f.color, readOnly: true }));
-        } catch (e) {
-          problems.set(f.name, (e as Error).message);
-          console.error(`Chalkboard: calendar link "${f.name}": ${(e as Error).message}`);
-          return [];
-        }
+        const n = failed.length;
+        const ev = await kept(
+          ym,
+          'link:' + f.name,
+          async () =>
+            ical
+              .eventsFromIcs(await feedText(f), null, rangeStart, rangeEnd, [])
+              .map(e => ({ ...e, cal: f.name, calColor: f.color, readOnly: true })),
+          failed,
+          `“${f.name}”: `
+        );
+        if (failed.length > n) problems.set(f.name, failed[failed.length - 1]);
+        else problems.delete(f.name);
+        return ev;
       })
     ]);
     for (const list of more) out.push(...list);
-    out.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : a.sort - b.sort));
-    monthCache.set(ym, { at: Date.now(), events: out });
+    out = out.slice().sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : a.sort - b.sort));
     return out;
   }
 
@@ -468,6 +515,7 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     reset() {
       mainUrl = null;
       monthCache.clear();
+      saved?.clear(); // a different calendar or account: the saved copies aren't theirs
     }
   };
 }
