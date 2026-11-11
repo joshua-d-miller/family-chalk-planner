@@ -557,6 +557,9 @@ body.display{touch-action:manipulation}
 #slides .clock.sidepanel{position:static;text-align:left;transform:none!important;margin-bottom:14px;padding:0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;border-radius:0}
 #slides .clock.sidepanel b{font-size:72px}
 #slides .clock.sidepanel span{font-size:24px}
+#slides .syear{position:absolute;top:30px;right:40px;z-index:2;color:#F4F1E8;font-family:'Kalam',cursive;padding:8px 18px;border-radius:20px;background:rgba(10,10,10,.42);-webkit-backdrop-filter:blur(12px) brightness(.75);backdrop-filter:blur(12px) brightness(.75);box-shadow:0 4px 24px rgba(0,0,0,.35);text-shadow:0 1px 2px rgba(0,0,0,.85),0 0 12px rgba(0,0,0,.5);font-size:24px;font-weight:700;letter-spacing:1px;pointer-events:none;display:none}
+#slides .syear.left{right:auto;left:40px}
+#slides.sidepanel-on .syear{top:20px;right:24px}
 /* today's events / temperature / reminders over the slideshow: translucent cards, on the side away from the clock */
 #slides .sinfo{position:absolute;bottom:30px;left:40px;z-index:2;max-width:min(46vw,560px);text-align:left;color:#F4F1E8;font-family:'Kalam',cursive;padding:12px 24px 12px;border-radius:24px;background:rgba(10,10,10,.42);-webkit-backdrop-filter:blur(12px) brightness(.75);backdrop-filter:blur(12px) brightness(.75);box-shadow:0 4px 24px rgba(0,0,0,.35);text-shadow:0 1px 2px rgba(0,0,0,.85),0 0 12px rgba(0,0,0,.5);pointer-events:none}
 #slides .sinfo.right{left:auto;right:40px;text-align:right}
@@ -577,12 +580,22 @@ body.display{touch-action:manipulation}
 #slides.sidepanel-on .sinfo li{font-size:22px}
 #slides.sidepanel-on .sinfo .temp b{font-size:52px}
 #slides.sidepanel-on .sinfo .temp span{font-size:22px}
+#slides .clock.clock-hidden{display:none!important}
 #slides .tapx{display:none;position:absolute;top:20px;left:50%;transform:translateX(-50%);font:16px 'Kalam',cursive;color:rgba(var(--ink),.7);background:rgba(0,0,0,.4);padding:4px 14px;border-radius:14px}
 body.edit #slides .tapx{display:block}
 #pmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:75}
 #ppmodal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:20}
 #pmodal.open,#ppmodal.open{display:flex}
-#pmodal .card{width:min(520px,94vw);max-height:94vh;overflow-y:auto}
+#pmodal .card{width:min(540px,94vw);max-height:94vh;overflow-y:auto}
+.palbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:8px;max-height:220px;overflow-y:auto;padding-right:4px}
+.palbcard{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;padding:10px 12px;border-radius:12px;border:2px solid rgba(var(--ink),.28);background:rgba(255,255,255,.04);color:var(--chalk);cursor:pointer;text-align:left;font-family:'Kalam',cursive;transition:all .15s}
+.palbcard:hover{background:rgba(255,255,255,.08);border-color:rgba(var(--ink),.5)}
+.palbcard.on{border-color:var(--yellow);background:rgba(242,212,121,.14);color:var(--yellow)}
+.palbcard .title{font-size:16px;font-weight:700;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
+.palbcard .meta{font-size:13px;opacity:.75;line-height:1}
+.palbcard.on .meta{opacity:.95}
+.panalyze-box{display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.03);border:1px dashed rgba(var(--ink),.3)}
+.panalyze-box .res{font:700 15px 'Kalam',cursive;color:var(--yellow);flex:1;min-width:0}
 #ppmodal .card{width:min(440px,94vw);max-height:94vh;overflow-y:auto}
 /* Pantry page styles */
 .ppcols{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 18px;margin-top:10px;overflow-y:auto}
@@ -743,8 +756,8 @@ body.family .stamp .x,body.family .gtile .x,body.family .gtile.up,body.family #g
 body.family #zoom,body.family #settingsBtn,body.family #acctBtn{display:none!important}
 body.family #titleBtn{display:none!important}   /* the month title (typed or hand-lettered) is styled from a tablet */
 body.family .titlerow h1.hand{outline:none}
-/* ⚙️ Settings: everyone signed in gets Holidays; the calendar, trash and Notes settings are for admins (signed in to the console) */
-body:not(.isadmin) #setmodal .adminonly,body:not(.isadmin) #gDisconnect{display:none!important}
+/* ⚙️ Settings: everyone signed in gets Holidays & Calendar reconnect; trash and Notes settings are for admins (signed in to the console) */
+body:not(.isadmin) #setmodal .adminonly {display:none!important}
 body.isadmin #setmodal .notadmin{display:none}
 #pinErr{color:#F7A1A1;min-height:22px;margin-top:8px;font-size:16px}
 body.edit:not(.drawing) .bar{pointer-events:auto;cursor:pointer}
@@ -966,11 +979,18 @@ body.subpageOn #wheelBtn { z-index: 22; }
 }
 
 
-/* Clean up side drawer & bottom bar: subpages accessed via navigation wheel; board/photo settings in settings modal */
+/* Clean up bottom bar: subpages accessed via navigation wheel; board/photo settings in settings modal */
 .cork #choresBtn, .cork #mealsBtn, .cork #remindersBtn, .cork #timersBtn,
 .cork #pantryBtn, .cork #jarsBtn, .cork #musicBtn,
-.cork #borderBtn, .cork #styleBtn, .cork #photosBtn, .cork #sideBtn {
+.cork #borderBtn, .cork #styleBtn, .cork #sideBtn {
   display: none !important;
+}
+/* In bottom bar, photosBtn is hidden, but in the slide-out hamburger drawer, show it */
+body:not(.menudrawer) .cork #photosBtn {
+  display: none !important;
+}
+body.menudrawer .cork #photosBtn {
+  display: flex !important;
 }
 
 </style>
@@ -1253,62 +1273,75 @@ body.subpageOn #wheelBtn { z-index: 22; }
   <div class="slide-sidebar" id="slideSidebar"></div>
   <div class="clock" id="sClock"><b id="sTime"></b><span id="sDate"></span></div>
   <div class="sinfo" id="sInfo"></div>
+  <div class="syear" id="sYear"></div>
   <div class="dim" id="sDim"></div>
   <div class="tapx">Tap to close the slideshow</div>
 </div>
 
 <div id="pmodal" role="dialog" aria-modal="true" aria-labelledby="pTitle">
   <form class="card" id="pForm">
-    <h3 id="pTitle">Photos</h3>
+    <h3 id="pTitle">Photos &amp; Slideshow</h3>
     <div class="sublbl" id="pInfo" style="margin-top:0"></div>
-    <div class="sublbl" style="margin-top:10px">Immich Server</div>
-    <div class="row">
-      <div>
-        <label for="pImmichUrl">Server URL (or /share/ link)</label>
-        <input type="text" id="pImmichUrl" placeholder="http://192.168.1.50:2283" autocomplete="off" spellcheck="false">
-      </div>
-      <div>
-        <label for="pImmichKey">API Key</label>
-        <input type="password" id="pImmichKey" placeholder="Paste Immich API key" autocomplete="off" spellcheck="false">
-      </div>
-    </div>
-    <div class="row" style="align-items:flex-end;margin-top:6px">
-      <div style="flex:1">
-        <label for="pImmichAlbum">Immich Album</label>
-        <select id="pImmichAlbum">
-          <option value="">Auto (Favorites, or recent photos)</option>
-          <option value="__favorites__">★ Favorites</option>
-          <option value="__all__">All recent photos</option>
-          <option value="__thisday__">📅 Custom: On this day in previous years</option>
-        </select>
-      </div>
-      <div style="flex:0 0 auto">
-        <button type="button" class="seg" id="pImmichLoad" style="height:40px">Load albums</button>
+
+    <div class="sublbl" style="margin-top:10px">Photo album</div>
+    <div class="palbgrid" id="pAlbGrid"></div>
+    <select id="pImmichAlbum" style="display:none">
+      <option value="">Auto (Favorites, or recent photos)</option>
+      <option value="__favorites__">★ Favorites</option>
+      <option value="__all__">All recent photos</option>
+      <option value="__thisday__">📅 Custom: On this day in previous years</option>
+    </select>
+
+    <div style="margin-top:12px">
+      <label class="check"><input type="checkbox" id="pThisDayCheck"> Include photos on this day in previous years</label>
+      <div class="panalyze-box" id="pAnalyzeBox">
+        <button type="button" class="seg" id="pAnalyzeBtn" style="padding:4px 14px;height:34px;font-size:15px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Analyze</button>
+        <div class="res" id="pAnalyzeRes">Click Analyze to see photos from this day</div>
       </div>
     </div>
-    <div class="sublbl" id="pMonthLbl">Beside the month name</div>
-    <div class="opts" id="pSide">
-      <button type="button" class="seg" data-side="random"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/></svg>Random photos</button>
-      <button type="button" class="seg" data-side="chosen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Photos I pick</button>
-      <button type="button" class="seg" data-side="art"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg>Art instead</button>
-    </div>
-    <div class="pickgrid" id="pPick"></div>
-    <div class="sublbl" id="pSideHint" style="margin-top:6px"></div>
-    <label class="check"><input type="checkbox" id="pFrame"> Usually show photos there (months you haven't set)</label>
-    <label class="check"><input type="checkbox" id="pNight"> Slideshow overnight</label>
-    <div class="row" id="pTimes">
-      <div><label for="pFrom">Starts</label><input type="time" id="pFrom"></div>
-      <div><label for="pTo">Ends</label><input type="time" id="pTo"></div>
-    </div>
-    <label for="pDim">Slideshow brightness</label>
-    <select id="pDim"><option value="30">Dim (30%)</option><option value="50">Medium (50%)</option><option value="70">Bright (70%)</option><option value="100">Full</option></select>
-    <label for="pEvery">New photo every</label>
-    <select id="pEvery"><option value="10">10 seconds</option><option value="20">20 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option></select>
-    <div class="sublbl" style="margin-top:14px">Also show on the slideshow</div>
+
+    <div class="sublbl" style="margin-top:14px">Slideshow screen widgets</div>
+    <label class="check"><input type="checkbox" id="pShowClock"> Clock &amp; date</label>
     <label class="check"><input type="checkbox" id="pShowEvents"> Today’s events</label>
     <label class="check"><input type="checkbox" id="pShowTemp"> Today’s temperature</label>
     <label class="check"><input type="checkbox" id="pShowRem"> Today’s reminders</label>
     <label class="check"><input type="checkbox" id="pSidePanel"> Show overlay on left side (reserve space beside photos)</label>
+
+    <details style="margin-top:14px;border:1px solid rgba(var(--ink),.2);border-radius:10px;padding:8px 12px;background:rgba(255,255,255,.02)">
+      <summary style="font:700 16px 'Kalam',cursive;color:rgba(var(--ink),.8);cursor:pointer;outline:none">Server &amp; Schedule Settings</summary>
+      <div class="row" style="margin-top:8px">
+        <div>
+          <label for="pImmichUrl">Server URL (or /share/ link)</label>
+          <input type="text" id="pImmichUrl" placeholder="http://192.168.1.50:2283" autocomplete="off" spellcheck="false">
+        </div>
+        <div>
+          <label for="pImmichKey">API Key</label>
+          <input type="password" id="pImmichKey" placeholder="Paste Immich API key" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <button type="button" class="seg" id="pImmichLoad" style="height:36px;font-size:14px">Reload albums</button>
+      </div>
+      <div class="sublbl" id="pMonthLbl" style="margin-top:10px">Beside the month name</div>
+      <div class="opts" id="pSide">
+        <button type="button" class="seg" data-side="random"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/></svg>Random photos</button>
+        <button type="button" class="seg" data-side="chosen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Photos I pick</button>
+        <button type="button" class="seg" data-side="art"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/></svg>Art instead</button>
+      </div>
+      <div class="pickgrid" id="pPick"></div>
+      <div class="sublbl" id="pSideHint" style="margin-top:6px"></div>
+      <label class="check"><input type="checkbox" id="pFrame"> Usually show photos there (months you haven't set)</label>
+      <label class="check"><input type="checkbox" id="pNight"> Slideshow overnight</label>
+      <div class="row" id="pTimes">
+        <div><label for="pFrom">Starts</label><input type="time" id="pFrom"></div>
+        <div><label for="pTo">Ends</label><input type="time" id="pTo"></div>
+      </div>
+      <label for="pDim">Slideshow brightness</label>
+      <select id="pDim"><option value="30">Dim (30%)</option><option value="50">Medium (50%)</option><option value="70">Bright (70%)</option><option value="100">Full</option></select>
+      <label for="pEvery">New photo every</label>
+      <select id="pEvery"><option value="10">10 seconds</option><option value="20">20 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option></select>
+    </details>
+
     <div class="opts" style="margin-top:16px">
       <button type="button" class="seg" id="pPreview"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4l15 8-15 8z"/></svg>Preview slideshow</button>
       <button type="button" class="seg" id="pSync"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Check album now</button>
@@ -1326,22 +1359,24 @@ body.subpageOn #wheelBtn { z-index: 22; }
     <h3 id="setTitle">Settings</h3>
     <div class="adminonly">
     <a href="/admin" class="seg" id="devicesBtn" style="margin-bottom:10px;display:inline-flex;align-items:center;gap:6px;text-decoration:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Admin console: screens &amp; people</a>
-    <div class="sublbl" style="margin-top:0">Calendar</div>
-    <div id="calStat" class="calstat"></div>
-    <div id="gConnect" hidden>
-      <ol class="gsteps">
-        <li><button type="button" class="seg" id="gStart">Sign in with Google</button><br>Opens Google. Choose the account that has the family calendar and allow access.</li>
-        <li id="gPasteStep">Google then sends you to a page that <b>won't load</b>. That's expected. Copy the whole address from the address bar and paste it here:
-          <input type="text" id="gPaste" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="http://localhost/?state=…&amp;code=…">
-          <button type="button" class="seg" id="gFinish">Connect</button></li>
-      </ol>
-    </div>
-    <div id="gPick" hidden>
-      <div class="sublbl">Which calendars should the board show? (tap to turn on or off)</div>
-      <div class="gcals" id="gCals"></div>
-      <div id="gMainWrap" hidden>
-        <div class="sublbl" style="margin-top:12px">Default calendar for new events (uses the board’s main chalk style)</div>
-        <div class="opts" id="gMain"></div>
+    <div class="cal-settings-wrap">
+      <div class="sublbl" style="margin-top:0">Calendar</div>
+      <div id="calStat" class="calstat"></div>
+      <div id="gConnect" hidden>
+        <ol class="gsteps">
+          <li><button type="button" class="seg" id="gStart">Sign in with Google</button><br>Opens Google. Choose the account that has the family calendar and allow access.</li>
+          <li id="gPasteStep">Google then sends you to a page that <b>won't load</b>. That's expected. Copy the whole address from the address bar and paste it here:
+            <input type="text" id="gPaste" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="http://localhost/?state=…&amp;code=…">
+            <button type="button" class="seg" id="gFinish">Connect</button></li>
+        </ol>
+      </div>
+      <div id="gPick" hidden>
+        <div class="sublbl">Which calendars should the board show? (tap to turn on or off)</div>
+        <div class="gcals" id="gCals"></div>
+        <div id="gMainWrap" hidden>
+          <div class="sublbl" style="margin-top:12px">Default calendar for new events (uses the board’s main chalk style)</div>
+          <div class="opts" id="gMain"></div>
+        </div>
       </div>
     </div>
     <div class="sublbl" style="margin-top:20px">Trash &amp; recycling</div>
@@ -1409,7 +1444,8 @@ body.subpageOn #wheelBtn { z-index: 22; }
     <div class="sublbl" id="setSaved" style="min-height:20px"></div>
     <div class="err" id="setErr"></div>
     <div class="actions">
-      <button type="button" class="btn del" id="gDisconnect" hidden>Disconnect Google</button>
+      <button type="button" class="btn" id="gReconnect" hidden>Reconnect Google</button>
+      <button type="button" class="btn del" id="gDisconnect" hidden>Disconnect / Reset Google</button>
       <button type="button" class="btn go" id="setClose">Done</button>
     </div>
   </div>
@@ -4183,10 +4219,10 @@ body.subpageOn #wheelBtn { z-index: 22; }
   }
   // The slideshow extras are also remembered on this device, so they stick even if the board server hasn't been restarted with the newest code
   function phExtrasLocal(cfg, save) {
-    var K = ['showEvents', 'showTemp', 'showReminders', 'sidePanel'], loc = {};
+    var K = ['showEvents', 'showTemp', 'showReminders', 'showClock', 'sidePanel'], loc = {};
     try { loc = JSON.parse(localStorage.getItem('chalkSlideExtras') || '{}') || {}; } catch (e) {}
     if (save) { K.forEach(function (k) { loc[k] = !!cfg[k]; }); try { localStorage.setItem('chalkSlideExtras', JSON.stringify(loc)); } catch (e) {} return cfg; }
-    K.forEach(function (k) { if (cfg[k] === undefined) cfg[k] = !!loc[k]; });   // only an old server leaves them out
+    K.forEach(function (k) { if (cfg[k] === undefined) cfg[k] = (k === 'showClock' ? true : !!loc[k]); });   // only an old server leaves them out
     return cfg;
   }
   var phServerKnows = false;   // true once the server has shown it stores these settings
@@ -4299,6 +4335,10 @@ body.subpageOn #wheelBtn { z-index: 22; }
     c.style.top = top ? '30px' : 'auto'; c.style.bottom = top ? 'auto' : '30px';
     var dx = Math.round(Math.random() * 36) * (left ? 1 : -1), dy = Math.round(Math.random() * 20) * (top ? 1 : -1);
     c.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';   // drift so nothing sits still all night
+    var sy = $('sYear');
+    if (sy && !side) {
+      sy.classList.toggle('left', !left && top); // if clock is on top-right, put year on top-left
+    }
   }
   var slideHistory = [];
   var slideHistoryIdx = -1;
@@ -4308,7 +4348,29 @@ body.subpageOn #wheelBtn { z-index: 22; }
     var panelW = side ? Math.min(380, Math.round(fullW * 0.3)) : 0;
     var W = fullW - panelW;
     var tiles = tilesOverride || planSlide(W, H);
-    if (!tiles) return;
+    var sy = $('sYear');
+    if (!tiles) {
+      document.querySelectorAll('#slides .sl').forEach(function (s) { s.classList.remove('on'); s.innerHTML = ''; });
+      if (sy) { sy.textContent = ''; sy.style.display = 'none'; }
+      return;
+    }
+    if (sy) {
+      var years = [];
+      tiles.forEach(function (t) {
+        if (t.p && t.p.date) {
+          var y = new Date(t.p.date).getFullYear();
+          if (y && !isNaN(y) && years.indexOf(y) < 0) years.push(y);
+        }
+      });
+      years.sort();
+      if (years.length) {
+        sy.textContent = years.length === 1 ? String(years[0]) : years.join(' · ');
+        sy.style.display = 'block';
+      } else {
+        sy.textContent = '';
+        sy.style.display = 'none';
+      }
+    }
     if (!tilesOverride) {
       if (slideHistoryIdx >= 0 && slideHistoryIdx < slideHistory.length - 1) {
         slideHistory = slideHistory.slice(0, slideHistoryIdx + 1);
@@ -4425,7 +4487,9 @@ body.subpageOn #wheelBtn { z-index: 22; }
   function checkSlides() {
     if (ph.manual && !ph.list.length) ph.manual = false;
     $('sDim').style.opacity = String(1 - (ph.cfg.dim || 50) / 100);
-    $('sClock').style.opacity = String(Math.min(1, 0.6 + (ph.cfg.dim || 50) / 100 * 0.5));   // the clock dims less than the photos so it stays readable
+    var showClk = ph.cfg && ph.cfg.showClock !== undefined ? !!ph.cfg.showClock : true;
+    $('sClock').classList.toggle('clock-hidden', !showClk);
+    $('sClock').style.opacity = showClk ? String(Math.min(1, 0.6 + (ph.cfg.dim || 50) / 100 * 0.5)) : '0';
     setSlides(ph.preview || ph.manual ? true : nightNow() && ph.list.length > 0 && Date.now() > (ph.peekUntil || 0));
   }
   setInterval(checkSlides, 30 * 1000);
@@ -4535,13 +4599,94 @@ body.subpageOn #wheelBtn { z-index: 22; }
       sel.appendChild(new Option('All recent photos', '__all__'));
       sel.appendChild(new Option('📅 Custom: On this day in previous years', '__thisday__'));
       (albums || []).forEach(function (a) {
-        sel.appendChild(new Option(a.title + ' (' + a.count + ')' + (a.shared ? ' · shared' : ''), a.id));
+        if (a && a.count > 0) {
+          sel.appendChild(new Option(a.title + ' (' + a.count + ')' + (a.shared ? ' · shared' : ''), a.id));
+        }
       });
       if (cur && !Array.prototype.some.call(sel.options, function (o) { return o.value === cur; })) {
         sel.appendChild(new Option('Saved album (' + cur + ')', cur));
       }
       sel.value = cur || '';
+      renderAlbumGrid(albums || [], cur || '');
     };
+    var renderAlbumGrid = function (albums, selectedVal) {
+      var grid = $('pAlbGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      var list = [
+        { id: '', title: 'Auto', countText: 'Favorites / recent' },
+        { id: '__favorites__', title: '★ Favorites', countText: 'Starred' },
+        { id: '__all__', title: 'Recent photos', countText: 'All uploads' }
+      ];
+      (albums || []).forEach(function (a) {
+        if (a && a.count > 0) {
+          list.push({
+            id: a.id,
+            title: a.title || 'Untitled',
+            countText: a.count + ' photo' + (a.count === 1 ? '' : 's') + (a.shared ? ' · shared' : '')
+          });
+        }
+      });
+      list.forEach(function (it) {
+        var card = el('button', 'palbcard' + (it.id === selectedVal ? ' on' : ''));
+        card.type = 'button';
+        card.appendChild(el('div', 'title', it.title));
+        card.appendChild(el('div', 'meta', it.countText));
+        card.addEventListener('click', function () {
+          if ($('pThisDayCheck')) $('pThisDayCheck').checked = false;
+          var sel = $('pImmichAlbum');
+          if (sel) sel.value = it.id;
+          Array.prototype.forEach.call(grid.querySelectorAll('.palbcard'), function (c) { c.classList.remove('on'); });
+          card.classList.add('on');
+        });
+        grid.appendChild(card);
+      });
+    };
+    if ($('pThisDayCheck')) {
+      $('pThisDayCheck').addEventListener('change', function () {
+        var on = $('pThisDayCheck').checked;
+        var sel = $('pImmichAlbum');
+        if (on) {
+          if (sel) sel.value = '__thisday__';
+          var grid = $('pAlbGrid');
+          if (grid) Array.prototype.forEach.call(grid.querySelectorAll('.palbcard'), function (c) { c.classList.remove('on'); });
+        } else {
+          if (sel && sel.value === '__thisday__') sel.value = '';
+          var grid2 = $('pAlbGrid');
+          if (grid2) {
+            Array.prototype.forEach.call(grid2.querySelectorAll('.palbcard'), function (c) {
+              c.classList.toggle('on', c.querySelector('.title') && c.querySelector('.title').textContent === 'Auto');
+            });
+          }
+        }
+      });
+    }
+    if ($('pAnalyzeBtn')) {
+      $('pAnalyzeBtn').addEventListener('click', function () {
+        var btn = $('pAnalyzeBtn'), res = $('pAnalyzeRes');
+        btn.disabled = true;
+        res.textContent = 'Searching photos on this day…';
+        post('/api/photos/analyze-thisday', {
+          url: $('pImmichUrl') ? $('pImmichUrl').value.trim() : undefined,
+          apiKey: ($('pImmichKey') && $('pImmichKey').value.trim()) ? $('pImmichKey').value.trim() : undefined
+        }).then(function (r) {
+          if (!r.count) {
+            res.textContent = 'No photos found for today (' + r.date + ') in the past 30 years.';
+          } else {
+            var yrStr = r.years && r.years.length ? ' from ' + r.years.join(', ') : '';
+            res.textContent = 'Found ' + r.count + ' photo' + (r.count === 1 ? '' : 's') + ' for today (' + r.date + ')' + yrStr + '!';
+          }
+        }).catch(function (e) {
+          if (e.status === 404 && !(e.body && e.body.error)) {
+            res.textContent = 'Server restart needed: restart the server to load the new Analyze endpoint.';
+          } else {
+            res.textContent = 'Analysis error: ' + e.message;
+          }
+        }).then(function () {
+          btn.disabled = false;
+        });
+      });
+    }
     if ($('pImmichLoad')) {
       $('pImmichLoad').addEventListener('click', function () {
         var btn = $('pImmichLoad');
@@ -4567,6 +4712,9 @@ body.subpageOn #wheelBtn { z-index: 22; }
     $('pFrame').checked = !!c.frame; $('pNight').checked = !!c.night;
     $('pFrom').value = c.from || '21:00'; $('pTo').value = c.to || '06:00'; $('pEvery').value = String(c.every || 20); $('pDim').value = String(c.dim || 50);
     $('pShowEvents').checked = !!c.showEvents; $('pShowTemp').checked = !!c.showTemp; $('pShowRem').checked = !!c.showReminders; $('pSidePanel').checked = !!c.sidePanel;
+    if ($('pShowClock')) $('pShowClock').checked = c.showClock !== undefined ? !!c.showClock : true;
+    if ($('pThisDayCheck')) $('pThisDayCheck').checked = (im.album === '__thisday__');
+    if ($('pAnalyzeRes')) $('pAnalyzeRes').textContent = 'Click Analyze to see photos from this day';
     if ($('pImmichUrl')) $('pImmichUrl').value = im.url || '';
     if ($('pImmichKey')) {
       $('pImmichKey').value = '';
@@ -4644,15 +4792,18 @@ body.subpageOn #wheelBtn { z-index: 22; }
         showEvents: $('pShowEvents').checked,
         showTemp: $('pShowTemp').checked,
         showReminders: $('pShowRem').checked,
+        showClock: $('pShowClock') ? $('pShowClock').checked : true,
         sidePanel: $('pSidePanel').checked
       };
       if ($('pImmichUrl')) payload.immichUrl = $('pImmichUrl').value.trim();
       if ($('pImmichKey') && $('pImmichKey').value.trim()) payload.immichKey = $('pImmichKey').value.trim();
-      if ($('pImmichAlbum')) payload.immichAlbum = $('pImmichAlbum').value;
+      if ($('pImmichAlbum')) {
+        payload.immichAlbum = ($('pThisDayCheck') && $('pThisDayCheck').checked) ? '__thisday__' : $('pImmichAlbum').value;
+      }
       post('/api/photos/settings', payload)
         .then(function (c) {
           phServerKnows = c.showEvents !== undefined;   // an updated server echoes the new settings back
-          ph.cfg = phExtrasLocal(Object.assign({}, c, { showEvents: payload.showEvents, showTemp: payload.showTemp, showReminders: payload.showReminders, sidePanel: payload.sidePanel }), true);
+          ph.cfg = phExtrasLocal(Object.assign({}, c, { showEvents: payload.showEvents, showTemp: payload.showTemp, showReminders: payload.showReminders, showClock: payload.showClock, sidePanel: payload.sidePanel }), true);
           if (JSON.stringify(sideDraft) === sideStart) return;
           if (sideDraft.mode === 'photos' && sideDraft.pick === 'chosen' && !sideDraft.ids.length) sideDraft.pick = 'random';
           return post('/api/meta', { ym: state.ym, side: sideDraft }).then(function (m) { state.meta = m; });
@@ -5326,6 +5477,7 @@ body.subpageOn #wheelBtn { z-index: 22; }
       $('gConnect').hidden = !(g && !c.connected);
       $('gPasteStep').hidden = !c.paste;
       $('gPick').hidden = !(g && c.connected);
+      if ($('gReconnect')) $('gReconnect').hidden = !(g && (c.problem || !c.connected));
       $('gDisconnect').hidden = !(g && (c.connected || c.problem));
       if (g && c.connected) loadCals();
     };
@@ -5518,21 +5670,23 @@ body.subpageOn #wheelBtn { z-index: 22; }
     });
     var openSettings = function () {
       $('setErr').textContent = ''; $('setSaved').textContent = ''; $('gPaste').value = ''; holCount(); drawTodaySet();
-      if (!document.body.classList.contains('isadmin')) { $('setmodal').classList.add('open'); return; }   // editors: holidays only
       loadBins();
       api('/api/calendar/status').then(function (c) { calSt = c; drawCal(); }).catch(function (e) { $('setErr').textContent = e.message; });
       $('setmodal').classList.add('open');
     };
     $('settingsBtn').addEventListener('click', function () { if (!state.drawing) openSettings(); });
     $('setClose').addEventListener('click', function () { $('setmodal').classList.remove('open'); });
-    $('gStart').addEventListener('click', function () {
+    var startGoogleAuth = function () {
       $('setErr').textContent = '';
       var win = window.open('', '_blank');   // open now (inside the tap) so it isn't blocked, then point it at Google
       post('/api/google/start', {}).then(function (r) {
         if (win) win.location = r.url; else location.href = r.url;
+        $('gConnect').hidden = false;
         if (calSt.paste) setTimeout(function () { $('gPaste').focus(); }, 400);
       }).catch(function (e) { if (win) win.close(); $('setErr').textContent = e.message; });
-    });
+    };
+    $('gStart').addEventListener('click', startGoogleAuth);
+    if ($('gReconnect')) $('gReconnect').addEventListener('click', startGoogleAuth);
     $('gFinish').addEventListener('click', function () {
       $('gFinish').disabled = true; $('setErr').textContent = '';
       post('/api/google/finish', { pasted: $('gPaste').value }).then(openSettings)
@@ -5540,7 +5694,7 @@ body.subpageOn #wheelBtn { z-index: 22; }
         .then(function () { $('gFinish').disabled = false; });
     });
     $('gDisconnect').addEventListener('click', function () {
-      if (!confirm('Disconnect Google? The board stops showing the calendar until you connect again.')) return;
+      if (!confirm('Disconnect / reset Google Calendar? This clears the stored connection and allows reconnecting cleanly.')) return;
       post('/api/google/disconnect', {}).then(openSettings).catch(function (e) { $('setErr').textContent = e.message; });
     });
     if (location.hash === '#settings') setTimeout(openSettings, 600);   // back from Google's sign-in page

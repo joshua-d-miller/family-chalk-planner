@@ -1129,7 +1129,7 @@ app.post('/api/google/calendar', (req, res) => {
 });
 app.post('/api/google/disconnect', (req, res) => {
   fs.rmSync(G_FILE, { force: true });
-  gAccess = null; calUrl = null; monthCache.clear();
+  gAccess = null; calUrl = null; monthCache.clear(); calProblems.clear();
   broadcast('calendar', { ym: 'any' });
   res.json({ ok: true });
 });
@@ -2144,7 +2144,7 @@ const GP_UA = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWe
 const CK = 'database/1/com.apple.photos.cloud/production';
 const CK_HOST = process.env.PHOTO_CK_HOST || 'https://ckdatabasews.icloud.com';   // override only for testing
 const photoState = { list: [], synced: 0, error: null, running: false };
-const PHOTO_CFG_DEFAULT = { frame: true, night: true, from: '21:00', to: '06:00', every: 20, dim: 50, showEvents: false, showTemp: false, showReminders: false, sidePanel: false };
+const PHOTO_CFG_DEFAULT = { frame: true, night: true, from: '21:00', to: '06:00', every: 20, dim: 50, showEvents: false, showTemp: false, showReminders: false, showClock: true, sidePanel: false };
 function photoCfg() {
   const r = qKvGet.get('photoCfg');
   return { ...PHOTO_CFG_DEFAULT, ...(r ? JSON.parse(r.data) : {}) };
@@ -2276,22 +2276,32 @@ async function immichAlbum(src) {
     return (r && r.assets && Array.isArray(r.assets.items)) ? r.assets.items : (Array.isArray(r) ? r : []);
   };
   if (want === '__thisday__' || want.toLowerCase() === 'thisday' || want.toLowerCase() === 'on this day') {
-    // Custom album: on this day in previous years
+    // Custom album: on this day in previous years via Immich /api/memories?for=YYYY-MM-DD
     const now = new Date();
     const curYear = now.getFullYear();
+    const minYear = curYear - 30;
     const curMonth = now.getMonth();
     const curDate = now.getDate();
-    const all = await searchMeta({});
-    const matches = all.filter(a => {
+    const todayStr = `${curYear}-${String(curMonth + 1).padStart(2, '0')}-${String(curDate).padStart(2, '0')}`;
+    const mems = await immichRequest(src.immichUrl, src.immichKey, `/api/memories?for=${encodeURIComponent(todayStr)}`).catch(() => []);
+    const rawAssets = [];
+    (Array.isArray(mems) ? mems : (mems && Array.isArray(mems.items) ? mems.items : [])).forEach(m => {
+      if (m && Array.isArray(m.assets)) rawAssets.push(...m.assets);
+    });
+    const seen = new Set();
+    const matches = rawAssets.filter(a => {
+      if (!a || !a.id || seen.has(a.id)) return false;
+      seen.add(a.id);
       const dtStr = a.localDateTime || a.fileCreatedAt || (a.exifInfo && a.exifInfo.dateTimeOriginal) || a.createdAt;
-      if (!dtStr) return false;
+      if (!dtStr) return true; // already grouped under this day's memory by Immich
       const d = new Date(dtStr);
-      if (isNaN(d.getTime())) return false;
-      return d.getFullYear() < curYear && d.getMonth() === curMonth && d.getDate() === curDate;
+      if (isNaN(d.getTime())) return true;
+      const yr = d.getFullYear();
+      return yr >= minYear && yr < curYear;
     });
     if (matches.length) return immichAssetsToPhotos(matches, src.immichUrl, src.immichKey, null);
-    // If no exact matches for this date in previous years, fallback to all recent photos so slideshow isn't empty
-    return immichAssetsToPhotos(all, src.immichUrl, src.immichKey, null);
+    // If no photos from this day in previous years, do not fallback: return empty list so screen stays black
+    return [];
   }
   if (want === '__favorites__' || want.toLowerCase() === 'favorites') {
     return immichAssetsToPhotos(await searchMeta({ isFavorite: true }), src.immichUrl, src.immichKey, null);
@@ -2500,14 +2510,16 @@ app.get('/api/photos', (req, res) => {
   if (req.query && (req.query.thisDay === '1' || req.query.thisDay === 'true')) {
     const now = new Date();
     const curYear = now.getFullYear();
+    const minYear = curYear - 30;
     const curMonth = now.getMonth();
     const curDate = now.getDate();
-    const filtered = photos.filter(p => {
+    photos = photos.filter(p => {
       if (!p.date) return false;
       const d = new Date(p.date);
-      return !isNaN(d.getTime()) && d.getFullYear() < curYear && d.getMonth() === curMonth && d.getDate() === curDate;
+      if (isNaN(d.getTime())) return false;
+      const yr = d.getFullYear();
+      return yr >= minYear && yr < curYear && d.getMonth() === curMonth && d.getDate() === curDate;
     });
-    if (filtered.length) photos = filtered;
   }
   res.json({
     enabled: src.enabled,
@@ -2548,6 +2560,48 @@ app.post('/api/photos/immich-albums', async (req, res) => {
     res.status(400).json({ error: e.message });
   }
 });
+app.post('/api/photos/analyze-thisday', async (req, res) => {
+  const b = req.body || {};
+  const cur = photoSourceCfg();
+  const url = normalizeImmichUrl(b.url !== undefined ? b.url : cur.immichUrl);
+  const key = String(b.apiKey ? b.apiKey : cur.immichKey).trim();
+  if (!url || !key) return res.status(400).json({ error: 'Immich server URL and API key are required.' });
+  try {
+    const now = new Date();
+    const curYear = now.getFullYear();
+    const minYear = curYear - 30;
+    const curMonth = now.getMonth();
+    const curDate = now.getDate();
+    const todayStr = `${curYear}-${String(curMonth + 1).padStart(2, '0')}-${String(curDate).padStart(2, '0')}`;
+    const mems = await immichRequest(url, key, `/api/memories?for=${encodeURIComponent(todayStr)}`);
+    const rawAssets = [];
+    (Array.isArray(mems) ? mems : (mems && Array.isArray(mems.items) ? mems.items : [])).forEach(m => {
+      if (m && Array.isArray(m.assets)) rawAssets.push(...m.assets);
+    });
+    const seen = new Set();
+    const matches = rawAssets.filter(a => {
+      if (!a || !a.id || seen.has(a.id)) return false;
+      seen.add(a.id);
+      const dtStr = a.localDateTime || a.fileCreatedAt || (a.exifInfo && a.exifInfo.dateTimeOriginal) || a.createdAt;
+      if (!dtStr) return true;
+      const d = new Date(dtStr);
+      if (isNaN(d.getTime())) return true;
+      const yr = d.getFullYear();
+      return yr >= minYear && yr < curYear;
+    });
+    const years = [...new Set(matches.map(a => {
+      const dtStr = a.localDateTime || a.fileCreatedAt || (a.exifInfo && a.exifInfo.dateTimeOriginal) || a.createdAt;
+      return dtStr ? new Date(dtStr).getFullYear() : null;
+    }).filter(y => y && !isNaN(y)))].sort((a, b) => b - a);
+    res.json({
+      count: matches.length,
+      years,
+      date: `${curMonth + 1}/${curDate}`
+    });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
 app.post('/api/board-settings/immich-test', async (req, res) => {
   const b = req.body || {};
   const cur = photoSourceCfg();
@@ -2574,6 +2628,7 @@ app.post('/api/photos/settings', async (req, res) => {
     showEvents: b.showEvents === undefined ? cur.showEvents : !!b.showEvents,   // slideshow extras (translucent cards)
     showTemp: b.showTemp === undefined ? cur.showTemp : !!b.showTemp,
     showReminders: b.showReminders === undefined ? cur.showReminders : !!b.showReminders,
+    showClock: b.showClock === undefined ? (cur.showClock !== undefined ? cur.showClock : true) : !!b.showClock,
     sidePanel: b.sidePanel === undefined ? cur.sidePanel : !!b.sidePanel   // left sidebar panel mode (photos don't overlap)
   };
   const sv = {};
