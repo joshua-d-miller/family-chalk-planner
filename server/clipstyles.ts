@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | clipstyles.ts
 ===============================================================================
- Version:   0.16.0
+ Version:   0.16.2
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
  Updated:   2026-11-11
@@ -33,6 +33,9 @@
  0.16.0    2026-11-11   joshua    The board's own pictures (Garland & trims),
                         claude    from a file in the repository; each picture
                                   keeps its shape.
+
+ 0.16.2    2026-11-11   joshua    Says which styles have pictures of their own
+                        claude    (the garland set).
 ===============================================================================
 */
 
@@ -159,7 +162,13 @@ export function makeStyles(cacheDir: string) {
   return {
     unpacking,
     list: () =>
-      STYLES.map(s => ({ prefix: s.prefix, name: s.name, credit: s.credit, count: ready.get(s.prefix)?.length || 0 })),
+      STYLES.map(s => ({
+        prefix: s.prefix,
+        name: s.name,
+        credit: s.credit,
+        count: ready.get(s.prefix)?.length || 0,
+        own: !!s.file // pictures of its own (garland, lights), not the everyday ones redrawn
+      })),
     names: (prefix: string) => ready.get(prefix)?.map(n => prefix + '-' + n) || null,
     // the file for "no-jack-o-lantern", or null
     fileOf(name: string) {

@@ -4,6 +4,12 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.16.2 — the garland in Clipart
+- Fixed: the **Garland & trims** pictures were hard to find in ★ Stamps → Clipart (only under their
+  style, and even there mostly missing). They're now a **🎄 Garland & trims** group right after
+  Favorites, searching "garland", "lights" or "wreath" finds them, and the Garland & trims style shows
+  all 46.
+
 ## 0.16.1 — a month's own style
 - **A month's own style:** 🎨 Style now opens on **Just December** (whichever month you're on), so a
   change can't reach every month by accident. A month can have a **style of its own** (Holiday for
