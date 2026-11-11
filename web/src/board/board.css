@@ -671,3 +671,18 @@ body.boardpage {
 .slate .hasswitch .bphoto {
   margin-top: 30px;
 }
+
+/* art and the writing: art she put behind the writing sits under the calendar and Notes; writing
+   that art hides (her choice, or a leftover day from the next month) keeps its place, unseen */
+.slate .cal,
+.slate .notes {
+  position: relative;
+  z-index: 1;
+}
+.slate .artSvg.under,
+.slate .gifLayer.under {
+  z-index: 0;
+}
+.slate .underart {
+  visibility: hidden;
+}
