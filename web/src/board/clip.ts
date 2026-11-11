@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | clip.ts
 ===============================================================================
- Version:   0.14.1
+ Version:   0.16.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-08
+ Updated:   2026-11-11
 
  Purpose:
      Clipart: the pictures the board has (Fluent emoji, Game Icons "gi-",
@@ -24,6 +24,9 @@
 
  0.14.1    2026-11-08   joshua    clipPath: the path the board keeps for a
                         claude    picture.
+
+ 0.16.0    2026-11-11   joshua    Search words for garland, lights, ornaments
+                        claude    and wreaths.
 ===============================================================================
 */
 
@@ -51,7 +54,13 @@ export const CLIP_SYN: Record<string, string> = {
   pumpkin: 'jack-o-lantern',
   halloween:
     'jack-o-lantern ghost bat spider-web candy gi-pumpkin-lantern gi-witch-face gi-mummy-head gi-vampire-dracula gi-bat gi-cauldron',
-  christmas: 'christmas-tree santa-claus wrapped-gift snowman',
+  christmas:
+    'cp-garland-lights cp-garland-pine cp-wreath cp-ornament-red cp-bow cp-stocking christmas-tree santa-claus wrapped-gift snowman',
+  garland:
+    'cp-garland-lights cp-garland-pine cp-garland-holly cp-garland-tinsel cp-garland-beads cp-garland-bunting cp-garland-candy-cane cp-string-lights',
+  lights: 'cp-garland-lights cp-string-lights',
+  ornament: 'cp-ornament-red cp-ornament-gold cp-ornament-blue',
+  wreath: 'cp-wreath',
   thanksgiving: 'turkey gi-cornucopia gi-corn gi-pumpkin gi-pilgrim-hat gi-wheat gi-acorn pie fallen-leaf',
   witch: 'gi-witch-face gi-witch-flight gi-pointy-hat',
   mummy: 'gi-mummy-head',
@@ -89,7 +98,7 @@ export function searchClip(names: string[], q: string, max = 60) {
   return [...syn, ...names.filter(n => !syn.includes(n) && terms.every(t => n.includes(t)))].slice(0, max);
 }
 // a picture's name without its set's short name (gi- chalk drawings, tb- line drawings, se- no- om- tw- fx- eo- ip-
-// the other styles)
-export const clipLabel = (n: string) => n.replace(/^(gi|tb|se|no|om|tw|fx|eo|ip)-/, '').replace(/-/g, ' ');
+// the other styles, cp- the board's own)
+export const clipLabel = (n: string) => n.replace(/^(gi|tb|se|no|om|tw|fx|eo|ip|cp)-/, '').replace(/-/g, ' ');
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

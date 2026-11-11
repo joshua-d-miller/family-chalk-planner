@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Month.tsx
 ===============================================================================
- Version:   0.15.1
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-10
+ Updated:   2026-11-11
 
  Purpose:
      The month: its name, the weekdays, and a box per day with its events,
@@ -48,6 +48,9 @@
 
  0.15.1    2026-11-10   joshua    The month knows when the calendar couldn't be
                         claude    reached.
+
+ 0.16.0    2026-11-11   joshua    A cake on birthdays only when ⚙️ Settings
+                        claude    says so.
 ===============================================================================
 */
 
@@ -87,7 +90,8 @@ export interface MonthData {
   today: string;
   grid: { start: string; weeks: number; y: number; m: number; weekStart?: number; time24?: boolean };
   events: BoardEvent[];
-  problem?: string; // the calendar couldn't be reached (the board shows holidays and what it had)
+  problem?: string;
+  cake?: boolean; // a 🎂 on birthdays // the calendar couldn't be reached (the board shows holidays and what it had)
 }
 export interface Bins {
   day: number | null;
@@ -124,13 +128,13 @@ export const addDays = (ds: string, n: number) => {
   const [y, m, d] = ds.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 };
-// how an event reads in a day box: holidays get their emoji, birthdays a cake
 // the first day of the week a date is in (weekStart: 0 Sunday, 1 Monday)
 export const weekOf = (ds: string, weekStart: number) =>
   addDays(ds, -((new Date(ds + 'T12:00:00Z').getUTCDay() - weekStart + 7) % 7));
-export function evText(ev: BoardEvent) {
+// how an event reads in a day box: holidays get their emoji, birthdays a cake (when ⚙️ Settings says so)
+export function evText(ev: BoardEvent, cake = false) {
   let t = ev.holiday ? `${ev.icon} ${ev.title}` : ev.title;
-  if (!ev.holiday && /birthday|bday/i.test(t) && !t.includes('🎂')) t = '🎂 ' + t;
+  if (cake && !ev.holiday && /birthday|bday/i.test(t) && !t.includes('🎂')) t = '🎂 ' + t;
   return ev.allDay || ev.holiday ? t : `${t} @ ${ev.time}`;
 }
 
@@ -274,7 +278,7 @@ export function Month({
       // room for events, in pixels: a normal line is 15px; Large / Extra large ones take more
       const room = cellH - 5 - 24 - lanesHere * 24 - 4;
       const need = (e: BoardEvent) =>
-        15 * big * (e.size ? EV_SIZE[e.size] : 1) * (e.size && evText(e).length > 12 ? 2 : 1);
+        15 * big * (e.size ? EV_SIZE[e.size] : 1) * (e.size && evText(e, data.cake).length > 12 ? 2 : 1);
       let show = 0;
       let used = 0;
       for (let k = 0; k < list.length; k++) {
@@ -306,7 +310,7 @@ export function Month({
           </div>
           {lanesHere > 0 && <div style={{ height: lanesHere * 24, flex: 'none' }} />}
           {list.slice(0, show).map((ev, i) => {
-            const full = evText(ev);
+            const full = evText(ev, data.cake);
             const at = !ev.allDay && !ev.holiday ? full.lastIndexOf(' @ ') : -1;
             return (
               <div

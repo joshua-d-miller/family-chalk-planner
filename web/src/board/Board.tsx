@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   0.15.1
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-10
+ Updated:   2026-11-11
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -75,6 +75,9 @@
                                   hides them or sits behind the writing; art
                                   over the grid's leftover days hides their
                                   events by itself.
+
+ 0.16.0    2026-11-11   joshua    A month's own colors; the cake setting in the
+                        claude    day view.
 ===============================================================================
 */
 
@@ -143,6 +146,7 @@ export type MonthMeta = {
   borderYearly?: boolean;
   artPad: number;
   boardPad?: number;
+  look?: Record<string, string>; // this month's own colors, over the board style's
 };
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -334,6 +338,7 @@ export function Board({
   const extras = useLive<{ bins: Bins }>('api/extras', ['extras']).data;
   const savedTheme = useLive<Theme>('api/theme', ['theme']).data;
   const [themeDraft, setThemeDraft] = useState<Theme | null>(null);
+  const [lookDraft, setLookDraft] = useState<Record<string, string> | null>(null); // this month's colors, being picked
   const theme = themeDraft || savedTheme;
   // ------------- //
   // | The cards | //
@@ -374,7 +379,9 @@ export function Board({
     return () => clearTimeout(t);
   }, [edit, ym, wk, touched, editing]);
 
-  const tv = useMemo(() => themeVals(theme), [theme]);
+  // the board style, with this month's own colors over it
+  const monthLook = lookDraft || (meta && 'artPad' in meta ? meta.look : undefined);
+  const tv = useMemo(() => ({ ...themeVals(theme), ...(monthLook || {}) }), [theme, monthLook]);
   const css = useMemo(() => themeCss(tv, sf.lum), [tv, sf.lum]);
   const m = month.data && 'grid' in month.data ? month.data : null;
   const slides = useSlides(photos, !edit || family);
@@ -921,6 +928,7 @@ export function Board({
         <DayView
           date={day}
           events={m.events}
+          cake={m.cake}
           onClose={closeDay}
           onEvent={
             edit
@@ -1017,7 +1025,17 @@ export function Board({
           onClose={closeEditor}
         />
       )}
-      {editing?.k === 'style' && <StyleEditor theme={savedTheme} onPreview={setThemeDraft} onClose={closeEditor} />}
+      {editing?.k === 'style' && shown && (
+        <StyleEditor
+          theme={savedTheme}
+          onPreview={setThemeDraft}
+          ym={shown}
+          monthName={monthName}
+          look={mm?.look || null}
+          onPreviewLook={setLookDraft}
+          onClose={closeEditor}
+        />
+      )}
     </div>
   );
 }

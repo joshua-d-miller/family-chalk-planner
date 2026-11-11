@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Draw.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-11
 
  Purpose:
      Drawing on the board (a tablet): chalk or Posca lines (Apple Pencil
@@ -30,6 +30,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.16.0    2026-11-11   joshua    Turning what's selected: a handle above it,
+                        claude    and buttons.
 ===============================================================================
 */
 
@@ -37,7 +40,7 @@ import { useRef, useState } from 'react';
 import type { PointerEvent as RPointerEvent } from 'react';
 import { Art } from '../Art.tsx';
 import type { ArtItem } from '../Art.tsx';
-import { hits, inRect, isClosedLine, unionBox, xform } from '../geom.ts';
+import { hits, inRect, isClosedLine, unionBox, spin, xform } from '../geom.ts';
 import type { Box } from '../geom.ts';
 import { CHALK, POSCA } from '../../ui/Colors.tsx';
 import type { ArtEditor } from './useArt.ts';
@@ -92,6 +95,7 @@ type Drag =
   | { k: 'band'; b: Box; x0: number; y0: number }
   | { k: 'move'; start: [number, number]; orig: ArtItem[]; moved: boolean }
   | { k: 'scale'; orig: ArtItem[]; box: Box; start: [number, number] }
+  | { k: 'turn'; orig: ArtItem[]; box: Box; start: [number, number] }
   | { k: 'text'; item: ArtItem; start: [number, number]; moved: boolean }
   | null;
 
@@ -236,6 +240,14 @@ export function DrawLayer({
       const k0 = Math.hypot(d.start[0] - cx, d.start[1] - cy) || 1;
       const k = Math.max(0.15, Math.min(6, Math.hypot(pt[0] - cx, pt[1] - cy) / k0));
       art.preview(d.orig.map(o => xform(o, 0, 0, k, cx, cy)));
+    } else if (d.k === 'turn') {
+      const cx = (d.box.x1 + d.box.x2) / 2;
+      const cy = (d.box.y1 + d.box.y2) / 2;
+      let deg = ((Math.atan2(pt[1] - cy, pt[0] - cx) - Math.atan2(d.start[1] - cy, d.start[0] - cx)) * 180) / Math.PI;
+      // snaps to straight (and every 45°) when close
+      const near = Math.round(deg / 45) * 45;
+      if (Math.abs(deg - near) < 4) deg = near;
+      art.preview(d.orig.map(o => spin(o, deg, cx, cy)));
     } else if (d.k === 'text') {
       const dx = pt[0] - d.start[0];
       const dy = pt[1] - d.start[1];
@@ -264,9 +276,9 @@ export function DrawLayer({
         const hit = topHit(r.x1, r.y1, 8); // a tap: the one thing under the finger
         setSelection(hit ? [hit.id] : []);
       } else setSelection(items.filter(x => x.id >= 0 && inRect(x, r)).map(x => x.id));
-    } else if (d.k === 'move' || d.k === 'scale') {
+    } else if (d.k === 'move' || d.k === 'scale' || d.k === 'turn') {
       const ids = new Set(d.orig.map(o => o.id));
-      if (d.k === 'scale' || d.moved)
+      if (d.k === 'scale' || d.k === 'turn' || d.moved)
         art.update(
           d.orig,
           items.filter(x => ids.has(x.id))
@@ -290,7 +302,16 @@ export function DrawLayer({
       sel.map(o => xform(o, 0, 0, k, cx, cy))
     );
   };
-  const barW = 430;
+  const turn = (deg: number) => {
+    if (!selBox) return;
+    const cx = (selBox.x1 + selBox.x2) / 2;
+    const cy = (selBox.y1 + selBox.y2) / 2;
+    art.update(
+      sel,
+      sel.map(o => spin(o, deg, cx, cy))
+    );
+  };
+  const barW = 500;
   return (
     <div
       ref={ref}
@@ -341,6 +362,17 @@ export function DrawLayer({
             }}
           />
           <div
+            className="selGrip turn"
+            aria-label="Drag to turn"
+            style={{ left: (selBox.x1 + selBox.x2) / 2, top: Math.max(14, selBox.y1 - 26) }}
+            onPointerDown={e => {
+              e.stopPropagation();
+              e.preventDefault();
+              (e.target as Element).setPointerCapture?.(e.pointerId);
+              go({ k: 'turn', orig: sel, box: selBox, start: toBoard(e) });
+            }}
+          />
+          <div
             className="selbar"
             onPointerDown={e => e.stopPropagation()}
             style={{
@@ -361,6 +393,12 @@ export function DrawLayer({
             </button>
             <button type="button" aria-label="Make bigger" onClick={() => resize(1.2)}>
               +
+            </button>
+            <button type="button" aria-label="Turn left" onClick={() => turn(-15)}>
+              ↺
+            </button>
+            <button type="button" aria-label="Turn right" onClick={() => turn(15)}>
+              ↻
             </button>
             <button
               type="button"

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | clipstyles.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.16.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-11
 
  Purpose:
      More picture sets for Stamps, each in its own style (Streamline,
@@ -29,9 +29,14 @@
  -------   ----------   -------   --------------------------------------------
  0.14.0    2026-11-07   joshua    New file.
                         claude
+
+ 0.16.0    2026-11-11   joshua    The board's own pictures (Garland & trims),
+                        claude    from a file in the repository; each picture
+                                  keeps its shape.
 ===============================================================================
 */
 
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -47,6 +52,7 @@ export interface ClipStyle {
   prefix: string;
   name: string; // shown in Stamps
   pkg: string; // @iconify-json/<pkg>
+  file?: string; // or the board's own pictures, in the same format (a file in the repository)
   credit: string; // for the line under the pictures (and NOTICE)
 }
 export const STYLES: ClipStyle[] = [
@@ -56,7 +62,14 @@ export const STYLES: ClipStyle[] = [
   { prefix: 'tw', name: 'Twitter', pkg: 'twemoji', credit: 'Twemoji by Twitter (CC BY 4.0)' },
   { prefix: 'fx', name: 'Firefox', pkg: 'fxemoji', credit: 'Firefox OS Emoji by Mozilla (Apache 2.0)' },
   { prefix: 'eo', name: 'EmojiOne', pkg: 'emojione', credit: 'EmojiOne (CC BY 4.0)' },
-  { prefix: 'ip', name: 'IconPark', pkg: 'icon-park', credit: 'IconPark by ByteDance (Apache 2.0)' }
+  { prefix: 'ip', name: 'IconPark', pkg: 'icon-park', credit: 'IconPark by ByteDance (Apache 2.0)' },
+  {
+    prefix: 'cp',
+    name: 'Garland & trims',
+    pkg: '',
+    file: path.join(import.meta.dirname, '..', 'clipart', 'garland.json'),
+    credit: 'Drawn for Family Chalk Planner (CC0)'
+  }
 ];
 export const stylePrefix = (name: string) => STYLES.find(s => name.startsWith(s.prefix + '-'));
 
@@ -83,7 +96,9 @@ export function makeStyles(cacheDir: string) {
   const dirOf = (s: ClipStyle) => {
     let ver = '0';
     try {
-      ver = (require(`@iconify-json/${s.pkg}/package.json`) as { version: string }).version;
+      ver = s.file
+        ? crypto.createHash('sha256').update(fs.readFileSync(s.file)).digest('hex').slice(0, 12) // its content
+        : (require(`@iconify-json/${s.pkg}/package.json`) as { version: string }).version;
     } catch {
       /* not installed */
     }
@@ -99,7 +114,7 @@ export function makeStyles(cacheDir: string) {
     }
     let file: string;
     try {
-      file = require.resolve(`@iconify-json/${s.pkg}/icons.json`);
+      file = s.file || require.resolve(`@iconify-json/${s.pkg}/icons.json`);
     } catch {
       return; // not installed: that style just isn't offered
     }
@@ -115,7 +130,11 @@ export function makeStyles(cacheDir: string) {
         all.slice(k, k + 200).map(async ([n, src]) => {
           if (!NAME.test(n)) return;
           const i = j.icons[src];
-          const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${i.left || 0} ${i.top || 0} ${i.width || j.width || 16} ${i.height || j.height || 16}" width="256" height="256">${i.body}</svg>`;
+          const w = i.width || j.width || 16;
+          const h = i.height || j.height || 16;
+          // its own shape (a garland is long and thin): the longest side 256
+          const k = 256 / Math.max(w, h);
+          const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${i.left || 0} ${i.top || 0} ${w} ${h}" width="${Math.round(w * k)}" height="${Math.round(h * k)}">${i.body}</svg>`;
           await fs.promises.writeFile(path.join(tmp, n + '.svg'), svg);
           names.push(n);
         })

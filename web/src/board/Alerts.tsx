@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Alerts.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-11
 
  Purpose:
      What pops up on the board: a reminder whose time has come (from Colby
@@ -29,6 +29,9 @@
 
  0.14.0    2026-11-07   joshua    Hiding a holiday opens Settings in place.
                         claude
+
+ 0.16.0    2026-11-11   joshua    A cake on birthdays only when ⚙️ Settings
+                        claude    says so.
 ===============================================================================
 */
 
@@ -153,10 +156,12 @@ export function DayView({
   events,
   onClose,
   onEvent,
-  onAdd
+  onAdd,
+  cake = false
 }: {
   date: string;
   events: BoardEvent[];
+  cake?: boolean; // a 🎂 on birthdays
   onClose: () => void;
   onEvent?: (e: BoardEvent) => void;
   onAdd?: () => void;
@@ -197,7 +202,7 @@ export function DayView({
                       : undefined
               }
             >
-              {evText(e)}
+              {evText(e, cake)}
               {e.cal ? ' · ' + e.cal : ''}
             </button>
           );

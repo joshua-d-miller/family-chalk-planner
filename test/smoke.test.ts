@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | smoke.test.ts
 ===============================================================================
- Version:   0.15.1
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-10
+ Updated:   2026-11-11
 
  Purpose:
      End-to-end smoke test: real server + mock CalDAV + mock photo album,
@@ -64,6 +64,9 @@
 
  0.15.1    2026-11-10   joshua    The month without its calendar.
                         claude
+
+ 0.16.0    2026-11-11   joshua    Birthdays; turned pictures; a month's own
+                        claude    colors; the garland set.
 ===============================================================================
 */
 
@@ -203,12 +206,17 @@ test('chalk drawings and holiday borders', async () => {
   }
   assert.deepEqual(
     styles.map(s => s.prefix),
-    ['se', 'no', 'om', 'tw', 'fx', 'eo', 'ip']
+    ['se', 'no', 'om', 'tw', 'fx', 'eo', 'ip', 'cp']
   );
   assert.ok(
-    styles.every(s => s.count > 500),
+    styles.filter(s => s.prefix !== 'cp').every(s => s.count > 500),
     'every style unpacked'
   );
+  // the board's own: garlands and trims, a garland long and thin
+  assert.equal(styles.find(s => s.prefix === 'cp')!.count, 19);
+  const garland = await (await api('/api/clip/cp-garland-lights.svg')).text();
+  assert.match(garland, /width="256" height="\d+"/);
+  assert.ok(Number(/height="(\d+)"/.exec(garland)![1]) < 100, 'long and thin');
   const noto = await (await api('/api/clip/list?style=no')).json();
   assert.ok(noto.includes('no-jack-o-lantern'));
   r = await api('/api/clip/no-jack-o-lantern.svg');
@@ -442,6 +450,54 @@ test('holidays can be hidden (every year) and brought back', async () => {
   assert.equal(d.holidays.find(h => h.title === "Indigenous Peoples' Day").off, true);
   await post('/api/holidays', { off: [] });
   assert.ok(await has('2026-10', "Indigenous Peoples' Day"), 'back again');
+});
+
+test('a turned picture keeps its turn; a month keeps its own colors', async () => {
+  const r = await (
+    await post('/api/art/bulk', {
+      ym: '2026-12',
+      items: [
+        { k: 'g', src: '/api/clip/gi-mummy-head.svg', x: 300, y: 300, w: 90, h: 90, r: 35 },
+        { k: 't', s: 'Hi', x: 200, y: 200, r: -190 }
+      ]
+    })
+  ).json();
+  const art = await (await api('/api/art?ym=2026-12')).json();
+  assert.equal(art.find((x: { id: number }) => x.id === r.ids[0]).r, 35);
+  assert.equal(art.find((x: { id: number }) => x.id === r.ids[1]).r, undefined, 'out of range: not turned');
+  await post('/api/art/delete', { ym: '2026-12', ids: r.ids });
+  // December's own day-box and number colors (the rest from the board style)
+  let m = await (
+    await post('/api/meta', { ym: '2026-12', look: { lineC: '#C62828', numC: '#A9D8A0', numF: 'x', bogus: '#000000' } })
+  ).json();
+  assert.deepEqual(m.look, { lineC: '#C62828', numC: '#A9D8A0' });
+  m = await (await post('/api/meta', { ym: '2026-12', side: { mode: 'art' } })).json();
+  assert.deepEqual(m.look, { lineC: '#C62828', numC: '#A9D8A0' }, 'kept when something else changes');
+  assert.equal((await (await api('/api/meta?ym=2026-11')).json()).look, undefined, 'only December');
+  m = await (await post('/api/meta', { ym: '2026-12', look: null })).json();
+  assert.equal(m.look, undefined);
+});
+
+test('birthdays: no cake and no countdown unless asked; a starred one counts down', async () => {
+  const d = new Date(Date.now() + 5 * 864e5).toLocaleString('sv-SE', { timeZone: 'America/New_York' }).slice(0, 10);
+  const add = await (await post('/api/events', { title: 'Amanda’s Bday', date: d, allDay: true })).json();
+  const cd = async () => (await (await api('/api/countdowns')).json()) as { icon: string; title: string }[];
+  const month = async () => await (await api('/api/month?ym=' + d.slice(0, 7))).json();
+  assert.deepEqual(await (await api('/api/birthdays')).json(), { cake: false, countdown: false });
+  assert.equal((await month()).cake, false);
+  assert.ok(!(await cd()).some(c => /Amanda/.test(c.title)), 'no countdown without a star');
+  // counting down to every birthday: a star, until the cake is on too
+  await post('/api/birthdays', { countdown: true });
+  assert.equal((await cd()).find(c => /Amanda/.test(c.title))?.icon, '⭐');
+  await post('/api/birthdays', { cake: true });
+  assert.equal((await cd()).find(c => /Amanda/.test(c.title))?.icon, '🎂');
+  assert.equal((await month()).cake, true);
+  // back off; starring this one counts it down by itself
+  await post('/api/birthdays', { cake: false, countdown: false });
+  const ev = (await month()).events.find((e: { title: string }) => /Amanda/.test(e.title));
+  assert.equal((await post('/api/countdowns', { ref: ev.ref, on: true, title: ev.title, date: ev.start })).status, 200);
+  assert.equal((await cd()).find(c => /Amanda/.test(c.title))?.icon, '⭐');
+  await post('/api/events/delete', { ref: add.ref || { href: add.href }, scope: 'all', origDate: d });
 });
 
 test('the calendar can’t be reached: the month still shows, with its holidays and the problem', async () => {

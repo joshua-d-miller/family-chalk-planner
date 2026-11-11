@@ -4,6 +4,21 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.16.0 — garland, turning and a month's own colors
+- **A month's own colors:** 🎨 Style has **Every month** and **Colors just for November** (whichever
+  month you're on). Pick the day boxes' lines, the day numbers, today's mark and the other colors just for
+  this month; everything else comes from the board style. **Like every month** takes them away again.
+- **Garland & trims:** 19 Christmas pictures drawn for the board, in Stamps: garlands (lights, pine with
+  ornaments, holly, gold tinsel, beads, bunting, candy-cane swag), a string of lights, a wreath, holly,
+  ornaments in red, gold and blue, a bow, a stocking, a candy cane, mistletoe, a present and a gingerbread
+  man. Garlands go up long and thin (240 wide), for along the top or bottom of the calendar. Search
+  "garland", "lights", "ornament" or "wreath". A new 🎀 Holly & bows border uses them too.
+- **Turning:** in Select, drag the blue handle above what's picked to turn it (it snaps to straight), or
+  use ↺ ↻ to turn 15° at a time. Clipart, stamps, words and drawings all turn.
+- **Birthdays:** a 🎂 on birthdays is now a setting, off unless turned on (⚙️ Settings → Birthdays). So is
+  counting down to every birthday: with it off, a birthday counts down only when it's starred for a
+  countdown, like any other event.
+
 ## 0.15.1 — the month stays up, and art that knows about events
 - **Art over events:** when a piece of art (a stamp, clipart, words, a drawing) blanks out events, the
   board asks once while decorating: **Hide them** (the art wins and those events disappear from the

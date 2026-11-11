@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Art.tsx
 ===============================================================================
- Version:   0.15.1
+ Version:   0.16.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-10
+ Updated:   2026-11-11
 
  Purpose:
      The art on a month: chalk and Posca lines, fills, words, clipart and
@@ -43,6 +43,9 @@
 
  0.15.1    2026-11-10   joshua    Art she put behind the writing is drawn under
                         claude    the calendar.
+
+ 0.16.0    2026-11-11   joshua    Pictures and words turned.
+                        claude
 ===============================================================================
 */
 
@@ -74,6 +77,7 @@ export type ArtItem = {
   still?: string;
   mode?: string;
   g?: string; // things added together (a stamp, a copy) move as one
+  r?: number; // a picture or words, turned (degrees, -179 to 180)
   cv?: 'hide' | 'under'; // over events: hide them, or sit behind the writing (none: not asked yet)
 };
 
@@ -261,7 +265,7 @@ export function Art({
                 </text>
               );
               return (
-                <g key={it.id} data-id={it.id}>
+                <g key={it.id} data-id={it.id} transform={it.r ? `rotate(${it.r} ${it.x} ${it.y})` : undefined}>
                   {!it.m && text(ic, 0.4)}
                   {text(p)}
                 </g>
@@ -303,7 +307,8 @@ export function Art({
                 left: (it.x || 0) - (it.w || 0) / 2,
                 top: (it.y || 0) - (it.h || 0) / 2,
                 width: it.w,
-                height: it.h
+                height: it.h,
+                transform: it.r ? `rotate(${it.r}deg)` : undefined
               }}
             />
           ))}

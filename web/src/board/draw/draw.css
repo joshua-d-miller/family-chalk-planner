@@ -49,6 +49,11 @@
   cursor: nwse-resize;
   touch-action: none;
 }
+/* the turn handle, above what's selected */
+.slate .selGrip.turn {
+  background: #9cc9e6;
+  cursor: grab;
+}
 .slate .selbar {
   position: absolute;
   z-index: 3;

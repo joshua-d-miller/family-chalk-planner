@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | geom.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-11
 
  Purpose:
      Where things are on the board, in board pixels (the slate is 1252 x
@@ -36,6 +36,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.16.0    2026-11-11   joshua    Turning (spin), and the box of something
+                        claude    turned.
 ===============================================================================
 */
 
@@ -67,14 +70,29 @@ export function textBox(it: ArtItem): Box {
   return { x1: x - w / 2 - 6, x2: x + w / 2 + 6, y1: y - h / 2 - 4, y2: y + h / 2 + 4 };
 }
 
+// a box turned by r degrees about its middle: the box around it
+function turnedBox(b: Box, r: number | undefined): Box {
+  if (!r) return b;
+  const cx = (b.x1 + b.x2) / 2;
+  const cy = (b.y1 + b.y2) / 2;
+  const a = (r * Math.PI) / 180;
+  const c = Math.abs(Math.cos(a));
+  const s = Math.abs(Math.sin(a));
+  const hw = (b.x2 - b.x1) / 2;
+  const hh = (b.y2 - b.y1) / 2;
+  const w = hw * c + hh * s;
+  const h = hw * s + hh * c;
+  return { x1: cx - w, x2: cx + w, y1: cy - h, y2: cy + h };
+}
+
 export function itemBox(it: ArtItem): Box {
-  if (it.k === 't') return textBox(it);
+  if (it.k === 't') return turnedBox(textBox(it), it.r);
   if (it.k === 'g') {
     const x = it.x || 0;
     const y = it.y || 0;
     const w = it.w || 0;
     const h = it.h || 0;
-    return { x1: x - w / 2, y1: y - h / 2, x2: x + w / 2, y2: y + h / 2 };
+    return turnedBox({ x1: x - w / 2, y1: y - h / 2, x2: x + w / 2, y2: y + h / 2 }, it.r);
   }
   const p = it.p || [];
   const h = (it.w || 4) / 2;
@@ -163,6 +181,35 @@ export function xform(it: ArtItem, dx: number, dy: number, k = 1, cx = 0, cy = 0
   } else {
     o.p = (o.p || []).map((v, i) => (i % 2 ? (v - cy) * k + cy + dy : (v - cx) * k + cx + dx));
     o.w = Math.max(1, Math.min(60, Math.round((o.w || 4) * k * 10) / 10));
+  }
+  return o;
+}
+// turned by deg degrees about (cx, cy): pictures and words keep their turn (r), lines turn their points
+export function spin(it: ArtItem, deg: number, cx: number, cy: number): ArtItem {
+  const o: ArtItem = JSON.parse(JSON.stringify(it));
+  const a = (deg * Math.PI) / 180;
+  const cos = Math.cos(a);
+  const sin = Math.sin(a);
+  const turn = (x: number, y: number): [number, number] => [
+    cx + (x - cx) * cos - (y - cy) * sin,
+    cy + (x - cx) * sin + (y - cy) * cos
+  ];
+  if (o.k === 't' || o.k === 'g') {
+    const [x, y] = turn(o.x || 0, o.y || 0);
+    o.x = Math.round(x);
+    o.y = Math.round(y);
+    let r = Math.round((((o.r || 0) + deg) % 360) + 360) % 360;
+    if (r > 180) r -= 360;
+    if (r) o.r = r;
+    else delete o.r;
+  } else {
+    const p = o.p || [];
+    const q: number[] = [];
+    for (let i = 0; i < p.length; i += 2) {
+      const [x, y] = turn(p[i], p[i + 1]);
+      q.push(Math.round(x * 10) / 10, Math.round(y * 10) / 10);
+    }
+    o.p = q;
   }
   return o;
 }
