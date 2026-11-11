@@ -2,16 +2,16 @@
 ===============================================================================
  Family Chalk Planner | Server | month.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-11
 
  Purpose:
      Each month's own options: the typed title's style (or a hand-lettered
      one), what goes beside the month name (photos or room to draw), the
      holiday border, and which layout the month's art was placed on.
-       month_meta(month)    { hideTitle, title, side, border, artPad }
+       month_meta(month)    { hideTitle, title, side, border, artPad, look }
        kv 'titleDefault'    the title style for months without their own
        kv 'borders'         { MM: border } borders that come back every
            year in that month
@@ -42,6 +42,9 @@
                                   get it.
 
                                   Month titles can use any of the fonts.
+
+ 0.16.0    2026-11-11   joshua    A month's own colors (look) over the board
+                        claude    style's.
 ===============================================================================
 */
 
@@ -50,6 +53,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { isYm } from './dates.ts';
 import type { Kv } from './kv.ts';
 import { BOARD_FONTS } from '../shared/fonts.ts';
+import { COLOR_KEYS } from './theme.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //
@@ -77,6 +81,15 @@ interface Stored {
   side?: Side;
   border?: Border | { off: true }; // off: none this year, even if there's a yearly one
   artPad?: number;
+  look?: Record<string, string>; // this month's own colors (day boxes, numbers...) over the board style's
+}
+// a month's own colors: board-style color names to #rrggbb (anything else left out)
+function cleanLook(v: unknown): Record<string, string> | undefined {
+  if (!v || typeof v !== 'object') return undefined;
+  const out: Record<string, string> = {};
+  for (const [k, c] of Object.entries(v as Record<string, unknown>))
+    if (COLOR_KEYS.includes(k) && typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c)) out[k] = c;
+  return Object.keys(out).length ? out : undefined;
 }
 export interface MonthMeta extends Omit<Stored, 'border'> {
   border?: Border;
@@ -203,7 +216,7 @@ export function setup({
   // The title (typed style, or hand-lettered) and what goes beside it.      //
   // makeDefault: for every month.                                           //
   app.post('/api/meta', (req, res) => {
-    const { ym, hideTitle, title, makeDefault, side } = req.body || {};
+    const { ym, hideTitle, title, makeDefault, side, look } = req.body || {};
     if (!isYm(ym)) return res.status(400).json({ error: 'bad month' });
     const cur = stored(ym);
     const meta: Stored = { hideTitle: hideTitle === undefined ? !!cur.hideTitle : !!hideTitle };
@@ -213,6 +226,8 @@ export function setup({
     if (t) meta.title = t;
     const sd = side === undefined ? cur.side : side === null ? undefined : cleanSide(side); // null = back to the usual
     if (sd) meta.side = sd;
+    const lk = look === undefined ? cur.look : look === null ? undefined : cleanLook(look); // null = the board style's
+    if (lk) meta.look = lk;
     if (makeDefault && t) {
       kv.set('titleDefault', t);
       delete meta.title;

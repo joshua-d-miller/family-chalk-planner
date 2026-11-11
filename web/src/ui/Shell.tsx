@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Shell.tsx
 ===============================================================================
- Version:   0.15.0
+ Version:   0.16.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-08
+ Updated:   2026-11-11
 
  Purpose:
      The bar that stays at the bottom while the pages change. A family
@@ -40,6 +40,11 @@
 
                                   The Week page draws its own cork, like the
                                   calendar.
+
+ 0.16.0    2026-11-11   joshua    The pages' cork goes exactly where the
+                        claude    board's is (a board that doesn't fill the
+                                  screen leaves it above the bottom or in from
+                                  the sides).
 ===============================================================================
 */
 
@@ -78,6 +83,13 @@ export function shellKind(who: Who | null): ShellKind {
 // ------------------------------- //
 // The kind of bar, where a page puts its tools on the cork, and how much of //
 // the bottom of the screen the tab bar takes.                               //
+// where the board's cork is on the screen, in screen pixels: its left edge, width, and how far its
+// bottom edge is from the bottom of the screen (a board that doesn't fill the screen leaves a gap)
+export interface CorkAt {
+  left: number;
+  width: number;
+  bottom: number;
+}
 interface ShellState {
   kind: ShellKind;
   who: Who | null;
@@ -85,7 +97,8 @@ interface ShellState {
   slot: HTMLElement | null;
   navH: number;
   corkZ: number | null; // how big the board drew its cork on this screen (the pages' cork matches it)
-  setCorkZ: (z: number) => void;
+  setCorkZ: (z: number, at?: CorkAt) => void;
+  corkAt: CorkAt | null; // and where it is (the pages' cork goes in the same place)
   setBusyBoard: (busy: boolean) => void; // drawing or zoomed in: the tab bar shrinks out of the way
 }
 const Ctx = createContext<ShellState>({
@@ -96,6 +109,7 @@ const Ctx = createContext<ShellState>({
   navH: 0,
   corkZ: null,
   setCorkZ: () => {},
+  corkAt: null,
   setBusyBoard: () => {}
 });
 export const useShell = () => useContext(Ctx);
@@ -105,22 +119,32 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [navH, setNavH] = useState(0);
   const [busyBoard, setBusyBoard] = useState(false);
-  const [corkZ, setCorkZState] = useState<number | null>(() => {
+  // the board's cork on this screen, remembered for the pages (only for a screen this size)
+  const [cork, setCork] = useState<{ z: number; at: CorkAt | null } | null>(() => {
     try {
-      const v = JSON.parse(sessionStorage.getItem('chalkCorkZ') || 'null') as { z: number; w: number } | null;
-      return v && v.w === innerWidth ? v.z : null; // only for a screen this wide
+      const v = JSON.parse(sessionStorage.getItem('chalkCorkZ') || 'null') as {
+        z: number;
+        at?: CorkAt;
+        w: number;
+        h?: number;
+      } | null;
+      return v && v.w === innerWidth && (v.h === undefined || v.h === innerHeight)
+        ? { z: v.z, at: v.at || null }
+        : null;
     } catch {
       return null;
     }
   });
-  const setCorkZ = useCallback((z: number) => {
-    setCorkZState(z);
+  const setCorkZ = useCallback((z: number, at?: CorkAt) => {
+    setCork(c => (c && c.z === z && JSON.stringify(c.at) === JSON.stringify(at || null) ? c : { z, at: at || null }));
     try {
-      sessionStorage.setItem('chalkCorkZ', JSON.stringify({ z, w: innerWidth }));
+      sessionStorage.setItem('chalkCorkZ', JSON.stringify({ z, at, w: innerWidth, h: innerHeight }));
     } catch {
       /* fine: the pages work it out */
     }
   }, []);
+  const corkZ = cork?.z ?? null;
+  const corkAt = cork?.at ?? null;
   const onBoard = here === 'board' || here === 'edit' || here === 'week';
   useEffect(() => {
     const c = document.documentElement.classList;
@@ -134,7 +158,17 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
   }, [kind]);
   return (
     <Ctx.Provider
-      value={{ kind, who, here, slot: kind === 'cork' && !onBoard ? slot : null, navH, corkZ, setCorkZ, setBusyBoard }}
+      value={{
+        kind,
+        who,
+        here,
+        slot: kind === 'cork' && !onBoard ? slot : null,
+        navH,
+        corkZ,
+        setCorkZ,
+        corkAt,
+        setBusyBoard
+      }}
     >
       {children}
       {kind === 'cork' && !onBoard && <CorkBar onSlot={setSlot} />}
@@ -226,7 +260,7 @@ function corkZoom() {
   return Math.max(0.6, Math.min(innerWidth / BOARD_W, innerHeight / BOARD_H));
 }
 function CorkBar({ onSlot }: { onSlot: (el: HTMLElement | null) => void }) {
-  const { corkZ } = useShell();
+  const { corkZ, corkAt } = useShell();
   // the board's own size for it, when the board has been shown on this screen; else worked out the same way.
   // Only a change of width counts: a phone's address bar coming and going changes the height as a page
   // scrolls, and the cork mustn't grow and shrink with it
@@ -242,11 +276,19 @@ function CorkBar({ onSlot }: { onSlot: (el: HTMLElement | null) => void }) {
     return () => removeEventListener('resize', on);
   }, []);
   const z = corkZ ?? own;
+  // exactly where the board's cork is (sizes in the zoomed cork's own pixels)
+  const at = corkAt && corkZ ? corkAt : null;
   useEffect(() => {
-    document.documentElement.style.setProperty('--corkh', 50 * z + 'px');
-  }, [z]);
+    document.documentElement.style.setProperty('--corkh', 50 * z + (at ? at.bottom : 0) + 'px');
+  }, [z, at]);
   return (
-    <nav className="cork corkbar" aria-label="Pages" style={{ zoom: z }}>
+    <nav
+      className="cork corkbar"
+      aria-label="Pages"
+      style={
+        at ? { zoom: z, left: at.left / z, width: at.width / z, right: 'auto', bottom: at.bottom / z } : { zoom: z }
+      }
+    >
       <CorkNav />
       <span className="gap" />
       <span className="groove" aria-hidden="true" />

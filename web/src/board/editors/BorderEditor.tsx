@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | BorderEditor.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.16.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-11
 
  Purpose:
      🖼 Border: a ready-made holiday set, or up to 8 pictures of her own,
@@ -22,6 +22,11 @@
  0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
                         claude    events, the month's title and border, the
                                   board style.
+
+ 0.16.0    2026-11-11   joshua    A Holly & bows border.
+                        claude
+
+                                  A Twinkling lights border.
 ===============================================================================
 */
 
@@ -42,6 +47,8 @@ const PRESETS: [string, string, string][] = [
   ['🎃 Halloween', 'jack-o-lantern gi-bat gi-mummy-head gi-vampire-dracula gi-witch-face ghost', '#F3A35E'],
   ['🦃 Thanksgiving', 'gi-pumpkin gi-corn turkey maple-leaf gi-acorn gi-wheat', '#F2D479'],
   ['🎄 Christmas', 'christmas-tree wrapped-gift gi-candy-canes snowman star santa-claus', '#A9D8A0'],
+  ['✨ Twinkling lights', 'cp-bulb-red cp-bulb-gold cp-bulb-green cp-bulb-blue cp-bulb-pink cp-bulb-purple', '#F2D479'],
+  ['🎀 Holly & bows', 'cp-holly cp-ornament-red cp-bow cp-ornament-gold cp-candy-cane cp-present', '#F6B3CB'],
   ['❄️ Winter', 'snowflake gi-snowflake-2 snowman gi-winter-hat', '#EDEAE0'],
   ['💕 Valentine’s', 'red-heart gi-hearts pink-heart love-letter', '#F6B3CB'],
   ['☘️ St. Patrick’s', 'shamrock four-leaf-clover rainbow gi-clover', '#A9D8A0'],

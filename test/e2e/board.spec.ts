@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   0.15.1
+ Version:   0.16.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-10
+ Updated:   2026-11-11
 
  Purpose:
      The board itself: this month on the tablet, moving between months,
@@ -31,6 +31,9 @@
 
  0.15.1    2026-11-10   joshua    Art over events: the question, and leftover
                         claude    days.
+
+ 0.16.0    2026-11-11   joshua    The cork stays put between the calendar and a
+                        claude    page.
 ===============================================================================
 */
 
@@ -221,5 +224,33 @@ test('art over events: asks once, then hides them; leftover days hide on their o
     expect(art.filter((x: { cv?: string }) => x.cv === 'hide').length).toBeGreaterThan(0);
   } finally {
     await board.admin.post('/api/art/delete', { ym, ids: r.ids });
+  }
+});
+
+test('a family screen: the cork stays put going from the calendar to a page and back', async ({ as }) => {
+  for (const viewport of [
+    { width: 1280, height: 900 }, // taller than the board: a gap under it
+    { width: 1600, height: 800 } // wider: gaps at the sides
+  ]) {
+    const page = await as('family', { context: { viewport } });
+    const where = () =>
+      page.evaluate(() => {
+        const c = document.querySelector('.cork')!.getBoundingClientRect();
+        const pill = document.querySelector('.cork a.pill')!.getBoundingClientRect();
+        return [c.left, c.top, c.width, c.height, pill.left, pill.top, pill.height].map(v => Math.round(v));
+      });
+    await page.waitForTimeout(500);
+    const onBoard = await where();
+    await page.locator('#menuBtn').click();
+    await page.locator('#menuPanel').getByRole('link', { name: 'Pantry' }).click();
+    await expect(page).toHaveURL(/\/pantry$/);
+    const onPage = await where();
+    // within 2 pixels: the board's cork is scaled as a picture, the page's is laid out at that size, and the
+    // two round a button's width differently by a pixel or so (nothing anyone sees)
+    for (let i = 0; i < onBoard.length; i++)
+      expect(
+        Math.abs(onPage[i] - onBoard[i]),
+        `${['left', 'top', 'width', 'height', 'button left', 'button top', 'button height'][i]}: ${onBoard} → ${onPage}`
+      ).toBeLessThanOrEqual(2);
   }
 });

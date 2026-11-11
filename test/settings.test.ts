@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | settings.test.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.16.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-06
+ Updated:   2026-11-11
 
  Purpose:
      Admin console → ⚙️ Board: settings saved in the database override
@@ -16,6 +16,11 @@
  -------   ----------   -------   --------------------------------------------
  0.13.0    2026-11-06   joshua    Server and tests are all TypeScript (ES
                         claude    modules).
+
+ 0.16.0    2026-11-11   joshua    Waits for the board to really stop before
+                        claude    starting the next (a slow machine left the
+                                  old one on the port); shows what the board
+                                  said if it stops on its own.
 ===============================================================================
 */
 
@@ -34,7 +39,7 @@ const PORT = 3996,
   DAV = 5996,
   GEO = 5997;
 const base = `http://127.0.0.1:${PORT}`;
-let server, dav, geo, data, admin, exitCode;
+let server, dav, geo, data, admin, exitCode, exited: Promise<number | null>;
 
 function start() {
   exitCode = null;
@@ -54,17 +59,37 @@ function start() {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
-  server.on('exit', c => {
+  // what the board said, shown if it stops when a test didn't stop it (a crash), so CI shows why
+  let said = '';
+  const keep = (d: Buffer) => (said = (said + d).slice(-4000));
+  server.stdout.on('data', keep);
+  server.stderr.on('data', keep);
+  const me = server;
+  exited = new Promise(done => server.on('exit', c => done(c)));
+  server.on('exit', (c, sig) => {
     exitCode = c;
+    if (c !== 3 && sig !== 'SIGTERM' && me === server) console.error(`the board stopped (${c ?? sig}):\n${said}`);
   });
 }
 async function ready() {
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 100; i++) {
     try {
       if ((await fetch(base + '/api/whoami')).ok) return;
     } catch {}
     await new Promise(r => setTimeout(r, 200));
   }
+  throw new Error('the board did not start');
+}
+// the board has really stopped (a busy board, unpacking pictures on a slow machine, can take a few
+// seconds): starting the next one before that, the old one would still have the port
+async function stopped(ms = 20000) {
+  const c = await Promise.race([exited, new Promise<'late'>(r => setTimeout(() => r('late'), ms))]);
+  if (c === 'late') throw new Error('the board did not stop');
+  return c;
+}
+async function stop() {
+  server.kill();
+  await stopped();
 }
 
 test.before(async () => {
@@ -92,8 +117,8 @@ test.before(async () => {
   await ready();
   admin = client(base, (await makeAdmin(base, data)).cookie);
 });
-test.after(() => {
-  server && server.kill();
+test.after(async () => {
+  if (server && exitCode === null) await stop().catch(() => {});
   dav && dav.close();
   geo && geo.close();
   fs.rmSync(data, { recursive: true, force: true });
@@ -160,8 +185,7 @@ test('saving restarts the board; the console wins over .env; passwords are encry
   ).json();
   assert.equal(r.restarting, true);
   assert.deepEqual(r.changed.sort(), ['BOARD_TITLE', 'CALDAV_PASSWORD', 'TEMP_UNIT']);
-  for (let i = 0; i < 30 && exitCode === null; i++) await new Promise(res => setTimeout(res, 100));
-  assert.equal(exitCode, 3, 'exits so the service manager restarts it');
+  assert.equal(await stopped(), 3, 'exits so the service manager restarts it');
   start();
   await ready();
   assert.match(await (await admin.api('/edit')).text(), /<title>Millers<\/title>/);
@@ -195,16 +219,14 @@ test('saving restarts the board; the console wins over .env; passwords are encry
 });
 
 test('a lost key only means entering the password again', async () => {
-  server.kill();
-  await new Promise(r => setTimeout(r, 300));
+  await stop();
   fs.rmSync(path.join(data, 'secret.key'));
   start();
   await ready();
   const gone = await (await admin.api('/api/board-settings')).json();
   assert.deepEqual(gone.lost.sort(), ['CALDAV_PASSWORD', 'CALDAV_USER'], 'a missing key: those values are marked');
   assert.ok(!fs.existsSync(path.join(data, 'secret.key')), 'reading never makes a new key');
-  server.kill();
-  await new Promise(r => setTimeout(r, 300));
+  await stop();
   fs.writeFileSync(path.join(data, 'secret.key'), 'a-different-key\n');
   start();
   await ready();
@@ -224,7 +246,7 @@ test('a lost key only means entering the password again', async () => {
       .restarting,
     true
   );
-  for (let i = 0; i < 30 && exitCode === null; i++) await new Promise(res => setTimeout(res, 100));
+  assert.equal(await stopped(), 3);
   start();
   await ready();
   assert.deepEqual((await (await admin.api('/api/board-settings')).json()).lost, []);
@@ -250,7 +272,7 @@ test('more calendars, calendar links, Monday weeks, 24-hour time, other holidays
     })
   ).json();
   assert.equal(r.restarting, true);
-  for (let i = 0; i < 30 && exitCode === null; i++) await new Promise(res => setTimeout(res, 100));
+  assert.equal(await stopped(), 3);
   start();
   await ready();
   const m = await (await admin.api('/api/month?ym=2026-10')).json();

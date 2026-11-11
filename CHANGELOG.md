@@ -4,6 +4,33 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.16.0 — garland, turning and a month's own colors
+- **A month's own colors:** 🎨 Style has **Every month** and **Colors just for November** (whichever
+  month you're on). Pick the day boxes' lines, the day numbers, today's mark and the other colors just for
+  this month; everything else comes from the board style. **Like every month** takes them away again.
+- **Garland & trims:** 46 Christmas pictures drawn for the board, in Stamps:
+  - garlands: lights, pine with ornaments, holly, gold tinsel, beads, bunting and a candy-cane swag, and
+    a string of lights
+  - **twinkling** (they animate on every screen): a garland of lights, a string of lights, a star, a
+    candle, and single bulbs in six colors (purple too)
+  - a tree, a star, three snowflakes, a wreath, holly, a pine sprig, a poinsettia, ornaments (red, gold,
+    blue, striped), a bow, a stocking, a candy cane, mistletoe, a present, a gift tag, a Santa hat,
+    mittens, hot cocoa, jingle bells, a snowman, a reindeer, a gingerbread man, a sugar cookie and a North
+    Pole sign
+
+  Garlands go up long and thin (240 wide), for along the top or bottom of the calendar. Search
+  "garland", "lights", "twinkle", "snowflake", "ornament" or "wreath".
+- **✨ Twinkling lights border:** a string of red, gold, green, blue, pink and purple bulbs on a wire all the way around the calendar,
+  each bulb pointing out and twinkling at its own pace. Also a new 🎀 Holly & bows border.
+- **Turning:** in Select, drag the blue handle above what's picked to turn it (it snaps to straight), or
+  use ↺ ↻ to turn 15° at a time. Clipart, stamps, words and drawings all turn.
+- Fixed: on a family screen the cork jumped a little going from the calendar to a page (Chores, Pantry...)
+  and back. On a screen the board doesn't fill exactly, the calendar's cork sits a little above the
+  bottom or in from the sides; the pages' cork now goes in exactly the same place, buttons and all.
+- **Birthdays:** a 🎂 on birthdays is now a setting, off unless turned on (⚙️ Settings → Birthdays). So is
+  counting down to every birthday: with it off, a birthday counts down only when it's starred for a
+  countdown, like any other event.
+
 ## 0.15.1 — the month stays up, and art that knows about events
 - **Art over events:** when a piece of art (a stamp, clipart, words, a drawing) blanks out events, the
   board asks once while decorating: **Hide them** (the art wins and those events disappear from the

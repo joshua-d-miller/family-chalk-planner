@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Calendar | routes.ts
 ===============================================================================
- Version:   0.15.1
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-10
+ Updated:   2026-11-11
 
  Purpose:
      What the screens ask the calendar for: a month (with holidays and the
@@ -48,6 +48,10 @@
  0.15.1    2026-11-10   joshua    When the calendar can't be reached, the month
                         claude    still shows (holidays and the events it had),
                                   with the problem.
+
+ 0.16.0    2026-11-11   joshua    Birthdays: a cake and counting down to every
+                        claude    one are settings, both off; otherwise a
+                                  birthday counts down only when starred.
 ===============================================================================
 */
 
@@ -141,6 +145,12 @@ export function registerCalendarRoutes({
   const colors = () => marks<string>('evcolors');
   const sizes = () => marks<string>('evsizes');
   const countdowns = () => marks<{ title: string; date: string }>('countdowns');
+  // birthdays: a 🎂 on them, and counting down to every one without starring it (both off unless asked)
+  const isBirthday = (t: string) => /birthday|bday|🎂/i.test(t);
+  const bdays = () => {
+    const v = (kvGet('birthdays') || {}) as { cake?: boolean; countdown?: boolean };
+    return { cake: !!v.cake, countdown: !!v.countdown };
+  };
   // this occurrence's setting, else the whole series'
   const forEvent = <T>(all: Record<string, T>, ref: EventRef) => all[keyOf(ref)] ?? all[`${ref.href}|`];
 
@@ -178,6 +188,7 @@ export function registerCalendarRoutes({
         events: [...hol, ...events],
         calendars: source.writable(),
         today: clock.today(),
+        cake: bdays().cake,
         ...(down ? { problem: down } : {})
       });
     } catch (err) {
@@ -186,7 +197,15 @@ export function registerCalendarRoutes({
       try {
         const g = clock.monthGrid(ym);
         const hol = showHolidays ? holidays.between(g.start, addDays(g.start, g.weeks * 7 - 1)) : [];
-        res.json({ ym, grid: g, events: hol, calendars: [], today: clock.today(), problem: (err as Error).message });
+        res.json({
+          ym,
+          grid: g,
+          events: hol,
+          calendars: [],
+          today: clock.today(),
+          cake: bdays().cake,
+          problem: (err as Error).message
+        });
       } catch {
         res.status(502).json({ error: (err as Error).message });
       }
@@ -288,11 +307,30 @@ export function registerCalendarRoutes({
     res.json({ ok: true });
   });
 
+  // ------------- //
+  // | Birthdays | //
+  // ------------- //
+  // A cake on birthdays, and counting down to every birthday without       //
+  // starring it: both off unless the family turns them on (Settings)        //
+  app.get('/api/birthdays', (_req, res) => res.json(bdays()));
+  app.post('/api/birthdays', (req, res) => {
+    const b = req.body || {};
+    const v = {
+      ...bdays(),
+      ...('cake' in b ? { cake: !!b.cake } : {}),
+      ...('countdown' in b ? { countdown: !!b.countdown } : {})
+    };
+    kvSet('birthdays', v);
+    broadcast('calendar', {});
+    broadcast('countdowns', {});
+    res.json(v);
+  });
+
   // ------------------ //
   // | The countdowns | //
   // ------------------ //
-  // The next 3 within 60 days: big holidays, starred events, and birthdays  //
-  // from the calendar                                                       //
+  // The next 3 within 60 days: big holidays and starred events (and every  //
+  // birthday in the calendar, when Settings → Birthdays says so)            //
   app.get('/api/countdowns', async (_req, res) => {
     const today = clock.today();
     const horizon = addDays(today, 60);
@@ -301,18 +339,23 @@ export function registerCalendarRoutes({
       const big = holidays.ofYear(+h.start.slice(0, 4)).find(x => x.date === h.start && x.title === h.title);
       if (big && big.big) items.push({ icon: h.icon, title: h.title, date: h.start });
     }
+    const bd = bdays();
+    const icon = (t: string) => (bd.cake && isBirthday(t) ? '🎂' : '⭐');
+    const plain = (t: string) => t.replace(/🎂/g, '').trim();
     for (const m of Object.values(countdowns()))
-      if (m.date >= today && m.date <= horizon) items.push({ icon: '⭐', title: m.title, date: m.date });
-    try {
-      const ym = today.slice(0, 7);
-      const next = addDays(`${ym}-28`, 7).slice(0, 7);
-      for (const e of [...(await source.eventsForMonth(ym)), ...(await source.eventsForMonth(next))]) {
-        if (/birthday|bday|🎂/i.test(e.title) && e.start >= today && e.start <= horizon)
-          items.push({ icon: '🎂', title: e.title.replace(/🎂/g, '').trim(), date: e.start });
+      if (m.date >= today && m.date <= horizon)
+        items.push({ icon: icon(m.title), title: plain(m.title), date: m.date });
+    if (bd.countdown)
+      try {
+        const ym = today.slice(0, 7);
+        const next = addDays(`${ym}-28`, 7).slice(0, 7);
+        for (const e of [...(await source.eventsForMonth(ym)), ...(await source.eventsForMonth(next))]) {
+          if (isBirthday(e.title) && e.start >= today && e.start <= horizon)
+            items.push({ icon: icon(e.title), title: plain(e.title), date: e.start });
+        }
+      } catch {
+        /* the calendar is down: holidays still count down */
       }
-    } catch {
-      /* the calendar is down: holidays still count down */
-    }
     const seen = new Set<string>();
     const list = items
       .filter(i => {

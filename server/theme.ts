@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Server | theme.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-11
 
  Purpose:
      Board style ("theme"): a preset name plus the family's tweaks to it,
@@ -24,6 +24,9 @@
                                   today, and the frame's thickness.
 
  0.14.0    2026-11-07   joshua    The board style can use any of the fonts.
+                        claude
+
+ 0.16.0    2026-11-11   joshua    The names of its colors, for a month's own.
                         claude
 ===============================================================================
 */
@@ -59,6 +62,8 @@ const TWEAKS: Record<string, 'color' | 'font' | string[]> = {
   lineS: ['solid', 'dashed', 'dotted'],
   lineW: ['thin', 'normal', 'bold']
 };
+// the colors (a month can have its own: server/month.ts)
+export const COLOR_KEYS = Object.keys(TWEAKS).filter(k => TWEAKS[k] === 'color');
 const SURFACES = ['slate', 'green', 'blue', 'cork', 'kraft', 'white', 'wood', 'glass', 'linen', 'peg'];
 
 export interface Theme {

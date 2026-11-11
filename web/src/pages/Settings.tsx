@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Settings.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-11
 
  Purpose:
      ⚙️ Settings on the board (signed-in people). Admins also get the
@@ -27,6 +27,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 0.16.0    2026-11-11   joshua    Birthdays: a cake, and counting down to every
+                        claude    one.
 ===============================================================================
 */
 
@@ -58,6 +61,7 @@ export function Settings({ who }: { who: Who | null }) {
       )}
       {admin && <Calendar />}
       <Holidays />
+      <Birthdays />
       <Photos />
       {admin && <Trash />}
       <RightColumn />
@@ -336,6 +340,36 @@ function Holidays() {
           </button>
         ))}
       </div>
+      {sv.line}
+    </Card>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | Birthdays | //
+// ------------- //
+// A cake on birthdays, and counting down to every one without starring it  //
+function Birthdays() {
+  const b = useLive<{ cake: boolean; countdown: boolean }>('api/birthdays', ['calendar']);
+  const sv = useSaved();
+  if (!b.data) return null;
+  const set = (patch: Partial<{ cake: boolean; countdown: boolean }>) => {
+    b.set({ ...b.data!, ...patch });
+    sv.run(post('api/birthdays', patch));
+  };
+  return (
+    <Card title="Birthdays" id="birthdays">
+      <label className="check">
+        <input type="checkbox" checked={b.data.cake} onChange={e => set({ cake: e.target.checked })} />
+        <span className="t">Put a 🎂 on birthdays (events with “birthday” or “bday” in their name)</span>
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={b.data.countdown} onChange={e => set({ countdown: e.target.checked })} />
+        <span className="t">
+          Count down to every birthday in Notes (otherwise only the ones starred ⭐ for a countdown)
+        </span>
+      </label>
       {sv.line}
     </Card>
   );

@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | app-pages.spec.ts
 ===============================================================================
- Version:   0.15.0
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-08
+ Updated:   2026-11-11
 
  Purpose:
      The new screens (React): the meal plan, reminders, timers, the
@@ -43,6 +43,9 @@
 
  0.15.0    2026-11-08   joshua    A family screen sent to Settings gets back to
                         claude    the calendar.
+
+ 0.16.0    2026-11-11   joshua    Turning; colors just for this month.
+                        claude
 ===============================================================================
 */
 
@@ -492,7 +495,7 @@ test('the board (new screen, tablet): draw, undo and redo, erase, write, select,
   await board.admin.post('/api/art/clear', { ym });
   const t = await as('tablet', { path: '/edit' });
   const artOf = async () =>
-    (await (await board.admin.api(`/api/art?ym=${ym}`)).json()) as { k?: string; s?: string; z?: number }[];
+    (await (await board.admin.api(`/api/art?ym=${ym}`)).json()) as { k?: string; s?: string; z?: number; r?: number }[];
   await t.locator('#drawBtn').click();
   const box = (await t.locator('.slate').boundingBox())!;
   const at = (x: number, y: number) => [box.x + (x / 1252) * box.width, box.y + (y / 642) * box.height] as const;
@@ -527,6 +530,13 @@ test('the board (new screen, tablet): draw, undo and redo, erase, write, select,
   await expect(t.locator('.selbar')).toBeVisible();
   await t.locator('.selbar').getByRole('button', { name: 'Make bigger' }).click();
   await expect.poll(async () => (await artOf()).find(x => x.k === 't')?.z).toBeGreaterThan(40);
+  // turned a little to the right, twice, and back once
+  await t.locator('.selbar').getByRole('button', { name: 'Turn right' }).click();
+  await t.locator('.selbar').getByRole('button', { name: 'Turn right' }).click();
+  await t.locator('.selbar').getByRole('button', { name: 'Turn left' }).click();
+  await expect.poll(async () => (await artOf()).find(x => x.k === 't')?.r).toBe(15);
+  await expect(t.locator('.slate > .artSvg .lines g[transform^="rotate(15"]')).toHaveCount(1);
+  await expect(t.locator('.selGrip.turn')).toBeVisible();
   await t.locator('.selbar').getByRole('button', { name: 'Erase' }).click();
   await expect.poll(async () => (await artOf()).length).toBe(0);
   // a stamp from the library: an emoji, put up where she taps
@@ -606,4 +616,25 @@ test('a family screen sent to Settings can get back (it needs a parent signed in
   await page.locator('#signBack').click();
   await expect(page).toHaveURL(/\/edit$/);
   await expect(page.locator('#grid')).toBeVisible();
+});
+
+test('board style: colors just for this month', async ({ as, board }) => {
+  const { ym, name } = thisMonth();
+  const t = await as('tablet', { path: '/edit' });
+  await t.locator('#styleBtn').click();
+  await t
+    .locator('#styleSheet')
+    .getByRole('radio', { name: `Colors just for ${name}` })
+    .click();
+  await expect(t.locator('#styleSheet .presets')).toHaveCount(0); // just the colors
+  const lines = t.locator('#styleSheet .threl', { hasText: 'Calendar lines' }).locator('.colors button');
+  await lines.nth(2).click();
+  const picked = await lines.nth(2).getAttribute('aria-label');
+  await t.locator('#styleSheet').getByRole('button', { name: 'Save' }).click();
+  await expect
+    .poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).look?.lineC?.toLowerCase())
+    .toBe(picked!.toLowerCase());
+  // every other month keeps the board style
+  expect((await (await board.admin.api('/api/theme')).json()).o?.lineC).toBeUndefined();
+  await board.admin.post('/api/meta', { ym, look: null });
 });

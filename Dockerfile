@@ -28,6 +28,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund --loglevel=error && npm cache clean --force
 
 COPY server ./server
+COPY clipart ./clipart
 COPY shared ./shared
 COPY public ./public
 COPY --from=screens /build/web/dist ./web/dist

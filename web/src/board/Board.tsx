@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   0.15.1
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-10
+ Updated:   2026-11-11
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -75,6 +75,11 @@
                                   hides them or sits behind the writing; art
                                   over the grid's leftover days hides their
                                   events by itself.
+
+ 0.16.0    2026-11-11   joshua    A month's own colors; the cake setting in the
+                        claude    day view.
+
+                                  Tells the pages where its cork is.
 ===============================================================================
 */
 
@@ -143,6 +148,7 @@ export type MonthMeta = {
   borderYearly?: boolean;
   artPad: number;
   boardPad?: number;
+  look?: Record<string, string>; // this month's own colors, over the board style's
 };
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -253,8 +259,26 @@ export function Board({
   const fit = useFit(pad, bh, shell.navH);
   // the pages' cork is drawn the same size as this one
   const { kind: shellKind, setCorkZ, setBusyBoard } = shell;
-  useEffect(() => {
-    if (edit && shellKind === 'cork') setCorkZ(fit.scale);
+  // (and where it is: a board that doesn't fill the screen leaves its cork above the bottom or in from the sides,
+  // and the pages' cork goes in exactly the same place, so moving between them only the middle changes)
+  useLayoutEffect(() => {
+    if (!edit || shellKind !== 'cork') return;
+    const tell = () => {
+      const r = document.querySelector('#board > .cork, #board .cork:not(.corkbar)')?.getBoundingClientRect();
+      setCorkZ(
+        fit.scale,
+        r && r.width
+          ? {
+              left: Math.round(r.left),
+              width: Math.round(r.width),
+              bottom: Math.max(0, Math.round(innerHeight - r.bottom))
+            }
+          : undefined
+      );
+    };
+    tell();
+    const t = setTimeout(tell, 300); // once the board has settled (fonts, the first layout)
+    return () => clearTimeout(t);
   }, [edit, shellKind, setCorkZ, fit.scale]);
   // ---------------------- //
   // | Zooming in to draw | //
@@ -334,6 +358,7 @@ export function Board({
   const extras = useLive<{ bins: Bins }>('api/extras', ['extras']).data;
   const savedTheme = useLive<Theme>('api/theme', ['theme']).data;
   const [themeDraft, setThemeDraft] = useState<Theme | null>(null);
+  const [lookDraft, setLookDraft] = useState<Record<string, string> | null>(null); // this month's colors, being picked
   const theme = themeDraft || savedTheme;
   // ------------- //
   // | The cards | //
@@ -374,7 +399,9 @@ export function Board({
     return () => clearTimeout(t);
   }, [edit, ym, wk, touched, editing]);
 
-  const tv = useMemo(() => themeVals(theme), [theme]);
+  // the board style, with this month's own colors over it
+  const monthLook = lookDraft || (meta && 'artPad' in meta ? meta.look : undefined);
+  const tv = useMemo(() => ({ ...themeVals(theme), ...(monthLook || {}) }), [theme, monthLook]);
   const css = useMemo(() => themeCss(tv, sf.lum), [tv, sf.lum]);
   const m = month.data && 'grid' in month.data ? month.data : null;
   const slides = useSlides(photos, !edit || family);
@@ -921,6 +948,7 @@ export function Board({
         <DayView
           date={day}
           events={m.events}
+          cake={m.cake}
           onClose={closeDay}
           onEvent={
             edit
@@ -1017,7 +1045,17 @@ export function Board({
           onClose={closeEditor}
         />
       )}
-      {editing?.k === 'style' && <StyleEditor theme={savedTheme} onPreview={setThemeDraft} onClose={closeEditor} />}
+      {editing?.k === 'style' && shown && (
+        <StyleEditor
+          theme={savedTheme}
+          onPreview={setThemeDraft}
+          ym={shown}
+          monthName={monthName}
+          look={mm?.look || null}
+          onPreviewLook={setLookDraft}
+          onClose={closeEditor}
+        />
+      )}
     </div>
   );
 }

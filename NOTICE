@@ -21,6 +21,8 @@ Third-party components (fetched or installed separately, not part of this reposi
   shared/fonts.ts (Patrick Hand to Roboto); and Noto Color Emoji (Google),
   used only where a screen has no emoji of its own. Installed from npm (@fontsource; the emoji in the COLRv1
   format from @infolektuell/noto-color-emoji).
+- The "Garland & trims" pictures (clipart/garland.json, drawn by clipart/garland.py): drawn for this
+  project and given to the public domain (CC0).
 - React (MIT, Meta Platforms) for the screens, built with Vite (MIT).
 - OpenCV (Apache-2.0) and the YuNet face detection model from opencv_zoo (MIT):
   optional face finder, installed by deploy/setup-face.sh.

@@ -26,6 +26,7 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 **🗒️ Notes** on the cork picks what the bottom of the Notes column shows **on this screen** (🫙 jars, ☀️ today, 📅 up next or 📷 photos) and what its little switch can flip to. Tick just one for no switch; **Like the rest of the board** goes back to the board's choice. The wall can't change anything, so its choice is in the admin console: **📺 Screens → Bottom of Notes** on its row.
 
 ### Automatic on the calendar (nothing to do)
+- **Birthdays:** ⚙️ Settings → **Birthdays** can put a 🎂 on birthdays (events with "birthday" or "bday" in their name) and count down to every one in Notes. Both are off to start; a birthday you star for a countdown always counts down.
 - **US holidays** appear in light blue italics with an icon (board only, never written to your calendar). **Tap a holiday** to see the whole list and hide the ones you don't want (every year, from the calendar and the countdowns); tap a hidden one to bring it back. Family screens can do this too. When no holiday is showing to tap, open the same list from ⚙️ Settings → **Holidays** (everyone signed in on a tablet has ⚙️; the calendar, trash and Notes settings in it are for admins).
 - **Countdowns** in Notes: the next 3 things within 60 days — big holidays, any event with "birthday" or "bday" in the title (🎂), and anything ticked ⭐.
 - **Trash / recycling** labels on the right days (set in ⚙️ Settings), and **weather** (today / tomorrow) in Notes.
@@ -38,6 +39,12 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 - **Eraser**, **Undo / Redo**, and the trash can to **wipe this month's art**.
 - The drawing covers the whole board, so you can write or draw across several days ("Grandma visiting" over a week) or anywhere in the margins.
 - Art is saved per month, so each month starts fresh.
+
+### Turning things
+In Select, pick something (clipart, a stamp, words or a drawing) and drag the **blue handle** above it to turn it; it snaps to straight. **↺ ↻** in the bar turn it 15° at a time.
+
+### Christmas garland
+Stamps has a **Garland & trims** style: garlands (lights, pine, holly, tinsel, beads, bunting, candy cane), a string of lights, a tree, snowflakes, a wreath, ornaments, a poinsettia, a Santa hat, a snowman, a reindeer, hot cocoa and more. The lights, a star and a candle **twinkle**. Garlands go up long and thin, for along the top or bottom of the calendar. Search "garland", "lights", "twinkle", "snowflake", "ornament" or "wreath". For lights all the way around the calendar, pick the **✨ Twinkling lights** border.
 
 ### Art over events
 When a stamp, clipart, words or a drawing blanks out events, the board asks once while you decorate: **Hide them** (the art wins: those events don't show on the board under it) or **Keep showing them** (the art sits behind the writing, and the events read on top). Art that only touches the writing (a pumpkin in the corner of a day, a chalk circle around an event) never asks. To change your mind later, pick the piece in Select: the note at the bottom offers the other choice. Hidden events are still in your calendar: tap the day to see everything on it, and they still count in Up next and the countdowns. Art over the leftover days at the start or end of the month (the next or last month's) hides their events without asking.
@@ -66,6 +73,7 @@ When a stamp, clipart, words or a drawing blanks out events, the board asks once
 - Tap a jar: **+** adds the next piece in turn (it drops in on the wall) and **−** takes out the last one added. **Add a…** has a big button for every kind of piece (star, heart, rainbow, lightning, critter), so a kid can ask for exactly the one they want ("a rainbow, please!"). The jar remembers every piece in the order it went in. Change the **name**, the **goal**, and **what + adds, in turn** (tap the icons). **🎉 Reward!** celebrates and empties it.
 
 ### 🎨 Board style
+- **Every month / Colors just for this month:** the switch at the top. With **Colors just for November** (the month you're on), the colors you pick (day numbers, today's mark, the calendar's lines and the rest) are only for that month; everything else comes from the board style. **Like every month** takes them away.
 - **Background:** black slate, green or blue chalkboard, cork, kraft paper, whiteboard, dark wood, black glass, linen paper or pegboard. Changing it keeps your look and colors; a color only changes where it would be hard to read on that background (lighter on dark ones, darker on light ones, same hue) — that goes for the drawings and stamps too, without changing what's saved, so switching back brings the original colors back.
 - **Change with the season** (off unless you turn it on): adds a faint pattern over the background for the month shown — snowflakes in winter, blossoms in spring, suns in summer, leaves in autumn, hearts in February, pumpkins in October (seasons flip south of the equator, using the weather location).
 - **Presets:** Classic (the original look), Pastel, Bold, Simple, Autumn, Winter, Holiday, Scrawl.

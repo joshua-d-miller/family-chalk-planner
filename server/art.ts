@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | art.ts
 ===============================================================================
- Version:   0.15.1
+ Version:   0.16.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
- Updated:   2026-11-10
+ Updated:   2026-11-11
 
  Purpose:
      The art layer: chalk and Posca drawings, words, clipart, GIFs and
@@ -56,6 +56,9 @@
 
  0.15.1    2026-11-10   joshua    A piece of art keeps her choice about the
                         claude    events under it (cv).
+
+ 0.16.0    2026-11-11   joshua    Pictures and words can be turned (r).
+                        claude
 ===============================================================================
 */
 
@@ -95,6 +98,9 @@ export function cleanItem(raw: unknown): ArtItem | null {
   const group = typeof it.g === 'string' && GROUP.test(it.g) ? { g: it.g } : {};
   // over events: 'hide' hides the events under it, 'under' draws it behind the writing (none: not asked yet)
   const cover = it.cv === 'hide' || it.cv === 'under' ? { cv: it.cv } : {};
+  // a picture or words, turned (degrees)
+  const r = Math.round(Number(it.r));
+  const turn = Number.isFinite(r) && r && r >= -180 && r <= 180 ? { r } : {};
   const x = Number(it.x);
   const y = Number(it.y);
   if (it.k === 'g') {
@@ -115,6 +121,7 @@ export function cleanItem(raw: unknown): ArtItem | null {
       w: size(it.w),
       h: size(it.h),
       mode: ['gentle', 'loop', 'still'].includes(it.mode as string) ? it.mode : 'gentle',
+      ...turn,
       ...group,
       ...cover
     };
@@ -133,6 +140,7 @@ export function cleanItem(raw: unknown): ArtItem | null {
       f: Math.min(Math.max(Math.trunc(Number(it.f)) || 0, 0), BOARD_FONTS.length - 1),
       z: Math.min(Math.max(Math.round(Number(it.z)) || 40, 12), 120),
       ...(it.m ? { m: true } : {}),
+      ...turn,
       ...group,
       ...cover
     };

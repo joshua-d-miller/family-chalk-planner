@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Month.tsx
 ===============================================================================
- Version:   0.15.1
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-10
+ Updated:   2026-11-11
 
  Purpose:
      The month: its name, the weekdays, and a box per day with its events,
@@ -48,6 +48,12 @@
 
  0.15.1    2026-11-10   joshua    The month knows when the calendar couldn't be
                         claude    reached.
+
+ 0.16.0    2026-11-11   joshua    A cake on birthdays only when ⚙️ Settings
+                        claude    says so.
+
+                                  A border of light bulbs is a string of
+                                  lights: on a wire, pointing out, twinkling.
 ===============================================================================
 */
 
@@ -87,7 +93,8 @@ export interface MonthData {
   today: string;
   grid: { start: string; weeks: number; y: number; m: number; weekStart?: number; time24?: boolean };
   events: BoardEvent[];
-  problem?: string; // the calendar couldn't be reached (the board shows holidays and what it had)
+  problem?: string;
+  cake?: boolean; // a 🎂 on birthdays // the calendar couldn't be reached (the board shows holidays and what it had)
 }
 export interface Bins {
   day: number | null;
@@ -124,13 +131,13 @@ export const addDays = (ds: string, n: number) => {
   const [y, m, d] = ds.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 };
-// how an event reads in a day box: holidays get their emoji, birthdays a cake
 // the first day of the week a date is in (weekStart: 0 Sunday, 1 Monday)
 export const weekOf = (ds: string, weekStart: number) =>
   addDays(ds, -((new Date(ds + 'T12:00:00Z').getUTCDay() - weekStart + 7) % 7));
-export function evText(ev: BoardEvent) {
+// how an event reads in a day box: holidays get their emoji, birthdays a cake (when ⚙️ Settings says so)
+export function evText(ev: BoardEvent, cake = false) {
   let t = ev.holiday ? `${ev.icon} ${ev.title}` : ev.title;
-  if (!ev.holiday && /birthday|bday/i.test(t) && !t.includes('🎂')) t = '🎂 ' + t;
+  if (cake && !ev.holiday && /birthday|bday/i.test(t) && !t.includes('🎂')) t = '🎂 ' + t;
   return ev.allDay || ev.holiday ? t : `${t} @ ${ev.time}`;
 }
 
@@ -274,7 +281,7 @@ export function Month({
       // room for events, in pixels: a normal line is 15px; Large / Extra large ones take more
       const room = cellH - 5 - 24 - lanesHere * 24 - 4;
       const need = (e: BoardEvent) =>
-        15 * big * (e.size ? EV_SIZE[e.size] : 1) * (e.size && evText(e).length > 12 ? 2 : 1);
+        15 * big * (e.size ? EV_SIZE[e.size] : 1) * (e.size && evText(e, data.cake).length > 12 ? 2 : 1);
       let show = 0;
       let used = 0;
       for (let k = 0; k < list.length; k++) {
@@ -306,7 +313,7 @@ export function Month({
           </div>
           {lanesHere > 0 && <div style={{ height: lanesHere * 24, flex: 'none' }} />}
           {list.slice(0, show).map((ev, i) => {
-            const full = evText(ev);
+            const full = evText(ev, data.cake);
             const at = !ev.allDay && !ev.holiday ? full.lastIndexOf(' @ ') : -1;
             return (
               <div
@@ -427,18 +434,47 @@ function BorderLayer({ border: b }: { border: Border }) {
   const half = (sz + 6) / 2;
   const gap = sz * 0.45;
   const pts: [number, number][] = [];
-  const side = (x0: number, y0: number, x1: number, y1: number) => {
+  const turn: number[] = []; // which way each one faces (a string of lights: out from the calendar)
+  const side = (x0: number, y0: number, x1: number, y1: number, deg: number) => {
     const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / (sz + gap)));
-    for (let i = 0; i < n; i++) pts.push([x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n]);
+    for (let i = 0; i < n; i++) {
+      pts.push([x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n]);
+      turn.push(deg);
+    }
   };
+  // a border of only light bulbs is a string of lights: on a wire, every bulb pointing out
+  const lights = b.items.every(n => n.startsWith('cp-bulb-'));
   const W = CAL_W;
   const H = CAL_H;
-  side(half, half, W - half, half);
-  side(W - half, half, W - half, H - half);
-  side(W - half, H - half, half, H - half);
-  side(half, H - half, half, half);
+  side(half, half, W - half, half, 180);
+  side(W - half, half, W - half, H - half, -90);
+  side(W - half, H - half, half, H - half, 0);
+  side(half, H - half, half, half, 90);
+  // the wire: through each bulb's socket (the end that faces the calendar), sagging a little between them
+  const sock = pts.map(([x, y], i): [number, number] => {
+    const a = (turn[i] * Math.PI) / 180;
+    return [x + Math.sin(a) * sz * 0.42, y - Math.cos(a) * sz * 0.42];
+  });
+  const wire = lights
+    ? sock
+        .map(([x, y], i) => {
+          const [px, py] = sock[(i + sock.length - 1) % sock.length];
+          const mx = (x + px) / 2;
+          const my = (y + py) / 2;
+          return (
+            (i ? `Q${mx.toFixed(1)} ${(my + 3).toFixed(1)} ` : `M${x.toFixed(1)} ${y.toFixed(1)} `) +
+            `${x.toFixed(1)} ${y.toFixed(1)}`
+          );
+        })
+        .join(' ') + ' Z'
+    : '';
   return (
     <div className="borderLayer" id="borderLayer" aria-hidden="true">
+      {lights && (
+        <svg className="lightWire" width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+          <path d={wire} fill="none" stroke="#2E4A2E" strokeWidth={2} />
+        </svg>
+      )}
       {pts.map((p, i) => (
         <img
           key={i}
@@ -449,7 +485,7 @@ function BorderLayer({ border: b }: { border: Border }) {
             height: sz,
             left: +(p[0] - sz / 2).toFixed(1),
             top: +(p[1] - sz / 2).toFixed(1),
-            transform: `rotate(${Math.round((hash(i + 1, 7) - 0.5) * 24)}deg)`
+            transform: `rotate(${lights ? turn[i] : Math.round((hash(i + 1, 7) - 0.5) * 24)}deg)`
           }}
         />
       ))}

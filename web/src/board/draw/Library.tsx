@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Library.tsx
 ===============================================================================
- Version:   0.14.1
+ Version:   0.16.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-08
+ Updated:   2026-11-11
 
  Purpose:
      ★ Stamps: clipart and chalk drawings, emoji, GIFs (her own and
@@ -34,6 +34,9 @@
 
  0.14.1    2026-11-08   joshua    Clipart is placed with its path, so the
                         claude    board saves it.
+
+ 0.16.0    2026-11-11   joshua    A picture goes up in its own shape (a garland
+                        claude    long and thin).
 ===============================================================================
 */
 
@@ -227,7 +230,19 @@ function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
         (style ? '' : ' · Chalk drawings: game-icons.net (CC BY 3.0)');
   const place = (n: string) => {
     const s = clipPath(n, color); // the board keeps the path; the full address only works on this screen
-    pick({ name: clipLabel(n), items: [{ id: 0, k: 'g', x: 0, y: 0, w: 96, h: 96, src: s, still: s, mode: 'still' }] });
+    const put = (w: number, h: number) =>
+      pick({ name: clipLabel(n), items: [{ id: 0, k: 'g', x: 0, y: 0, w, h, src: s, still: s, mode: 'still' }] });
+    // in its own shape: a square picture 96 across, a long garland 240 wide
+    const img = new Image();
+    img.onload = () => {
+      const nw = img.naturalWidth || 1;
+      const nh = img.naturalHeight || 1;
+      const long = Math.max(nw, nh) / Math.min(nw, nh) > 1.8 ? 240 : 96;
+      const k = long / Math.max(nw, nh);
+      put(Math.round(nw * k), Math.round(nh * k));
+    };
+    img.onerror = () => put(96, 96);
+    img.src = clipSrc(n, color);
   };
   return (
     <>

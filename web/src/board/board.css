@@ -686,3 +686,11 @@ body.boardpage {
 .slate .underart {
   visibility: hidden;
 }
+
+/* a border of light bulbs: the wire they hang on */
+.slate .borderLayer .lightWire {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
