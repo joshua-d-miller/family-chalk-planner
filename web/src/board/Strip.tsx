@@ -14,7 +14,7 @@
      A screen that picked the ☰ button instead: no cork. The button sits
      in a bottom corner; its drawer has + Add event and the board's tools
      above the pages. Drawing, the drawer goes away and the drawing tools
-     stand in a cork rail down that side until Done.
+     float down that side (no cork) until Done.
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -125,8 +125,8 @@ export function Strip({
 // Put on the page itself (not in the board, which is scaled and moved), so  //
 // the button, the drawer and the rail keep their size and place. Not        //
 // drawing: the button, and its drawer with + Add event and the board's      //
-// buttons over the pages. Drawing: the drawing tools and ✏️ Done in a cork  //
-// rail down that side (the board steps aside for it, only while drawing).  //
+// buttons over the pages. Drawing: ✏️ Done and the drawing tools float     //
+// down that side (the board steps aside for them, only while drawing).     //
 function SideStrip({
   side,
   drawing,
@@ -161,7 +161,6 @@ function SideStrip({
     return createPortal(
       <div className={'cork rail ' + side} aria-label="Drawing tools" style={{ zoom: z }}>
         {children}
-        <span className="groove" aria-hidden="true" />
         {tools}
       </div>,
       document.body

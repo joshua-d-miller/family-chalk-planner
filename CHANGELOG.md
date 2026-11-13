@@ -15,9 +15,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   uses the button. Phones and tablets keep their tab bar.
 - On the right, the button sits over the bottom of the Notes column, whose list stops above it; the
   "can't reach the board" note moves to the other corner.
-- **Drawing with the button:** ✏️ Draw / Decorate puts the drawing tools in a cork rail down that
-  side until ✏️ Done (the colors two by two, so a computer's whole set fits a 720-high screen). Only
-  while drawing, the calendar moves over so the rail doesn't cover it.
+- **Drawing with the button:** ✏️ Draw / Decorate floats ✏️ Done and the drawing tools down that side
+  (no cork; the colors two by two, so a computer's whole set fits a 720-high screen). Only while
+  drawing, the calendar moves over so the tools don't cover it.
 
 ## 0.16.2 — the garland in Clipart
 - Fixed: the **Garland & trims** pictures were hard to find in ★ Stamps → Clipart (only under their
