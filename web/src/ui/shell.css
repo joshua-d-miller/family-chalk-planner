@@ -436,102 +436,125 @@ html.shell-drawer .page {
   cursor: pointer;
 }
 
-/* drawing: the drawing tools float down that side, until Done. No cork here: the strip itself is
-   see-through, and only the ✏️ Done button and the dark palette of tools show (the .cork class
-   stays only so the tools keep their own look) */
-.cork.rail {
+/* ---- on the calendar: the ☰ (and ✏️) in the corner, and the drawing tools popping over above ---- */
+.fabwrap {
   position: fixed;
-  top: 0;
-  bottom: 0;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   z-index: 46;
-  width: 72px;
-  height: auto;
-  box-sizing: border-box;
+  display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 12px 6px calc(12px + env(safe-area-inset-bottom, 0px));
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-width: none;
-  background: none;
-  box-shadow: none;
-  pointer-events: none; /* taps between the buttons go to the board */
+  gap: 12px;
+  pointer-events: none; /* only the buttons and the tools take taps, not the space between */
 }
-.cork.rail > * {
+.fabwrap > * {
   pointer-events: auto;
 }
-.cork.rail.right {
-  right: 0;
+.fabwrap.right {
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  align-items: flex-end;
 }
-.cork.rail.left {
-  left: 0;
+.fabwrap.left {
+  left: calc(16px + env(safe-area-inset-left, 0px));
+  align-items: flex-start;
 }
-.cork.rail .groove {
-  display: none;
+.fabrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.cork.rail .tools,
-.cork.rail .pill {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
+/* the corner button (☰, or ✏️ Done) is always the one in the corner */
+.fabwrap.left .fabrow {
+  flex-direction: row-reverse;
 }
-/* ✏️ Done: the word under the icon, to fit the rail */
-.cork.rail .pill {
-  flex-direction: column;
-  gap: 0;
-  width: 60px;
+.menufab.inrow {
+  position: static;
+}
+.menufab.small {
+  width: 48px;
+  height: 48px;
+  font-size: 21px;
+  font-family: var(--emoji), sans-serif;
+}
+.menufab.small.on {
+  border-color: var(--pink);
+}
+#drawFab span {
+  font-family: var(--emoji), sans-serif;
+  font-size: 24px;
+}
+/* ✏️ Done: a pill in the ☰'s corner, pink like Done on the cork */
+.menufab.done {
+  width: auto;
+  height: 58px;
+  padding: 0 22px;
+  gap: 8px;
+  border-radius: 29px;
+  border-color: var(--pink);
+  font-size: 21px;
+}
+.menufab.done span {
+  font-family: var(--emoji), sans-serif;
+  font-size: 20px;
+}
+/* the drawing tools: one dark palette above the buttons, wrapping onto more rows when it's a long set;
+   a little point aims at the corner button it came from (the .cork class only keeps the tools' look) */
+.cork.drawpop {
+  position: relative;
   height: auto;
-  min-height: 52px;
-  padding: 4px 2px;
-  border-radius: 16px;
-  font-size: 12px;
-  line-height: 1.1;
-  white-space: normal;
-  text-align: center;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+  display: block;
 }
-.cork.rail .pill .ic {
-  font-size: 18px;
+.cork.drawpop .tools {
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 470px;
+  padding: 6px 10px;
+  row-gap: 2px;
+  border-radius: 24px;
+  border: 1.5px solid rgba(237, 234, 224, 0.25);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
 }
-/* the drawing tools stand on end */
-.cork.rail .tools {
-  flex-direction: column;
-  padding: 6px 0;
-  width: 60px;
-}
-/* the colors two by two (the whole set has to fit a 720-high screen) */
-.cork.rail .swatches {
-  display: grid;
-  grid-template-columns: 27px 27px;
-  justify-items: center;
+.cork.drawpop .swatches {
   max-width: none;
   overflow: visible;
+  flex-wrap: wrap;
 }
-.cork.rail .sw {
-  width: 27px;
-  height: 32px;
+.cork.drawpop::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  background: #161616;
+  border-right: 1.5px solid rgba(237, 234, 224, 0.25);
+  border-bottom: 1.5px solid rgba(237, 234, 224, 0.25);
+  transform: rotate(45deg);
 }
-.cork.rail .sw span {
-  width: 20px;
-  height: 20px;
+.fabwrap.right .cork.drawpop::after {
+  right: 40px;
 }
-.cork.rail .cpick {
-  width: 24px;
-  height: 24px;
-  margin: 4px 0;
+.fabwrap.left .cork.drawpop::after {
+  left: 40px;
 }
-.cork.rail .tool {
-  height: 40px;
+.cork.drawpop {
+  animation: popin 0.16s ease-out;
 }
-.cork.rail .tool.medium {
-  flex-direction: column;
-  gap: 0;
-  width: 52px;
-  height: auto;
-  padding: 4px 0;
-  border-radius: 14px;
-  font-size: 12px;
+@keyframes popin {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
 }
-/* the zoom buttons move over for a rail on the right */
-html.rail-right .zoom {
-  right: calc(var(--railw, 0px) + 10px);
+@media (prefers-reduced-motion: reduce) {
+  .cork.drawpop {
+    animation: none;
+  }
+}
+/* a card or the menu is open: the buttons and tools step aside */
+body:has(.scrim) .fabwrap,
+body:has(.menuScrim) .fabwrap {
+  visibility: hidden;
 }

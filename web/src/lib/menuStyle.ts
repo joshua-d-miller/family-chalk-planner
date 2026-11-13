@@ -10,9 +10,10 @@
  Purpose:
      How this screen gets to its pages and tools: the cork along the bottom
      (as before), or a round ☰ button in a bottom corner that slides a
-     drawer out from that side. Each screen picks its own from the bottom
-     of the ☰ menu; it's kept on the board (kv 'menustyle', per screen, or
-     per person on a computer), so clearing the browser doesn't lose it.
+     drawer out from that side, with or without a ✏️ Draw button beside
+     it. Each screen picks its own from the bottom of the ☰ menu; it's kept
+     on the board (kv 'menustyle', per screen, or per person on a
+     computer), so clearing the browser doesn't lose it.
 
  Used by:
      web/src/ui/Shell.tsx
@@ -43,24 +44,33 @@ export const MENU_STYLES: [MenuStyle, string][] = [
   ['right', 'Button, drawer on the right'],
   ['left', 'Button, drawer on the left']
 ];
+export interface MenuPref {
+  style: MenuStyle;
+  draw: boolean; // a ✏️ Draw button beside the ☰ (the ☰ button only)
+}
 const HINT = 'chalkMenuStyle'; // the browser's copy (only for opening the screen without a flash)
-const clean = (v: unknown): MenuStyle => (v === 'right' || v === 'left' ? v : 'cork');
+const CORK: MenuPref = { style: 'cork', draw: false };
+const clean = (v: unknown): MenuPref => {
+  const o = (v || {}) as { style?: unknown; draw?: unknown };
+  const style = o.style === 'right' || o.style === 'left' ? o.style : 'cork';
+  return { style, draw: style !== 'cork' && o.draw === true };
+};
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------------ //
 // | The browser's copy | //
 // ------------------------ //
-function hint(): MenuStyle {
+function hint(): MenuPref {
   try {
-    return clean(localStorage.getItem(HINT));
+    return clean(JSON.parse(localStorage.getItem(HINT) || 'null'));
   } catch {
-    return 'cork';
+    return CORK;
   }
 }
-function keepHint(s: MenuStyle) {
+function keepHint(p: MenuPref) {
   try {
-    if (s === 'cork') localStorage.removeItem(HINT);
-    else localStorage.setItem(HINT, s);
+    if (p.style === 'cork') localStorage.removeItem(HINT);
+    else localStorage.setItem(HINT, JSON.stringify(p));
   } catch {
     /* (private browsing): the board still has it */
   }
@@ -72,23 +82,25 @@ function keepHint(s: MenuStyle) {
 // ------------------------ //
 // The board's answer once it's here (and when it changes: the admin, or    //
 // this screen, saving it); until then the browser's copy.                  //
-export function useMenuStyle(): MenuStyle {
-  const live = useLive<{ style: string; saved: boolean }>('api/menustyle', ['menustyle']);
+export function useMenuPref(): MenuPref {
+  const live = useLive<{ style: string; draw: boolean; saved: boolean }>('api/menustyle', ['menustyle']);
   if (!live.data) return hint();
-  const s = clean(live.data.style);
-  if (s !== hint()) keepHint(s);
-  return s;
+  const p = clean(live.data);
+  const h = hint();
+  if (p.style !== h.style || p.draw !== h.draw) keepHint(p);
+  return p;
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
-// ------------------- //
+// --------------- //
 // | Changing it | //
-// ------------------- //
-// Saved on the board; everything on this screen that shows it changes at  //
-// once (other screens signed in as the same person follow too).           //
-export async function setMenuStyle(s: MenuStyle) {
-  await post('api/menustyle', { style: s });
-  keepHint(s);
+// --------------- //
+// Saved on the board (either half on its own); everything on this screen  //
+// that shows it changes at once (other screens signed in as the same      //
+// person follow too).                                                     //
+export async function setMenuPref(change: Partial<MenuPref>) {
+  const now = await post<{ style: string; draw: boolean }>('api/menustyle', change);
+  keepHint(clean(now));
   tellThisScreen('menustyle'); // (the board tells the other screens)
 }
 

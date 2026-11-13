@@ -41,7 +41,7 @@
 import type { ReactNode } from 'react';
 import { post } from '../lib/api.ts';
 import { MAX_FAVORITES, useFavorites } from '../lib/favorites.ts';
-import { MENU_STYLES, setMenuStyle, useMenuStyle } from '../lib/menuStyle.ts';
+import { MENU_STYLES, setMenuPref, useMenuPref } from '../lib/menuStyle.ts';
 import type { Who } from '../lib/who.ts';
 import { PAGES, homeHref, isHome } from '../routes.ts';
 import { useShell } from './Shell.tsx';
@@ -78,7 +78,8 @@ export function Menu({
   onClose: () => void;
 }) {
   const shell = useShell();
-  const style = useMenuStyle();
+  const pref = useMenuPref();
+  const style = pref.style;
   const fav = useFavorites();
   const rank = who?.rank || 0;
   const admin = who?.user?.role === 'admin';
@@ -176,7 +177,7 @@ export function Menu({
                 id={'menuStyle-' + v}
                 aria-pressed={style === v}
                 onClick={() => {
-                  void setMenuStyle(v);
+                  void setMenuPref({ style: v });
                   onClose();
                 }}
               >
@@ -186,6 +187,24 @@ export function Menu({
                 <span className="lbl">{label}</span>
               </button>
             ))}
+            {/* with the button: a ✏️ Draw button beside it too, if this screen wants one */}
+            {style !== 'cork' && (
+              <button
+                type="button"
+                className={'item' + (pref.draw ? ' here' : '')}
+                id="menuStyle-draw"
+                aria-pressed={pref.draw}
+                onClick={() => void setMenuPref({ draw: !pref.draw })}
+              >
+                <span className="ic" aria-hidden="true">
+                  ✏️
+                </span>
+                <span className="lbl">Draw button beside ☰</span>
+                <span className="tick" aria-hidden="true">
+                  {pref.draw ? '✓' : ''}
+                </span>
+              </button>
+            )}
           </section>
         )}
         <div className="who">

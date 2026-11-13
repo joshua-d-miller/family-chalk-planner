@@ -10,17 +10,16 @@
  Purpose:
      A family screen that swaps the cork for the ☰ button: on the right,
      on the left, and back to the cork. The drawer has the calendar's
-     tools and the pages; drawing puts the tools in a rail down that side.
+     tools and the pages; drawing pops the tools over just above the
+     buttons (the board never moves), and a ✏️ button can sit beside ☰.
 ===============================================================================
  CHANGELOG
 ===============================================================================
  Version   Date         Author    Description
  -------   ----------   -------   --------------------------------------------
  0.17.0    2026-11-12   joshua    New file. On a 16:9 screen (the kitchen's)
-                                  the board keeps its size on either side and
-                                  the Notes list stops above the button.
-                        colby
-                        claude
+                        colby     the board keeps its size on either side and
+                        claude    the Notes list stops above the button.
 ===============================================================================
 */
 
@@ -56,19 +55,43 @@ test('a family screen can swap the cork for the ☰ button on either side', asyn
   await expect(panel.locator('a[href="chores"]')).toBeVisible();
   if (process.env.SHOTS) await fam.screenshot({ path: 'test-results/menu-right-open.png' });
 
-  // ----------------------------- //
-  // | Decorating: the tool rail | //
-  // ----------------------------- //
+  // ------------------------------------------------ //
+  // | Decorating: the tools pop over, the board stays | //
+  // ------------------------------------------------ //
+  const before = (await fam.locator('#board').boundingBox())!;
   await panel.locator('#drawBtn').click();
   await expect(fam.locator('#menuPanel')).toHaveCount(0);
-  const rail = fam.locator('.cork.rail.right');
-  await expect(rail).toBeVisible();
-  await expect(rail.locator('#stampsBtn')).toBeVisible();
-  await expect(fam.locator('#menuFab')).toHaveCount(0);
-  if (process.env.SHOTS) await fam.screenshot({ path: 'test-results/menu-right-rail.png' });
-  await rail.locator('#drawBtn').click(); // Done
-  await expect(fam.locator('.cork.rail')).toHaveCount(0);
+  const pop = fam.locator('.fabwrap.right #drawPop');
+  await expect(pop).toBeVisible();
+  await expect(pop.locator('#stampsBtn')).toBeVisible();
+  await expect(fam.locator('#menuFab')).toHaveCount(0); // ✏️ Done is in its corner
+  expect(await fam.locator('#board').boundingBox()).toEqual(before); // the board didn't move
+  if (process.env.SHOTS) await fam.screenshot({ path: 'test-results/menu-right-pop.png' });
+  await fam.locator('#toolsFab').click(); // 🎨 hides the tools, to draw underneath
+  await expect(fam.locator('#drawPop')).toHaveCount(0);
+  await fam.locator('#toolsFab').click(); // and brings them back
+  await expect(pop).toBeVisible();
+  await fam.locator('#doneFab').click();
+  await expect(fam.locator('#drawPop')).toHaveCount(0);
   await expect(fam.locator('#menuFab')).toBeVisible();
+
+  // ---------------------------------- //
+  // | ✏️ beside the ☰, if it's wanted | //
+  // ---------------------------------- //
+  await expect(fam.locator('#drawFab')).toHaveCount(0); // off unless the screen asks for it
+  await fam.locator('#menuFab').click();
+  await fam.locator('#menuStyle-draw').click();
+  await expect(fam.locator('#menuStyle-draw')).toHaveAttribute('aria-pressed', 'true');
+  await fam.keyboard.press('Escape');
+  await fam
+    .locator('.menuScrim')
+    .click({ force: true })
+    .catch(() => {});
+  await expect(fam.locator('#drawFab')).toBeVisible();
+  await fam.locator('#drawFab').click();
+  await expect(pop).toBeVisible();
+  await fam.locator('#doneFab').click();
+  await expect(fam.locator('#drawFab')).toBeVisible();
 
   // ------------------------------- //
   // | A page: the button there too | //

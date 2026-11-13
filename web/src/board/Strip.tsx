@@ -13,8 +13,9 @@
 
      A screen that picked the ☰ button instead: no cork. The button sits
      in a bottom corner; its drawer has + Add event and the board's tools
-     above the pages. Drawing, the drawer goes away and the drawing tools
-     float down that side (no cork) until Done.
+     above the pages; a ✏️ Draw button can sit beside the ☰ too (the
+     screen's choice). Drawing, the tools pop over just above the buttons
+     (hide them to draw underneath), and ✏️ Done takes the ☰'s corner.
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -31,8 +32,9 @@
                                   drawer (✏️ Edit the calendar).
 
  0.17.0    2026-11-12   joshua    The ☰ button, its drawer and the drawing
-                        colby     rail, on the right or the left, for a screen
-                        claude    that picked them instead of the cork.
+                        colby     tools popping over beside it, on the right or
+                        claude    the left, for a screen that picked them
+                                  instead of the cork.
 ===============================================================================
 */
 
@@ -53,11 +55,15 @@ import { CorkNav, MenuFab, useBarZoom, useShell } from '../ui/Shell.tsx';
 // the cork is just the tools.                                               //
 export function Strip({
   drawing,
+  onDraw,
+  drawLabel = 'Draw',
   tools,
   add,
   children
 }: {
   drawing: boolean;
+  onDraw?: () => void; // ✏️ Draw / Decorate, and Done
+  drawLabel?: string; // what ✏️ says on this screen (Draw, or Decorate on a family screen)
   tools?: ReactNode; // the drawing tools, while drawing
   add?: ReactNode; // + Add event
   children: ReactNode; // the board's own buttons
@@ -69,7 +75,7 @@ export function Strip({
   }, [drawing]);
   if (kind === 'cork' && side)
     return (
-      <SideStrip side={side} drawing={drawing} tools={tools} add={add}>
+      <SideStrip side={side} drawing={drawing} onDraw={onDraw} drawLabel={drawLabel} tools={tools} add={add}>
         {children}
       </SideStrip>
     );
@@ -123,52 +129,83 @@ export function Strip({
 // | The ☰ button, on the board | //
 // ------------------------------- //
 // Put on the page itself (not in the board, which is scaled and moved), so  //
-// the button, the drawer and the rail keep their size and place. Not        //
-// drawing: the button, and its drawer with + Add event and the board's      //
-// buttons over the pages. Drawing: ✏️ Done and the drawing tools float     //
-// down that side (the board steps aside for them, only while drawing).     //
+// the buttons and the drawer keep their size and place. Not drawing: the ☰  //
+// (and ✏️ beside it, if this screen wants it), and the drawer with + Add    //
+// event and the board's buttons over the pages. Drawing: the tools pop over //
+// just above the buttons, 🎨 hides or shows them (to draw underneath), and  //
+// ✏️ Done sits in the ☰'s corner. The board never moves for any of it.     //
 function SideStrip({
   side,
   drawing,
+  onDraw,
+  drawLabel,
   tools,
   add,
   children
 }: {
   side: 'left' | 'right';
   drawing: boolean;
+  onDraw?: () => void;
+  drawLabel: string;
   tools?: ReactNode;
   add?: ReactNode;
   children: ReactNode;
 }) {
-  const { who, here } = useShell();
-  const [open, setOpen] = useState(false);
+  const { who, here, drawBtn } = useShell();
+  const [open, setOpen] = useState(false); // the drawer
+  const [shown, setShown] = useState(true); // the drawing tools' pop-over
   const z = useBarZoom();
   useEffect(() => {
-    if (drawing) setOpen(false);
+    if (drawing) {
+      setOpen(false);
+      setShown(true); // every time drawing starts, the tools are out
+    }
   }, [drawing]);
-  // the rail's width on the screen: the board leaves room for it, and the zoom buttons move over
-  useEffect(() => {
-    const c = document.documentElement;
-    c.style.setProperty('--railw', drawing ? RAIL_W * z + 'px' : '0px');
-    c.classList.toggle('rail-left', drawing && side === 'left');
-    c.classList.toggle('rail-right', drawing && side === 'right');
-    return () => {
-      c.style.removeProperty('--railw');
-      c.classList.remove('rail-left', 'rail-right');
-    };
-  }, [drawing, side, z]);
-  if (drawing)
-    return createPortal(
-      <div className={'cork rail ' + side} aria-label="Drawing tools" style={{ zoom: z }}>
-        {children}
-        {tools}
-      </div>,
-      document.body
-    );
+  // the buttons, the ☰ (or ✏️ Done) always in the corner
   return createPortal(
     <>
-      <MenuFab side={side} open={open} onClick={() => setOpen(true)} label="Menu and the calendar's tools" />
-      {open && (
+      <div className={'fabwrap ' + side} style={{ zoom: z }}>
+        {drawing && shown && (
+          <div className="cork drawpop" id="drawPop" aria-label="Drawing tools">
+            {tools}
+          </div>
+        )}
+        <div className="fabrow">
+          {drawing ? (
+            <>
+              <button
+                type="button"
+                className={'menufab inrow small' + (shown ? ' on' : '')}
+                id="toolsFab"
+                aria-label={shown ? 'Hide the drawing tools' : 'Show the drawing tools'}
+                aria-expanded={shown}
+                onClick={() => setShown(v => !v)}
+              >
+                <span aria-hidden="true">🎨</span>
+              </button>
+              <button type="button" className="menufab inrow done" id="doneFab" onClick={onDraw}>
+                <span aria-hidden="true">✏️</span> Done
+              </button>
+            </>
+          ) : (
+            <>
+              {drawBtn && onDraw && (
+                <button type="button" className="menufab inrow" id="drawFab" aria-label={drawLabel} onClick={onDraw}>
+                  <span aria-hidden="true">✏️</span>
+                </button>
+              )}
+              <MenuFab
+                side={side}
+                open={open}
+                onClick={() => setOpen(true)}
+                label="Menu and the calendar's tools"
+                inRow
+              />
+            </>
+          )}
+        </div>
+      </div>
+      {open && !drawing && (
         <Menu
           who={who}
           here={here}
@@ -187,8 +224,6 @@ function SideStrip({
     document.body
   );
 }
-// the drawing rail's width in the cork's own pixels (the board leaves this much room beside it)
-export const RAIL_W = 72;
 // how much of the bottom of the screen the ☰ button takes, in the cork's own pixels (the button, and
 // the gap under and over it): the Notes column's list stops above it
 export const FAB_BAND = 16 + 58 + 8;

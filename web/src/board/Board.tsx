@@ -86,7 +86,8 @@
 
  0.17.0    2026-11-12   joshua    A screen with the ☰ button instead of the
                         colby     cork: the board gets the cork's room, and
-                        claude    steps aside for the drawing rail.
+                        claude    never moves for the button or the drawing
+                                  tools (they pop over beside it).
 ===============================================================================
 */
 
@@ -116,7 +117,7 @@ import { PhotosEditor } from './editors/PhotosEditor.tsx';
 import { NotesEditor } from './editors/NotesEditor.tsx';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
-import { FAB_BAND, RAIL_W, Strip } from './Strip.tsx';
+import { FAB_BAND, Strip } from './Strip.tsx';
 import { navigate } from '../lib/nav.ts';
 import { useBarZoom, useShell, visibleHeight } from '../ui/Shell.tsx';
 import { DrawLayer, firstPen, isPosca, recolor, touches } from './draw/Draw.tsx';
@@ -164,11 +165,10 @@ export type MonthMeta = {
 // ----------------------------------- //
 // The board is always 1252 by 642, scaled to fit; a tablet adds the cork    //
 // strip and the wooden frame around it.                                     //
-function useFit(pad: number, h: number, below = 0, beside = 0) {
+function useFit(pad: number, h: number, below = 0) {
   // below: the tab bar's height on a phone or tablet (the board fits above it)
-  // beside: the drawing rail's width, on a screen with the ☰ button (the board fits next to it)
   const calc = () => {
-    const scale = Math.min((innerWidth - beside) / (W + 2 * pad), (visibleHeight() - below) / (h + 2 * pad));
+    const scale = Math.min(innerWidth / (W + 2 * pad), (visibleHeight() - below) / (h + 2 * pad));
     return { scale, res: Math.max(1, Math.min(4, Math.round(scale * (devicePixelRatio || 1) * 2) / 2)) };
   };
   const [fit, setFit] = useState(calc);
@@ -181,7 +181,7 @@ function useFit(pad: number, h: number, below = 0, beside = 0) {
       removeEventListener('resize', on);
       window.visualViewport?.removeEventListener('resize', on);
     };
-  }, [pad, h, below, beside]);
+  }, [pad, h, below]);
   return fit;
 }
 
@@ -267,15 +267,14 @@ export function Board({
   // | The cork, or the ☰ button | //
   // ------------------------------- //
   // A screen that picked the ☰ button has no cork under the board, so the   //
-  // board grows into its room; drawing, it moves over for the rail.         //
+  // board grows into its room, and never moves for the button or tools.    //
   const [drawing, setDrawing] = useState(false);
   const side = edit && shell.kind === 'cork' ? shell.side : null;
   const bh = H + (edit && !side ? CORK : 0);
   const barZ = useBarZoom();
-  const railW = side && drawing ? RAIL_W * barZ : 0;
   // the ☰ button floats over the board's bottom corner (the board keeps its size); on the right it's
   // over the bottom of the Notes column, whose list stops above it
-  const fit = useFit(pad, bh, shell.navH, railW);
+  const fit = useFit(pad, bh, shell.navH);
   const fabClear = (() => {
     if (side !== 'right' || drawing) return 0;
     const areaH = visibleHeight() - shell.navH;
@@ -502,6 +501,11 @@ export function Board({
     return () => setBusyBoard(false);
   }, [drawing, zoom.z, setBusyBoard]);
   const [pen, setPen] = useState<Pen>(firstPen);
+  // ✏️ Draw / Decorate and Done (a family screen starts on Select: it moves and decorates, no pens)
+  const toggleDraw = () => {
+    if (family && !drawing) setPen(p => ({ ...p, tool: 'select' }));
+    setDrawing(d => !d);
+  };
   const [selection, setSelection] = useState<number[]>([]);
   const [hidden, setHidden] = useState<number[]>([]);
   const [placing, setPlacing] = useState<{ st: Stamp; k: number } | null>(null);
@@ -738,8 +742,7 @@ export function Board({
       className={(sf.lum > 0.18 ? 'light' : '') + (pad ? ' framed' : '')}
       style={{
         ...(pad ? {} : { backgroundImage: bg }),
-        ...(shell.navH ? { bottom: 'auto', height: visibleHeight() - shell.navH } : {}),
-        ...(railW ? { [side === 'left' ? 'paddingLeft' : 'paddingRight']: railW } : {})
+        ...(shell.navH ? { bottom: 'auto', height: visibleHeight() - shell.navH } : {})
       }}
       onPointerDown={e => (swipe.current = e.isPrimary ? [e.clientX, e.clientY] : null)}
       onPointerUp={tap}
@@ -860,6 +863,8 @@ export function Board({
         {edit && (
           <Strip
             drawing={drawing}
+            onDraw={toggleDraw}
+            drawLabel={family ? 'Decorate' : 'Draw'}
             add={
               m && !drawing ? (
                 <button
@@ -897,15 +902,7 @@ export function Board({
               ) : undefined
             }
           >
-            <button
-              type="button"
-              className={'pill' + (drawing ? ' on' : '')}
-              id="drawBtn"
-              onClick={() => {
-                if (family && !drawing) setPen(p => ({ ...p, tool: 'select' }));
-                setDrawing(d => !d);
-              }}
-            >
+            <button type="button" className={'pill' + (drawing ? ' on' : '')} id="drawBtn" onClick={toggleDraw}>
               <span className="ic" aria-hidden="true">
                 ✏️
               </span>{' '}

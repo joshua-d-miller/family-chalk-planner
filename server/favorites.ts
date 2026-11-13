@@ -19,8 +19,10 @@
        kv 'notesbottom'  { 'p:...' | 's:...': { def: 'upnext', can:
            ['upnext', 'today', 'photos'] } }
      And how it gets to its pages and tools: the cork (nothing saved), or
-     the ☰ button in the bottom right or left corner:
-       kv 'menustyle'  { 'p:...' | 's:...': 'right' | 'left' }
+     the ☰ button in the bottom right or left corner, with or without a ✏️
+     Draw button beside it:
+       kv 'menustyle'  { 'p:...' | 's:...': { style: 'right' | 'left',
+           draw: true | false } }
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -139,25 +141,37 @@ export function setup({
   // ---------------------- //
   // | This screen's menu | //
   // ---------------------- //
-  // The cork (nothing kept) or the ☰ button on the right or the left. Kept  //
-  // on the board, per screen (or per person on a computer), so a cleared    //
-  // browser keeps it; the screen changes at once when it's saved.           //
-  const styles = () => kv.get<Record<string, string>>('menustyle') || {};
+  // The cork (nothing kept) or the ☰ button on the right or the left, and   //
+  // whether a ✏️ Draw button sits beside it. Kept on the board, per screen  //
+  // (or per person on a computer), so a cleared browser keeps it; the       //
+  // screen changes at once when it's saved. A change can send just one of   //
+  // the two.                                                                //
+  interface MenuPref {
+    style: 'right' | 'left';
+    draw: boolean;
+  }
+  const prefs = () => kv.get<Record<string, MenuPref>>('menustyle') || {};
+  const view = (p: MenuPref | undefined) => ({ style: p?.style || 'cork', draw: !!p?.draw });
   app.get('/api/menustyle', (req, res) => {
     const k = whose(req);
-    res.json({ style: (k && styles()[k]) || 'cork', saved: !!k });
+    res.json({ ...view(k ? prefs()[k] : undefined), saved: !!k });
   });
   app.post('/api/menustyle', (req, res) => {
     const k = whose(req);
     if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
-    const style = req.body?.style;
-    if (!['cork', 'right', 'left'].includes(style)) return res.status(400).json({ error: 'Pick where the menu goes' });
-    const map = styles();
-    if (style === 'cork') delete map[k];
-    else map[k] = style;
+    const body = req.body || {};
+    const map = prefs();
+    const now = view(map[k]);
+    const style = body.style ?? now.style;
+    const draw = body.draw ?? now.draw;
+    if (!['cork', 'right', 'left'].includes(style) || typeof draw !== 'boolean')
+      return res.status(400).json({ error: 'Pick where the menu goes' });
+    if (style === 'cork')
+      delete map[k]; // (the cork has no ✏️ button of its own)
+    else map[k] = { style, draw };
     kv.set('menustyle', map);
     broadcast('menustyle', {});
-    res.json({ style, saved: true });
+    res.json({ ...view(map[k]), saved: true });
   });
 }
 

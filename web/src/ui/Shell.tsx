@@ -59,7 +59,7 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useFavorites } from '../lib/favorites.ts';
-import { useMenuStyle } from '../lib/menuStyle.ts';
+import { useMenuPref } from '../lib/menuStyle.ts';
 import type { Who } from '../lib/who.ts';
 import { PAGES, homeHref, isHome } from '../routes.ts';
 import { Menu } from './Menu.tsx';
@@ -102,6 +102,7 @@ export interface CorkAt {
 interface ShellState {
   kind: ShellKind;
   side: 'left' | 'right' | null; // the ☰ button and its drawer instead of the cork: which side (else null)
+  drawBtn: boolean; // and a ✏️ Draw button beside it
   who: Who | null;
   here: string;
   slot: HTMLElement | null;
@@ -114,6 +115,7 @@ interface ShellState {
 const Ctx = createContext<ShellState>({
   kind: 'none',
   side: null,
+  drawBtn: false,
   who: null,
   here: 'board',
   slot: null,
@@ -128,8 +130,9 @@ export const useShell = () => useContext(Ctx);
 export function Shell({ who, here, children }: { who: Who | null; here: string; children: ReactNode }) {
   const kind = shellKind(who);
   // only a screen that would get the cork can swap it for the button (phones and tablets keep their tab bar)
-  const style = useMenuStyle();
-  const side = kind === 'cork' && style !== 'cork' ? style : null;
+  const pref = useMenuPref();
+  const side = kind === 'cork' && pref.style !== 'cork' ? pref.style : null;
+  const drawBtn = !!side && pref.draw; // a ✏️ Draw button beside the ☰ (on the calendar)
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [navH, setNavH] = useState(0);
   const [busyBoard, setBusyBoard] = useState(false);
@@ -178,6 +181,7 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
       value={{
         kind,
         side,
+        drawBtn,
         who,
         here,
         slot: kind === 'cork' && !side && !onBoard ? slot : null,
@@ -278,7 +282,7 @@ const BOARD_H = 642 + 50;
 function corkZoom() {
   return Math.max(0.6, Math.min(innerWidth / BOARD_W, innerHeight / BOARD_H));
 }
-// the same size, for the ☰ button and the drawing rail (they sit outside the board's scaling)
+// the same size, for the ☰ button and the drawing tools beside it (outside the board's scaling)
 export function useBarZoom() {
   const [z, setZ] = useState(corkZoom);
   useEffect(() => {
@@ -338,23 +342,25 @@ export function MenuFab({
   side,
   open,
   onClick,
-  label = 'Menu'
+  label = 'Menu',
+  inRow = false
 }: {
   side: 'left' | 'right';
   open: boolean;
   onClick: () => void;
   label?: string;
+  inRow?: boolean; // in the board's row of buttons (which places and sizes it)
 }) {
   const z = useBarZoom();
   return (
     <button
       type="button"
-      className={'menufab ' + side}
+      className={'menufab ' + side + (inRow ? ' inrow' : '')}
       id="menuFab"
       aria-label={label}
       aria-expanded={open}
       onClick={onClick}
-      style={{ zoom: z }}
+      style={inRow ? undefined : { zoom: z }}
     >
       <span aria-hidden="true">☰</span>
     </button>
