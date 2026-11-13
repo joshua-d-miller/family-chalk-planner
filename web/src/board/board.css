@@ -228,7 +228,8 @@ body.boardpage {
   flex: none;
   display: flex;
   flex-direction: column;
-  padding: 6px 4px 4px 14px;
+  /* --fabclear: the ☰ and + Add event buttons are over the bottom of the column (a screen with them on the right) */
+  padding: 6px 4px calc(4px + var(--fabclear, 0px)) 14px;
   border-left: 1.5px solid var(--gold);
   gap: 12px;
   overflow: hidden;

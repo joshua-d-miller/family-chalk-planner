@@ -6,14 +6,18 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 
 ## 0.17.0 — the ☰ button instead of the cork
 - **The ☰ button:** a family screen or a computer can swap the cork along the bottom for a round ☰
-  button in a bottom corner (Colby's idea). Tapping it slides a drawer out from that side: **+ Add
-  event** and the calendar's tools (Decorate, Month title, Border, Photos, Notes, Style) at the top,
-  then the pages. The calendar grows into the room the cork took.
+  button in a bottom corner (Colby's idea), with **+ Add event** beside it so adding an event is still
+  one tap. The ☰ slides a drawer out from that side: the calendar's tools (Decorate, Month title,
+  Border, Photos, Notes, Style) at the top, then the pages.
 - **Either side:** ☰ Menu → **This screen's menu** at the bottom: *Cork along the bottom*, *Button,
-  drawer on the right* or *Button, drawer on the left*. Each screen keeps its own choice, so the
-  kitchen can keep the cork while another screen uses the button. Phones and tablets keep their tab bar.
-- **Drawing with the button:** ✏️ Draw / Decorate closes the drawer and puts the drawing tools in a
-  cork rail down that side until ✏️ Done; the calendar moves over so the rail doesn't cover it.
+  drawer on the right* or *Button, drawer on the left*. Each screen keeps its own choice, saved on the
+  board (clearing the browser doesn't lose it), so the kitchen can keep the cork while another screen
+  uses the button. Phones and tablets keep their tab bar.
+- **Nothing hides under the buttons:** on the right the calendar keeps its full size and the Notes
+  column's list stops above them; on the left the calendar leaves just enough room underneath them.
+  The "can't reach the board" note moves to the other corner.
+- **Drawing with the button:** ✏️ Draw / Decorate puts the drawing tools in a cork rail down that
+  side until ✏️ Done; the calendar moves over so the rail doesn't cover it.
 
 ## 0.16.2 — the garland in Clipart
 - Fixed: the **Garland & trims** pictures were hard to find in ★ Stamps → Clipart (only under their

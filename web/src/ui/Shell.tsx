@@ -338,23 +338,25 @@ export function MenuFab({
   side,
   open,
   onClick,
-  label = 'Menu'
+  label = 'Menu',
+  inRow = false
 }: {
   side: 'left' | 'right';
   open: boolean;
   onClick: () => void;
   label?: string;
+  inRow?: boolean; // in the board's row of buttons (which places and sizes it)
 }) {
   const z = useBarZoom();
   return (
     <button
       type="button"
-      className={'menufab ' + side}
+      className={'menufab ' + side + (inRow ? ' inrow' : '')}
       id="menuFab"
       aria-label={label}
       aria-expanded={open}
       onClick={onClick}
-      style={{ zoom: z }}
+      style={inRow ? undefined : { zoom: z }}
     >
       <span aria-hidden="true">☰</span>
     </button>

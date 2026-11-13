@@ -16,7 +16,8 @@
 ===============================================================================
  Version   Date         Author    Description
  -------   ----------   -------   --------------------------------------------
- 0.17.0    2026-11-12   joshua    New file.
+ 0.17.0    2026-11-12   joshua    New file. On a 16:9 screen (the kitchen's),
+                                  nothing on the board is under the buttons.
                         colby
                         claude
 ===============================================================================
@@ -41,10 +42,15 @@ test('a family screen can swap the cork for the ☰ button on either side', asyn
   // ------------------------------------- //
   // | The drawer: tools, then the pages | //
   // ------------------------------------- //
+  // + Add event: one tap, beside the ☰
+  await fam.locator('.fabrow #addBtn').click();
+  await expect(fam.locator('#evTitle')).toBeVisible();
+  await fam.keyboard.press('Escape');
+  await expect(fam.locator('#evTitle')).toHaveCount(0);
   await fam.locator('#menuFab').click();
   const panel = fam.locator('#menuPanel');
   await expect(panel).toHaveClass(/right/);
-  await expect(panel.locator('#addBtn')).toBeVisible();
+  await expect(panel.locator('#addBtn')).toHaveCount(0); // (it has its own button)
   await expect(panel.locator('#drawBtn')).toContainText('Decorate');
   await expect(panel.locator('a[href="chores"]')).toBeVisible();
   if (process.env.SHOTS) await fam.screenshot({ path: 'test-results/menu-right-open.png' });
@@ -95,4 +101,44 @@ test('a phone keeps its tab bar (no menu choice there)', async ({ as }) => {
   await expect(phone.locator('#tabbar')).toBeVisible();
   await phone.locator('#moreBtn').click();
   await expect(phone.locator('#menuStyle-right')).toHaveCount(0);
+});
+
+// ---------------------------------------- //
+// | A 16:9 screen: nothing under the buttons | //
+// ---------------------------------------- //
+// Overlap of two boxes on the screen (0: they don't touch)
+const overlap = (a: { x: number; y: number; width: number; height: number }, b: typeof a) =>
+  Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)) *
+  Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
+
+test('on a 16:9 screen the buttons cover nothing on the board, on either side', async ({ as }) => {
+  for (const [w, h] of [
+    [1280, 720],
+    [1920, 1080]
+  ] as const) {
+    const fam = await as('family', { context: { viewport: { width: w, height: h } } });
+    await fam.locator('#menuBtn').click();
+    await fam.locator('#menuStyle-right').click();
+    const row = fam.locator('.fabrow');
+    await expect(row).toHaveClass(/right/);
+    // on the right: the Notes column's list stops above the buttons (the board keeps its size)
+    const rowBox = (await row.boundingBox())!;
+    const lastNote = (await fam.locator('.slate .notes > *').last().boundingBox())!;
+    expect(lastNote.y + lastNote.height, `${w}x${h}: Notes ends above the buttons`).toBeLessThanOrEqual(rowBox.y);
+    expect(overlap(rowBox, (await fam.locator('#grid').boundingBox())!), `${w}x${h}: the calendar is clear`).toBe(0);
+    if (process.env.SHOTS) await fam.screenshot({ path: `test-results/k-right-${w}x${h}.png` });
+    // on the left: the board leaves room under itself, so the last Sunday is clear
+    await fam.locator('#menuFab').click();
+    await fam.locator('#menuStyle-left').click();
+    await expect(fam.locator('.fabrow')).toHaveClass(/left/);
+    await fam.waitForTimeout(300); // the board has resized
+    const leftBox = (await fam.locator('.fabrow').boundingBox())!;
+    const grid = (await fam.locator('#grid').boundingBox())!;
+    expect(overlap(leftBox, grid), `${w}x${h}: the calendar is clear of the buttons`).toBe(0);
+    if (process.env.SHOTS) await fam.screenshot({ path: `test-results/k-left-${w}x${h}.png` });
+    await fam.locator('#menuFab').click();
+    await fam.locator('#menuStyle-cork').click();
+    await expect(fam.locator('#editBtn')).toBeVisible();
+    expect(fam.errors).toEqual([]);
+  }
 });

@@ -116,7 +116,7 @@ import { PhotosEditor } from './editors/PhotosEditor.tsx';
 import { NotesEditor } from './editors/NotesEditor.tsx';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
-import { RAIL_W, Strip } from './Strip.tsx';
+import { FAB_BAND, RAIL_W, Strip } from './Strip.tsx';
 import { navigate } from '../lib/nav.ts';
 import { useBarZoom, useShell, visibleHeight } from '../ui/Shell.tsx';
 import { DrawLayer, firstPen, isPosca, recolor, touches } from './draw/Draw.tsx';
@@ -273,7 +273,18 @@ export function Board({
   const bh = H + (edit && !side ? CORK : 0);
   const barZ = useBarZoom();
   const railW = side && drawing ? RAIL_W * barZ : 0;
-  const fit = useFit(pad, bh, shell.navH, railW);
+  // the ☰ and + Add event buttons along the bottom: on the left they'd sit on the last Sunday, so the
+  // board leaves just enough room under itself for them (it only shrinks when the screen has no room
+  // to spare); on the right the board keeps its size and the Notes column's list stops above them
+  const fabBand = side === 'left' && !drawing ? FAB_BAND * barZ : 0;
+  const fit = useFit(pad, bh, shell.navH + fabBand, railW);
+  const fabClear = (() => {
+    if (side !== 'right' || drawing) return 0;
+    const areaH = visibleHeight() - shell.navH;
+    const boardBottom = (areaH + (bh + 2 * pad) * fit.scale) / 2; // the board is centred on the screen
+    const overlap = boardBottom - (innerHeight - FAB_BAND * barZ);
+    return overlap > 0 ? Math.ceil(overlap / fit.scale) : 0; // in board pixels
+  })();
   // the pages' cork is drawn the same size as this one
   const { kind: shellKind, setCorkZ, setBusyBoard } = shell;
   // (and where it is: a board that doesn't fill the screen leaves its cork above the bottom or in from the sides,
@@ -730,6 +741,7 @@ export function Board({
       style={{
         ...(pad ? {} : { backgroundImage: bg }),
         ...(shell.navH ? { bottom: 'auto', height: visibleHeight() - shell.navH } : {}),
+        ...(fabBand ? { paddingBottom: fabBand } : {}), // (the surface still runs under the buttons)
         ...(railW ? { [side === 'left' ? 'paddingLeft' : 'paddingRight']: railW } : {})
       }}
       onPointerDown={e => (swipe.current = e.isPrimary ? [e.clientX, e.clientY] : null)}
@@ -744,7 +756,8 @@ export function Board({
           padding: pad,
           width: W + 2 * pad,
           height: bh + 2 * pad,
-          background: pad ? sf.frame || 'var(--wood)' : undefined
+          background: pad ? sf.frame || 'var(--wood)' : undefined,
+          ...(fabClear ? { ['--fabclear' as string]: fabClear + 'px' } : {})
         }}
       >
         <div
