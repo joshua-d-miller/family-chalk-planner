@@ -308,3 +308,211 @@ html.os-android .tabbar.mini {
   border-radius: 18px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
 }
+
+/* ---- the ☰ button instead of the cork (a screen that picked it: the bottom of the ☰ menu) ---- */
+/* a round chalk button in a bottom corner, over the board's own corner */
+.menufab {
+  position: fixed;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 46; /* over the board and the pages, under the cards (50) and the menu (60) */
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(237, 234, 224, 0.7);
+  background: rgba(22, 22, 22, 0.88);
+  color: var(--chalk);
+  font:
+    700 26px 'Kalam',
+    cursive;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 3px rgba(185, 141, 88, 0.55); /* a ring of cork, so it reads as the cork's button */
+  -webkit-tap-highlight-color: transparent;
+}
+.menufab.right {
+  right: calc(16px + env(safe-area-inset-right, 0px));
+}
+.menufab.left {
+  left: calc(16px + env(safe-area-inset-left, 0px));
+}
+.menufab:active {
+  transform: scale(0.94);
+}
+/* a card or the menu is open: the button steps aside */
+body:has(.scrim) .menufab,
+body:has(.menuScrim) .menufab {
+  visibility: hidden;
+}
+/* the pages have no cork to keep clear of, just the button */
+html.shell-drawer .page {
+  padding-bottom: 96px;
+}
+
+/* the drawer: the ☰ menu, from the right when the button is on the right */
+.menu.right {
+  inset: 0 0 0 auto;
+  border-right: 0;
+  border-left: 2px solid var(--line);
+  box-shadow: -6px 0 30px rgba(0, 0, 0, 0.6);
+  padding: max(14px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 20px 12px;
+}
+.menu {
+  animation: menuin-left 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.menu.right {
+  animation-name: menuin-right;
+}
+.menu.up {
+  animation: none;
+}
+@keyframes menuin-left {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes menuin-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu {
+    animation: none;
+  }
+}
+/* the calendar's tools at the top of the drawer, as menu rows */
+.menu .mtools {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+.menu .mtools .pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 8px 0 10px;
+  border-radius: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--chalk);
+  font-family: var(--hand);
+  font-size: 0.95em;
+  text-align: left;
+  cursor: pointer;
+}
+.menu .mtools .pill .ic {
+  flex: 0 0 30px;
+  text-align: center;
+  font-family: var(--emoji), sans-serif;
+}
+.menu .mtools .pill.addev {
+  color: var(--yellow);
+  border: 2px solid var(--yellow);
+  justify-content: center;
+  margin-bottom: 4px;
+}
+/* this screen's menu: the three choices, a little quieter than the pages */
+.menu .mstyle {
+  margin-top: auto;
+  padding-top: 6px;
+}
+.menu .mstyle .item {
+  min-height: 44px;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
+/* drawing: the drawing tools in a cork rail down that side, until Done */
+.cork.rail {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 46;
+  width: 72px;
+  height: auto;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 12px 6px calc(12px + env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.cork.rail.right {
+  right: 0;
+  box-shadow:
+    inset 3px 0 6px rgba(0, 0, 0, 0.35),
+    -2px 0 12px rgba(0, 0, 0, 0.4);
+}
+.cork.rail.left {
+  left: 0;
+  box-shadow:
+    inset -3px 0 6px rgba(0, 0, 0, 0.35),
+    2px 0 12px rgba(0, 0, 0, 0.4);
+}
+.cork.rail .groove {
+  align-self: stretch;
+  width: auto;
+  height: 4px;
+  margin: 0 6px;
+  flex: none;
+}
+/* ✏️ Done: the word under the icon, to fit the rail */
+.cork.rail .pill {
+  flex-direction: column;
+  gap: 0;
+  width: 60px;
+  height: auto;
+  min-height: 52px;
+  padding: 4px 2px;
+  border-radius: 16px;
+  font-size: 12px;
+  line-height: 1.1;
+  white-space: normal;
+  text-align: center;
+}
+.cork.rail .pill .ic {
+  font-size: 18px;
+}
+/* the drawing tools stand on end */
+.cork.rail .tools {
+  flex-direction: column;
+  padding: 6px 0;
+  width: 60px;
+}
+.cork.rail .swatches {
+  flex-direction: column;
+  max-width: none;
+  overflow: visible;
+}
+.cork.rail .sw {
+  width: 44px;
+  height: 38px;
+}
+.cork.rail .cpick {
+  margin: 4px 0;
+}
+.cork.rail .tool.medium {
+  flex-direction: column;
+  gap: 0;
+  width: 52px;
+  height: auto;
+  padding: 4px 0;
+  border-radius: 14px;
+  font-size: 12px;
+}
+/* the zoom buttons move over for a rail on the right */
+html.rail-right .zoom {
+  right: calc(var(--railw, 0px) + 10px);
+}

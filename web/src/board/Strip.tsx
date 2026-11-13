@@ -2,14 +2,19 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Strip.tsx
 ===============================================================================
- Version:   0.14.0
- Author:    Joshua D. Miller, Claude
- Updated:   2026-11-07
+ Version:   0.17.0
+ Author:    Joshua D. Miller, Colby Way, Claude
+ Updated:   2026-11-12
 
  Purpose:
      The cork under the board when it's being changed: on a family
      screen, the pages (☰ Menu, 📅 Calendar, the pinned ones) and the
      board's tools in a drawer; on a phone or tablet, just the tools.
+
+     A screen that picked the ☰ button instead: no cork. The button sits
+     in a bottom corner; its drawer has + Add event and the board's tools
+     above the pages. Drawing, the drawer goes away and the drawing tools
+     stand in a cork rail down that side until Done.
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -24,12 +29,18 @@
 
                                   The pages on the cork, and the tools in a
                                   drawer (✏️ Edit the calendar).
+
+ 0.17.0    2026-11-12   joshua    The ☰ button, its drawer and the drawing
+                        colby     rail, on the right or the left, for a screen
+                        claude    that picked them instead of the cork.
 ===============================================================================
 */
 
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
-import { CorkNav, useShell } from '../ui/Shell.tsx';
+import { createPortal } from 'react-dom';
+import { Menu } from '../ui/Menu.tsx';
+import { CorkNav, MenuFab, useBarZoom, useShell } from '../ui/Shell.tsx';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------- //
@@ -51,11 +62,17 @@ export function Strip({
   add?: ReactNode; // + Add event
   children: ReactNode; // the board's own buttons
 }) {
-  const { kind } = useShell();
+  const { kind, side } = useShell();
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (drawing) setOpen(true);
   }, [drawing]);
+  if (kind === 'cork' && side)
+    return (
+      <SideStrip side={side} drawing={drawing} tools={tools} add={add}>
+        {children}
+      </SideStrip>
+    );
   if (kind !== 'cork')
     return (
       <div className="cork">
@@ -100,5 +117,78 @@ export function Strip({
     </div>
   );
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------- //
+// | The ☰ button, on the board | //
+// ------------------------------- //
+// Put on the page itself (not in the board, which is scaled and moved), so  //
+// the button, the drawer and the rail keep their size and place. Not        //
+// drawing: the button, and its drawer with + Add event and the board's      //
+// buttons over the pages. Drawing: the drawing tools and ✏️ Done in a cork  //
+// rail down that side (the board steps aside for it).                       //
+function SideStrip({
+  side,
+  drawing,
+  tools,
+  add,
+  children
+}: {
+  side: 'left' | 'right';
+  drawing: boolean;
+  tools?: ReactNode;
+  add?: ReactNode;
+  children: ReactNode;
+}) {
+  const { who, here } = useShell();
+  const [open, setOpen] = useState(false);
+  const z = useBarZoom();
+  useEffect(() => {
+    if (drawing) setOpen(false);
+  }, [drawing]);
+  // the rail's width on the screen: the board leaves room for it, and the zoom buttons move over
+  useEffect(() => {
+    const c = document.documentElement;
+    c.style.setProperty('--railw', drawing ? RAIL_W * z + 'px' : '0px');
+    c.classList.toggle('rail-left', drawing && side === 'left');
+    c.classList.toggle('rail-right', drawing && side === 'right');
+    return () => {
+      c.style.removeProperty('--railw');
+      c.classList.remove('rail-left', 'rail-right');
+    };
+  }, [drawing, side, z]);
+  if (drawing)
+    return createPortal(
+      <div className={'cork rail ' + side} aria-label="Drawing tools" style={{ zoom: z }}>
+        {children}
+        <span className="groove" aria-hidden="true" />
+        {tools}
+      </div>,
+      document.body
+    );
+  return createPortal(
+    <>
+      <MenuFab side={side} open={open} onClick={() => setOpen(true)} label="Menu and the calendar's tools" />
+      {open && (
+        <Menu
+          who={who}
+          here={here}
+          side={side}
+          toolsTitle="The calendar"
+          tools={
+            <>
+              {add}
+              {children}
+            </>
+          }
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>,
+    document.body
+  );
+}
+// the drawing rail's width in the cork's own pixels (the board leaves this much room beside it)
+export const RAIL_W = 72;
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

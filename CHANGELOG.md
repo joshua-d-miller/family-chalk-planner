@@ -4,6 +4,17 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.17.0 — the ☰ button instead of the cork
+- **The ☰ button:** a family screen or a computer can swap the cork along the bottom for a round ☰
+  button in a bottom corner (Colby's idea). Tapping it slides a drawer out from that side: **+ Add
+  event** and the calendar's tools (Decorate, Month title, Border, Photos, Notes, Style) at the top,
+  then the pages. The calendar grows into the room the cork took.
+- **Either side:** ☰ Menu → **This screen's menu** at the bottom: *Cork along the bottom*, *Button,
+  drawer on the right* or *Button, drawer on the left*. Each screen keeps its own choice, so the
+  kitchen can keep the cork while another screen uses the button. Phones and tablets keep their tab bar.
+- **Drawing with the button:** ✏️ Draw / Decorate closes the drawer and puts the drawing tools in a
+  cork rail down that side until ✏️ Done; the calendar moves over so the rail doesn't cover it.
+
 ## 0.16.2 — the garland in Clipart
 - Fixed: the **Garland & trims** pictures were hard to find in ★ Stamps → Clipart (only under their
   style, and even there mostly missing). They're now a **🎄 Garland & trims** group right after
