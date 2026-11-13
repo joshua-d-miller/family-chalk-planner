@@ -273,11 +273,9 @@ export function Board({
   const bh = H + (edit && !side ? CORK : 0);
   const barZ = useBarZoom();
   const railW = side && drawing ? RAIL_W * barZ : 0;
-  // the ☰ and + Add event buttons along the bottom: on the left they'd sit on the last Sunday, so the
-  // board leaves just enough room under itself for them (it only shrinks when the screen has no room
-  // to spare); on the right the board keeps its size and the Notes column's list stops above them
-  const fabBand = side === 'left' && !drawing ? FAB_BAND * barZ : 0;
-  const fit = useFit(pad, bh, shell.navH + fabBand, railW);
+  // the ☰ button floats over the board's bottom corner (the board keeps its size); on the right it's
+  // over the bottom of the Notes column, whose list stops above it
+  const fit = useFit(pad, bh, shell.navH, railW);
   const fabClear = (() => {
     if (side !== 'right' || drawing) return 0;
     const areaH = visibleHeight() - shell.navH;
@@ -741,7 +739,6 @@ export function Board({
       style={{
         ...(pad ? {} : { backgroundImage: bg }),
         ...(shell.navH ? { bottom: 'auto', height: visibleHeight() - shell.navH } : {}),
-        ...(fabBand ? { paddingBottom: fabBand } : {}), // (the surface still runs under the buttons)
         ...(railW ? { [side === 'left' ? 'paddingLeft' : 'paddingRight']: railW } : {})
       }}
       onPointerDown={e => (swipe.current = e.isPrimary ? [e.clientX, e.clientY] : null)}

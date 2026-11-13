@@ -126,8 +126,7 @@ export function Strip({
 // the button, the drawer and the rail keep their size and place. Not        //
 // drawing: the button, and its drawer with + Add event and the board's      //
 // buttons over the pages. Drawing: the drawing tools and ✏️ Done in a cork  //
-// rail down that side (the board steps aside for it). + Add event has its  //
-// own button beside the ☰, so it's still one tap.                          //
+// rail down that side (the board steps aside for it, only while drawing).  //
 function SideStrip({
   side,
   drawing,
@@ -167,20 +166,21 @@ function SideStrip({
       </div>,
       document.body
     );
-  // + Add event stays one tap: its own button beside the ☰ (towards the middle of the screen)
   return createPortal(
     <>
-      <div className={'fabrow ' + side} style={{ zoom: z }}>
-        {add && <div className="fabadd">{add}</div>}
-        <MenuFab side={side} open={open} onClick={() => setOpen(true)} label="Menu and the calendar's tools" inRow />
-      </div>
+      <MenuFab side={side} open={open} onClick={() => setOpen(true)} label="Menu and the calendar's tools" />
       {open && (
         <Menu
           who={who}
           here={here}
           side={side}
           toolsTitle="The calendar"
-          tools={children}
+          tools={
+            <>
+              {add}
+              {children}
+            </>
+          }
           onClose={() => setOpen(false)}
         />
       )}
@@ -190,8 +190,8 @@ function SideStrip({
 }
 // the drawing rail's width in the cork's own pixels (the board leaves this much room beside it)
 export const RAIL_W = 72;
-// how much of the bottom of the screen the ☰ and + Add event buttons take, in the cork's own pixels
-// (the button, and the gap under and over it)
+// how much of the bottom of the screen the ☰ button takes, in the cork's own pixels (the button, and
+// the gap under and over it): the Notes column's list stops above it
 export const FAB_BAND = 16 + 58 + 8;
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

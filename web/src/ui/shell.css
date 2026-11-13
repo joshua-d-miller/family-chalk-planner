@@ -342,47 +342,9 @@ html.os-android .tabbar.mini {
 .menufab:active {
   transform: scale(0.94);
 }
-/* on the calendar: + Add event beside the ☰, towards the middle of the screen */
-.fabrow {
-  position: fixed;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  z-index: 46;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.fabrow.right {
-  right: calc(16px + env(safe-area-inset-right, 0px));
-}
-.fabrow.left {
-  left: calc(16px + env(safe-area-inset-left, 0px));
-  flex-direction: row-reverse;
-}
-.fabrow .menufab.inrow {
-  position: static;
-}
-.fabadd .pill.addev {
-  height: 52px;
-  padding: 0 22px;
-  border-radius: 26px;
-  border: 2.5px solid var(--yellow);
-  background: rgba(22, 22, 22, 0.88);
-  color: var(--yellow);
-  font:
-    700 19px 'Kalam',
-    cursive;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
-  white-space: nowrap;
-}
-.fabadd .pill.addev:active {
-  transform: scale(0.96);
-}
-/* a card or the menu is open: the buttons step aside */
+/* a card or the menu is open: the button steps aside */
 body:has(.scrim) .menufab,
-body:has(.menuScrim) .menufab,
-body:has(.scrim) .fabrow,
-body:has(.menuScrim) .fabrow {
+body:has(.menuScrim) .menufab {
   visibility: hidden;
 }
 /* the "can't reach the board" note keeps out of the button's corner */
@@ -534,17 +496,29 @@ html.shell-drawer .page {
   padding: 6px 0;
   width: 60px;
 }
+/* the colors two by two (the whole set has to fit a 720-high screen) */
 .cork.rail .swatches {
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 27px 27px;
+  justify-items: center;
   max-width: none;
   overflow: visible;
 }
 .cork.rail .sw {
-  width: 44px;
-  height: 38px;
+  width: 27px;
+  height: 32px;
+}
+.cork.rail .sw span {
+  width: 20px;
+  height: 20px;
 }
 .cork.rail .cpick {
+  width: 24px;
+  height: 24px;
   margin: 4px 0;
+}
+.cork.rail .tool {
+  height: 40px;
 }
 .cork.rail .tool.medium {
   flex-direction: column;
