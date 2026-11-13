@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | household.test.ts
 ===============================================================================
- Version:   0.15.0
+ Version:   0.17.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-08
+ Updated:   2026-11-12
 
  Purpose:
      Reminders, timers, the pantry and the right-hand column's pages (from
@@ -27,6 +27,10 @@
 
  0.15.0    2026-11-08   joshua    A week's own art; the bottom of Notes per
                         claude    screen.
+
+ 0.17.0    2026-11-12   joshua    Each screen's menu (the cork or the ☰
+                        colby     button) is kept on the board.
+                        claude
 ===============================================================================
 */
 
@@ -201,4 +205,18 @@ test('the bottom of Notes: each screen its own, the wall’s from the admin cons
   await ed.post('/api/devices/notes-bottom', { id: wallId, bottom: null });
   assert.equal((await (await wall.api('/api/notesbottom')).json()).bottom, null);
   await fam.post('/api/notesbottom', { bottom: null });
+});
+
+test('each screen keeps its own menu on the board (the cork, or the ☰ button on either side)', async () => {
+  assert.deepEqual(await (await fam.api('/api/menustyle')).json(), { style: 'cork', saved: true });
+  const r = await fam.post('/api/menustyle', { style: 'right' });
+  assert.deepEqual(await r.json(), { style: 'right', saved: true });
+  // the same screen asking again (a cleared browser has nothing but its pairing) gets it back
+  assert.equal((await (await fam.api('/api/menustyle')).json()).style, 'right');
+  // another screen (or person) has its own
+  assert.equal((await (await ed.api('/api/menustyle')).json()).style, 'cork');
+  assert.equal((await fam.post('/api/menustyle', { style: 'top' })).status, 400);
+  assert.equal((await wall.post('/api/menustyle', { style: 'left' })).status, 403, 'the wall has no menu to change');
+  await fam.post('/api/menustyle', { style: 'cork' });
+  assert.equal((await (await fam.api('/api/menustyle')).json()).style, 'cork');
 });

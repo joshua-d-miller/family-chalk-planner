@@ -176,7 +176,7 @@ export function Menu({
                 id={'menuStyle-' + v}
                 aria-pressed={style === v}
                 onClick={() => {
-                  setMenuStyle(v);
+                  void setMenuStyle(v);
                   onClose();
                 }}
               >

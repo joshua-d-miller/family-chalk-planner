@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | access.ts
 ===============================================================================
- Version:   0.15.0
+ Version:   0.17.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-08
+ Updated:   2026-11-12
 
  Purpose:
      Who may do what.
@@ -81,6 +81,10 @@
                         claude    column.
 
                                   /week is one of the screens' pages.
+
+ 0.17.0    2026-11-12   joshua    A family screen saves its own menu (the cork
+                        colby     or the ☰ button).
+                        claude
 ===============================================================================
 */
 
@@ -588,7 +592,8 @@ export function setup(
     '/pantry/item/delete',
     '/right-pages',
     '/favorites', // a view-only screen (the wall) has no strip, so it never sends any
-    '/notesbottom' // (the wall's is set in the admin console)
+    '/notesbottom', // (the wall's is set in the admin console)
+    '/menustyle' // the cork or the ☰ button (the wall has neither)
   ]);
   const ADMIN = [
     /^\/board-settings/,

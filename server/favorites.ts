@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Server | favorites.ts
 ===============================================================================
- Version:   0.15.0
+ Version:   0.17.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-08
+ Updated:   2026-11-12
 
  Purpose:
      Favorites: the few things each person (and each family screen) uses
@@ -18,6 +18,9 @@
      console):
        kv 'notesbottom'  { 'p:...' | 's:...': { def: 'upnext', can:
            ['upnext', 'today', 'photos'] } }
+     And how it gets to its pages and tools: the cork (nothing saved), or
+     the ☰ button in the bottom right or left corner:
+       kv 'menustyle'  { 'p:...' | 's:...': 'right' | 'left' }
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -33,6 +36,10 @@
  0.15.0    2026-11-08   joshua    What the bottom of each screen's Notes column
                         claude    shows and can switch to (the admin console
                                   sets the wall's).
+
+ 0.17.0    2026-11-12   joshua    Each screen's menu: the cork or the ☰ button
+                        colby     (right or left), kept on the board so
+                        claude    clearing the browser doesn't lose it.
 ===============================================================================
 */
 
@@ -127,6 +134,30 @@ export function setup({
     if (req.body?.bottom !== null && !b) return res.status(400).json({ error: 'Pick what it shows' });
     setBottom('s:' + id, b);
     res.json({ bottom: b });
+  });
+
+  // ---------------------- //
+  // | This screen's menu | //
+  // ---------------------- //
+  // The cork (nothing kept) or the ☰ button on the right or the left. Kept  //
+  // on the board, per screen (or per person on a computer), so a cleared    //
+  // browser keeps it; the screen changes at once when it's saved.           //
+  const styles = () => kv.get<Record<string, string>>('menustyle') || {};
+  app.get('/api/menustyle', (req, res) => {
+    const k = whose(req);
+    res.json({ style: (k && styles()[k]) || 'cork', saved: !!k });
+  });
+  app.post('/api/menustyle', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const style = req.body?.style;
+    if (!['cork', 'right', 'left'].includes(style)) return res.status(400).json({ error: 'Pick where the menu goes' });
+    const map = styles();
+    if (style === 'cork') delete map[k];
+    else map[k] = style;
+    kv.set('menustyle', map);
+    broadcast('menustyle', {});
+    res.json({ style, saved: true });
   });
 }
 

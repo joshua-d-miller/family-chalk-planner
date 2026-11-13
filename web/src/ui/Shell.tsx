@@ -164,6 +164,8 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
     const c = document.documentElement.classList;
     c.toggle('shell-cork', kind === 'cork' && !side);
     c.toggle('shell-drawer', !!side);
+    c.toggle('menu-right', side === 'right');
+    c.toggle('menu-left', side === 'left');
     c.toggle('shell-tabs', kind === 'tabs');
     c.toggle('os-ios', osOf() === 'ios');
     c.toggle('os-android', osOf() === 'android');

@@ -347,6 +347,11 @@ body:has(.scrim) .menufab,
 body:has(.menuScrim) .menufab {
   visibility: hidden;
 }
+/* the "can't reach the board" note keeps out of the button's corner */
+html.menu-right .offline {
+  right: auto;
+  left: 14px;
+}
 /* the pages have no cork to keep clear of, just the button */
 html.shell-drawer .page {
   padding-bottom: 96px;
