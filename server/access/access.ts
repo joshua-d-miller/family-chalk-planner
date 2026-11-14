@@ -661,6 +661,7 @@ export function setup(
     '/border',
     '/frame',
     '/chores/check',
+    '/chores/ha-check', // a Home Assistant to-do list
     // reminders, timers, the pantry and the right-hand column's pages
     '/reminders',
     '/reminders/item',

@@ -113,6 +113,12 @@ export const FIELDS: Record<string, Field> = {
           (c.main === undefined || typeof c.main === 'boolean')
       )
   },
+  // the Home Assistant app: its to-do lists on the Chores page: [{ id, name }]
+  HA_TODO_LISTS: {
+    type: 'json',
+    check: v =>
+      jsonList(v, c => typeof c.id === 'string' && /^todo\.[a-z0-9_]{1,200}$/.test(c.id) && isName(c.name, 100))
+  },
   CALDAV_URL: { type: 'url' },
   CALDAV_USER: { type: 'text', max: 200, private: true },
   CALDAV_PASSWORD: { type: 'secret' },

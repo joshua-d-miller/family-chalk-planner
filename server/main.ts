@@ -101,6 +101,7 @@ import * as timers from './timers.ts';
 import * as pantry from './pantry.ts';
 import * as media from './media.ts';
 import { makeHomeAssistant } from './homeassistant.ts';
+import * as haTodos from './ha-todos.ts';
 import * as webclip from './webclip.ts';
 import * as photos from './photos/photos.ts';
 import * as pages from './pages.ts';
@@ -347,6 +348,8 @@ chores.setup({
   kidOf: req => who.kidOf(req),
   who: req => who.whoOf(req)
 });
+// the Home Assistant app: its to-do lists on the Chores page
+haTodos.setup({ app, ha, lists: cfg.haTodoLists, broadcast });
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------- //

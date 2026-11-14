@@ -71,6 +71,7 @@ export function readConfig(env: NodeJS.ProcessEnv, appDir: string, dataDir: stri
   const faceDir = env.FACE_DIR || path.join(appDir, 'face');
   const cfg = {
     port: num(env.PORT, 3002),
+    haTodoLists: jsonList<{ id: string; name: string }>(env.HA_TODO_LISTS), // the Home Assistant app: on the Chores page
     bind: env.BIND || '0.0.0.0',
     backupDir: env.BACKUP_DIR || path.join(dataDir, 'backup'), // snapshots, the key, and uploads (media/)
     // else the server's own time zone

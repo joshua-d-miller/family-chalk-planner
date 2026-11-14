@@ -14,7 +14,8 @@
      role set in the console, or the default), nobody else can claim to be
      them, the board's own sign-ins are off, and pages are served from the
      ingress path and may be framed by Home Assistant only. Its calendars
-     are the board's: read, added to, changed and deleted as each allows.
+     are the board's: read, added to, changed and deleted as each allows;
+     its to-do lists are on the Chores page.
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -60,7 +61,8 @@ test.before(async () => {
         { id: 'calendar.family', name: 'Family', color: '#9CC9E6', main: true },
         { id: 'calendar.work', name: 'Work', color: '#E8A35C' },
         { id: 'calendar.holidays', name: 'Holidays', color: '#F26B6B' }
-      ])
+      ]),
+      HA_TODO_LISTS: JSON.stringify([{ id: 'todo.chores', name: 'Chores' }])
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -274,4 +276,29 @@ test('adding, changing and deleting go to Home Assistant', async () => {
   // nor can a made-up calendar be reached
   r = await post(admin, '/api/events/delete', { ref: { href: 'ha:calendar.secret', etag: 'x' } });
   assert.equal(r.status, 502);
+});
+
+// ------------------------------- //
+// | Home Assistant's to-do lists | //
+// ------------------------------- //
+test('Home Assistant’s to-do lists are on the Chores page', async () => {
+  const pick = await (await admin('/api/board-settings/ha-todos')).json();
+  assert.deepEqual(pick.lists, [{ id: 'todo.chores', name: 'Chores' }]);
+  assert.equal((await kid('/api/board-settings/ha-todos')).status, 403, 'the console’s');
+  const v = await (await kid('/api/chores/ha')).json();
+  assert.deepEqual(v.lists[0].items, [
+    { uid: 't-trash', title: 'Take out the trash', done: false },
+    { uid: 't-dog', title: 'Feed the dog', done: true }
+  ]);
+  const r = await post(kid, '/api/chores/ha-check', { list: 'todo.chores', uid: 't-trash', done: true });
+  assert.equal(r.status, 200, await r.clone().text());
+  assert.equal((await r.json()).lists[0].items[0].done, true);
+  assert.ok(ha.state().calls.includes('todo todo.chores t-trash completed'));
+  assert.equal((await post(kid, '/api/chores/ha-check', { list: 'todo.other', uid: 'x', done: true })).status, 404);
+  await post(admin, '/api/ha/people', { id: 'u-kid', role: 'view' });
+  assert.equal(
+    (await post(kid, '/api/chores/ha-check', { list: 'todo.chores', uid: 't-dog', done: false })).status,
+    403
+  );
+  await post(admin, '/api/ha/people', { id: 'u-kid', role: null });
 });

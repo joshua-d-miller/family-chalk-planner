@@ -71,3 +71,8 @@ export interface ChoresView {
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+
+// the Home Assistant app: its to-do lists on the Chores page (server/ha-todos.ts)
+export interface HaTodoView {
+  lists: { id: string; name: string; items: { uid: string; title: string; done: boolean }[]; problem?: string }[];
+}

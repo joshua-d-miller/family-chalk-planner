@@ -303,6 +303,14 @@ button:disabled{opacity:.5;cursor:default}
           <label for="bfGred">Sign-in return address (optional, HTTPS setups only — see the guide)</label><input id="bfGred" data-k="GOOGLE_REDIRECT_URI" autocomplete="off" spellcheck="false" placeholder="https://board.example/oauth/google/callback">
         </div>
       </div>
+      <div class="card" id="bfTodoCard" hidden>
+        <h2>Home Assistant to-do lists</h2>
+        <p class="dim">Shown on the Chores page under the board’s own chores, and ticked off from there (Shopping List, Local To-do, Google Tasks…). Home Assistant keeps them.</p>
+        <div class="actions" style="margin-top:4px"><button id="bfTodoList">List Home Assistant’s to-do lists</button></div>
+        <div class="list" id="bfTodos"></div>
+        <div class="err" id="bfTodoErr"></div>
+        <input type="hidden" id="bfTodoVal" data-k="HA_TODO_LISTS">
+      </div>
       <div class="card">
         <h2>Calendar links</h2>
         <p class="dim">Read-only calendars from a link (iCal, “.ics” or “webcal://”): the school calendar, a sports team, your work calendar’s “publish” link. Checked every 15 minutes.</p>
@@ -598,6 +606,32 @@ button:disabled{opacity:.5;cursor:default}
     busy($('bfHaList'), api('api/board-settings/ha-calendars')).then(function (r) { haAvail = r.calendars; drawHa(); })
       .catch(function (e) { $('bfHaErr').textContent = e.message; });
   });
+  // the Home Assistant app: which of its to-do lists show on the Chores page
+  var todoAvail = null;
+  function drawTodos() {
+    var box = $('bfTodos'); box.innerHTML = '';
+    var chosen = jsonVal('bfTodoVal'), all = (todoAvail || []).slice();
+    chosen.forEach(function (c) { if (!all.some(function (a) { return a.id === c.id; })) all.push({ id: c.id, name: c.name, missing: true }); });
+    all.forEach(function (l) {
+      var it = el('div', 'item'), line = el('div', 'line');
+      var cb = el('input'); cb.type = 'checkbox'; cb.style.cssText = 'width:22px;height:22px;flex:0 0 22px';
+      cb.checked = chosen.some(function (c) { return c.id === l.id; }); cb.setAttribute('aria-label', 'Show ' + l.name);
+      var nm = el('div'); nm.style.cssText = 'flex:1 1 160px;min-width:0';
+      nm.appendChild(el('b', null, l.name)); nm.appendChild(el('div', 'dim', l.missing ? '⚠ not in Home Assistant any more' : l.id)); nm.lastChild.style.fontSize = '13px';
+      cb.addEventListener('change', function () {
+        var a = jsonVal('bfTodoVal').filter(function (x) { return x.id !== l.id; });
+        if (cb.checked) { if (a.length >= 8) { cb.checked = false; $('bfTodoErr').textContent = 'At most 8 lists'; return; } a.push({ id: l.id, name: l.name.slice(0, 100) }); }
+        setJson('bfTodoVal', a);
+      });
+      line.appendChild(cb); line.appendChild(nm); it.appendChild(line); box.appendChild(it);
+    });
+    if (!all.length) box.appendChild(el('div', 'dim', todoAvail ? 'Home Assistant has no to-do lists yet (Settings → Devices & services → Add integration → Local To-do).' : 'Press “List Home Assistant’s to-do lists” to choose.'));
+  }
+  $('bfTodoList').addEventListener('click', function () {
+    $('bfTodoErr').textContent = '';
+    busy($('bfTodoList'), api('api/board-settings/ha-todos')).then(function (r) { todoAvail = r.lists; drawTodos(); })
+      .catch(function (e) { $('bfTodoErr').textContent = e.message; });
+  });
   function loadBoard() {
     api('api/board-settings').then(function (d) {
       bf.data = d; var F = d.fields;
@@ -622,6 +656,7 @@ button:disabled{opacity:.5;cursor:default}
       });
       $('bfProvHa').hidden = !d.homeAssistant;
       haAvail = null; drawHa();
+      $('bfTodoCard').hidden = !d.homeAssistant; todoAvail = null; drawTodos();
       bfSetProv(bfDefaultProv());
       $('bfVer').textContent = d.version; $('bfErr').textContent = '';
       $('bfHere').textContent = d.here;

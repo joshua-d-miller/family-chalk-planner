@@ -2,16 +2,17 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Chores.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   1.0.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-14
 
  Purpose:
      Chores: today's, this week's and this month's, a column per person
      and per group that shares one. Tap to tick off (a chore done several
      times: once per tap). On a kid's tablet: only theirs. Signed-in
-     people can change the list (✎).
+     people can change the list (✎). In the Home Assistant app, the to-do
+     lists picked in the console follow, ticked off the same way.
 
  Used by:
      web/src/App.tsx
@@ -35,13 +36,16 @@
 
  0.14.0    2026-11-07   joshua    📅 Calendar only on the wall (everywhere else
                         claude    the bar has it).
+
+ 1.0.0     2026-11-14   joshua    Home Assistant's to-do lists, under the
+                        claude    board's own chores.
 ===============================================================================
 */
 
 import { navigate } from '../lib/nav.ts';
 import { useShell } from '../ui/Shell.tsx';
 import { useEffect, useMemo, useState } from 'react';
-import type { Chore, ChoreProgress, ChoresView, Every, Person } from '../../../shared/chores.ts';
+import type { Chore, ChoreProgress, ChoresView, Every, HaTodoView, Person } from '../../../shared/chores.ts';
 import { post } from '../lib/api.ts';
 import { useLive } from '../lib/live.ts';
 import { RANK } from '../lib/who.ts';
@@ -95,6 +99,14 @@ export function entries(d: ChoresView, every: Every): Entry[] {
 export function Chores({ who }: { who: Who | null }) {
   const live = useLive<ChoresView>('api/chores', ['chores']);
   const d = live.data;
+  // Home Assistant's to-do lists (the app): asked again every minute, as they change there too
+  const haLive = useLive<HaTodoView>('api/chores/ha', ['chores']);
+  const haLists = d?.mine ? [] : haLive.data?.lists || [];
+  const haReload = haLive.reload;
+  useEffect(() => {
+    const t = setInterval(haReload, 60e3);
+    return () => clearInterval(t);
+  }, [haReload]);
   const [tab, setTab] = useState<Every>('day');
   const [editing, setEditing] = useState(false);
   const [err, setErr] = useState('');
@@ -156,6 +168,17 @@ export function Chores({ who }: { who: Who | null }) {
   // Who may tick it here: signed-in people and family screens, anyone's; a  //
   // kid's tablet, their own; the wall, none                                 //
   const can = (en: Entry) => (who?.rank || 0) >= RANK.family || (!!d?.mine && en.who.includes(d.mine));
+
+  async function haTick(list: string, uid: string, done: boolean) {
+    if ((who?.rank || 0) < RANK.family) return;
+    setErr('');
+    try {
+      haLive.set(await post<HaTodoView>('api/chores/ha-check', { list, uid, done }));
+    } catch (e) {
+      setErr((e as Error).message);
+      haLive.reload();
+    }
+  }
 
   async function tick(en: Entry) {
     if (!d || !can(en)) return;
@@ -230,7 +253,7 @@ export function Chores({ who }: { who: Who | null }) {
         </div>
       )}
       <div className="err">{err || (live.error && live.error.message)}</div>
-      {d && !d.chores.length && (
+      {d && !d.chores.length && !haLists.length && (
         <div className="empty">
           {editor
             ? 'No chores yet — tap “✎ Change the list” to add them (or start from an example).'
@@ -280,6 +303,41 @@ export function Chores({ who }: { who: Who | null }) {
           );
         })}
       </div>
+      {haLists.length > 0 && (
+        <div id="chHa" className="chha">
+          {haLists.map(l => {
+            const items = [...l.items].sort((a, b) => Number(a.done) - Number(b.done));
+            const canHa = (who?.rank || 0) >= RANK.family;
+            return (
+              <div className="chcol section" key={l.id}>
+                <h3>
+                  🏠 {l.name}
+                  <small>
+                    {l.items.filter(i => i.done).length} / {l.items.length}
+                  </small>
+                </h3>
+                {l.problem && <div className="err">{l.problem}</div>}
+                {!items.length && !l.problem && <div className="dim">Nothing on it</div>}
+                {items.map(i => (
+                  <button
+                    key={i.uid}
+                    type="button"
+                    className={'check chitem' + (i.done ? ' done' : '') + (canHa ? ' can' : '')}
+                    aria-pressed={i.done}
+                    disabled={!canHa}
+                    onClick={() => haTick(l.id, i.uid, !i.done)}
+                  >
+                    <span className="box chbox" aria-hidden="true">
+                      {i.done ? '✓' : ''}
+                    </span>
+                    <span className="t ct">{i.title}</span>
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
       {editing && d && (
         <ChoresEditor
           data={{ people: d.people, chores: d.chores as Chore[] }}
