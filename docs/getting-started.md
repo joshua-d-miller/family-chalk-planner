@@ -26,8 +26,8 @@ it; and an admin console where you add screens and people.
 
 ## Step 1: Install it
 
-Pick the one that matches what you have. Every way ends the same: the board running, and a one-time
-**setup code** like `MJ3J-FKFW`.
+Pick the one that matches what you have. Docker and Linux end the same: the board running, and a
+one-time **setup code** like `MJ3J-FKFW`. Home Assistant needs no code: it skips to Step 3.
 
 | You have | Use | Time |
 | --- | --- | --- |
@@ -45,12 +45,19 @@ A rented server is someone else's computer: if you go that way, read
 1. In Home Assistant, go to **Settings → Apps**, tap **App store** (bottom right), open the **⋮**
    menu (top right) → **Repositories**, add `https://github.com/joshua-d-miller/family-chalk-planner-ha`, and close the
    dialog.
-2. Find **Family Chalk Planner** in the list, tap it, then **Install**, then **Start**.
-3. Open the app's **Log** tab. After about a minute you'll see:
-   `no admin yet. Open /admin and enter the setup code ABCD-EFGH`.
+2. Find **Family Chalk Planner** in the list, tap it, then **Install**. Turn on **Show in sidebar**,
+   then tap **Start**.
+3. After about a minute, tap **Family Board** in the sidebar.
 
-The board is at `http://homeassistant.local:3002/` (or your Home Assistant's address, port 3002).
-Home Assistant updates it and includes it in its backups; more in the app's **Documentation** tab.
+There's no setup code or separate account: **your Home Assistant login is your board login**. Home
+Assistant's administrators get the admin console; everyone else gets the role you pick in 👪 People.
+In ⚙️ Board, pick which of Home Assistant's **calendars** and **to-do lists** the board shows
+([Calendars](calendars.md#home-assistant)).
+
+Inside Home Assistant the board hides the sidebar while it's open. For the wall, open
+`http://homeassistant.local:3002/` (or your Home Assistant's address, port 3002) on the wall screen and
+pair it from the console's 📺 Screens (step 4 below). Home Assistant updates the board and includes it
+in its backups; more in the app's **Documentation** tab.
 
 ### B. Docker
 
@@ -91,6 +98,8 @@ Family Chalk Planner is installed (running from /opt/family-chalk-planner).
 More (other folders, HTTPS, backups): [install.md](install.md).
 
 ## Step 2: Create the admin account
+
+*(Home Assistant: skip this; its administrators are the board's admins.)*
 
 On a computer or tablet, open `http://<the board's address>:3002/admin`.
 
@@ -165,6 +174,9 @@ A paired screen stays paired, even after a restart or an update.
 
 ## Step 5: Invite the family
 
+*(Home Assistant: everyone already has their Home Assistant login. In 👪 People, pick what each person
+can do, or set the default.)*
+
 In the console, **👪 People**: a username, their name, and **Editor** (everything on the board) or
 **Admin** (also the console and settings). Tap **Make invite link** and send it to them. The link
 works once, for 3 days. They choose a password and set up their own authenticator app.
@@ -198,7 +210,7 @@ That's it: the board is up. The [user guide](user-guide.md) shows what every but
 
 | What you see | What to do |
 | --- | --- |
-| The setup code doesn't work | It works once. Lost it or used it? Linux: `sudo /opt/family-chalk-planner/deploy/reset-admin.sh`. Docker: `docker compose exec -u 1000:1000 board node server/chalkboard.js --reset-admin`, then `docker compose restart`. Home Assistant: the app's **Reset the admin** option. Each prints a new code. |
+| The setup code doesn't work | It works once. Lost it or used it? Linux: `sudo /opt/family-chalk-planner/deploy/reset-admin.sh`. Docker: `docker compose exec -u 1000:1000 board node server/chalkboard.js --reset-admin`, then `docker compose restart`. Home Assistant has no setup code: its administrators are the board's admins. Each prints a new code. |
 | "Calendar unavailable" on the board | iCloud needs an **app-specific password**, not your Apple ID password. Check ⚙️ Board → Calendar, tap **Find my calendars** again, then **Save and restart**. |
 | The wall screen keeps showing a pairing code | The code changes every 15 minutes; pair it with the one showing now. |
 | Can't open the board from another device | Use the server's IP address and port 3002 (`http://192.168.1.20:3002/`); check the server's firewall allows port 3002. |

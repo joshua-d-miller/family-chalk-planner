@@ -30,7 +30,7 @@ A chalkboard-style family wall calendar for a wall-mounted screen, edited from a
 
 | You have | Install with |
 |---|---|
-| **Home Assistant** | [![Add the repository to my Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjoshua-d-miller%2Ffamily-chalk-planner-ha) then install **Family Chalk Planner** from the app store ([family-chalk-planner-ha](https://github.com/joshua-d-miller/family-chalk-planner-ha)). Home Assistant updates and backs it up. |
+| **Home Assistant** | [![Add the repository to my Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjoshua-d-miller%2Ffamily-chalk-planner-ha) then install **Family Chalk Planner** from the app store ([family-chalk-planner-ha](https://github.com/joshua-d-miller/family-chalk-planner-ha)). It's in Home Assistant's sidebar, uses its logins, calendars and to-do lists, and Home Assistant updates and backs it up. |
 | **Docker** (a NAS, a Pi, any server) | `curl -fsSLO https://raw.githubusercontent.com/joshua-d-miller/family-chalk-planner/main/compose.yaml && docker compose up -d` ([docker.md](docs/docker.md)) |
 | **Debian/Ubuntu**, a Raspberry Pi, a **Proxmox** container | `git clone https://github.com/joshua-d-miller/family-chalk-planner.git /opt/family-chalk-planner && sudo bash /opt/family-chalk-planner/deploy/install.sh` ([install.md](docs/install.md)) |
 | Nothing always on at home | A small cloud server behind a free Cloudflare Tunnel ([cloud.md](docs/cloud.md)) |

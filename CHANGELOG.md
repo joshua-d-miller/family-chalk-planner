@@ -4,9 +4,25 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
-## 1.0.0 — Ready for everyone
-The first public release. Nothing changes for a board that's already running; this marks the board as ready for
-other families to install and rely on, with what the earlier releases built:
+## 1.0.0 — Ready for everyone, and part of Home Assistant
+The first public release. For Docker and Linux nothing changes for a board that's already running; this marks
+the board as ready for other families to install and rely on.
+
+**The Home Assistant app becomes part of Home Assistant:**
+
+- **In the sidebar** (Family Board). Inside Home Assistant the board hides Home Assistant's sidebar while it's
+  open (its ☰ button brings it back) and puts it back as it was afterwards. Wall screens still open the board's
+  own address (port 3002) and are paired from the admin console.
+- **Home Assistant logins:** its administrators are the board's admins; everyone else gets the role picked in
+  the admin console (👪 People), or the default. No setup code, and the board's own sign-ins are off in the app.
+- **Home Assistant's calendars** as the board's calendar: pick them in ⚙️ Board, one the main one for new
+  events, the others in their own colors. Events are added, changed and deleted where Home Assistant allows it
+  (a calendar that can only add and delete, like Home Assistant's Google calendars, is changed by deleting and
+  adding again).
+- **Home Assistant's to-do lists on the Chores page**, ticked off from the board straight into Home Assistant.
+- Tested against a pretend Home Assistant on every change.
+
+**Also, from the earlier releases:**
 
 - **Four ways to run it**, each documented step by step: the **Home Assistant app**
   ([family-chalk-planner-ha](https://github.com/joshua-d-miller/family-chalk-planner-ha), installed, updated and

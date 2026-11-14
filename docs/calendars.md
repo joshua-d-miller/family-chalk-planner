@@ -6,6 +6,7 @@ it is set in the admin console → **⚙️ Board**.
 
 | Your calendar | Add and change events from the board? | How |
 | --- | --- | --- |
+| **Home Assistant's calendars** (the Home Assistant app) | Yes, where Home Assistant allows it | [Pick them in ⚙️ Board](#home-assistant) |
 | **iCloud** (iPhone, iPad, Mac) | Yes | [CalDAV with an app-specific password](#icloud) |
 | **Google Calendar** | Yes | [Google sign-in](google-calendar.md) (about 15 minutes, once) |
 | **Nextcloud, Fastmail, Synology, Radicale** and other CalDAV servers | Yes | [CalDAV](#other-caldav-calendars) |
@@ -14,6 +15,23 @@ it is set in the admin console → **⚙️ Board**.
 
 Calendar links are read again every 15 minutes, so a change made elsewhere can take that long to show up
 (plus however often the service updates its link; Outlook and Google can take longer).
+
+## Home Assistant
+
+In the Home Assistant app the board can use the calendars Home Assistant already has (Local Calendar,
+Google Calendar, CalDAV, Outlook and the rest), so there's nothing to connect twice.
+
+1. Admin console → **⚙️ Board → Calendar → 🏠 Home Assistant** (picked for you in the app).
+2. Tap **List Home Assistant's calendars**, tick the ones to show and give each a color.
+3. Tap **Make main** on the one new events should go to, then **Save and restart**.
+
+Each calendar can do on the board what Home Assistant lets it do. A calendar that can add and delete
+but not change events (Home Assistant's Google calendars) is changed by deleting the event and adding
+it again, which works for one-off events; repeating ones are read-only there. A calendar Home Assistant
+can't change at all (holidays, a feed) shows read-only.
+
+Below it, **Home Assistant to-do lists** puts lists on the board's Chores page (Shopping List, Local
+To-do, Google Tasks...); ticking one off on the board ticks it off in Home Assistant.
 
 ## iCloud
 
