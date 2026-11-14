@@ -16,11 +16,11 @@ it; and an admin console where you add screens and people.
   computer at home? A small cloud server works too ([cloud.md](cloud.md)).
 - **A screen for the wall** with a web browser: an Android tablet or display (Fully Kiosk Browser is
   the easiest), a Raspberry Pi with a monitor, or a smart TV's browser.
-- **Your calendar's sign-in:**
+- **Your calendar's sign-in** (every option: [calendars.md](calendars.md)):
   - **iCloud:** your Apple ID email and an *app-specific password* (step 3 shows where to get one).
   - **Google Calendar:** about 15 minutes of one-time setup ([google-calendar.md](google-calendar.md)).
   - **Nextcloud, Fastmail or any CalDAV calendar:** its address, username and password.
-  - **Just a calendar link** (school, sports team): works too, read-only.
+  - **Outlook or Microsoft 365, or just a calendar link** (school, sports team): works too, read-only.
 - **An authenticator app** on your phone (Google Authenticator, Microsoft Authenticator, 1Password,
   Authy...) for the admin account.
 
@@ -121,6 +121,8 @@ In the console, tap **⚙️ Board**.
    - **Nextcloud, Fastmail, other CalDAV:** its CalDAV address, your username and password (or an app
      password).
    - **Google:** tap **Google Calendar** and follow [google-calendar.md](google-calendar.md).
+   - **Outlook or Microsoft 365:** the board can show it, read-only, as a calendar link (next step);
+     [calendars.md](calendars.md#outlook-and-microsoft-365) shows where to find the link.
 
    Tap **Find my calendars** and pick the one to show. Under **More calendars from this account** you
    can add others (kids' activities, work), each in its own color.

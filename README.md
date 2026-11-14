@@ -4,7 +4,7 @@ A chalkboard-style family wall calendar for a wall-mounted screen, edited from a
 
 ![The board on the wall: a month of events, weather, trash day, countdowns, meal plan and reward jars](docs/images/wall.jpg)
 
-- **Your real calendar.** Events come from Google Calendar or any CalDAV calendar (iCloud, Nextcloud, Fastmail, Radicale…). Add, edit and delete from the tablet, including repeating events ("just this one" or "all of them"), and make birthdays and big days stand out in large or extra-large writing.
+- **Your real calendar.** Events come from Google Calendar or any CalDAV calendar (iCloud, Nextcloud, Fastmail, Radicale…); Outlook and any other calendar link show alongside, read-only ([which calendars](docs/calendars.md)). Add, edit and delete from the tablet, including repeating events ("just this one" or "all of them"), and make birthdays and big days stand out in large or extra-large writing.
 - **Draw on it.** Chalk and paint-marker drawing, typed or hand-lettered month titles in 63 fonts (handwritten, regular serif and sans, chalk, script, bubbly and holiday ones), and **⭐ Pictures**: one search through about 22,000 pictures (emoji in eight styles, real clipart from Openclipart, weather and food sets, and about 3,200 chalk drawings in any color), seasonal packs (Thanksgiving, Christmas, Halloween, back to school...), Favorites, free public-domain pictures from the web when you can't find one, and GIFs (upload, or paste a link and the board keeps its own copy). The art is saved per month.
 - **Holiday borders.** Jack-o'-lanterns, bats and mummies around October; pumpkins, corn and turkeys for Thanksgiving; ready-made sets for every season, or any pictures you pick. They come back every year.
 - **Chores.** A family checklist for every day, week and month that resets by itself. Swipe left on the calendar to see it, tick chores off on the board or your phone, and give each kid a tablet that shows only their own.
@@ -51,6 +51,7 @@ Every way prints a one-time **setup code**. Open `http://<server>:3002/admin`, e
 | [User guide](docs/user-guide.md) | The tablet, family screens, kids' tablets, chores, the wall display |
 | [Install](docs/install.md) | Debian/Ubuntu and Proxmox, HTTPS, screens and people, backups, troubleshooting |
 | [Docker](docs/docker.md) | Running it with Docker Compose |
+| [Calendars](docs/calendars.md) | Which calendars work and how to connect each: iCloud, Google, CalDAV, Outlook, calendar links |
 | [Google Calendar](docs/google-calendar.md) | Connecting a Google calendar |
 | [Photos](docs/photos.md) | iCloud and Google Photos shared albums, face framing |
 

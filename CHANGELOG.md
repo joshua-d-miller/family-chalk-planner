@@ -20,6 +20,16 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - New README screenshots, from a made-up family (made by `test/e2e/readme-shots.spec.ts`, so they can be
   taken again any time); the guide's by `test/docs-shots.ts`.
 - The weather town's example in the console is "Your town".
+- **[Calendars](docs/calendars.md):** which calendars work and how to connect each, including **Outlook and
+  Microsoft 365** (shown read-only from a published calendar link) and where to find calendar links in Google
+  and iCloud.
+- **Smoke tests for what the guide promises:**
+  - a brand-new board, done the way the guide says in a real browser: setup code, admin, calendar, Save and
+    restart (through the container's start script), pairing the wall, the family's events on it
+  - calendar links as Outlook (Windows time zone names), Google (UTC, a moved week) and iCloud publish them
+  - the Docker image both ways it's run: as a plain container, and the way Home Assistant runs the app
+    (labels, options, Reset the admin once, a restart after saved settings, a clean stop)
+  - every link, picture and section the README and guides point to
 
 ## 0.17.0 — Pictures, reworked, and the ☰ button instead of the cork
 - **⭐ Pictures, reworked** (Tarin's feedback: hard to get to, odd-looking on the board, not much
