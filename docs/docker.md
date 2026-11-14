@@ -11,7 +11,7 @@ docker compose logs board
 ```
 The log shows a one-time **setup code** (it's also in `data/setup-code.txt`).
 
-Building from the source instead (for example while the repository is private, or to try a change): clone the repository, uncomment `build: .` in `compose.yaml`, and run `docker compose up -d --build`.
+Building from the source instead (to try a change, for example): clone the repository, uncomment `build: .` in `compose.yaml`, and run `docker compose up -d --build`.
 
 ## 2. Set it up in the browser
 1. Open `http://<machine>:3002/admin`, enter the setup code, create the admin account and connect your authenticator app.

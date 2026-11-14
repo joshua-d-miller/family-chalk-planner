@@ -26,6 +26,8 @@ A chalkboard-style family wall calendar for a wall-mounted screen, edited from a
 
 **[Getting started](docs/getting-started.md)** walks through everything, step by step with pictures: installing, creating the admin account, connecting your calendar, putting it on the wall and inviting the family. About half an hour.
 
+**Which way?** Run it on something you already have at home: Home Assistant if you use it (it installs, updates and backs up the board for you), otherwise Docker or a small Linux machine. Everything then stays on your own network. A rented cloud server works too, but keep the board behind Cloudflare Access or Tailscale and read [what's on the server](docs/cloud.md#whats-on-the-server-and-how-to-limit-it) first.
+
 | You have | Install with |
 |---|---|
 | **Home Assistant** | [![Add the repository to my Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjoshua-d-miller%2Ffamily-chalk-planner-ha) then install **Family Chalk Planner** from the app store ([family-chalk-planner-ha](https://github.com/joshua-d-miller/family-chalk-planner-ha)). Home Assistant updates and backs it up. |

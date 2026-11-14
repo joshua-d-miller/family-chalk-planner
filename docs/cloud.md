@@ -89,9 +89,6 @@ Cloudflare rearranges its dashboard now and then; if a menu below has moved, loo
    the screens at the new address: on the wall, open `https://board.<your domain>/` and type its code into
    **📺 Screens**.
 
-(While the project's repository is private, its Docker image is too: build the image yourself instead, as
-[docker.md](docker.md#1-start-it) describes, and use `build: .` in place of the `image:` line.)
-
 ## Lock the door: Cloudflare Access (recommended)
 The board has its own locks (screens are paired with a code; people sign in with a passkey or a password plus an
 authenticator code; repeated wrong tries are slowed down), but anything on the internet is safer behind a second

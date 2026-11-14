@@ -4,6 +4,27 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.0.0 — Ready for everyone
+The first public release. Nothing changes for a board that's already running; this marks the board as ready for
+other families to install and rely on, with what the earlier releases built:
+
+- **Four ways to run it**, each documented step by step: the **Home Assistant app**
+  ([family-chalk-planner-ha](https://github.com/joshua-d-miller/family-chalk-planner-ha), installed, updated and
+  backed up by Home Assistant), **Docker**, a **Debian/Ubuntu/Raspberry Pi/Proxmox** machine (updates itself), or a
+  **rented cloud server** behind Cloudflare Access or Tailscale.
+- **[Getting started](docs/getting-started.md)** from nothing to the calendar on the wall, and
+  **[Calendars](docs/calendars.md)**: iCloud, Google, any CalDAV calendar, Outlook and calendar links.
+- **Tested the way people use it:** a new family's first run in a real browser, calendar links from Outlook,
+  Google and iCloud, the image as Docker and as the Home Assistant app, the install and update scripts, and every
+  link in the docs, on every change.
+- The docs no longer describe a private repository (the deploy-key setup is gone; installs that use one keep
+  working). The README and Getting started say which way to run it: at home (Home Assistant, Docker or Linux) is
+  simplest to keep safe.
+
+**Updating from 0.x:** 1.0.0 is a new major version, so a board with **Install updates by themselves** waits for
+you: admin console → ⚙️ Board → **Updates → Update now** (or `sudo deploy/update.sh`). Docker: `docker compose pull
+&& docker compose up -d`. Home Assistant: **Update** on the app.
+
 ## 0.17.2 — A browser's saved sign-in no longer becomes the calendar's
 - **Fixed:** in the admin console, a browser or password manager could fill the admin's own username and
   password into ⚙️ Board → Calendar without anyone noticing, and **Save and restart** then sent them to the

@@ -36,6 +36,10 @@ Pick the one that matches what you have. Every way ends the same: the board runn
 | Debian or Ubuntu, a Raspberry Pi, a Proxmox container | [C. Linux](#c-debian-ubuntu-raspberry-pi-or-proxmox) | 10 minutes |
 | Nothing always on at home | [D. A small cloud server](cloud.md) | 30 minutes |
 
+Home Assistant, Docker or Linux at home keep everything on your own network, and are the simplest to keep safe.
+A rented server is someone else's computer: if you go that way, read
+[what's on the server, and how to limit it](cloud.md#whats-on-the-server-and-how-to-limit-it) first.
+
 ### A. Home Assistant
 
 1. In Home Assistant, go to **Settings → Apps**, tap **App store** (bottom right), open the **⋮**
