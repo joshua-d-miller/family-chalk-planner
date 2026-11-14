@@ -100,6 +100,7 @@ import * as reminders from './reminders.ts';
 import * as timers from './timers.ts';
 import * as pantry from './pantry.ts';
 import * as media from './media.ts';
+import { makeHomeAssistant } from './homeassistant.ts';
 import * as webclip from './webclip.ts';
 import * as photos from './photos/photos.ts';
 import * as pages from './pages.ts';
@@ -200,7 +201,15 @@ app.set('trust proxy', cfg.trustProxy);
 // Who may do what: paired screens and signed-in people, the admin console   //
 // (server/access/). Registered first: its rules run before every other      //
 // route.                                                                    //
-const who = access.setup(app, { db, kv, dataDir: DATA_DIR, env: ENV, title: cfg.title, broadcast });
+// The Home Assistant app: Home Assistant's people, calendars and to-do lists, through its Supervisor
+const ha = ENV.SUPERVISOR_TOKEN
+  ? makeHomeAssistant({
+      token: ENV.SUPERVISOR_TOKEN,
+      ...(ENV.HA_API_URL ? { api: ENV.HA_API_URL } : {}),
+      ...(ENV.HA_WS_URL ? { ws: ENV.HA_WS_URL } : {})
+    })
+  : null;
+const who = access.setup(app, { db, kv, dataDir: DATA_DIR, env: ENV, title: cfg.title, broadcast, ha });
 if (process.argv.includes('--reset-admin')) {
   // deploy/reset-admin.sh
   console.log(`Removed every person, sign-in and paired screen. New setup code: ${who.resetAll()}`);
@@ -418,7 +427,7 @@ registerSettingsRoutes(app, {
   audit: who.audit
 });
 updates.setup({ app, db, dataDir: DATA_DIR, version: VERSION, updater: ENV.UPDATER, audit: who.audit });
-live.serve(app, { version: site.boardVersion, stillAllowed: ck => who.stillAllowed(ck) });
+live.serve(app, { version: site.boardVersion, stillAllowed: req => who.stillAllowed(req) });
 site.serve(); // last: the pages, then any file in public/
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

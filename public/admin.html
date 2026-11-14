@@ -1,12 +1,13 @@
 <!doctype html>
 <html lang="en">
 <head>
+<base href="/">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>Admin console</title>
-<link rel="icon" href="/icons/icon-192.png">
-<link href="/fonts.css" rel="stylesheet">
+<link rel="icon" href="icons/icon-192.png">
+<link href="fonts.css" rel="stylesheet">
 <style>
 :root{--ui:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,'Apple Color Emoji','Segoe UI Emoji','Board Emoji',sans-serif;--bg:#191917;--card:#22221f;--line:rgba(201,180,122,.4);--chalk:#EDEAE0;--dim:rgba(237,234,224,.62);--pink:#F6B3CB;--yellow:#F2D479;--green:#A9D8A0;--red:#F7A1A1}
 *{box-sizing:border-box}
@@ -120,6 +121,11 @@ button:disabled{opacity:.5;cursor:default}
   </section>
 
   <!-- sign in -->
+  <section class="card" id="vHaOnly" hidden>
+    <h2>Open it from Home Assistant</h2>
+    <p class="dim" id="haOnlyText">This board runs as a Home Assistant app: people sign in to Home Assistant, not to the board. Open <b>Family Chalk Planner</b> in Home Assistant’s sidebar (or the app’s <b>Open web UI</b>). Only Home Assistant admins see the admin console.</p>
+  </section>
+
   <section class="card" id="vLogin" hidden>
     <h2>Sign in</h2>
     <p class="dim" id="loginWhy">The admin console asks for a fresh sign-in.</p>
@@ -132,7 +138,7 @@ button:disabled{opacity:.5;cursor:default}
       <div><label for="liPw">Password</label><input id="liPw" type="password" autocomplete="current-password"></div>
     </div>
     <label for="liCode">Code from your authenticator app</label><input id="liCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7">
-    <div class="actions"><button class="go" id="liGo">Sign in</button><a class="dim" href="/edit">Back to the board</a></div>
+    <div class="actions"><button class="go" id="liGo">Sign in</button><a class="dim" href="edit">Back to the board</a></div>
     <div class="err" id="liErr"></div>
     <p class="dim" style="font-size:14px;margin-top:14px">Can’t sign in at all? Another admin can send you a new invite link. If there’s no other admin, run <code>deploy/reset-admin.sh</code> on the server: it removes every account and paired screen and prints a new setup code.</p>
   </section>
@@ -148,7 +154,7 @@ button:disabled{opacity:.5;cursor:default}
         <button data-t="account">👤 My account</button>
       </div>
       <div class="actions" style="margin:0">
-        <a href="/edit#settings"><button class="sm">🗓 Open the board</button></a>
+        <a href="edit#settings"><button class="sm">🗓 Open the board</button></a>
         <button class="sm" id="logout">Sign out</button>
       </div>
     </div>
@@ -176,7 +182,19 @@ button:disabled{opacity:.5;cursor:default}
     </div>
 
     <div id="tPeople" hidden>
-      <div class="card">
+      <div class="card" id="haPeopleCard" hidden>
+        <h2>People from Home Assistant</h2>
+        <p class="dim">Everyone with a Home Assistant login opens the board from Home Assistant’s sidebar. Home Assistant admins are always the board’s admins; pick what everyone else may do.</p>
+        <div class="list" id="haList"></div>
+        <label for="haDefault">Anyone not set here (and anyone new)</label>
+        <select id="haDefault">
+          <option value="view">👀 View only: sees the board</option>
+          <option value="family">✋ Family: adds events, ticks chores, decorates</option>
+          <option value="editor">🎨 Editor: everything on the board but settings</option>
+        </select>
+        <div class="err" id="haErr"></div>
+      </div>
+      <div class="card" id="inviteCard">
         <h2>Invite someone</h2>
         <p class="dim">They get a link to choose a password, set up an authenticator app, and add a passkey. Send it to them yourself (text or email); it works once, for 3 days.</p>
         <div class="row">
@@ -192,7 +210,7 @@ button:disabled{opacity:.5;cursor:default}
         <div class="err" id="ivErr"></div>
         <div id="ivOut" hidden><div class="link" id="ivLink"></div><div class="actions"><button class="sm" id="ivCopy">Copy link</button></div></div>
       </div>
-      <div class="card"><h2>People</h2><div class="list" id="ppList"></div></div>
+      <div class="card" id="boardPeopleCard"><h2>People</h2><div class="list" id="ppList"></div></div>
     </div>
 
     <div id="tSecurity" hidden>
@@ -369,7 +387,7 @@ button:disabled{opacity:.5;cursor:default}
     </div>
   </section>
 </main>
-<script src="/passkey.js"></script>
+<script src="passkey.js"></script>
 <script>
 (function () { if (location.protocol === 'http:' && !/^(localhost|127\.|\[::1\])/.test(location.hostname)) document.getElementById('httpWarn').hidden = false; })();
 (function () {
@@ -385,7 +403,7 @@ button:disabled{opacity:.5;cursor:default}
       });
     });
   }
-  var who = {}, VIEWS = ['vSetup', 'vJoin', 'vEnroll', 'vOfferPk', 'vLogin', 'vConsole'];
+  var who = {}, VIEWS = ['vSetup', 'vJoin', 'vEnroll', 'vOfferPk', 'vLogin', 'vConsole', 'vHaOnly'];
   function show(v) { VIEWS.forEach(function (x) { $(x).hidden = x !== v; }); window.scrollTo(0, 0); }
   var ago = function (t) { if (!t) return 'never'; var m = Math.round((Date.now() - t) / 60000); return m < 2 ? 'just now' : m < 60 ? m + ' min ago' : m < 2880 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' days ago'; };
   var pkReady = function () { return who.passkeys && window.chalkPasskey && window.chalkPasskey.supported; };
@@ -400,7 +418,7 @@ button:disabled{opacity:.5;cursor:default}
     show('vEnroll'); setTimeout(function () { $('enCode').focus(); }, 100);
   }
   $('enGo').addEventListener('click', function () {
-    busy($('enGo'), api('/api/account/enroll', { enroll: enrollTok, code: $('enCode').value }))
+    busy($('enGo'), api('api/account/enroll', { enroll: enrollTok, code: $('enCode').value }))
       .then(function (r) { afterEnroll && afterEnroll(r); })
       .catch(function (e) { $('enErr').textContent = e.message; });
   });
@@ -418,20 +436,20 @@ button:disabled{opacity:.5;cursor:default}
   // ---- first run ----
   $('suGo').addEventListener('click', function () {
     if ($('suPw').value !== $('suPw2').value) { $('suErr').textContent = 'The two passwords don’t match'; return; }
-    busy($('suGo'), api('/api/account/setup', { code: $('suCode').value, username: $('suUser').value, name: $('suName').value, password: $('suPw').value }))
+    busy($('suGo'), api('api/account/setup', { code: $('suCode').value, username: $('suUser').value, name: $('suName').value, password: $('suPw').value }))
       .then(function (r) { showEnroll(r, function () { refresh().then(function () { offerPasskey(openConsole); }); }); })
       .catch(function (e) { $('suErr').textContent = e.message; });
   });
 
   // ---- invite link: /join#code ----
-  var inviteCode = location.pathname === '/join' ? location.hash.slice(1) : '';
+  var inviteCode = /\/join$/.test(location.pathname) ? location.hash.slice(1) : '';
   $('joGo').addEventListener('click', function () {
     if ($('joPw').value !== $('joPw2').value) { $('joErr').textContent = 'The two passwords don’t match'; return; }
-    busy($('joGo'), api('/api/account/join', { invite: inviteCode, password: $('joPw').value }))
+    busy($('joGo'), api('api/account/join', { invite: inviteCode, password: $('joPw').value }))
       .then(function (r) {
         showEnroll(r, function (done) {
           refresh().then(function () {
-            offerPasskey(function () { location.href = done.role === 'admin' ? '/admin' : '/edit'; }, 'On this tablet or phone, sign in to the board with Face ID, Touch ID or your fingerprint next time: add a passkey now.');
+            offerPasskey(function () { location.href = done.role === 'admin' ? 'admin' : 'edit'; }, 'On this tablet or phone, sign in to the board with Face ID, Touch ID or your fingerprint next time: add a passkey now.');
           });
         });
       })
@@ -449,12 +467,12 @@ button:disabled{opacity:.5;cursor:default}
     busy($('pkGo'), window.chalkPasskey.signIn('admin')).then(function () { refresh().then(openConsole); }).catch(function (e) { $('liErr').textContent = e.message; });
   });
   $('liGo').addEventListener('click', function () {
-    busy($('liGo'), api('/api/account/login', { username: $('liUser').value, password: $('liPw').value, code: $('liCode').value, kind: 'admin' }))
+    busy($('liGo'), api('api/account/login', { username: $('liUser').value, password: $('liPw').value, code: $('liCode').value, kind: 'admin' }))
       .then(function () { $('liPw').value = ''; refresh().then(openConsole); })
       .catch(function (e) { $('liErr').textContent = e.message; });
   });
   $('liCode').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('liGo').click(); });
-  $('logout').addEventListener('click', function () { api('/api/account/logout', {}).then(function () { location.href = '/admin'; }); });
+  $('logout').addEventListener('click', function () { api('api/account/logout', {}).then(function () { location.href = 'admin'; }); });
 
   // ---- ⚙️ Board: all of the board's settings (kept in its database) ----
   var bf = { data: null, prov: 'caldav' };
@@ -514,15 +532,15 @@ button:disabled{opacity:.5;cursor:default}
     $('bfMoreErr').textContent = '';
     var main = ($('bfCal').value || '').trim();
     var p = bf.prov === 'google'
-      ? api('/api/google/calendars', {}).then(function (l) { return l.map(function (c) { return { id: c.id, name: c.name }; }); })
-      : api('/api/board-settings/caldav-test', { url: $('bfUrl').value || undefined, user: ($('bfUser').dataset.typed && $('bfUser').value) || undefined, password: ($('bfPass').dataset.typed && $('bfPass').value) || undefined }).then(function (r) { return r.list.map(function (c) { return { id: c.url, name: c.name }; }); });
+      ? api('api/google/calendars', {}).then(function (l) { return l.map(function (c) { return { id: c.id, name: c.name }; }); })
+      : api('api/board-settings/caldav-test', { url: $('bfUrl').value || undefined, user: ($('bfUser').dataset.typed && $('bfUser').value) || undefined, password: ($('bfPass').dataset.typed && $('bfPass').value) || undefined }).then(function (r) { return r.list.map(function (c) { return { id: c.url, name: c.name }; }); });
     busy($('bfMoreList'), p).then(function (l) {
       moreAvail = l.filter(function (c) { return bf.prov === 'google' ? true : c.name !== main; });
       drawMore();
     }).catch(function (e) { $('bfMoreErr').textContent = bf.prov === 'google' ? e.message + ' (connect Google in ⚙️ Settings on the board first)' : e.message; });
   });
   function loadBoard() {
-    api('/api/board-settings').then(function (d) {
+    api('api/board-settings').then(function (d) {
       bf.data = d; var F = d.fields;
       if (!$('bfTz').options.length) {
         $('bfTz').appendChild(new Option('(default: the server’s time zone)', ''));
@@ -571,7 +589,7 @@ button:disabled{opacity:.5;cursor:default}
     var q = this.value.trim(); clearTimeout(placeTimer);
     placeTimer = setTimeout(function () {
       if (q.length < 2) { $('bfPlaces').innerHTML = ''; return; }
-      api('/api/board-settings/geocode?q=' + encodeURIComponent(q)).then(function (r) {
+      api('api/board-settings/geocode?q=' + encodeURIComponent(q)).then(function (r) {
         var box = $('bfPlaces'); box.innerHTML = '';
         r.places.forEach(function (pl) {
           var b = el('button', 'sm', pl.name); b.type = 'button'; b.style.textAlign = 'left';
@@ -588,7 +606,7 @@ button:disabled{opacity:.5;cursor:default}
   });
   $('bfFind').addEventListener('click', function () {
     $('bfFindErr').textContent = '';
-    busy($('bfFind'), api('/api/board-settings/caldav-test', { url: $('bfUrl').value || undefined, user: $('bfUser').value || undefined, password: $('bfPass').value || undefined }))
+    busy($('bfFind'), api('api/board-settings/caldav-test', { url: $('bfUrl').value || undefined, user: $('bfUser').value || undefined, password: $('bfPass').value || undefined }))
       .then(function (r) {
         var dl = $('bfCals'); dl.innerHTML = '';
         r.calendars.forEach(function (n) { dl.appendChild(new Option(n, n)); });
@@ -598,7 +616,7 @@ button:disabled{opacity:.5;cursor:default}
   });
   // Immich: list the albums (with what's typed, else what's saved), so one can be picked
   $('bfImList').addEventListener('click', function () {
-    busy($('bfImList'), api('/api/board-settings/immich-albums', { url: $('bfImUrl').value, apiKey: $('bfImKey').value || undefined }))
+    busy($('bfImList'), api('api/board-settings/immich-albums', { url: $('bfImUrl').value, apiKey: $('bfImKey').value || undefined }))
       .then(function (r) {
         var sel = $('bfImAlbum'), keep = sel.value;
         Array.prototype.slice.call(sel.options, 4).forEach(function (o) { o.remove(); });
@@ -613,7 +631,7 @@ button:disabled{opacity:.5;cursor:default}
   var upTimer = null;
   var UP_STATE = { checking: 'Looking for a newer version…', running: 'Updating…', updated: '✓ ', current: '✓ ', available: '', failed: '⚠ ', rolledback: '⚠ ' };
   function loadUpdates() {
-    return api('/api/updates').then(function (u) {
+    return api('api/updates').then(function (u) {
       var st = u.status, busyNow = u.requested || (st && (st.state === 'running' || st.state === 'checking'));
       var line = 'This board is running ' + u.version + '.';
       if (st && st.message) line += ' ' + (UP_STATE[st.state] || '') + st.message + (st.at ? ' (' + new Date(st.at).toLocaleString() + ')' : '');
@@ -630,7 +648,7 @@ button:disabled{opacity:.5;cursor:default}
   }
   $('upGo').addEventListener('click', function () {
     if (!confirm('Update the board now? It restarts for a minute; screens reconnect by themselves.')) return;
-    busy($('upGo'), api('/api/updates/run', {})).then(loadUpdates).catch(function (e) { $('upErr').textContent = e.message; });
+    busy($('upGo'), api('api/updates/run', {})).then(loadUpdates).catch(function (e) { $('upErr').textContent = e.message; });
   });
   // A browser or password manager fills a username and password it sees on the page (the admin's own
   // sign-in) without being asked. The board's account fields are only saved once someone has typed or
@@ -652,12 +670,12 @@ button:disabled{opacity:.5;cursor:default}
     var F = bf.data.fields, curProv = F.CALENDAR_PROVIDER.value || '';
     if (bf.prov !== (curProv || (F.GOOGLE_CLIENT_ID.value ? 'google' : 'caldav'))) values.CALENDAR_PROVIDER = bf.prov;
     $('bfErr').textContent = '';
-    busy($('bfSave'), api('/api/board-settings', { values: values })).then(function (r) {
+    busy($('bfSave'), api('api/board-settings', { values: values })).then(function (r) {
       if (!r.restarting) { $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', 'Nothing changed.')); return; }
       $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', 'Saved. Restarting the board…'));
       var tries = 0, wait = function () {
         setTimeout(function () {
-          fetch('/api/whoami').then(function (x) { if (!x.ok) throw 0; $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', '✓ Saved and running with the new settings.')); loadBoard(); })
+          fetch('api/whoami').then(function (x) { if (!x.ok) throw 0; $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', '✓ Saved and running with the new settings.')); loadBoard(); })
             .catch(function () { if (++tries < 40) wait(); else $('bfErr').textContent = 'The board hasn’t come back yet. Check the server (journalctl -u family-chalk-planner).'; });
         }, 1500);
       };
@@ -674,7 +692,7 @@ button:disabled{opacity:.5;cursor:default}
     Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.classList.toggle('on', b.dataset.t === t); });
     $('tScreens').hidden = t !== 'screens'; $('tPeople').hidden = t !== 'people'; $('tAccount').hidden = t !== 'account'; $('tSecurity').hidden = t !== 'security'; $('tBoard').hidden = t !== 'board';
     if (t === 'screens') loadScreens(); else if (t === 'people') loadPeople(); else if (t === 'security') loadSecurity(); else if (t === 'board') loadBoard(); else loadAccount();
-    try { history.replaceState(null, '', '/admin#' + t); } catch (e) {}
+    try { history.replaceState(null, '', 'admin#' + t); } catch (e) {}
   }
   Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.addEventListener('click', function () { tab(b.dataset.t); }); });
   window.addEventListener('hashchange', function () {   // links like /admin#security
@@ -682,10 +700,12 @@ button:disabled{opacity:.5;cursor:default}
     if (!$('vConsole').hidden && ['screens', 'people', 'security', 'board', 'account'].indexOf(t) >= 0) tab(t);
   });
   function openConsole() {
-    $('subtitle').textContent = 'Signed in as ' + (who.user ? who.user.name + ' (' + who.user.username + ')' : '');
+    $('subtitle').textContent = who.ha ? 'Signed in to Home Assistant as ' + (who.ha.person ? who.ha.person.name : '') : 'Signed in as ' + (who.user ? who.user.name + ' (' + who.user.username + ')' : '');
+    // as the Home Assistant app there's no board account to manage or sign out of
+    document.querySelector('#tabs [data-t="account"]').hidden = !!who.ha; $('logout').hidden = !!who.ha;
     show('vConsole');
     var t = location.hash.slice(1);
-    tab(['screens', 'people', 'security', 'board', 'account'].indexOf(t) >= 0 ? t : 'screens');
+    tab(['screens', 'people', 'security', 'board'].concat(who.ha ? [] : ['account']).indexOf(t) >= 0 ? t : 'screens');
     loadBadge();
   }
   function segs(id, help, texts) {
@@ -701,7 +721,7 @@ button:disabled{opacity:.5;cursor:default}
   // the family members from Chores (kids first): who a kid's tablet belongs to
   var chorePeople = [];
   function loadChorePeople() {
-    return api('/api/chores').then(function (c) {
+    return api('api/chores').then(function (c) {
       chorePeople = (c.people || []).slice().sort(function (a, b) { return (b.kid ? 1 : 0) - (a.kid ? 1 : 0); });
       var sel = $('dvKid'); sel.innerHTML = '';
       chorePeople.forEach(function (p) { var o = el('option', null, p.name); o.value = p.id; sel.appendChild(o); });
@@ -735,7 +755,7 @@ button:disabled{opacity:.5;cursor:default}
         b = { def: sel.value, can: [] };
         Array.prototype.forEach.call(ticks.querySelectorAll('input'), function (i) { if (i.checked) b.can.push(i.value); });
       }
-      api('/api/devices/notes-bottom', { id: x.id, bottom: b }).then(function (r) { cur = r.bottom; draw(); }).catch(function (e) { $('dvErr').textContent = e.message; });
+      api('api/devices/notes-bottom', { id: x.id, bottom: b }).then(function (r) { cur = r.bottom; draw(); }).catch(function (e) { $('dvErr').textContent = e.message; });
     }
     function draw() {
       ticks.innerHTML = '';
@@ -757,7 +777,7 @@ button:disabled{opacity:.5;cursor:default}
   }
   function loadScreens() {
     var bottoms = {};
-    return loadChorePeople().then(function () { return api('/api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('/api/devices'); }).then(function (d) {
+    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
       var w = $('dvWaiting'); w.innerHTML = '';
       d.waiting.forEach(function (p) { w.appendChild(el('p', 'dim', '⏳ ' + p.agent + ' is showing a code (' + ago(p.created) + ') - type it above.')); });
       var list = $('dvList'); list.innerHTML = '';
@@ -765,14 +785,14 @@ button:disabled{opacity:.5;cursor:default}
       d.devices.forEach(function (x) {
         var it = el('div', 'item'), line = el('div', 'line');
         var nm = el('input'); nm.value = x.name; nm.setAttribute('aria-label', 'Screen name');
-        nm.addEventListener('change', function () { api('/api/devices/update', { id: x.id, name: nm.value }).catch(function (e) { $('dvErr').textContent = e.message; }); });
+        nm.addEventListener('change', function () { api('api/devices/update', { id: x.id, name: nm.value }).catch(function (e) { $('dvErr').textContent = e.message; }); });
         var sel = el('select'); sel.setAttribute('aria-label', 'What it may do');
         Object.keys(SCREEN_ROLES).concat(chorePeople.map(function (p) { return 'kid:' + p.id; })).forEach(function (r) { var o = el('option', null, roleName(r)); o.value = r; sel.appendChild(o); });
         if (!Array.prototype.some.call(sel.options, function (o) { return o.value === x.role; })) { var o = el('option', null, roleName(x.role)); o.value = x.role; sel.appendChild(o); }
         sel.value = x.role;
-        sel.addEventListener('change', function () { api('/api/devices/update', { id: x.id, role: sel.value }).catch(function (e) { $('dvErr').textContent = e.message; sel.value = x.role; }); });
+        sel.addEventListener('change', function () { api('api/devices/update', { id: x.id, role: sel.value }).catch(function (e) { $('dvErr').textContent = e.message; sel.value = x.role; }); });
         var rm = el('button', 'sm del', 'Remove');
-        rm.addEventListener('click', function () { if (confirm('Remove “' + x.name + '”? It stops showing the board until it’s paired again.')) api('/api/devices/remove', { id: x.id }).then(loadScreens).catch(function (e) { $('dvErr').textContent = e.message; }); });
+        rm.addEventListener('click', function () { if (confirm('Remove “' + x.name + '”? It stops showing the board until it’s paired again.')) api('api/devices/remove', { id: x.id }).then(loadScreens).catch(function (e) { $('dvErr').textContent = e.message; }); });
         line.appendChild(nm); line.appendChild(sel); line.appendChild(rm); it.appendChild(line);
         it.appendChild(el('div', 'meta', x.agent + ' · paired ' + new Date(x.created).toLocaleDateString() + ' · last seen ' + ago(x.last_seen)));
         if (!/^kid:/.test(x.role)) it.appendChild(bottomLine(x, bottoms[x.id] || null));
@@ -783,38 +803,70 @@ button:disabled{opacity:.5;cursor:default}
   $('dvGo').addEventListener('click', function () {
     $('dvErr').textContent = '';
     if (dvRole.v === 'kid' && !$('dvKid').value) { $('dvErr').textContent = 'Add the family in Chores first (on the board: 🧹 Chores → Edit)'; return; }
-    busy($('dvGo'), api('/api/devices/approve', { code: $('dvCode').value, name: $('dvName').value, role: dvRole.v === 'kid' ? 'kid:' + $('dvKid').value : dvRole.v }))
+    busy($('dvGo'), api('api/devices/approve', { code: $('dvCode').value, name: $('dvName').value, role: dvRole.v === 'kid' ? 'kid:' + $('dvKid').value : dvRole.v }))
       .then(function () { $('dvCode').value = ''; $('dvName').value = ''; loadScreens(); })
       .catch(function (e) { $('dvErr').textContent = e.message; });
   });
   setInterval(function () { if (!$('vConsole').hidden && !$('tScreens').hidden && !$('dvList').contains(document.activeElement)) loadScreens(); }, 10000);   // not while something in the list is being changed
 
+  // ---- people, as the Home Assistant app: Home Assistant's own, each with a role ----
+  var HA_ROLES = { view: '👀 View only', family: '✋ Family', editor: '🎨 Editor', admin: '🔑 Admin' };
+  function loadHaPeople() {
+    return api('api/ha/people').then(function (d) {
+      var list = $('haList'); list.innerHTML = '';
+      $('haDefault').value = d.default;
+      d.people.forEach(function (p) {
+        var it = el('div', 'item'), line = el('div', 'line');
+        line.appendChild(el('b', '', p.name));
+        if (p.admin) line.appendChild(el('span', 'dim', '🔑 Admin (a Home Assistant admin)'));
+        else {
+          var sel = el('select'); sel.setAttribute('aria-label', 'What ' + p.name + ' may do');
+          var dflt = el('option', '', 'The default (' + HA_ROLES[d.default].replace(/^\S+ /, '') + ')'); dflt.value = ''; sel.appendChild(dflt);
+          ['view', 'family', 'editor', 'admin'].forEach(function (r) { var o = el('option', '', HA_ROLES[r]); o.value = r; sel.appendChild(o); });
+          sel.value = p.role || '';
+          sel.addEventListener('change', function () {
+            $('haErr').textContent = '';
+            api('api/ha/people', { id: p.id, name: p.name, role: sel.value || null }).catch(function (e) { $('haErr').textContent = e.message; });
+          });
+          line.appendChild(sel);
+        }
+        it.appendChild(line); list.appendChild(it);
+      });
+    }).catch(function (e) { $('haErr').textContent = e.message; });
+  }
+  $('haDefault').addEventListener('change', function () {
+    $('haErr').textContent = '';
+    api('api/ha/people', { default: $('haDefault').value }).then(loadHaPeople).catch(function (e) { $('haErr').textContent = e.message; });
+  });
   function loadPeople() {
-    return api('/api/users').then(function (d) {
+    var inHa = !!who.ha;
+    $('haPeopleCard').hidden = !inHa; $('inviteCard').hidden = inHa; $('boardPeopleCard').hidden = inHa;
+    if (inHa) return loadHaPeople();
+    return api('api/users').then(function (d) {
       var list = $('ppList'); list.innerHTML = '';
       d.users.forEach(function (u) {
         var it = el('div', 'item'), line = el('div', 'line');
         var nm = el('input'); nm.value = u.name; nm.setAttribute('aria-label', 'Name');
-        nm.addEventListener('change', function () { api('/api/users/update', { id: u.id, name: nm.value }).catch(function (e) { $('ivErr').textContent = e.message; }); });
+        nm.addEventListener('change', function () { api('api/users/update', { id: u.id, name: nm.value }).catch(function (e) { $('ivErr').textContent = e.message; }); });
         var sel = el('select'); sel.setAttribute('aria-label', 'Role');
         Object.keys(PEOPLE_ROLES).forEach(function (r) { var o = el('option', null, PEOPLE_ROLES[r]); o.value = r; sel.appendChild(o); });
         sel.value = u.role;
-        sel.addEventListener('change', function () { api('/api/users/update', { id: u.id, role: sel.value }).catch(function (e) { $('ivErr').textContent = e.message; sel.value = u.role; }); });
+        sel.addEventListener('change', function () { api('api/users/update', { id: u.id, role: sel.value }).catch(function (e) { $('ivErr').textContent = e.message; sel.value = u.role; }); });
         line.appendChild(nm); line.appendChild(sel); it.appendChild(line);
         var status = !u.totp_ok ? (u.invited ? 'invite sent, not set up yet' : 'not set up') : (u.passkeys ? u.passkeys + ' passkey' + (u.passkeys > 1 ? 's' : '') : 'no passkeys') + ' · signed in on ' + u.signedIn + ' device' + (u.signedIn === 1 ? '' : 's') + ' · last sign-in ' + ago(u.last_login);
         it.appendChild(el('div', 'meta', '@' + u.username + (u.id === d.me ? ' (you)' : '') + ' · ' + status));
         var acts = el('div', 'actions');
         if (u.id !== d.me) {
           var so = el('button', 'sm', 'Sign out everywhere'); so.hidden = !u.totp_ok;
-          so.addEventListener('click', function () { api('/api/users/signout', { id: u.id }).then(loadPeople).catch(function (e) { $('ivErr').textContent = e.message; }); });
+          so.addEventListener('click', function () { api('api/users/signout', { id: u.id }).then(loadPeople).catch(function (e) { $('ivErr').textContent = e.message; }); });
           var ri = el('button', 'sm', 'New invite link');
           ri.title = 'Forgot their password or lost their phone: clears their password, authenticator and passkeys and makes a new link';
           ri.addEventListener('click', function () {
             if (!confirm('Start over for ' + u.name + '? Their password, authenticator and passkeys are cleared and they get a new invite link.')) return;
-            api('/api/users/reinvite', { id: u.id }).then(function (r) { showLink(r.link); loadPeople(); }).catch(function (e) { $('ivErr').textContent = e.message; });
+            api('api/users/reinvite', { id: u.id }).then(function (r) { showLink(r.link); loadPeople(); }).catch(function (e) { $('ivErr').textContent = e.message; });
           });
           var rm = el('button', 'sm del', 'Remove');
-          rm.addEventListener('click', function () { if (confirm('Remove ' + u.name + '? They’re signed out everywhere.')) api('/api/users/remove', { id: u.id }).then(loadPeople).catch(function (e) { $('ivErr').textContent = e.message; }); });
+          rm.addEventListener('click', function () { if (confirm('Remove ' + u.name + '? They’re signed out everywhere.')) api('api/users/remove', { id: u.id }).then(loadPeople).catch(function (e) { $('ivErr').textContent = e.message; }); });
           acts.appendChild(so); acts.appendChild(ri); acts.appendChild(rm);
         }
         if (u.totp_ok) {
@@ -837,19 +889,19 @@ button:disabled{opacity:.5;cursor:default}
   }
   function loadPersonDetail(u, box) {
     box.innerHTML = ''; box.appendChild(el('div', 'dim', 'Loading…'));
-    api('/api/users/' + encodeURIComponent(u.id)).then(function (d) {
+    api('api/users/' + encodeURIComponent(u.id)).then(function (d) {
       box.innerHTML = '';
       box.appendChild(el('div', 'dim', 'Signed in on:'));
       if (!d.sessions.length) box.appendChild(el('div', 'dim', '— nowhere right now'));
       d.sessions.forEach(function (sx) {
-        box.appendChild(sessLine(sx, function () { api('/api/users/sessions/remove', { id: sx.id }).then(function () { if (sx.here) location.reload(); else loadPersonDetail(u, box); loadPeople(); }); }));
+        box.appendChild(sessLine(sx, function () { api('api/users/sessions/remove', { id: sx.id }).then(function () { if (sx.here) location.reload(); else loadPersonDetail(u, box); loadPeople(); }); }));
       });
       box.appendChild(el('div', 'dim', 'Passkeys:'));
       if (!d.passkeys.length) box.appendChild(el('div', 'dim', '— none'));
       d.passkeys.forEach(function (p) {
         var row = el('div', 'sub-item');
         row.appendChild(el('span', 'grow', '🔑 ' + (p.name || 'Passkey') + ' · added ' + new Date(p.created).toLocaleDateString() + ' · last used ' + ago(p.last_used)));
-        var b = el('button', 'sm del', 'Remove'); b.addEventListener('click', function () { if (confirm('Remove passkey “' + p.name + '” of ' + u.name + '? Ask them to delete it from their password manager or device too.')) api('/api/users/passkeys/remove', { id: p.id }).then(function () { loadPersonDetail(u, box); }); });
+        var b = el('button', 'sm del', 'Remove'); b.addEventListener('click', function () { if (confirm('Remove passkey “' + p.name + '” of ' + u.name + '? Ask them to delete it from their password manager or device too.')) api('api/users/passkeys/remove', { id: p.id }).then(function () { loadPersonDetail(u, box); }); });
         row.appendChild(b); box.appendChild(row);
       });
     }).catch(function (e) { box.innerHTML = ''; box.appendChild(el('div', 'err', e.message)); });
@@ -857,7 +909,7 @@ button:disabled{opacity:.5;cursor:default}
   function showLink(link) { $('ivOut').hidden = false; $('ivLink').textContent = link; }
   $('ivGo').addEventListener('click', function () {
     $('ivErr').textContent = '';
-    busy($('ivGo'), api('/api/users/invite', { username: $('ivUser').value, name: $('ivName').value, role: ivRole.v }))
+    busy($('ivGo'), api('api/users/invite', { username: $('ivUser').value, name: $('ivName').value, role: ivRole.v }))
       .then(function (r) { showLink(r.link); $('ivUser').value = ''; $('ivName').value = ''; loadPeople(); })
       .catch(function (e) { $('ivErr').textContent = e.message; });
   });
@@ -868,16 +920,16 @@ button:disabled{opacity:.5;cursor:default}
   });
 
   function loadMySessions() {
-    return api('/api/account/sessions').then(function (d) {
+    return api('api/account/sessions').then(function (d) {
       var box = $('mySess'); box.innerHTML = '';
       d.sessions.forEach(function (sx) {
-        box.appendChild(sessLine(sx, function () { api('/api/account/sessions/remove', { id: sx.id }).then(function () { if (sx.here) location.reload(); else loadMySessions(); }).catch(function (e) { $('mySessErr').textContent = e.message; }); }));
+        box.appendChild(sessLine(sx, function () { api('api/account/sessions/remove', { id: sx.id }).then(function () { if (sx.here) location.reload(); else loadMySessions(); }).catch(function (e) { $('mySessErr').textContent = e.message; }); }));
       });
     }).catch(function () {});
   }
   function loadAccount() {
     loadMySessions();
-    return api('/api/account/me').then(function (m) {
+    return api('api/account/me').then(function (m) {
       $('pkWhy').textContent = m.passkeysHere && pkReady() ? 'Sign in with Face ID, Touch ID, your fingerprint or Windows Hello. Add one on each phone, tablet or computer you use.'
         : who.publicUrl ? 'Passkeys work when you open the board at ' + who.publicUrl + '.' : 'Passkeys need the board’s https:// address in PUBLIC_URL (see the install guide). Until then, sign in with your password and authenticator code.';
       $('pkAdd').hidden = !(m.passkeysHere && pkReady());
@@ -888,7 +940,7 @@ button:disabled{opacity:.5;cursor:default}
         var rm = el('button', 'sm del', 'Remove');
         rm.addEventListener('click', function () {
           if (!confirm('Remove this passkey? Also delete it from the password manager or device that holds it, so it isn’t offered any more.')) return;
-          api('/api/account/passkeys/remove', { id: p.id }).then(loadAccount).catch(function (e) { if (e.status === 401) showLogin('For safety, sign in again to add or remove a passkey.'); else $('pkErr').textContent = e.message; });
+          api('api/account/passkeys/remove', { id: p.id }).then(loadAccount).catch(function (e) { if (e.status === 401) showLogin('For safety, sign in again to add or remove a passkey.'); else $('pkErr').textContent = e.message; });
         });
         line.appendChild(rm); it.appendChild(line);
         it.appendChild(el('div', 'meta', 'added ' + new Date(p.created).toLocaleDateString() + ' · last used ' + ago(p.last_used)));
@@ -904,14 +956,14 @@ button:disabled{opacity:.5;cursor:default}
   });
   $('cpGo').addEventListener('click', function () {
     $('cpErr').textContent = ''; $('cpOk').textContent = '';
-    busy($('cpGo'), api('/api/account/password', { current: $('cpCur').value, next: $('cpNew').value }))
+    busy($('cpGo'), api('api/account/password', { current: $('cpCur').value, next: $('cpNew').value }))
       .then(function () { $('cpCur').value = ''; $('cpNew').value = ''; $('cpOk').textContent = 'Changed ✓'; })
       .catch(function (e) { $('cpErr').textContent = e.message; });
   });
   $('taGo').addEventListener('click', function () {
     $('taErr').textContent = '';
-    busy($('taGo'), api('/api/account/totp', { password: $('taPw').value }))
-      .then(function (r) { $('taPw').value = ''; showEnroll(r, function () { location.href = '/admin#account'; location.reload(); }); })
+    busy($('taGo'), api('api/account/totp', { password: $('taPw').value }))
+      .then(function (r) { $('taPw').value = ''; showEnroll(r, function () { location.href = 'admin#account'; location.reload(); }); })
       .catch(function (e) { $('taErr').textContent = e.message; });
   });
 
@@ -935,7 +987,7 @@ button:disabled{opacity:.5;cursor:default}
     return box;
   }
   function loadBadge() {
-    api('/api/security?limit=20').then(function (d) { var n = d.alerts.filter(function (a) { return a.level !== 'info'; }).length; $('secBadge').hidden = !n; $('secBadge').textContent = n; }).catch(function () {});
+    api('api/security?limit=20').then(function (d) { var n = d.alerts.filter(function (a) { return a.level !== 'info'; }).length; $('secBadge').hidden = !n; $('secBadge').textContent = n; }).catch(function () {});
   }
   function drawLog() {
     var f = $('logFilter').value, box = $('secLog'); box.innerHTML = '';
@@ -960,7 +1012,7 @@ button:disabled{opacity:.5;cursor:default}
   }
   var logShow = 30;
   function loadSecurity() {
-    return api('/api/security?limit=500').then(function (d) {
+    return api('api/security?limit=500').then(function (d) {
       sec = d;
       var box = $('secAlerts'); box.innerHTML = '';
       if (!d.alerts.length) box.appendChild(el('p', 'ok', '✓ Nothing needs a look right now.'));
@@ -979,19 +1031,25 @@ button:disabled{opacity:.5;cursor:default}
   $('sfSave').addEventListener('click', function () {
     var body = {}; Array.prototype.forEach.call(document.querySelectorAll('.nums input'), function (i) { body[i.dataset.k] = +i.value; });
     $('sfErr').textContent = ''; $('sfOk').textContent = '';
-    busy($('sfSave'), api('/api/security/settings', body)).then(function () { $('sfOk').textContent = 'Saved ✓'; loadSecurity(); }).catch(function (e) { $('sfErr').textContent = e.message; });
+    busy($('sfSave'), api('api/security/settings', body)).then(function () { $('sfOk').textContent = 'Saved ✓'; loadSecurity(); }).catch(function (e) { $('sfErr').textContent = e.message; });
   });
 
   // ---- start ----
-  function refresh() { return api('/api/whoami').then(function (w) { who = w; return w; }); }
+  function refresh() { return api('api/whoami').then(function (w) { who = w; return w; }); }
   refresh().then(function (w) {
     if (inviteCode) {
       document.title = 'Join the board'; $('title').textContent = 'Join the board';
-      return api('/api/account/join', { invite: inviteCode, check: true }).then(function (u) {
+      return api('api/account/join', { invite: inviteCode, check: true }).then(function (u) {
         $('joinTitle').textContent = 'Welcome, ' + u.name + '!';
         $('joinText').textContent = 'Your username is ' + u.username + '. Choose a password, then add the board to an authenticator app' + (pkReady() ? ' and this device’s passkey.' : '.');
         show('vJoin');
       }).catch(function (e) { $('joinTitle').textContent = 'This link doesn’t work'; $('joinText').textContent = e.message; $('joGo').hidden = true; Array.prototype.forEach.call(document.querySelectorAll('#vJoin .row'), function (r) { r.hidden = true; }); show('vJoin'); });
+    }
+    if (w.ha) {
+      if (w.admin) return openConsole();
+      $('subtitle').textContent = 'Home Assistant app';
+      if (w.ha.inside) $('haOnlyText').textContent = 'Only Home Assistant admins see the admin console. ' + (w.ha.person ? w.ha.person.name + ', you' : 'You') + ' can use the board itself from Home Assistant’s sidebar.';
+      return show('vHaOnly');
     }
     if (w.setup && w.firstRun) { $('subtitle').textContent = 'First-time setup'; return show('vSetup'); }
     if (w.setup) { $('subtitle').textContent = 'Reset: create the admin again'; return show('vSetup'); }

@@ -137,6 +137,7 @@ export function App() {
     if (!w.rank && w.firstRun) return go('admin');
     if (!w.rank || (new URLSearchParams(location.search).has('pair') && !w.device)) return <Pair who={w} />;
     if (w.device?.role === 'family' && !w.user) return go('edit'); // a family screen edits right on the board
+    if (w.ha?.person && w.rank >= RANK.family) return go('edit'); // inside Home Assistant: its people edit
     if (kidOf(w)) return go('chores'); // a kid's tablet opens on their chores
   }
   if (!w.rank && w.firstRun) return go('admin');

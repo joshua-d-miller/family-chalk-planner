@@ -88,6 +88,31 @@ export function SignIn({
       setBusy(false);
     }
   };
+  // the Home Assistant app: sign-in is Home Assistant's; an admin there sets what each person may do
+  if (who?.ha)
+    return (
+      <div className="page">
+        <div
+          className="sheet open"
+          id="signpad"
+          role="dialog"
+          aria-labelledby="signTitle"
+          style={{ margin: '8vh auto 0' }}
+        >
+          <h3 id="signTitle">{who.ha.person ? 'Not for you yet' : 'Open it from Home Assistant'}</h3>
+          <p className="dim">
+            {who.ha.person
+              ? `${why || 'This needs more than you may do on the board.'} A Home Assistant admin can change what you may do: admin console → 👪 People.`
+              : 'People sign in to Home Assistant, not to the board: open Family Chalk Planner in Home Assistant’s sidebar.'}
+          </p>
+          {back && (
+            <p>
+              <a href={back}>Back to the calendar</a>
+            </p>
+          )}
+        </div>
+      </div>
+    );
   return (
     <div className="page">
       <div

@@ -37,6 +37,7 @@
 export interface ReqLike {
   get(name: string): string | undefined;
   ip?: string;
+  socket?: { remoteAddress?: string }; // (where it came from: Home Assistant's Ingress proxy, or not)
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
