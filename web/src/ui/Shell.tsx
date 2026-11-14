@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Shell.tsx
 ===============================================================================
- Version:   0.16.0
- Author:    Joshua D. Miller, Claude
+ Version:   0.17.0
+ Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-12
 
  Purpose:
      The bar that stays at the bottom while the pages change. A family
@@ -13,6 +13,10 @@
      the pages pinned to it, then the tools of the page it's on. A phone
      or tablet gets a tab bar like its own apps (Liquid Glass on an iPhone
      or iPad, Material on Android). The wall gets neither.
+
+     A family screen or computer can swap the cork for a round ☰ button in
+     a bottom corner, which slides a drawer out from that side (the ☰
+     menu's "This screen's menu", kept per screen).
 
  Used by:
      web/src/App.tsx
@@ -45,12 +49,17 @@
                         claude    board's is (a board that doesn't fill the
                                   screen leaves it above the bottom or in from
                                   the sides).
+
+ 0.17.0    2026-11-12   joshua    The ☰ button and its drawer, on the right or
+                        colby     the left, instead of the cork (each screen
+                        claude    picks). The board gets the cork's room.
 ===============================================================================
 */
 
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useFavorites } from '../lib/favorites.ts';
+import { useMenuPref } from '../lib/menuStyle.ts';
 import type { Who } from '../lib/who.ts';
 import { PAGES, homeHref, isHome } from '../routes.ts';
 import { Menu } from './Menu.tsx';
@@ -92,6 +101,8 @@ export interface CorkAt {
 }
 interface ShellState {
   kind: ShellKind;
+  side: 'left' | 'right' | null; // the ☰ button and its drawer instead of the cork: which side (else null)
+  drawBtn: boolean; // and a ✏️ Draw button beside it
   who: Who | null;
   here: string;
   slot: HTMLElement | null;
@@ -103,6 +114,8 @@ interface ShellState {
 }
 const Ctx = createContext<ShellState>({
   kind: 'none',
+  side: null,
+  drawBtn: false,
   who: null,
   here: 'board',
   slot: null,
@@ -116,6 +129,10 @@ export const useShell = () => useContext(Ctx);
 
 export function Shell({ who, here, children }: { who: Who | null; here: string; children: ReactNode }) {
   const kind = shellKind(who);
+  // only a screen that would get the cork can swap it for the button (phones and tablets keep their tab bar)
+  const pref = useMenuPref();
+  const side = kind === 'cork' && pref.style !== 'cork' ? pref.style : null;
+  const drawBtn = !!side && pref.draw; // a ✏️ Draw button beside the ☰ (on the calendar)
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [navH, setNavH] = useState(0);
   const [busyBoard, setBusyBoard] = useState(false);
@@ -148,11 +165,14 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
   const onBoard = here === 'board' || here === 'edit' || here === 'week';
   useEffect(() => {
     const c = document.documentElement.classList;
-    c.toggle('shell-cork', kind === 'cork');
+    c.toggle('shell-cork', kind === 'cork' && !side);
+    c.toggle('shell-drawer', !!side);
+    c.toggle('menu-right', side === 'right');
+    c.toggle('menu-left', side === 'left');
     c.toggle('shell-tabs', kind === 'tabs');
     c.toggle('os-ios', osOf() === 'ios');
     c.toggle('os-android', osOf() === 'android');
-  }, [kind]);
+  }, [kind, side]);
   useEffect(() => {
     if (kind !== 'tabs') setNavH(0);
   }, [kind]);
@@ -160,9 +180,11 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
     <Ctx.Provider
       value={{
         kind,
+        side,
+        drawBtn,
         who,
         here,
-        slot: kind === 'cork' && !onBoard ? slot : null,
+        slot: kind === 'cork' && !side && !onBoard ? slot : null,
         navH,
         corkZ,
         setCorkZ,
@@ -171,7 +193,8 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
       }}
     >
       {children}
-      {kind === 'cork' && !onBoard && <CorkBar onSlot={setSlot} />}
+      {kind === 'cork' && !side && !onBoard && <CorkBar onSlot={setSlot} />}
+      {side && !onBoard && <PagesFab side={side} />}
       {kind === 'tabs' && <TabBar onHeight={setNavH} mini={busyBoard && onBoard} />}
     </Ctx.Provider>
   );
@@ -259,6 +282,16 @@ const BOARD_H = 642 + 50;
 function corkZoom() {
   return Math.max(0.6, Math.min(innerWidth / BOARD_W, innerHeight / BOARD_H));
 }
+// the same size, for the ☰ button and the drawing tools beside it (outside the board's scaling)
+export function useBarZoom() {
+  const [z, setZ] = useState(corkZoom);
+  useEffect(() => {
+    const on = () => setZ(corkZoom());
+    addEventListener('resize', on);
+    return () => removeEventListener('resize', on);
+  }, []);
+  return z;
+}
 function CorkBar({ onSlot }: { onSlot: (el: HTMLElement | null) => void }) {
   const { corkZ, corkAt } = useShell();
   // the board's own size for it, when the board has been shown on this screen; else worked out the same way.
@@ -294,6 +327,53 @@ function CorkBar({ onSlot }: { onSlot: (el: HTMLElement | null) => void }) {
       <span className="groove" aria-hidden="true" />
       <div className="corktools" ref={onSlot} />
     </nav>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | The ☰ button | //
+// ------------------ //
+// Instead of the cork: a round button in a bottom corner. The board draws   //
+// its own (its drawer has the calendar's tools too); the pages get this     //
+// one, which opens the ☰ menu from the same side. A page's own tools stay   //
+// up in its heading, as on a phone.                                         //
+export function MenuFab({
+  side,
+  open,
+  onClick,
+  label = 'Menu',
+  inRow = false
+}: {
+  side: 'left' | 'right';
+  open: boolean;
+  onClick: () => void;
+  label?: string;
+  inRow?: boolean; // in the board's row of buttons (which places and sizes it)
+}) {
+  const z = useBarZoom();
+  return (
+    <button
+      type="button"
+      className={'menufab ' + side + (inRow ? ' inrow' : '')}
+      id="menuFab"
+      aria-label={label}
+      aria-expanded={open}
+      onClick={onClick}
+      style={inRow ? undefined : { zoom: z }}
+    >
+      <span aria-hidden="true">☰</span>
+    </button>
+  );
+}
+function PagesFab({ side }: { side: 'left' | 'right' }) {
+  const { who, here } = useShell();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <MenuFab side={side} open={open} onClick={() => setOpen(true)} />
+      {open && <Menu who={who} here={here} side={side} onClose={() => setOpen(false)} />}
+    </>
   );
 }
 

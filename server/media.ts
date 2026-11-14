@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | media.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.17.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
- Updated:   2026-11-06
+ Updated:   2026-11-14
 
  Purpose:
      Pictures people add to the board: uploads, "Add from link", and the
@@ -36,6 +36,10 @@
  -------   ----------   -------   --------------------------------------------
  0.13.0    2026-11-06   joshua    Move clipart and media into their own
                         claude    TypeScript modules.
+
+ 0.17.0    2026-11-14   joshua    keepImage(): a picture the board fetched
+                        claude    itself (Pictures' "From the web") is kept
+                                  like an upload.
 ===============================================================================
 */
 
@@ -402,6 +406,13 @@ export function setup({
     );
     res.json({ ok: true }); // files stay, in case a GIF on some month still uses it
   });
+  // a picture the board fetched itself (Pictures' "From the web"): kept like an upload, if it is one
+  return {
+    keepImage(buf: Buffer) {
+      const kind = kindOf(buf);
+      return kind ? keep(buf, kind) : null;
+    }
+  };
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -308,3 +308,253 @@ html.os-android .tabbar.mini {
   border-radius: 18px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
 }
+
+/* ---- the ☰ button instead of the cork (a screen that picked it: the bottom of the ☰ menu) ---- */
+/* a round chalk button in a bottom corner, over the board's own corner */
+.menufab {
+  position: fixed;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 46; /* over the board and the pages, under the cards (50) and the menu (60) */
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(237, 234, 224, 0.7);
+  background: rgba(22, 22, 22, 0.88);
+  color: var(--chalk);
+  font:
+    700 26px 'Kalam',
+    cursive;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 3px rgba(185, 141, 88, 0.55); /* a ring of cork, so it reads as the cork's button */
+  -webkit-tap-highlight-color: transparent;
+}
+.menufab.right {
+  right: calc(16px + env(safe-area-inset-right, 0px));
+}
+.menufab.left {
+  left: calc(16px + env(safe-area-inset-left, 0px));
+}
+.menufab:active {
+  transform: scale(0.94);
+}
+/* a card or the menu is open: the button steps aside */
+body:has(.scrim) .menufab,
+body:has(.menuScrim) .menufab {
+  visibility: hidden;
+}
+/* the "can't reach the board" note keeps out of the button's corner */
+html.menu-right .offline {
+  right: auto;
+  left: 14px;
+}
+/* the pages have no cork to keep clear of, just the button */
+html.shell-drawer .page {
+  padding-bottom: 96px;
+}
+
+/* the drawer: the ☰ menu, from the right when the button is on the right */
+.menu.right {
+  inset: 0 0 0 auto;
+  border-right: 0;
+  border-left: 2px solid var(--line);
+  box-shadow: -6px 0 30px rgba(0, 0, 0, 0.6);
+  padding: max(14px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 20px 12px;
+}
+.menu {
+  animation: menuin-left 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.menu.right {
+  animation-name: menuin-right;
+}
+.menu.up {
+  animation: none;
+}
+@keyframes menuin-left {
+  from {
+    transform: translateX(-100%);
+  }
+}
+@keyframes menuin-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu {
+    animation: none;
+  }
+}
+/* the calendar's tools at the top of the drawer, as menu rows */
+.menu .mtools {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+.menu .mtools .pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 8px 0 10px;
+  border-radius: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--chalk);
+  font-family: var(--hand);
+  font-size: 0.95em;
+  text-align: left;
+  cursor: pointer;
+}
+.menu .mtools .pill .ic {
+  flex: 0 0 30px;
+  text-align: center;
+  font-family: var(--emoji), sans-serif;
+}
+.menu .mtools .pill.addev {
+  color: var(--yellow);
+  border: 2px solid var(--yellow);
+  justify-content: center;
+  margin-bottom: 4px;
+}
+/* this screen's menu: the three choices, a little quieter than the pages */
+.menu .mstyle {
+  margin-top: auto;
+  padding-top: 6px;
+}
+.menu .mstyle .item {
+  min-height: 44px;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
+/* ---- on the calendar: the ☰ (and ✏️) in the corner, and the drawing tools popping over above ---- */
+.fabwrap {
+  position: fixed;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 46;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none; /* only the buttons and the tools take taps, not the space between */
+}
+.fabwrap > * {
+  pointer-events: auto;
+}
+.fabwrap.right {
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  align-items: flex-end;
+}
+.fabwrap.left {
+  left: calc(16px + env(safe-area-inset-left, 0px));
+  align-items: flex-start;
+}
+.fabrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* the corner button (☰, or ✏️ Done) is always the one in the corner */
+.fabwrap.left .fabrow {
+  flex-direction: row-reverse;
+}
+.menufab.inrow {
+  position: static;
+}
+.menufab.small {
+  width: 48px;
+  height: 48px;
+  font-size: 21px;
+  font-family: var(--emoji), sans-serif;
+}
+.menufab.small.on {
+  border-color: var(--pink);
+}
+#drawFab span {
+  font-family: var(--emoji), sans-serif;
+  font-size: 24px;
+}
+/* ✏️ Done: a pill in the ☰'s corner, pink like Done on the cork */
+.menufab.done {
+  width: auto;
+  height: 58px;
+  padding: 0 22px;
+  gap: 8px;
+  border-radius: 29px;
+  border-color: var(--pink);
+  font-size: 21px;
+}
+.menufab.done span {
+  font-family: var(--emoji), sans-serif;
+  font-size: 20px;
+}
+/* the drawing tools: one dark palette above the buttons, wrapping onto more rows when it's a long set;
+   a little point aims at the corner button it came from (the .cork class only keeps the tools' look) */
+.cork.drawpop {
+  position: relative;
+  height: auto;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+  display: block;
+}
+.cork.drawpop .tools {
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 470px;
+  padding: 6px 10px;
+  row-gap: 2px;
+  border-radius: 24px;
+  border: 1.5px solid rgba(237, 234, 224, 0.25);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+}
+.cork.drawpop .swatches {
+  max-width: none;
+  overflow: visible;
+  flex-wrap: wrap;
+}
+.cork.drawpop::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  background: #161616;
+  border-right: 1.5px solid rgba(237, 234, 224, 0.25);
+  border-bottom: 1.5px solid rgba(237, 234, 224, 0.25);
+  transform: rotate(45deg);
+}
+.fabwrap.right .cork.drawpop::after {
+  right: 40px;
+}
+.fabwrap.left .cork.drawpop::after {
+  left: 40px;
+}
+.cork.drawpop {
+  animation: popin 0.16s ease-out;
+}
+@keyframes popin {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cork.drawpop {
+    animation: none;
+  }
+}
+/* a card or the menu is open: the buttons and tools step aside */
+body:has(.scrim) .fabwrap,
+body:has(.menuScrim) .fabwrap {
+  visibility: hidden;
+}

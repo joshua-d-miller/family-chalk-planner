@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   0.16.1
+ Version:   0.17.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-12
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -83,6 +83,14 @@
 
  0.16.1    2026-11-11   joshua    Draws a month in its own style when it has
                         claude    one.
+
+ 0.17.0    2026-11-12   joshua    A screen with the ☰ button instead of the
+                        colby     cork: the board gets the cork's room, and
+                        claude    never moves for the button or the drawing
+                                  tools (they pop over beside it).
+
+                                  ⭐ Pictures beside Draw / Decorate: straight
+                                  to the pictures.
 ===============================================================================
 */
 
@@ -112,9 +120,9 @@ import { PhotosEditor } from './editors/PhotosEditor.tsx';
 import { NotesEditor } from './editors/NotesEditor.tsx';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
-import { Strip } from './Strip.tsx';
+import { FAB_BAND, Strip } from './Strip.tsx';
 import { navigate } from '../lib/nav.ts';
-import { useShell, visibleHeight } from '../ui/Shell.tsx';
+import { useBarZoom, useShell, visibleHeight } from '../ui/Shell.tsx';
 import { DrawLayer, firstPen, isPosca, recolor, touches } from './draw/Draw.tsx';
 import type { Pen } from './draw/Draw.tsx';
 import { Library } from './draw/Library.tsx';
@@ -257,15 +265,32 @@ export function Board({
   const photos = useLive<Photos>('api/photos', ['photos']).data;
   const pad =
     meta && 'artPad' in meta ? (meta.boardPad ?? (edit && !family ? EDIT_FRAME : 0)) : edit && !family ? EDIT_FRAME : 0;
-  const bh = H + (edit ? CORK : 0);
   const shell = useShell();
+  // ------------------------------- //
+  // | The cork, or the ☰ button | //
+  // ------------------------------- //
+  // A screen that picked the ☰ button has no cork under the board, so the   //
+  // board grows into its room, and never moves for the button or tools.    //
+  const [drawing, setDrawing] = useState(false);
+  const side = edit && shell.kind === 'cork' ? shell.side : null;
+  const bh = H + (edit && !side ? CORK : 0);
+  const barZ = useBarZoom();
+  // the ☰ button floats over the board's bottom corner (the board keeps its size); on the right it's
+  // over the bottom of the Notes column, whose list stops above it
   const fit = useFit(pad, bh, shell.navH);
+  const fabClear = (() => {
+    if (side !== 'right' || drawing) return 0;
+    const areaH = visibleHeight() - shell.navH;
+    const boardBottom = (areaH + (bh + 2 * pad) * fit.scale) / 2; // the board is centred on the screen
+    const overlap = boardBottom - (innerHeight - FAB_BAND * barZ);
+    return overlap > 0 ? Math.ceil(overlap / fit.scale) : 0; // in board pixels
+  })();
   // the pages' cork is drawn the same size as this one
   const { kind: shellKind, setCorkZ, setBusyBoard } = shell;
   // (and where it is: a board that doesn't fill the screen leaves its cork above the bottom or in from the sides,
   // and the pages' cork goes in exactly the same place, so moving between them only the middle changes)
   useLayoutEffect(() => {
-    if (!edit || shellKind !== 'cork') return;
+    if (!edit || shellKind !== 'cork' || side) return;
     const tell = () => {
       const r = document.querySelector('#board > .cork, #board .cork:not(.corkbar)')?.getBoundingClientRect();
       setCorkZ(
@@ -282,7 +307,7 @@ export function Board({
     tell();
     const t = setTimeout(tell, 300); // once the board has settled (fonts, the first layout)
     return () => clearTimeout(t);
-  }, [edit, shellKind, setCorkZ, fit.scale]);
+  }, [edit, shellKind, side, setCorkZ, fit.scale]);
   // ---------------------- //
   // | Zooming in to draw | //
   // ---------------------- //
@@ -473,13 +498,17 @@ export function Board({
   // | Drawing | //
   // ----------- //
   // The pen, what is picked, and a stamp being placed.                      //
-  const [drawing, setDrawing] = useState(false);
   // drawing or zoomed in on a phone or tablet: the tab bar shrinks to a button in the corner
   useEffect(() => {
     setBusyBoard(drawing || zoom.z > 1.01);
     return () => setBusyBoard(false);
   }, [drawing, zoom.z, setBusyBoard]);
   const [pen, setPen] = useState<Pen>(firstPen);
+  // ✏️ Draw / Decorate and Done (a family screen starts on Select: it moves and decorates, no pens)
+  const toggleDraw = () => {
+    if (family && !drawing) setPen(p => ({ ...p, tool: 'select' }));
+    setDrawing(d => !d);
+  };
   const [selection, setSelection] = useState<number[]>([]);
   const [hidden, setHidden] = useState<number[]>([]);
   const [placing, setPlacing] = useState<{ st: Stamp; k: number } | null>(null);
@@ -730,7 +759,8 @@ export function Board({
           padding: pad,
           width: W + 2 * pad,
           height: bh + 2 * pad,
-          background: pad ? sf.frame || 'var(--wood)' : undefined
+          background: pad ? sf.frame || 'var(--wood)' : undefined,
+          ...(fabClear ? { ['--fabclear' as string]: fabClear + 'px' } : {})
         }}
       >
         <div
@@ -836,6 +866,8 @@ export function Board({
         {edit && (
           <Strip
             drawing={drawing}
+            onDraw={toggleDraw}
+            drawLabel={family ? 'Decorate' : 'Draw'}
             add={
               m && !drawing ? (
                 <button
@@ -873,20 +905,29 @@ export function Board({
               ) : undefined
             }
           >
-            <button
-              type="button"
-              className={'pill' + (drawing ? ' on' : '')}
-              id="drawBtn"
-              onClick={() => {
-                if (family && !drawing) setPen(p => ({ ...p, tool: 'select' }));
-                setDrawing(d => !d);
-              }}
-            >
+            <button type="button" className={'pill' + (drawing ? ' on' : '')} id="drawBtn" onClick={toggleDraw}>
               <span className="ic" aria-hidden="true">
                 ✏️
               </span>{' '}
               {drawing ? (family ? 'Done' : 'Done drawing') : family ? 'Decorate' : 'Draw'}
             </button>
+            {m && !drawing && (
+              // straight to the pictures (and into decorating, to place one)
+              <button
+                type="button"
+                className="pill"
+                id="picturesBtn"
+                onClick={() => {
+                  toggleDraw();
+                  setEditing({ k: 'library' });
+                }}
+              >
+                <span className="ic" aria-hidden="true">
+                  ⭐
+                </span>{' '}
+                Pictures
+              </button>
+            )}
             {m && !drawing && (
               <>
                 {!family && (

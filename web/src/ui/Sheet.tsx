@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Sheet.tsx
 ===============================================================================
- Version:   0.15.0
+ Version:   0.17.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-08
+ Updated:   2026-11-14
 
  Purpose:
      A card over the page, for adding or changing one thing. Escape or a
@@ -20,6 +20,10 @@
 
  0.15.0    2026-11-08   joshua    Focuses its first field only when it opens; a
                         claude    tap outside closes it, a drag doesn't.
+
+ 0.17.0    2026-11-14   joshua    A card can open without focusing anything
+                        claude    (Pictures: its search box would bring up the
+                                  keyboard on a touch screen every time).
 ===============================================================================
 */
 
@@ -34,12 +38,14 @@ export function Sheet({
   title,
   onClose,
   children,
-  id
+  id,
+  focus = true
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   id?: string;
+  focus?: boolean; // focus the first field when it opens (not where that brings up a keyboard for nothing)
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const down = useRef(false);
@@ -48,7 +54,8 @@ export function Sheet({
   // the first field is ready to type in when it opens (only then: focusing again each time the card
   // redraws scrolled it back to the top while you were picking further down)
   useEffect(() => {
-    ref.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus({ preventScroll: true });
+    if (focus)
+      ref.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus({ preventScroll: true });
     const key = (e: KeyboardEvent) => e.key === 'Escape' && close.current();
     addEventListener('keydown', key);
     return () => removeEventListener('keydown', key);

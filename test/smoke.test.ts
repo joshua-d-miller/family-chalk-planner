@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | smoke.test.ts
 ===============================================================================
- Version:   0.16.0
+ Version:   0.17.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-11
+ Updated:   2026-11-14
 
  Purpose:
      End-to-end smoke test: real server + mock CalDAV + mock photo album,
@@ -67,6 +67,10 @@
 
  0.16.0    2026-11-11   joshua    Birthdays; turned pictures; a month's own
                         claude    colors; the garland set.
+
+ 0.17.0    2026-11-14   joshua    Weather and food pictures; the rest of the
+                        claude    chalk drawings (not the ones that aren't for
+                                  a family board); OpenMoji in chalk white.
 ===============================================================================
 */
 
@@ -197,7 +201,8 @@ test('chalk drawings and holiday borders', async () => {
   assert.match(await r.text(), /color="#EDEAE0"/, 'chalk white by default');
   r = await api('/api/clip/gi-pumpkin--f2a35e.svg');
   assert.match(await r.text(), /color="#f2a35e"/, 'any color');
-  assert.equal((await api('/api/clip/gi-guillotine.svg')).status, 404, 'only the hand-picked drawings');
+  assert.equal((await api('/api/clip/gi-guillotine.svg')).status, 404, 'none that aren’t for a family board');
+  assert.equal((await api('/api/clip/gi-farm-tractor.svg')).status, 200, 'the rest of the set is in');
   // the other picture styles: unpacked in the background, then listed and served from disk
   let styles: { prefix: string; count: number }[] = [];
   for (let i = 0; i < 120 && !(styles.length && styles.every(s => s.count > 0)); i++) {
@@ -206,12 +211,17 @@ test('chalk drawings and holiday borders', async () => {
   }
   assert.deepEqual(
     styles.map(s => s.prefix),
-    ['se', 'no', 'om', 'tw', 'fx', 'eo', 'ip', 'cp']
+    ['se', 'no', 'om', 'tw', 'fx', 'eo', 'ip', 'mc', 'ic', 'oc', 'cp']
   );
   assert.ok(
-    styles.filter(s => s.prefix !== 'cp').every(s => s.count > 500),
+    styles.filter(s => !['cp', 'mc', 'ic'].includes(s.prefix)).every(s => s.count > 500),
     'every style unpacked'
   );
+  assert.ok(styles.find(s => s.prefix === 'mc')!.count > 400, 'weather');
+  assert.ok(styles.find(s => s.prefix === 'ic')!.count > 100, 'food');
+  // OpenMoji's black outlines: chalk white, so they show on the board
+  const om = await (await api('/api/clip/om-turkey.svg')).text();
+  assert.ok(!/stroke="#000"/i.test(om) && /#EDEAE0/.test(om), 'chalk-white outlines');
   // the board's own: garlands and trims, a garland long and thin
   assert.equal(styles.find(s => s.prefix === 'cp')!.count, 46);
   assert.match(await (await api('/api/clip/cp-bulb-red.svg')).text(), /<animate /, 'the lights twinkle');

@@ -4,6 +4,49 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.17.0 — Pictures, reworked, and the ☰ button instead of the cork
+- **⭐ Pictures, reworked** (Tarin's feedback: hard to get to, odd-looking on the board, not much
+  there):
+  - **One search for everything:** the box at the top always looks through every picture, about
+    22,000 of them, and shows each thing once with its other looks behind **+3**. No style or
+    group to pick first. It knows everyday words ("turkey" is the bird, not the flag; "pumpkin"
+    finds the jack-o'-lantern).
+  - **Packs:** Thanksgiving, Fall leaves, Halloween, Christmas, Garland & lights, Winter,
+    Valentine's Day, St. Patrick's Day, Easter & spring, Summer, Fourth of July, Back to school,
+    Birthdays & parties, Sports & activities, Animals & pets, Food, Weather and Around the house,
+    about 600 hand-picked pictures. This month's packs come first.
+  - **Favorites:** ★ on any picture pins it, for every screen; your saved designs are there too.
+  - **More pictures:** the chalk drawings go from 119 to about 3,200 (weapons, gore and scary or
+    grown-up ones left out), plus weather pictures (Meteocons) and detailed food (Iconito).
+  - **Real clipart, no account:** 783 pictures from the public-domain Openclipart collection (animals,
+    food, holidays, people, plants, sports, vehicles...), picked to suit a family board and look right
+    on it, searchable by their own words and in the packs. In the repository
+    (`clipart/openclipart.json.gz`, made by `clipart/openclipart.py` from Debian's
+    `openclipart-svg`), so they work offline.
+  - **🌐 Look on the web:** under the search results, one tap looks for public-domain illustrations
+    on Openverse (no account, nothing to set up). Only when tapped, so the board stays well within
+    Openverse's limits. A picture placed is copied onto the board, so it stays if the site changes.
+  - **Shows on the board:** OpenMoji's and IconPark's black outlines are drawn in chalk white.
+  - **Quicker to reach:** **⭐ Pictures** sits next to Draw / Decorate (two taps from the
+    calendar). No size to pick first: a picture is picked after it goes up, to resize it there.
+  - Emoji, Find more and the size buttons are gone (the same pictures are in the search and the
+    packs).
+- **The ☰ button:** a family screen or a computer can swap the cork along the bottom for a round ☰
+  button floating in a bottom corner (Colby's idea). It slides a drawer out from that side: **+ Add
+  event** and the calendar's tools (Decorate, Month title, Border, Photos, Notes, Style) at the top,
+  then the pages. The calendar gets the cork's room and doesn't shrink for the button.
+- **Either side:** ☰ Menu → **This screen's menu** at the bottom: *Cork along the bottom*, *Button,
+  drawer on the right* or *Button, drawer on the left*. Each screen keeps its own choice, saved on the
+  board (clearing the browser doesn't lose it), so the kitchen can keep the cork while another screen
+  uses the button. Phones and tablets keep their tab bar.
+- On the right, the button sits over the bottom of the Notes column, whose list stops above it; the
+  "can't reach the board" note moves to the other corner.
+- **✏️ Draw beside the ☰ (if the screen wants it):** ☰ Menu → This screen's menu → *Draw button beside
+  ☰* adds a round ✏️ next to the ☰; without it, ✏️ Draw / Decorate is in the drawer.
+- **Drawing with the button:** the drawing tools pop over just above the buttons, and ✏️ Done takes the
+  ☰'s corner. 🎨 hides the tools to draw underneath them and brings them back. Nothing goes down the
+  side, and the calendar never moves.
+
 ## 0.16.2 — the garland in Clipart
 - Fixed: the **Garland & trims** pictures were hard to find in ★ Stamps → Clipart (only under their
   style, and even there mostly missing). They're now a **🎄 Garland & trims** group right after

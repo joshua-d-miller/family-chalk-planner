@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | app-pages.spec.ts
 ===============================================================================
- Version:   0.16.2
+ Version:   0.17.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-11
+ Updated:   2026-11-14
 
  Purpose:
      The new screens (React): the meal plan, reminders, timers, the
@@ -52,6 +52,9 @@
 
  0.16.2    2026-11-11   joshua    The garland set in the clipart.
                         claude
+
+ 0.17.0    2026-11-14   joshua    Pictures: a picture by searching and its
+                        claude    other looks; the garland as a pack.
 ===============================================================================
 */
 
@@ -546,21 +549,21 @@ test('the board (new screen, tablet): draw, undo and redo, erase, write, select,
   await expect(t.locator('.selGrip.turn')).toBeVisible();
   await t.locator('.selbar').getByRole('button', { name: 'Erase' }).click();
   await expect.poll(async () => (await artOf()).length).toBe(0);
-  // a stamp from the library: an emoji, put up where she taps
+  // a picture, found by searching, put up where she taps; then the same picture in another look (+3)
   await t.locator('#stampsBtn').click();
-  await t.locator('#libSheet').getByRole('radio', { name: 'Emoji', exact: true }).click();
-  await t.locator('#libSheet').getByRole('button', { name: 'Emoji 🎂' }).click();
+  const lib = t.locator('#libSheet');
+  await lib.locator('.clipq').fill('cake');
+  await lib.locator('.ptile .ctile img[src*="/api/clip/birthday-cake"]').first().click();
   await expect(t.locator('.slate .status')).toContainText('Tap the board');
-  await t.mouse.click(...at(800, 300));
-  await expect.poll(async () => (await artOf()).find(x => x.k === 't')?.s).toBe('🎂');
-  // clipart, in two styles: saved on the board (not only drawn on this screen), and still there after a reload
-  for (const style of ['Fluent', 'Noto']) {
-    await t.locator('#stampsBtn').click();
-    await t.locator('#libSheet').getByRole('radio', { name: 'Clipart' }).click();
-    await t.locator('#libSheet .cstyles').getByRole('radio', { name: style, exact: true }).click();
-    await t.locator('#libSheet .ctile').first().click();
-    await t.mouse.click(...at(style === 'Fluent' ? 500 : 650, 450));
-  }
+  await t.mouse.click(...at(500, 450));
+  await t.locator('#stampsBtn').click();
+  await lib.locator('.clipq').fill('cake');
+  await lib
+    .locator('.ptile', { has: t.locator('img[src*="/api/clip/birthday-cake"]') })
+    .locator('.looksn')
+    .click();
+  await lib.locator('.looks .ctile img[src*="/api/clip/no-birthday-cake"]').click();
+  await t.mouse.click(...at(650, 450));
   type Pic = { k?: string; src?: string };
   await expect.poll(async () => ((await artOf()) as Pic[]).filter(x => x.k === 'g').length).toBe(2);
   const pics = ((await artOf()) as Pic[]).filter(x => x.k === 'g').map(x => x.src);
@@ -575,24 +578,19 @@ test('the board (new screen, tablet): draw, undo and redo, erase, write, select,
   await board.admin.post('/api/art/clear', { ym });
 });
 
-test('clipart: the garland set is a group of its own, found by searching, and all there in its style', async ({
-  as
-}) => {
+test('pictures: the garland is a pack of its own, and found by searching', async ({ as }) => {
   const t = await as('tablet', { path: '/edit' });
   await t.locator('#drawBtn').click();
   await t.locator('#stampsBtn').click();
-  await t.locator('#libSheet').getByRole('radio', { name: 'Clipart' }).click();
   const lib = t.locator('#libSheet');
-  // its own group in the everyday view
-  await lib.getByRole('button', { name: '🎄 Garland & trims' }).click();
+  await lib.locator('#pack-garland').click();
   await expect(lib.locator('.ctile img[src*="/api/clip/cp-garland-lights"]').first()).toBeVisible();
+  await expect.poll(() => lib.locator('.ptile').count()).toBeGreaterThan(15);
+  await lib.locator('#picBack').click();
+  await expect(lib.locator('#pack-garland')).toBeVisible();
   // found by searching
   await lib.locator('.clipq').fill('garland');
   await expect(lib.locator('.ctile img[src*="/api/clip/cp-garland"]').first()).toBeVisible();
-  // its style: every picture in it
-  await lib.locator('.clipq').fill('');
-  await lib.locator('.cstyles').getByRole('radio', { name: 'Garland & trims' }).click();
-  await expect.poll(() => lib.locator('.ctile').count()).toBeGreaterThan(40);
   expect(t.errors).toEqual([]);
 });
 
