@@ -515,7 +515,7 @@ button:disabled{opacity:.5;cursor:default}
     var main = ($('bfCal').value || '').trim();
     var p = bf.prov === 'google'
       ? api('/api/google/calendars', {}).then(function (l) { return l.map(function (c) { return { id: c.id, name: c.name }; }); })
-      : api('/api/board-settings/caldav-test', { url: $('bfUrl').value || undefined, user: $('bfUser').value || undefined, password: $('bfPass').value || undefined }).then(function (r) { return r.list.map(function (c) { return { id: c.url, name: c.name }; }); });
+      : api('/api/board-settings/caldav-test', { url: $('bfUrl').value || undefined, user: ($('bfUser').dataset.typed && $('bfUser').value) || undefined, password: ($('bfPass').dataset.typed && $('bfPass').value) || undefined }).then(function (r) { return r.list.map(function (c) { return { id: c.url, name: c.name }; }); });
     busy($('bfMoreList'), p).then(function (l) {
       moreAvail = l.filter(function (c) { return bf.prov === 'google' ? true : c.name !== main; });
       drawMore();
@@ -632,10 +632,20 @@ button:disabled{opacity:.5;cursor:default}
     if (!confirm('Update the board now? It restarts for a minute; screens reconnect by themselves.')) return;
     busy($('upGo'), api('/api/updates/run', {})).then(loadUpdates).catch(function (e) { $('upErr').textContent = e.message; });
   });
+  // A browser or password manager fills a username and password it sees on the page (the admin's own
+  // sign-in) without being asked. The board's account fields are only saved once someone has typed or
+  // pasted into them, so a filled-in sign-in never ends up as the calendar's (or Immich's) password.
+  var ACCOUNT_FIELD = /^(CALDAV_USER|CALDAV_PASSWORD|GOOGLE_CLIENT_SECRET|IMMICH_API_KEY)$/;
+  Array.prototype.forEach.call(document.querySelectorAll('#tBoard [data-k]'), function (inp) {
+    if (!ACCOUNT_FIELD.test(inp.dataset.k)) return;
+    inp.setAttribute('data-1p-ignore', ''); inp.setAttribute('data-lpignore', 'true'); inp.setAttribute('data-bwignore', ''); inp.setAttribute('data-form-type', 'other');
+    ['keydown', 'paste', 'drop', 'cut'].forEach(function (ev) { inp.addEventListener(ev, function () { inp.dataset.typed = '1'; }); });
+  });
   $('bfSave').addEventListener('click', function () {
     var values = {};
     Array.prototype.forEach.call(document.querySelectorAll('#tBoard [data-k]'), function (inp) {
       var f = bf.data && bf.data.fields[inp.dataset.k]; if (!f) return;
+      if (ACCOUNT_FIELD.test(inp.dataset.k) && !inp.dataset.typed) return;   // filled in by the browser, not by a person
       if (f.type === 'secret') { if (inp.value) values[inp.dataset.k] = inp.value; }
       else if (inp.value !== inp.dataset.orig) values[inp.dataset.k] = inp.value;
     });
