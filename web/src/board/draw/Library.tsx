@@ -48,7 +48,8 @@
                                   over every picture, Favorites, packs, GIFs
                                   as a pack. No styles, groups, sizes or
                                   separate emoji to pick first; resize after
-                                  placing.
+                                  placing. Openclipart's pictures, and "Look
+                                  on the web" (public domain, Openverse).
 ===============================================================================
 */
 
@@ -82,7 +83,7 @@ type Found = { subject: string; label: string; id: string; looks: string[] };
 type View = { k: 'home' } | { k: 'fav' } | { k: 'gif' } | { k: 'pack'; id: string; name: string };
 const CREDIT =
   'Pictures: Fluent Emoji (Microsoft), Noto (Google), Twemoji, OpenMoji, Streamline, EmojiOne, Firefox, IconPark, ' +
-  'Meteocons, Iconito, chalk drawings from game-icons.net (CC BY 3.0), and drawn for the board. All credited in NOTICE.';
+  'Meteocons, Iconito, Openclipart, chalk drawings from game-icons.net (CC BY 3.0), and drawn for the board. All credited in NOTICE.';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ---------------- //
@@ -165,7 +166,7 @@ export function Library({
       </div>
       <div className="lscroll">
         {searching ? (
-          <SearchView q={q} {...tiles} setColor={setColor} />
+          <SearchView q={q} {...tiles} setColor={setColor} pick={pick} />
         ) : view.k === 'home' ? (
           <Home open={setView} favCount={fav.size} />
         ) : view.k === 'fav' ? (
@@ -360,7 +361,7 @@ function FavView({ items, pick, bg, ...t }: TileProps & { items: string[]; pick:
 // ------------------------- //
 // Each subject once, in its best look; "+3" on a tile means it has more    //
 // looks, and tapping that shows them.                                      //
-function SearchView({ q, ...t }: TileProps & { q: string }) {
+function SearchView({ q, pick, ...t }: TileProps & { q: string; pick: (s: Stamp) => void }) {
   const [found, setFound] = useState<Found[] | null>(null);
   const [looks, setLooks] = useState<Found | null>(null);
   const [err, setErr] = useState('');
@@ -401,7 +402,85 @@ function SearchView({ q, ...t }: TileProps & { q: string }) {
           onMore={n => setLooks(bySubject.get(n) || null)}
         />
       )}
+      {found && !looks && <WebPane key={q.trim()} q={q.trim()} pick={pick} />}
     </>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | From the web | //
+// ------------------ //
+// Public-domain illustrations from Openverse, only when asked for (a tap,  //
+// not every letter typed), so the board stays well within what Openverse   //
+// allows without an account. A picture placed is kept on the board.        //
+type WebPic = { id: string; title: string; creator: string; source: string; w: number; h: number };
+function WebPane({ q, pick }: { q: string; pick: (s: Stamp) => void }) {
+  const [found, setFound] = useState<WebPic[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  const search = async () => {
+    setBusy(true);
+    setNote('');
+    try {
+      const r = await get<{ found: WebPic[]; note?: string }>('api/clip/web?q=' + encodeURIComponent(q));
+      setFound(r.found);
+      setNote(r.note || (r.found.length ? '' : `Nothing on the web for “${q}” either`));
+    } catch (e) {
+      setNote((e as Error).message);
+    }
+    setBusy(false);
+  };
+  const place = async (p: WebPic) => {
+    setNote('Bringing it onto the board…');
+    try {
+      const { src } = await post<{ src: string }>('api/clip/web/keep', { id: p.id });
+      const img = new Image();
+      img.onload = () => {
+        const k = 120 / Math.max(img.naturalWidth || 1, img.naturalHeight || 1);
+        const w = Math.round((img.naturalWidth || 1) * k);
+        const h = Math.round((img.naturalHeight || 1) * k);
+        setNote('');
+        pick({
+          name: p.title || 'Picture',
+          items: [{ id: 0, k: 'g', x: 0, y: 0, w, h, src, still: src, mode: 'still' }]
+        });
+      };
+      img.onerror = () => setNote('⚠ That picture didn’t open');
+      img.src = url(src);
+    } catch (e) {
+      setNote('⚠ ' + (e as Error).message);
+    }
+  };
+  return (
+    <div className="webpics">
+      {!found && (
+        <button type="button" className="seg" id="webSearch" disabled={busy} onClick={search}>
+          {busy ? 'Looking…' : `🌐 Look on the web for “${q}”`}
+        </button>
+      )}
+      {found && found.length > 0 && (
+        <>
+          <div className="sublbl">From the web · public domain, from Openverse</div>
+          <div className="cgrid big pgrid">
+            {found.map(p => (
+              <div key={p.id} className="ptile">
+                <button
+                  type="button"
+                  className="ctile web"
+                  title={p.title + (p.creator ? ' - ' + p.creator : '')}
+                  aria-label={p.title || 'Picture from the web'}
+                  onClick={() => place(p)}
+                >
+                  <img alt="" loading="lazy" src={url(`api/clip/web/${p.id}/thumb`)} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      {note && <div className="empty">{note}</div>}
+    </div>
   );
 }
 

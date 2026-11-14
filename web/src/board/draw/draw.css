@@ -530,3 +530,18 @@
   border-color: var(--yellow);
   color: var(--yellow);
 }
+
+/* Pictures: "From the web" (public-domain pictures from Openverse), under the board's own */
+.webpics {
+  margin: 14px 0 4px;
+}
+.webpics #webSearch {
+  width: 100%;
+  min-height: 52px;
+  font-size: 17px;
+}
+.webpics .ctile.web img {
+  object-fit: contain;
+  background: #fff;
+  border-radius: 6px;
+}

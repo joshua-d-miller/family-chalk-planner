@@ -65,7 +65,8 @@
                         claude
 
  0.17.0    2026-11-14   joshua    Picture packs and Favorites (server/packs.ts);
-                        claude    each screen's menu (in favorites.ts).
+                        claude    each screen's menu (in favorites.ts);
+                                  "From the web" (server/webclip.ts).
 ===============================================================================
 */
 
@@ -99,6 +100,7 @@ import * as reminders from './reminders.ts';
 import * as timers from './timers.ts';
 import * as pantry from './pantry.ts';
 import * as media from './media.ts';
+import * as webclip from './webclip.ts';
 import * as photos from './photos/photos.ts';
 import * as pages from './pages.ts';
 import { registerSettingsRoutes } from './settings-routes.ts';
@@ -359,13 +361,20 @@ favorites.setup({
 // | Uploads, pictures from links, the GIF library | //
 // ------------------------------------------------- //
 // Kept inside the backup folder, so they ride along with the backups.       //
-media.setup({
+const mediaRoutes = media.setup({
   app,
   db,
   kv,
   mediaDir: path.join(cfg.backupDir, 'media'), // inside the backup folder, so they ride along with the backups
   allowPrivateLinks: cfg.allowPrivateLinks,
   testRoutes: cfg.testRoutes
+});
+// Pictures' "From the web": public-domain pictures from Openverse, kept like uploads once placed
+webclip.setup({
+  app,
+  cacheDir: path.join(DATA_DIR, 'clipart-cache'),
+  keepImage: mediaRoutes.keepImage,
+  ...(cfg.testRoutes && ENV.OPENVERSE_URL ? { api: ENV.OPENVERSE_URL } : {})
 });
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

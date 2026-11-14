@@ -30,7 +30,9 @@
                         claude    and wreaths.
 
  0.17.0    2026-11-14   joshua    Names of the weather (mc-) and food (ic-)
-                        claude    pictures read as words too.
+                        claude    pictures read as words too, and
+                                  Openclipart's (oc-; "apple 2" reads
+                                  "apple").
 ===============================================================================
 */
 
@@ -109,6 +111,10 @@ export function searchClip(names: string[], q: string, max = 60) {
 }
 // a picture's name without its set's short name (gi- chalk drawings, tb- line drawings, se- no- om- tw- fx- eo- ip-
 // the other styles, cp- the board's own, mc- weather, ic- food)
-export const clipLabel = (n: string) => n.replace(/^(gi|tb|se|no|om|tw|fx|eo|ip|cp|mc|ic)-/, '').replace(/-/g, ' ');
+export const clipLabel = (n: string) =>
+  n
+    .replace(/^(gi|tb|se|no|om|tw|fx|eo|ip|cp|mc|ic|oc)-/, '')
+    .replace(/-\d+$/, '')
+    .replace(/-/g, ' ');
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

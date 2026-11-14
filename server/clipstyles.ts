@@ -10,7 +10,8 @@
  Purpose:
      More picture sets for Pictures, each in its own style (Streamline,
      Noto, OpenMoji, Twitter, Firefox, EmojiOne, IconPark, plus weather
-     from Meteocons and food from Iconito). Sets drawn with black outlines
+     from Meteocons, food from Iconito, and the best of Openclipart: real
+     clipart, public domain). Sets drawn with black outlines
      (OpenMoji, IconPark) get chalk-white outlines instead, so they don't
      vanish on a dark board. Installed with
      the board (npm), so they work offline. Each is unpacked once into the
@@ -44,12 +45,15 @@
                         claude    OpenMoji's and IconPark's black outlines in
                                   chalk white. Each set says whether its
                                   pictures are its own or the emoji redrawn.
+                                  Openclipart (clipart/openclipart.json.gz,
+                                  packed), with each picture's own words.
 ===============================================================================
 */
 
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -79,6 +83,14 @@ export const STYLES: ClipStyle[] = [
   { prefix: 'mc', name: 'Weather', pkg: 'meteocons', credit: 'Meteocons by Bas Milius (MIT)', own: true },
   { prefix: 'ic', name: 'Food', pkg: 'iconito', credit: 'Iconito (MIT)', own: true },
   {
+    prefix: 'oc',
+    name: 'Openclipart',
+    pkg: '',
+    file: path.join(import.meta.dirname, '..', 'clipart', 'openclipart.json.gz'),
+    credit: 'Openclipart (public domain, CC0)',
+    own: true
+  },
+  {
     prefix: 'cp',
     name: 'Garland & trims',
     pkg: '',
@@ -107,6 +119,7 @@ interface IconSet {
   aliases?: Record<string, { parent: string }>;
   width?: number;
   height?: number;
+  tags?: Record<string, string>; // (the board's own sets) each picture's words: "dessert food"
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -118,6 +131,7 @@ interface IconSet {
 // minute).                                                                  //
 export function makeStyles(cacheDir: string) {
   const ready = new Map<string, string[]>(); // prefix -> its names, once unpacked
+  const words = new Map<string, Record<string, string>>(); // prefix -> each picture's words (if it has them)
   const dirOf = (s: ClipStyle) => {
     let ver = '0';
     try {
@@ -133,7 +147,9 @@ export function makeStyles(cacheDir: string) {
   async function unpack(s: ClipStyle) {
     const dir = dirOf(s);
     const index = path.join(dir, 'index.json');
+    const tagFile = path.join(dir, 'tags.json');
     if (fs.existsSync(index)) {
+      if (fs.existsSync(tagFile)) words.set(s.prefix, JSON.parse(fs.readFileSync(tagFile, 'utf8')));
       ready.set(s.prefix, JSON.parse(fs.readFileSync(index, 'utf8')));
       return;
     }
@@ -143,7 +159,8 @@ export function makeStyles(cacheDir: string) {
     } catch {
       return; // not installed: that style just isn't offered
     }
-    const j = JSON.parse(await fs.promises.readFile(file, 'utf8')) as IconSet;
+    const raw = await fs.promises.readFile(file);
+    const j = JSON.parse((file.endsWith('.gz') ? zlib.gunzipSync(raw) : raw).toString('utf8')) as IconSet;
     const tmp = dir + '.tmp';
     await fs.promises.rm(tmp, { recursive: true, force: true });
     await fs.promises.mkdir(tmp, { recursive: true });
@@ -167,9 +184,11 @@ export function makeStyles(cacheDir: string) {
       );
     }
     names.sort();
+    if (j.tags) await fs.promises.writeFile(path.join(tmp, 'tags.json'), JSON.stringify(j.tags));
     await fs.promises.writeFile(path.join(tmp, 'index.json'), JSON.stringify(names));
     await fs.promises.rm(dir, { recursive: true, force: true });
     await fs.promises.rename(tmp, dir);
+    if (j.tags) words.set(s.prefix, j.tags);
     ready.set(s.prefix, names);
   }
   const unpacking = (async () => {
@@ -193,6 +212,8 @@ export function makeStyles(cacheDir: string) {
         own: !!s.own // pictures of its own (garland, weather, food), not the everyday ones redrawn
       })),
     names: (prefix: string) => ready.get(prefix)?.map(n => prefix + '-' + n) || null,
+    // a set's own words for its pictures ({ "apple-pie": "dessert food" }), when it has them
+    tags: (prefix: string) => words.get(prefix) || {},
     // the file for "no-jack-o-lantern", or null
     fileOf(name: string) {
       const s = stylePrefix(name);

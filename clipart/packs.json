@@ -1,5 +1,5 @@
 {
-  "_about": "Family Chalk Planner 0.17.0: the picture packs in Pictures. Each pack: id, name, the months it comes first in (none: all year, after the seasonal ones), the border it goes with (a set in 🖼 Border, or none), its cover (4 pictures) and its pictures, by the names /api/clip/<name>.svg serves: Fluent emoji by name (turkey), chalk drawings gi-, the board's own garland cp-, food ic-, weather mc-. server/packs.ts leaves out any name the board doesn't have. Edit and restart; npm test checks every name.",
+  "_about": "Family Chalk Planner 0.17.0: the picture packs in Pictures. Each pack: id, name, the months it comes first in (none: all year, after the seasonal ones), the border it goes with (a set in 🖼 Border, or none), its cover (4 pictures) and its pictures, by the names /api/clip/<name>.svg serves: Fluent emoji by name (turkey), chalk drawings gi-, the board's own garland cp-, food ic-, weather mc-, Openclipart oc-. server/packs.ts leaves out any name the board doesn't have. Edit and restart; npm test checks every name.",
   "packs": [
     {
       "id": "thanksgiving",
@@ -8,12 +8,13 @@
       "border": "thanksgiving",
       "cover": ["turkey", "pie", "ear-of-corn", "gi-cornucopia"],
       "pictures": [
-        "turkey", "ic-turkey", "pie", "ic-pie", "ear-of-corn", "ic-corn", "roasted-sweet-potato", "fork-and-knife-with-plate",
-        "bread", "ic-bread", "ic-cake", "red-apple", "green-apple", "ic-apple", "maple-leaf", "fallen-leaf",
-        "leaf-fluttering-in-wind", "sunflower", "chestnut", "house", "folded-hands", "smiling-face-with-hearts",
-        "gi-cornucopia", "gi-wheat", "gi-pilgrim-hat", "gi-scarecrow", "gi-acorn", "gi-corn", "gi-maple-leaf",
-        "gi-oak-leaf", "gi-falling-leaf", "gi-pumpkin", "gi-pie-slice", "gi-sunflower", "gi-squirrel", "gi-barn-owl",
-        "gi-family-house"
+        "turkey", "ic-turkey", "pie", "ic-pie", "ear-of-corn", "ic-corn", "roasted-sweet-potato",
+        "fork-and-knife-with-plate", "bread", "ic-bread", "ic-cake", "red-apple", "green-apple", "ic-apple",
+        "maple-leaf", "fallen-leaf", "leaf-fluttering-in-wind", "sunflower", "chestnut", "house", "folded-hands",
+        "smiling-face-with-hearts", "gi-cornucopia", "gi-wheat", "gi-pilgrim-hat", "gi-scarecrow", "gi-acorn",
+        "gi-corn", "gi-maple-leaf", "gi-oak-leaf", "gi-falling-leaf", "gi-pumpkin", "gi-pie-slice", "gi-sunflower",
+        "gi-squirrel", "gi-barn-owl", "gi-family-house", "oc-turkey-on-platter",
+        "oc-turkey-platter-with-fruit-and-vegitables", "oc-pumpkin-pie", "oc-pumpkin", "oc-corn-on-the-cob"
       ]
     },
     {
@@ -28,7 +29,8 @@
         "umbrella-with-rain-drops", "cloud-with-rain", "gi-acorn", "gi-maple-leaf", "gi-oak-leaf", "gi-falling-leaf",
         "gi-chestnut-leaf", "gi-ginkgo-leaf", "gi-linden-leaf", "gi-curled-leaf", "gi-leaf-swirl", "gi-mushroom",
         "gi-mushrooms", "gi-spotted-mushroom", "gi-squirrel", "gi-hedgehog", "gi-barn-owl", "gi-fruit-tree",
-        "gi-shiny-apple", "mc-rain-fill", "mc-wind-fill"
+        "gi-shiny-apple", "mc-rain-fill", "mc-wind-fill", "oc-pumpkin", "oc-pumpkin-2", "oc-squirrel",
+        "oc-owl-on-branch", "oc-corn"
       ]
     },
     {
@@ -40,10 +42,11 @@
       "pictures": [
         "jack-o-lantern", "ghost", "bat", "spider", "spider-web", "black-cat", "candy", "lollipop", "crescent-moon",
         "full-moon", "owl", "person-mage", "person-vampire", "broom", "candle", "crystal-ball", "magic-wand",
-        "gi-pumpkin", "gi-pumpkin-lantern", "gi-pumpkin-mask", "gi-ghost", "gi-floating-ghost", "gi-bat", "gi-moon-bats",
-        "gi-spider-web", "gi-hanging-spider", "gi-cobweb", "gi-witch-face", "gi-witch-flight", "gi-cauldron",
-        "gi-magic-broom", "gi-candle-light", "gi-candles", "gi-cat", "gi-owl", "gi-moon", "gi-mummy-head",
-        "gi-wizard-face", "gi-pointy-hat", "gi-spiral-lollipop", "gi-skeleton", "gi-tombstone"
+        "gi-pumpkin", "gi-pumpkin-lantern", "gi-pumpkin-mask", "gi-ghost", "gi-floating-ghost", "gi-bat",
+        "gi-moon-bats", "gi-spider-web", "gi-hanging-spider", "gi-cobweb", "gi-witch-face", "gi-witch-flight",
+        "gi-cauldron", "gi-magic-broom", "gi-candle-light", "gi-candles", "gi-cat", "gi-owl", "gi-moon",
+        "gi-mummy-head", "gi-wizard-face", "gi-pointy-hat", "gi-spiral-lollipop", "gi-skeleton", "gi-tombstone",
+        "oc-pumpkin-2", "oc-pumpkin", "oc-candy", "oc-candy-2", "oc-lollipop"
       ]
     },
     {
@@ -53,13 +56,14 @@
       "border": "christmas",
       "cover": ["christmas-tree", "wrapped-gift", "santa-claus", "cp-wreath"],
       "pictures": [
-        "christmas-tree", "wrapped-gift", "santa-claus", "mrs-claus", "deer", "snowman", "star", "glowing-star",
-        "bell", "candle", "cookie", "hot-beverage", "cp-wreath", "cp-holly", "cp-mistletoe", "cp-poinsettia",
-        "cp-stocking", "cp-candy-cane", "cp-gingerbread-man", "cp-sugar-cookie", "cp-hot-cocoa", "cp-jingle-bells",
-        "cp-santa-hat", "cp-reindeer", "cp-present", "cp-gift-tag", "cp-bow", "cp-ornament-red", "cp-ornament-gold",
-        "cp-ornament-blue", "cp-ornament-striped", "cp-christmas-tree", "cp-star-twinkle", "cp-candle", "cp-north-pole",
-        "cp-pine-sprig", "cp-snowman", "gi-present", "gi-gingerbread-man", "gi-ringing-bell", "gi-pine-tree",
-        "gi-candy-canes", "gi-sparkles"
+        "christmas-tree", "wrapped-gift", "santa-claus", "mrs-claus", "deer", "snowman", "star", "glowing-star", "bell",
+        "candle", "cookie", "hot-beverage", "cp-wreath", "cp-holly", "cp-mistletoe", "cp-poinsettia", "cp-stocking",
+        "cp-candy-cane", "cp-gingerbread-man", "cp-sugar-cookie", "cp-hot-cocoa", "cp-jingle-bells", "cp-santa-hat",
+        "cp-reindeer", "cp-present", "cp-gift-tag", "cp-bow", "cp-ornament-red", "cp-ornament-gold", "cp-ornament-blue",
+        "cp-ornament-striped", "cp-christmas-tree", "cp-star-twinkle", "cp-candle", "cp-north-pole", "cp-pine-sprig",
+        "cp-snowman", "gi-present", "gi-gingerbread-man", "gi-ringing-bell", "gi-pine-tree", "gi-candy-canes",
+        "gi-sparkles", "oc-christmas-tree", "oc-lightly-decorated-evergreen", "oc-fatherchristmas", "oc-jingle-bells",
+        "oc-christmas-light", "oc-gift", "oc-snowman"
       ]
     },
     {
@@ -72,7 +76,8 @@
         "cp-garland-lights", "cp-garland-lights-twinkle", "cp-string-lights", "cp-string-lights-twinkle",
         "cp-garland-pine", "cp-garland-holly", "cp-garland-tinsel", "cp-garland-beads", "cp-garland-bunting",
         "cp-garland-candy-cane", "cp-bulb-red", "cp-bulb-gold", "cp-bulb-green", "cp-bulb-blue", "cp-bulb-pink",
-        "cp-bulb-purple", "cp-star", "cp-star-twinkle"
+        "cp-bulb-purple", "cp-star", "cp-star-twinkle", "oc-evergreen-wreath-with-large-holly",
+        "oc-wreath-of-evergreen-with-red-berries", "oc-christmas-light"
       ]
     },
     {
@@ -86,7 +91,9 @@
         "snowboarder", "scarf", "gloves", "coat", "hot-beverage", "penguin", "polar-bear", "evergreen-tree",
         "snow-capped-mountain", "cp-mittens", "cp-hot-cocoa", "cp-snowflake-1", "cp-snowflake-2", "cp-snowflake-3",
         "cp-snowman", "gi-snowman", "gi-snowflake-1", "gi-snowflake-2", "gi-snowing", "gi-winter-hat", "gi-igloo",
-        "gi-penguin", "gi-polar-bear", "gi-ice-skate", "gi-pine-tree", "mc-snow-fill", "mc-snowflake"
+        "gi-penguin", "gi-polar-bear", "gi-ice-skate", "gi-pine-tree", "mc-snow-fill", "mc-snowflake", "oc-snowman",
+        "oc-mitten", "oc-sledge", "oc-icicles", "oc-ice-skater", "oc-ice-skaters",
+        "oc-sleeping-bear-under-stars-with-snow-circle"
       ]
     },
     {
@@ -100,7 +107,8 @@
         "heart-with-arrow", "growing-heart", "heart-decoration", "love-letter", "rose", "bouquet", "tulip",
         "chocolate-bar", "candy", "wrapped-gift", "teddy-bear", "smiling-face-with-hearts",
         "smiling-face-with-heart-eyes", "kiss-mark", "cupcake", "ic-chocolate", "ic-chocolate-cake", "gi-hearts",
-        "gi-heart-bottle", "gi-love-letter", "gi-rose", "gi-crowned-heart", "gi-paw-heart"
+        "gi-heart-bottle", "gi-love-letter", "gi-rose", "gi-crowned-heart", "gi-paw-heart", "oc-heart",
+        "oc-heart-arrow", "oc-heart-ballons", "oc-heart-cluster", "oc-heart-highlight"
       ]
     },
     {
@@ -111,7 +119,8 @@
       "cover": ["shamrock", "four-leaf-clover", "rainbow", "money-bag"],
       "pictures": [
         "shamrock", "four-leaf-clover", "rainbow", "money-bag", "coin", "top-hat", "green-heart", "sparkles",
-        "gi-shamrock", "gi-clover", "gi-rainbow-star", "gi-gold-stack", "gi-gold-bar", "gi-horseshoe"
+        "gi-shamrock", "gi-clover", "gi-rainbow-star", "gi-gold-stack", "gi-gold-bar", "gi-horseshoe",
+        "oc-shamrock-for-march", "oc-shamrock-symbol"
       ]
     },
     {
@@ -122,10 +131,11 @@
       "cover": ["hatching-chick", "rabbit-face", "tulip", "egg"],
       "pictures": [
         "hatching-chick", "baby-chick", "rabbit-face", "rabbit", "egg", "nest-with-eggs", "tulip", "cherry-blossom",
-        "blossom", "hibiscus", "bouquet", "seedling", "potted-plant", "butterfly", "honeybee", "lady-beetle",
-        "rainbow", "umbrella-with-rain-drops", "sun-behind-small-cloud", "basket", "gi-easter-egg", "gi-rabbit",
-        "gi-rabbit-head", "gi-butterfly", "gi-bee", "gi-ladybug", "gi-daisy", "gi-flower-pot", "gi-sprout",
-        "gi-seedling", "gi-umbrella", "gi-bird-house", "gi-flowers", "mc-rain-fill", "mc-rainbow-fill"
+        "blossom", "hibiscus", "bouquet", "seedling", "potted-plant", "butterfly", "honeybee", "lady-beetle", "rainbow",
+        "umbrella-with-rain-drops", "sun-behind-small-cloud", "basket", "gi-easter-egg", "gi-rabbit", "gi-rabbit-head",
+        "gi-butterfly", "gi-bee", "gi-ladybug", "gi-daisy", "gi-flower-pot", "gi-sprout", "gi-seedling", "gi-umbrella",
+        "gi-bird-house", "gi-flowers", "mc-rain-fill", "mc-rainbow-fill", "oc-bunny", "oc-easter", "oc-tulips-bloom",
+        "oc-daffodil", "oc-sakura", "oc-butterfly", "oc-ladybug", "oc-flowerandpot"
       ]
     },
     {
@@ -139,8 +149,9 @@
         "tropical-drink", "sunglasses", "palm-tree", "crab", "tropical-fish", "spiral-shell", "camping", "tent",
         "canoe", "sailboat", "person-swimming", "bikini", "one-piece-swimsuit", "thong-sandal", "kite", "flying-disc",
         "ic-watermelon", "ic-ice-cream", "ic-lemon", "gi-sun", "gi-sunrise", "gi-beach-ball", "gi-beach-bucket",
-        "gi-palm-tree", "gi-watermelon", "gi-ice-cream-cone", "gi-ice-cream-scoop", "gi-sailboat", "gi-kite",
-        "gi-crab", "mc-clear-day-fill"
+        "gi-palm-tree", "gi-watermelon", "gi-ice-cream-cone", "gi-ice-cream-scoop", "gi-sailboat", "gi-kite", "gi-crab",
+        "mc-clear-day-fill", "oc-beach-ball", "oc-surfboard", "oc-sand-castle", "oc-trip-to-the-beach",
+        "oc-island-palm-and-the-sun", "oc-beach-chair", "oc-sun"
       ]
     },
     {
@@ -151,7 +162,8 @@
       "cover": ["fireworks", "tw-flag-united-states", "statue-of-liberty", "sparkler"],
       "pictures": [
         "fireworks", "sparkler", "tw-flag-united-states", "statue-of-liberty", "star", "glowing-star", "party-popper",
-        "hamburger", "hot-dog", "watermelon", "gi-firework-rocket", "gi-flat-star"
+        "hamburger", "hot-dog", "watermelon", "gi-firework-rocket", "gi-flat-star", "oc-hot-dog", "oc-burger",
+        "oc-watermelon"
       ]
     },
     {
@@ -164,7 +176,8 @@
         "backpack", "school", "bus", "books", "open-book", "notebook", "pencil", "crayon", "straight-ruler",
         "triangular-ruler", "scissors", "paperclip", "red-apple", "graduation-cap", "teacher", "student",
         "artist-palette", "abacus", "microscope", "globe-showing-americas", "alarm-clock", "gi-backpack", "gi-pencil",
-        "gi-pencil-ruler", "gi-open-book", "gi-bookshelf", "gi-school-bag", "gi-shiny-apple"
+        "gi-pencil-ruler", "gi-open-book", "gi-bookshelf", "gi-school-bag", "gi-shiny-apple", "oc-crayons", "oc-pencil",
+        "oc-stack-of-books", "oc-slate-apple", "oc-open-book", "oc-palette", "oc-scissors"
       ]
     },
     {
@@ -177,7 +190,8 @@
         "birthday-cake", "balloon", "party-popper", "confetti-ball", "wrapped-gift", "partying-face", "cupcake",
         "shortcake", "candle", "crown", "sparkles", "star", "trophy", "ribbon", "ic-cake", "ic-cupcake",
         "ic-chocolate-cake", "gi-cake-slice", "gi-cupcake", "gi-balloons", "gi-party-popper", "gi-party-hat",
-        "gi-party-flags", "gi-present", "gi-crown", "gi-trophy-cup", "gi-medal"
+        "gi-party-flags", "gi-present", "gi-crown", "gi-trophy-cup", "gi-medal", "oc-birthday-cake", "oc-balloons",
+        "oc-balloons-2", "oc-gift", "oc-cake", "oc-candied-apples"
       ]
     },
     {
@@ -192,7 +206,9 @@
         "bicycle", "skateboard", "roller-skate", "guitar", "musical-notes", "musical-keyboard", "drum", "violin",
         "microphone", "artist-palette", "video-game", "puzzle-piece", "chess-pawn", "gi-soccer-ball",
         "gi-basketball-ball", "gi-tennis-ball", "gi-baseball-glove", "gi-trophy-cup", "gi-medal", "gi-guitar",
-        "gi-musical-notes", "gi-grand-piano", "gi-roller-skate", "gi-skateboard", "gi-ice-skate", "gi-dutch-bike"
+        "gi-musical-notes", "gi-grand-piano", "gi-roller-skate", "gi-skateboard", "gi-ice-skate", "gi-dutch-bike",
+        "oc-baseball", "oc-baseball-bat", "oc-baseball-glove", "oc-beach-ball", "oc-tennis-racket", "oc-volley-ball",
+        "oc-cricket-bat", "oc-table-tennis", "oc-bicycle"
       ]
     },
     {
@@ -208,7 +224,9 @@
         "butterfly", "honeybee", "lady-beetle", "snail", "sauropod", "t-rex", "paw-prints", "gi-cat", "gi-sitting-dog",
         "gi-jumping-dog", "gi-dog-house", "gi-horse-head", "gi-cow", "gi-pig", "gi-sheep", "gi-rooster", "gi-chicken",
         "gi-duck", "gi-turtle", "gi-frog", "gi-unicorn", "gi-dinosaur-rex", "gi-elephant-head", "gi-lion",
-        "gi-bear-head", "gi-owl", "gi-dolphin", "gi-paw-heart"
+        "gi-bear-head", "gi-owl", "gi-dolphin", "gi-paw-heart", "oc-elephant", "oc-lion", "oc-tiger", "oc-rabbit",
+        "oc-penguin-and-chick", "oc-cat", "oc-dogs-cats-cat-and-dog", "oc-horse", "oc-pig", "oc-sheep", "oc-owl",
+        "oc-frog", "oc-turtle"
       ]
     },
     {
@@ -221,10 +239,11 @@
         "pizza", "hamburger", "taco", "burrito", "spaghetti", "hot-dog", "pancakes", "waffle", "croissant", "bagel",
         "cooking", "green-salad", "sushi", "steaming-bowl", "sandwich", "doughnut", "cookie", "popcorn", "strawberry",
         "banana", "grapes", "red-apple", "watermelon", "carrot", "broccoli", "ic-pizza", "ic-burger", "ic-taco",
-        "ic-pasta", "ic-pancake", "ic-waffle", "ic-salad", "ic-soup", "ic-sandwich", "ic-sushi", "ic-ramen",
-        "ic-donut", "ic-cookie", "ic-cupcake", "ic-strawberry", "ic-banana", "ic-carrot", "ic-broccoli", "ic-egg",
-        "ic-cheese", "ic-milk", "ic-coffee", "ic-juice", "ic-smoothie", "gi-hamburger", "gi-pizza-slice", "gi-hot-dog",
-        "gi-cupcake", "gi-carrot", "gi-cheese-wedge"
+        "ic-pasta", "ic-pancake", "ic-waffle", "ic-salad", "ic-soup", "ic-sandwich", "ic-sushi", "ic-ramen", "ic-donut",
+        "ic-cookie", "ic-cupcake", "ic-strawberry", "ic-banana", "ic-carrot", "ic-broccoli", "ic-egg", "ic-cheese",
+        "ic-milk", "ic-coffee", "ic-juice", "ic-smoothie", "gi-hamburger", "gi-pizza-slice", "gi-hot-dog", "gi-cupcake",
+        "gi-carrot", "gi-cheese-wedge", "oc-apple-pie", "oc-hamburger", "oc-pepperoni-pizza-slice",
+        "oc-spaghetti-and-sauce", "oc-french-fries", "oc-ice-cream-cone-scoop", "oc-strawberry", "oc-pan-cakes"
       ]
     },
     {
@@ -239,7 +258,8 @@
         "mc-sleet-fill", "mc-hail-fill", "mc-fog-fill", "mc-wind-fill", "mc-rainbow-fill", "mc-tornado-fill",
         "mc-hurricane-fill", "mc-umbrella-fill", "mc-thermometer-warmer-fill", "mc-thermometer-colder-fill",
         "mc-sunrise-fill", "mc-sunset-fill", "mc-moon-full-fill", "mc-starry-night-fill", "sun", "rainbow",
-        "umbrella-with-rain-drops", "snowflake", "cloud-with-lightning-and-rain", "tornado"
+        "umbrella-with-rain-drops", "snowflake", "cloud-with-lightning-and-rain", "tornado", "oc-sun-2", "oc-sunshine",
+        "oc-w-cloud", "oc-lightning", "oc-moon"
       ]
     },
     {
@@ -250,10 +270,11 @@
       "cover": ["house", "broom", "wastebasket", "toothbrush"],
       "pictures": [
         "house", "house-with-garden", "broom", "basket", "wastebasket", "recycling-symbol", "bucket", "sponge", "soap",
-        "toothbrush", "bathtub", "bed", "shopping-cart", "dog-face", "potted-plant", "alarm-clock",
-        "calendar", "spiral-calendar", "pushpin", "memo", "telephone", "envelope", "money-bag", "pill", "stethoscope",
-        "tooth", "automobile", "fuel-pump", "gi-trash-can", "gi-recycle", "gi-broom", "gi-toothbrush", "gi-soap",
-        "gi-bed", "gi-washing-machine", "gi-family-house", "gi-alarm-clock", "gi-calendar", "gi-shopping-cart"
+        "toothbrush", "bathtub", "bed", "shopping-cart", "dog-face", "potted-plant", "alarm-clock", "calendar",
+        "spiral-calendar", "pushpin", "memo", "telephone", "envelope", "money-bag", "pill", "stethoscope", "tooth",
+        "automobile", "fuel-pump", "gi-trash-can", "gi-recycle", "gi-broom", "gi-toothbrush", "gi-soap", "gi-bed",
+        "gi-washing-machine", "gi-family-house", "gi-alarm-clock", "gi-calendar", "gi-shopping-cart", "oc-house",
+        "oc-my-house", "oc-soft-blue-couch", "oc-teapot-cup", "oc-vacuum-cleaner", "oc-broom"
       ]
     }
   ]

@@ -69,3 +69,40 @@ test('pictures on a family screen: packs, search, favorites, placed and picked',
   await board.admin.post('/api/clip/favorites', { id: 'turkey', on: false });
   expect(fam.errors).toEqual([]);
 });
+
+test('look on the web: only when asked, a picture from the web placed and kept on the board', async ({ as, board }) => {
+  const fam = await as('family', { context: { viewport: { width: 1280, height: 720 } } });
+  // Openverse stands in here (the board's own handling of it is in test/webclip.test.ts)
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64'
+  );
+  const kept = (await (
+    await board.admin.api('/api/media', { method: 'POST', body: png, headers: { 'Content-Type': 'image/png' } })
+  ).json()) as { src: string };
+  const id = 'aaaaaaaa-1111-4111-8111-000000000001';
+  let searches = 0;
+  await fam.route('**/api/clip/web?*', r => {
+    searches++;
+    return r.fulfill({ json: { found: [{ id, title: 'Red kite', creator: 'Someone', source: 'x', w: 4, h: 3 }] } });
+  });
+  await fam.route(`**/api/clip/web/${id}/thumb`, r => r.fulfill({ body: png, contentType: 'image/png' }));
+  await fam.route('**/api/clip/web/keep', r => r.fulfill({ json: kept }));
+  await fam.locator('#editBtn').click();
+  await fam.locator('#picturesBtn').click();
+  const lib = fam.locator('#libSheet');
+  await lib.locator('.clipq').fill('kite');
+  // the board's own pictures first; the web only when asked
+  await expect(lib.locator('#webSearch')).toContainText('Look on the web for “kite”');
+  expect(searches).toBe(0);
+  await lib.locator('#webSearch').click();
+  await expect(lib.locator('.webpics .ctile.web')).toHaveCount(1);
+  expect(searches).toBe(1);
+  if (process.env.SHOTS) await fam.screenshot({ path: 'test-results/pictures-web.png' });
+  await lib.locator('.webpics .ctile.web').click();
+  await expect(fam.locator('.slate .status')).toContainText('Tap the board');
+  await fam.mouse.click(500, 300);
+  await expect(fam.locator(`.slate img[src*="${kept.src}"]`)).toHaveCount(1);
+  await fam.locator('.selbar').getByRole('button', { name: 'Erase' }).click();
+  expect(fam.errors).toEqual([]);
+});

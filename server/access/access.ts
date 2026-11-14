@@ -84,7 +84,8 @@
 
  0.17.0    2026-11-12   joshua    A family screen saves its own menu (the cork
                         colby     or the ☰ button), and pins pictures to
-                        claude    Favorites.
+                        claude    Favorites, and keeps a picture from the
+                                  web it places.
 ===============================================================================
 */
 
@@ -594,7 +595,8 @@ export function setup(
     '/favorites', // a view-only screen (the wall) has no strip, so it never sends any
     '/notesbottom', // (the wall's is set in the admin console)
     '/menustyle', // the cork or the ☰ button (the wall has neither)
-    '/clip/favorites' // ★ a picture into Favorites
+    '/clip/favorites', // ★ a picture into Favorites
+    '/clip/web/keep' // a public-domain picture from the web, onto the board
   ]);
   const ADMIN = [
     /^\/board-settings/,

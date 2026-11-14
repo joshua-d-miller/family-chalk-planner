@@ -46,7 +46,8 @@
                                   (/api/clip/search, server/catalog.ts).
                                   "Find more" (the Tabler line drawings) is
                                   gone: the chalk drawings and the one search
-                                  cover it.
+                                  cover it. Openclipart's pictures are
+                                  searched with their own words.
 ===============================================================================
 */
 
@@ -337,7 +338,15 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
     if (cat && !done) return cat;
     cat = buildCatalog({
       emoji: fluentSet().names,
-      styles: STYLES.map(st => ({ prefix: st.prefix, own: !!st.own, names: styles.names(st.prefix) || [] })),
+      styles: STYLES.map(st => {
+        const tags = styles.tags(st.prefix);
+        return {
+          prefix: st.prefix,
+          own: !!st.own,
+          names: styles.names(st.prefix) || [],
+          ...(Object.keys(tags).length ? { tags } : {})
+        };
+      }),
       drawings: [...drawingSet().ok].map(n => 'gi-' + n)
     });
     catFull = done;

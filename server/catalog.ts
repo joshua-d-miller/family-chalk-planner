@@ -10,12 +10,14 @@
  Purpose:
      Every picture the board has, in one list Pictures can search: the
      Fluent emoji and the same emoji in the other styles, the chalk
-     drawings, the board's own garland, weather and food. One search
+     drawings, the board's own garland, weather and food, and the
+     Openclipart pictures. One search
      always looks through all of it (no style to pick first) and answers
      with each subject once ("turkey"), its other looks alongside.
 
      Words come from each picture's name and, for emoji, from
-     clipart/words.json (Emojibase), so "turkey" finds the bird and
+     clipart/words.json (Emojibase) or, for Openclipart, its authors' own
+     words, so "turkey" finds the bird and
      "pumpkin" the jack-o'-lantern. Flags, letters and signs go last unless
      they're asked for, so "turkey" doesn't put a flag on the calendar.
 
@@ -35,8 +37,10 @@
 ===============================================================================
  Version   Date         Author    Description
  -------   ----------   -------   --------------------------------------------
- 0.17.0    2026-11-14   joshua    New file.
-                        claude
+ 0.17.0    2026-11-14   joshua    New file. Openclipart's pictures, with
+                        claude    their own words; its two or three drawings
+                                  of one thing ("apple", "apple-2") as one
+                                  answer with its looks.
 ===============================================================================
 */
 
@@ -67,7 +71,7 @@ export interface Found {
 }
 
 // the order a subject's looks are offered in (the first is the one shown)
-const LOOK_ORDER = ['', 'no', 'tw', 'se', 'eo', 'fx', 'om', 'gi', 'cp', 'mc', 'ic', 'ip'];
+const LOOK_ORDER = ['', 'no', 'tw', 'se', 'eo', 'fx', 'om', 'oc', 'gi', 'cp', 'mc', 'ic', 'ip'];
 const SKIN = /-(light|medium-light|medium|medium-dark|dark)$/;
 // emoji groups that are flags, symbols, letters (Emojibase: 8 symbols, 9 flags)
 const LOW_GROUPS = new Set([8, 9]);
@@ -100,7 +104,7 @@ function emojiWords(): Words {
 // their subjects) or its own; drawings: the chalk drawings ("gi-acorn").   //
 export function buildCatalog(src: {
   emoji: string[];
-  styles: { prefix: string; own: boolean; names: string[] }[];
+  styles: { prefix: string; own: boolean; names: string[]; tags?: Record<string, string> }[];
   drawings: string[];
 }): Picture[] {
   const w = emojiWords();
@@ -113,9 +117,11 @@ export function buildCatalog(src: {
       const n = id.slice(st.prefix.length + 1);
       if (n.startsWith('flag-')) flags.add(n);
     }
-  const add = (id: string, subject: string, name: string, set: string) => {
-    const tags = w[name];
-    const words = [...name.split('-'), ...(tags ? tags[0].split(' ') : [])].filter(Boolean);
+  const add = (id: string, subject: string, name: string, set: string, own?: string) => {
+    const tags = own === undefined ? w[name] : undefined;
+    const words = [...name.split('-'), ...(tags ? tags[0].split(' ') : []), ...(own ? own.split(' ') : [])].filter(
+      Boolean
+    );
     const low = (tags ? LOW_GROUPS.has(tags[1]) : false) || /^(flag|regional-indicator|keycap|letter)-/.test(name);
     // Streamline names its flags by the country alone ("turkey", "japan"): they're flags, not the bird
     if (set === 'se' && flags.has('flag-' + name)) {
@@ -133,7 +139,11 @@ export function buildCatalog(src: {
       const n = id.slice(s.prefix.length + 1);
       // (Twemoji names each flag three ways: "flag-turkey", "flag-for-turkey", "flag-for-flag-turkey")
       if (skin(n, mine) || n.startsWith('flag-for-')) continue;
-      add(id, s.own ? id : n, n, s.prefix);
+      if (s.tags) {
+        // a set with words of its own (Openclipart): "apple", "apple-2", "apple-3" are one answer
+        const base = n.replace(/-\d+$/, '');
+        add(id, s.prefix + '-' + base, base, s.prefix, s.tags[n] || '');
+      } else add(id, s.own ? id : n, n, s.prefix);
     }
   }
   for (const id of src.drawings) add(id, id, id.slice(3), 'gi');

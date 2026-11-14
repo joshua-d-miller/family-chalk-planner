@@ -18,6 +18,14 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   - **Favorites:** ★ on any picture pins it, for every screen; your saved designs are there too.
   - **More pictures:** the chalk drawings go from 119 to about 3,200 (weapons, gore and scary or
     grown-up ones left out), plus weather pictures (Meteocons) and detailed food (Iconito).
+  - **Real clipart, no account:** 783 pictures from the public-domain Openclipart collection (animals,
+    food, holidays, people, plants, sports, vehicles...), picked to suit a family board and look right
+    on it, searchable by their own words and in the packs. In the repository
+    (`clipart/openclipart.json.gz`, made by `clipart/openclipart.py` from Debian's
+    `openclipart-svg`), so they work offline.
+  - **🌐 Look on the web:** under the search results, one tap looks for public-domain illustrations
+    on Openverse (no account, nothing to set up). Only when tapped, so the board stays well within
+    Openverse's limits. A picture placed is copied onto the board, so it stays if the site changes.
   - **Shows on the board:** OpenMoji's and IconPark's black outlines are drawn in chalk white.
   - **Quicker to reach:** **⭐ Pictures** sits next to Draw / Decorate (two taps from the
     calendar). No size to pick first: a picture is picked after it goes up, to resize it there.

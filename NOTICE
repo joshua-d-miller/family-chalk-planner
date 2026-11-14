@@ -24,6 +24,12 @@ Third-party components (fetched or installed separately, not part of this reposi
   shared/fonts.ts (Patrick Hand to Roboto); and Noto Color Emoji (Google),
   used only where a screen has no emoji of its own. Installed from npm (@fontsource; the emoji in the COLRv1
   format from @infolektuell/noto-color-emoji).
+- Openclipart (public domain, CC0), https://openclipart.org: the best of its older collection as
+  shipped by Debian (openclipart-svg), cleaned and cropped (clipart/openclipart.json.gz, made by
+  clipart/openclipart.py).
+- Openverse (WordPress.org), https://openverse.org: Pictures' "Look on the web" searches it for
+  public-domain illustrations (CC0 or Public Domain Mark only), without an account; each picture's
+  source is in its Openverse record.
 - The "Garland & trims" pictures (clipart/garland.json, drawn by clipart/garland.py): drawn for this
   project and given to the public domain (CC0).
 - React (MIT, Meta Platforms) for the screens, built with Vite (MIT).

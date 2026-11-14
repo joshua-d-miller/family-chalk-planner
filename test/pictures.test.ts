@@ -83,6 +83,24 @@ test('search: every picture at once, the bird before the flag, each subject once
   assert.deepEqual(await find(''), []);
 });
 
+test('Openclipart: real clipart, found by its own words, one answer for its drawings of one thing', async () => {
+  const muffin = (await find('muffin')).find(f => f.subject === 'oc-muffin');
+  assert.ok(muffin, 'Openclipart’s muffin');
+  // found by the words its author gave it, not just its name
+  assert.ok((await find('dessert')).some(f => f.subject.startsWith('oc-')));
+  // "apple", "apple-2", "apple-3": one answer, the others as its looks
+  const apple = (await find('apple')).filter(f => f.subject.startsWith('oc-apple'));
+  assert.equal(apple.filter(f => f.subject === 'oc-apple').length, 1);
+  assert.ok(apple.find(f => f.subject === 'oc-apple')!.looks.length >= 2);
+  // an Italian title, in English
+  assert.ok((await find('ladybug')).some(f => f.subject.startsWith('oc-')));
+  const r = await ed.api('/api/clip/oc-muffin.svg');
+  assert.equal(r.status, 200);
+  assert.match(await r.text(), /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="[-0-9. ]+"/);
+  for (const q of ['gun', 'beer', 'cigarette', 'skull', 'nude'])
+    assert.ok(!(await find(q)).some(f => f.looks.some(l => l.startsWith('oc-'))), `no Openclipart for "${q}"`);
+});
+
 test('chalk drawings: no weapons, the family-friendly ones in', async () => {
   for (const q of ['sword', 'gun', 'skull', 'bomb', 'dagger'])
     assert.ok(!(await find(q)).some(f => f.looks.some(l => l.startsWith('gi-'))), `no chalk drawing for "${q}"`);

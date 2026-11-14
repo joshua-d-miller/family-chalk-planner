@@ -211,7 +211,7 @@ test('chalk drawings and holiday borders', async () => {
   }
   assert.deepEqual(
     styles.map(s => s.prefix),
-    ['se', 'no', 'om', 'tw', 'fx', 'eo', 'ip', 'mc', 'ic', 'cp']
+    ['se', 'no', 'om', 'tw', 'fx', 'eo', 'ip', 'mc', 'ic', 'oc', 'cp']
   );
   assert.ok(
     styles.filter(s => !['cp', 'mc', 'ic'].includes(s.prefix)).every(s => s.count > 500),

@@ -42,7 +42,7 @@ export interface Pack {
   id: string;
   name: string;
   months: number[]; // the months it comes first in (none: all year)
-  border: string; // the border it goes with (for later: "Decorate for me")
+  border: string; // the border it goes with (for reference)
   cover: string[];
   pictures: string[];
 }
