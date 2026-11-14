@@ -68,6 +68,7 @@ test('search: every picture at once, the bird before the flag, each subject once
   const turkey = await find('turkey');
   assert.equal(turkey[0].subject, 'turkey', 'the bird first');
   assert.ok(turkey[0].looks.length >= 3, 'with its other looks');
+  assert.ok(!turkey[0].looks.includes('se-turkey'), 'not Streamline’s flag, which it names "turkey"');
   const flag = turkey.findIndex(f => f.subject.includes('flag'));
   assert.ok(flag === -1 || flag > 1, 'a flag only after the pictures of a turkey');
   assert.equal(new Set(turkey.map(f => f.subject)).size, turkey.length, 'each subject once');

@@ -106,10 +106,22 @@ export function buildCatalog(src: {
   const w = emojiWords();
   const out: Picture[] = [];
   const plain = new Set(src.emoji);
+  // the countries with a flag (Emojibase's names, and the sets' own: Twemoji's "flag-turkey")
+  const flags = new Set(Object.keys(w).filter(k => k.startsWith('flag-')));
+  for (const st of src.styles)
+    for (const id of st.names) {
+      const n = id.slice(st.prefix.length + 1);
+      if (n.startsWith('flag-')) flags.add(n);
+    }
   const add = (id: string, subject: string, name: string, set: string) => {
     const tags = w[name];
     const words = [...name.split('-'), ...(tags ? tags[0].split(' ') : [])].filter(Boolean);
     const low = (tags ? LOW_GROUPS.has(tags[1]) : false) || /^(flag|regional-indicator|keycap|letter)-/.test(name);
+    // Streamline names its flags by the country alone ("turkey", "japan"): they're flags, not the bird
+    if (set === 'se' && flags.has('flag-' + name)) {
+      out.push({ id, subject: 'flag-' + name, label: 'flag ' + name.replace(/-/g, ' '), words, set, low: true });
+      return;
+    }
     out.push({ id, subject, label: name.replace(/-/g, ' '), words, set, low });
   };
   // a skin-tone version when the plain one is there: left out (one of each)
