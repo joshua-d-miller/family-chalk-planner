@@ -23,6 +23,7 @@ LABEL io.hass.type="app" \
       org.opencontainers.image.source="https://github.com/joshua-d-miller/family-chalk-planner"
 
 ENV NODE_ENV=production \
+    NODE_OPTIONS=--disable-warning=ExperimentalWarning \
     PORT=3002 \
     BIND=0.0.0.0 \
     DATA_DIR=/data \

@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | first-run.spec.ts
 ===============================================================================
- Version:   0.17.1
+ Version:   0.17.2
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-14
  Updated:   2026-11-14
@@ -22,6 +22,10 @@
  -------   ----------   -------   --------------------------------------------
  0.17.1    2026-11-14   joshua    New file.
                         claude
+
+ 0.17.2    2026-11-14   joshua    A password manager filling the admin's
+                        claude    sign-in into the calendar's fields doesn't
+                                  end up saved as the calendar's.
 ===============================================================================
 */
 
@@ -95,16 +99,29 @@ test('a new family: setup code → admin → calendar → wall', async ({ browse
   if (await skip.isVisible()) await skip.click(); // (offered a passkey: not now)
   await expect(p.locator('#vConsole')).toBeVisible();
 
-  // Step 3: the calendar, found and saved; the board starts again by itself
+  // A password manager filling the admin's own sign-in into the calendar's fields (no typing): saving
+  // the board's name must not make that sign-in the calendar's
   await p.locator('[data-t="board"]').click();
+  await p.locator('#bfUser').fill('alex');
+  await p.locator('#bfPass').fill('correct horse battery');
+  await p.locator('[data-k="BOARD_TITLE"]').pressSequentially('The Test Family');
+  await p.locator('#bfSave').click();
+  await expect.poll(() => log.split('starting again with the new settings').length - 1, { timeout: 30_000 }).toBe(1);
+  await expect.poll(async () => (await fetch(base + '/api/whoami').catch(() => null))?.ok ?? false).toBe(true);
+  await p.reload();
+  await p.locator('[data-t="board"]').click();
+  await expect(p.locator('[data-k="BOARD_TITLE"]')).toHaveValue('The Test Family');
+  await expect(p.locator('#bfUser')).toHaveValue('');
+
+  // Step 3: the calendar, typed in, found and saved; the board starts again by itself
   await p.locator('#bfUrl').fill(`http://127.0.0.1:${DAV}/`);
-  await p.locator('#bfUser').fill('u');
-  await p.locator('#bfPass').fill('p');
+  await p.locator('#bfUser').pressSequentially('u');
+  await p.locator('#bfPass').pressSequentially('p');
   await p.locator('#bfFind').click();
   await expect(p.locator('#bfFindErr')).toContainText('Signed in');
   await p.locator('#bfCal').fill('Family');
   await p.locator('#bfSave').click();
-  await expect.poll(() => log.includes('starting again with the new settings'), { timeout: 30_000 }).toBe(true);
+  await expect.poll(() => log.split('starting again with the new settings').length - 1, { timeout: 30_000 }).toBe(2);
   await expect
     .poll(async () => (await fetch(base + '/api/whoami').catch(() => null))?.ok ?? false, { timeout: 30_000 })
     .toBe(true);

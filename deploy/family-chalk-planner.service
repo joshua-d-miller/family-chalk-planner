@@ -14,7 +14,8 @@ WorkingDirectory=@APP_DIR@
 # Every other setting lives in the board's database (admin console → ⚙️ Board). An old .env is read
 # once on the first start of 0.7+ and moved into the database; the leading - means it's optional.
 EnvironmentFile=-@ENV_FILE@
-ExecStart=@NODE@ @APP_DIR@/server/chalkboard.js
+# (Node's note that its built-in SQLite is "experimental" on every start is left out of the log)
+ExecStart=@NODE@ --disable-warning=ExperimentalWarning @APP_DIR@/server/chalkboard.js
 Restart=on-failure
 RestartSec=2
 # Sandboxing lives in family-chalk-planner.service.d/hardening.conf (added where supported)

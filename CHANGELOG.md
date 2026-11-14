@@ -4,6 +4,16 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.17.2 — A browser's saved sign-in no longer becomes the calendar's
+- **Fixed:** in the admin console, a browser or password manager could fill the admin's own username and
+  password into ⚙️ Board → Calendar without anyone noticing, and **Save and restart** then sent them to the
+  calendar server ("The calendar server didn't accept that username and password"). Found testing the Home
+  Assistant app. The calendar's username and password, the Google client secret and the Immich key are now
+  only saved, and only used by **Find my calendars**, once someone has typed or pasted into them; password
+  managers are also asked to leave them alone. The first-run browser test now checks this.
+- Node's "SQLite is an experimental feature" note no longer opens every start in the log (Linux service and
+  Docker/Home Assistant image).
+
 ## 0.17.1 — A Home Assistant app, and a getting-started guide
 - **Home Assistant app:** [family-chalk-planner-ha](https://github.com/joshua-d-miller/family-chalk-planner-ha)
   runs the board as a Home Assistant app: install it from the app store, and Home Assistant updates it and
