@@ -1,0 +1,11 @@
+# A real Home Assistant for the board's tests (test/real-homeassistant). Started by CI as a container
+# (.github/workflows/ci.yml); the test then sets it up like a new family would: onboarding, an admin and
+# a second person, a Local Calendar and a Local To-do list.
+homeassistant:
+  name: Test Home
+  time_zone: America/New_York
+  country: US
+  unit_system: us_customary
+default_config:
+logger:
+  default: warning

@@ -32,7 +32,7 @@ import tseslint from 'typescript-eslint';
 import globals from 'globals';
 
 export default tseslint.config(
-  { ignores: ['node_modules/', 'public/', 'data/', 'test-results/', 'playwright-report/', 'web/dist/'] },
+  { ignores: ['node_modules/', 'public/', 'data/', 'test-results/', 'playwright-report/', 'test-results-ha/', 'playwright-report-ha/', 'web/dist/'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

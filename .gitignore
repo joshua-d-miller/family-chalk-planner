@@ -10,5 +10,7 @@ face/__pycache__/
 *.db-shm
 .DS_Store
 test-results/
+test-results-ha/
 playwright-report/
+playwright-report-ha/
 web/dist/

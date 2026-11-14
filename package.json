@@ -10,6 +10,7 @@
     "start": "node server/chalkboard.js",
     "test": "node --test test/*.test.ts",
     "test:e2e": "playwright test",
+    "test:homeassistant": "playwright test -c playwright.homeassistant.config.ts",
     "build": "vite build",
     "dev:web": "vite",
     "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json && tsc -p web/tsconfig.json",
