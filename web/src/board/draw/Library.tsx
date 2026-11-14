@@ -2,19 +2,20 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Library.tsx
 ===============================================================================
- Version:   0.16.2
+ Version:   0.17.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-14
 
  Purpose:
-     ★ Stamps: clipart and chalk drawings, emoji, GIFs (her own and
-     animated emoji) and the family's own saved stamps. Pick one, then tap
-     the board where it should go.
+     Pictures: a search that always looks through every picture the board
+     has, then Favorites (pictures pinned with ★ and the family's own saved
+     designs), the packs (this month's first: Thanksgiving, Christmas,
+     Birthdays...) and moving pictures (GIFs). Pick one, then tap the board
+     where it goes; it's picked afterwards, to move or resize.
 
  Used by:
      web/src/board/Board.tsx
-     web/src/board/draw/Find.tsx
      web/src/board/draw/Tools.tsx
 ===============================================================================
  CHANGELOG
@@ -41,80 +42,33 @@
  0.16.2    2026-11-11   joshua    Garland & trims is a group in the everyday
                         claude    clipart (right after Favorites) and found by
                                   searching; picking its style shows all of it.
+
+ 0.17.0    2026-11-14   joshua    Reworked (her feedback: hard to get to, odd
+                        claude    on the board, not much there): one search
+                                  over every picture, Favorites, packs, GIFs
+                                  as a pack. No styles, groups, sizes or
+                                  separate emoji to pick first; resize after
+                                  placing.
 ===============================================================================
 */
 
 import { useEffect, useMemo, useState } from 'react';
 import { get, post, upload, url } from '../../lib/api.ts';
+import { useLive } from '../../lib/live.ts';
 import { Segs } from '../../ui/bits.tsx';
 import { CHALK, Colors } from '../../ui/Colors.tsx';
 import { Sheet } from '../../ui/Sheet.tsx';
 import { Art } from '../Art.tsx';
 import type { ArtItem } from '../Art.tsx';
-import { clipLabel, clipPath, clipSrc, searchClip } from '../clip.ts';
+import { clipLabel, clipPath, clipSrc } from '../clip.ts';
 import { unionBox } from '../geom.ts';
-import { FindPane } from './Find.tsx';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ---------- //
 // | Stamps | //
 // ---------- //
+// What goes on the board: one picture, or a saved design of several pieces //
 export type Stamp = { name: string; items: ArtItem[] };
-const SIZES: [string, string][] = [
-  ['0.6', 'Small'],
-  ['1', 'Normal'],
-  ['1.5', 'Big']
-];
-const SETS: [string, string][] = [
-  [
-    '⭐ Favorites',
-    'red-heart star glowing-star sparkles sun rainbow balloon wrapped-gift birthday-cake cupcake party-popper confetti-ball trophy crown house dog-face cat-face teddy-bear unicorn rocket'
-  ],
-  [
-    '🍂 Fall',
-    'jack-o-lantern maple-leaf fallen-leaf ghost bat spider spider-web candy lollipop turkey sunflower red-apple pie mushroom chestnut'
-  ],
-  [
-    '❄️ Winter',
-    'snowflake snowman christmas-tree wrapped-gift santa-claus menorah gloves scarf hot-beverage cookie candle ice-skate skier'
-  ],
-  [
-    '🌷 Spring',
-    'tulip blossom cherry-blossom rabbit-face egg hatching-chick four-leaf-clover rainbow umbrella-with-rain-drops butterfly lady-beetle seedling bouquet'
-  ],
-  [
-    '☀️ Summer',
-    'sun beach-with-umbrella watermelon soft-ice-cream ice-cream tropical-drink sunglasses palm-tree crab tent camping fireworks'
-  ],
-  [
-    '🎓 School & sports',
-    'school graduation-cap books pencil backpack crayon artist-palette soccer-ball basketball baseball american-football volleyball tennis ballet-shoes guitar musical-notes'
-  ],
-  [
-    '🍕 Food',
-    'pizza hamburger taco spaghetti hot-dog pancakes croissant cooking green-salad sushi doughnut popcorn strawberry banana grapes'
-  ],
-  [
-    '🐶 Animals',
-    'dog-face cat-face rabbit-face bear panda fox monkey-face unicorn horse cow-face pig-face chicken penguin owl turtle fish dolphin sauropod t-rex'
-  ],
-  [
-    '🚗 Going places',
-    'house airplane automobile bus bicycle sailboat train hospital church stadium tent world-map luggage'
-  ]
-];
-const EMOJI: [string, string][] = [
-  [
-    'Holidays',
-    '🎂 🎉 🎈 🎁 🎊 🥳 🍰 🕯️ ❤️ 💝 💘 🌹 🍀 ☘️ 🐣 🐰 🥚 🌷 🇺🇸 🎆 🎇 🗽 🎃 👻 🦇 🍬 🍭 🦃 🍂 🥧 🎄 🎅 🤶 ⛄ ❄️ 🕎 ✡️ 🪔'
-  ],
-  ['Feelings', '😀 😄 😁 😊 🥰 😍 😎 🤩 🥳 😂 😴 🤒 🤗 😮 😢 😡 👍 👏 🙌 💪 🙏 👋 ❤️ 💯 ✨ 🌟 🏆 🥇'],
-  ['Activities', '⚽ 🏀 ⚾ 🏈 🎾 🏐 🏒 🥋 🏊 🚴 ⛸️ 🎿 🎣 🎹 🎸 🥁 🎻 🎤 🎨 📚 ✏️ 🎒 🏫 🎭 🎬 🎮 🧩 🎲 🎳 💃'],
-  ['Food', '🍕 🍔 🌮 🌯 🍝 🍣 🍜 🥞 🧇 🥓 🍳 🥪 🥗 🍗 🌭 🍟 🧁 🍰 🍪 🍩 🍦 🍫 🍎 🍌 🍓 🍉 🍇 🍿 ☕ 🥤 🧃 🍽️'],
-  ['Places', '🏠 🏡 🏫 🏥 ⛪ 🏖️ ⛰️ 🏕️ 🏞️ 🎡 🎢 🏟️ ✈️ 🚗 🚌 🚲 🚂 ⛵ 🧳 🗺️ 🛒 💈 🦷 🏦 📮'],
-  ['Nature', '☀️ 🌤️ ⛅ 🌧️ ⛈️ 🌈 ❄️ 🌙 ⭐ 🌻 🌸 🌼 🌵 🍁 🌲 🌊 🐶 🐱 🐾 🐟 🐢 🦋 🐝 🐞 🦉 🐴 🦄 🐻 🐧'],
-  ['Reminders', '🗑️ ♻️ 🧺 🧹 🧽 🛁 💊 🩺 📅 ⏰ ⏳ 💡 🔔 📞 📬 💰 🧾 📝 📌 🔑 🧸 🐕 🌱 🚿']
-];
 const GIF_MODES: [string, string][] = [
   ['gentle', 'Now and then'],
   ['loop', 'All the time'],
@@ -122,11 +76,18 @@ const GIF_MODES: [string, string][] = [
 ];
 type Gif = { id: string; src: string; still: string; w: number; h: number };
 type Anim = { cp: string; tags: string; cat: string };
+type PackCard = { id: string; name: string; now: boolean; cover: string[]; count: number };
+type Found = { subject: string; label: string; id: string; looks: string[] };
+// where the window is: the packs, Favorites, one pack, the moving pictures
+type View = { k: 'home' } | { k: 'fav' } | { k: 'gif' } | { k: 'pack'; id: string; name: string };
+const CREDIT =
+  'Pictures: Fluent Emoji (Microsoft), Noto (Google), Twemoji, OpenMoji, Streamline, EmojiOne, Firefox, IconPark, ' +
+  'Meteocons, Iconito, chalk drawings from game-icons.net (CC BY 3.0), and drawn for the board. All credited in NOTICE.';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
-// --------------- //
-// | The library | //
-// --------------- //
+// ---------------- //
+// | The pictures | //
+// ---------------- //
 export function Library({
   onPick,
   onClose,
@@ -136,128 +97,26 @@ export function Library({
   onClose: () => void;
   bg: number;
 }) {
-  const [pane, setPane] = useState<'clip' | 'emoji' | 'find' | 'gif' | 'mine'>('clip');
-  const [k, setK] = useState('1');
-  const pick = (s: Stamp) => onPick(s, +k);
-  return (
-    <Sheet title="Stamps" onClose={onClose} id="libSheet">
-      <div className="libtabs">
-        <Segs
-          value={pane}
-          onChange={setPane}
-          label="Kind"
-          options={[
-            ['clip', 'Clipart'],
-            ['emoji', 'Emoji'],
-            ['find', 'Find more'],
-            ['gif', 'GIFs'],
-            ['mine', 'My stamps']
-          ]}
-        />
-        <Segs value={k} onChange={setK} options={SIZES} label="Size" />
-      </div>
-      <div className="lscroll">
-        {pane === 'clip' && <ClipPane pick={pick} />}
-        {pane === 'emoji' && <EmojiPane pick={pick} />}
-        {pane === 'find' && <FindPane pick={pick} />}
-        {pane === 'gif' && <GifPane pick={pick} />}
-        {pane === 'mine' && <MinePane pick={pick} bg={bg} />}
-      </div>
-    </Sheet>
-  );
-}
-
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
-// ------------ //
-// | Clip art | //
-// ------------ //
-// own: pictures of its own (the garland set), not the everyday ones redrawn
-type ClipStyle = { prefix: string; name: string; credit: string; count: number; own?: boolean };
-const FLUENT = { prefix: '', name: 'Fluent', credit: 'Fluent Emoji by Microsoft (MIT)', count: 1 };
-function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
-  const [names, setNames] = useState<string[] | null>(null);
-  const [groups, setGroups] = useState<Record<string, string[]>>({});
-  const [styles, setStyles] = useState<ClipStyle[]>([]);
-  const [style, setStyle] = useState(''); // '' Fluent (and the chalk drawings), a set's short name, or 'all'
-  const [others, setOthers] = useState<Record<string, string[]>>({}); // each style's names, once loaded
-  const [err, setErr] = useState('');
-  const [set, setSet] = useState(0);
+  const [view, setView] = useState<View>({ k: 'home' });
   const [q, setQ] = useState('');
-  const [color, setColor] = useState('#EDEAE0');
-  useEffect(() => {
-    get<string[]>('api/clip/list').then(setNames, e => setErr('Couldn’t load clipart: ' + (e as Error).message));
-    get<Record<string, string[]>>('api/clip/drawings').then(setGroups, () => {});
-    get<ClipStyle[]>('api/clip/styles').then(setStyles, () => {});
-  }, []);
-  // a style's names, the first time it's chosen (or every style's, for All)
-  useEffect(() => {
-    // (the sets with pictures of their own are wanted from the start: they're in the everyday view too)
-    const own = styles.filter(s => s.own && s.count).map(s => s.prefix);
-    const want = [...own, ...(style === 'all' ? styles.map(s => s.prefix) : style ? [style] : [])];
-    for (const p of want)
-      if (!others[p])
-        get<string[]>('api/clip/list?style=' + p).then(
-          l => setOthers(o => ({ ...o, [p]: l })),
-          e => setErr((e as Error).message)
-        );
-  }, [style, styles, others]);
-  const sets = useMemo(
-    () => [
-      ...SETS.slice(0, 1),
-      // a set of its own pictures (Garland & trims) as a group, right after Favorites
-      ...(style
-        ? []
-        : styles
-            .filter(s => s.own && others[s.prefix]?.length)
-            .map(s => ['🎄 ' + s.name, others[s.prefix].join(' ')] as [string, string])),
-      ...SETS.slice(1),
-      ...(style ? [] : Object.entries(groups).map(([g, l]) => [g, l.join(' ')] as [string, string]))
-    ],
-    [groups, style, styles, others]
-  );
-  // the everyday view: Fluent, the chalk drawings, and the sets with pictures of their own
-  const everyday = useMemo(
-    () => (names ? names.concat(...styles.filter(s => s.own).map(s => others[s.prefix] || [])) : null),
-    [names, styles, others]
-  );
-  // the Fluent names in a group or search, as this style draws them (where it has one)
-  const inStyle = (base: string[], p: string) => {
-    const have = new Set(others[p] || []);
-    return base.map(n => p + '-' + n).filter(n => have.has(n));
-  };
-  const strip = (l: string[], p: string) => l.map(n => n.slice(p.length + 1));
-  let list: string[] = [];
-  if (names && everyday) {
-    const group = (sets[set]?.[1] || '').split(' ');
-    const own = styles.find(s => s.prefix === style)?.own;
-    if (!style) list = q.trim() ? searchClip(everyday, q, 120) : group.filter(n => everyday.includes(n));
-    // a set of its own pictures: all of them (it has few of the everyday ones)
-    else if (own && !q.trim()) list = others[style] || [];
-    else {
-      const ps = style === 'all' ? ['', ...styles.map(s => s.prefix)] : [style];
-      const per = ps.map(p => {
-        if (!p) return q.trim() ? searchClip(names, q, 40) : group.filter(n => names.includes(n));
-        const mine = others[p] || [];
-        return q.trim()
-          ? searchClip(strip(mine, p), q, style === 'all' ? 30 : 120).map(n => p + '-' + n)
-          : inStyle(group, p);
-      });
-      // All: each picture in every style, side by side
-      const longest = Math.max(0, ...per.map(l => l.length));
-      for (let i = 0; i < longest; i++) for (const l of per) if (l[i]) list.push(l[i]);
-      list = list.slice(0, 160);
+  const [color, setColor] = useState('#EDEAE0'); // the chalk drawings' color
+  const favs = useLive<{ items: string[] }>('api/clip/favorites', ['clipfav']);
+  const fav = new Set(favs.data?.items || []);
+  const pin = async (id: string) => {
+    const on = !fav.has(id);
+    favs.set({ items: on ? [id, ...(favs.data?.items || [])] : (favs.data?.items || []).filter(n => n !== id) });
+    try {
+      favs.set(await post<{ items: string[] }>('api/clip/favorites', { id, on }));
+    } catch {
+      favs.reload();
     }
-  }
-  const credit =
-    style === 'all'
-      ? 'every style (choose one to see who made it; all are credited in NOTICE)'
-      : (styles.find(s => s.prefix === style) || FLUENT).credit +
-        (style ? '' : ' · Chalk drawings: game-icons.net (CC BY 3.0)');
+  };
+  const pick = (s: Stamp) => onPick(s, 1);
+  // a picture goes up in its own shape: a square picture 96 across, a long garland 240 wide
   const place = (n: string) => {
     const s = clipPath(n, color); // the board keeps the path; the full address only works on this screen
     const put = (w: number, h: number) =>
       pick({ name: clipLabel(n), items: [{ id: 0, k: 'g', x: 0, y: 0, w, h, src: s, still: s, mode: 'still' }] });
-    // in its own shape: a square picture 96 across, a long garland 240 wide
     const img = new Image();
     img.onload = () => {
       const nw = img.naturalWidth || 1;
@@ -269,109 +128,279 @@ function ClipPane({ pick }: { pick: (s: Stamp) => void }) {
     img.onerror = () => put(96, 96);
     img.src = clipSrc(n, color);
   };
+  const tiles = { place, pin, fav, color };
+  const searching = q.trim().length > 0;
+  const back = !searching && view.k !== 'home';
+  return (
+    <Sheet title="Pictures" onClose={onClose} id="libSheet" focus={false}>
+      <div className="pickhead">
+        {back && (
+          <button type="button" className="seg" id="picBack" onClick={() => setView({ k: 'home' })}>
+            ‹ All packs
+          </button>
+        )}
+        <label className="picsearch">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="16.5" y1="16.5" x2="21" y2="21" />
+          </svg>
+          <input
+            type="search"
+            className="clipq"
+            placeholder="Search every picture: turkey, leaf, cake…"
+            value={q}
+            onChange={e => setQ(e.target.value)}
+            aria-label="Search every picture"
+          />
+        </label>
+      </div>
+      <div className="lscroll">
+        {searching ? (
+          <SearchView q={q} {...tiles} setColor={setColor} />
+        ) : view.k === 'home' ? (
+          <Home open={setView} favCount={fav.size} />
+        ) : view.k === 'fav' ? (
+          <FavView items={favs.data?.items || []} {...tiles} setColor={setColor} pick={pick} bg={bg} />
+        ) : view.k === 'gif' ? (
+          <GifPane pick={pick} />
+        ) : (
+          <PackView id={view.id} name={view.name} {...tiles} setColor={setColor} />
+        )}
+      </div>
+      <div className="sublbl credit">{CREDIT}</div>
+    </Sheet>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Favorites, the packs, GIFs | //
+// -------------------------------- //
+// Favorites first, then the packs (this month's first, marked), then the   //
+// moving pictures.                                                         //
+function Home({ open, favCount }: { open: (v: View) => void; favCount: number }) {
+  const [packs, setPacks] = useState<PackCard[] | null>(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    get<{ packs: PackCard[] }>('api/clip/packs').then(
+      r => setPacks(r.packs),
+      e => setErr('Couldn’t load the packs: ' + (e as Error).message)
+    );
+  }, []);
+  return (
+    <div className="packs" id="packs">
+      <button type="button" className="pack fav" id="pack-fav" onClick={() => open({ k: 'fav' })}>
+        <span className="cover star" aria-hidden="true">
+          ★
+        </span>
+        <span className="pk">
+          <b>Favorites</b>
+          <small>{favCount ? `${favCount} pinned · your designs` : 'pin pictures with ★ · your designs'}</small>
+        </span>
+      </button>
+      {err && <div className="empty">{err}</div>}
+      {packs?.map(p => (
+        <button
+          type="button"
+          key={p.id}
+          className={'pack' + (p.now ? ' now' : '')}
+          id={'pack-' + p.id}
+          onClick={() => open({ k: 'pack', id: p.id, name: p.name })}
+        >
+          <span className="cover" aria-hidden="true">
+            {p.cover.map(c => (
+              <img key={c} alt="" loading="lazy" src={clipSrc(c)} />
+            ))}
+          </span>
+          <span className="pk">
+            <b>{p.name}</b>
+            <small>
+              {p.now && <em>This month · </em>}
+              {p.count} pictures
+            </small>
+          </span>
+        </button>
+      ))}
+      <button type="button" className="pack" id="pack-gif" onClick={() => open({ k: 'gif' })}>
+        <span className="cover star" aria-hidden="true">
+          ✨
+        </span>
+        <span className="pk">
+          <b>Moving pictures</b>
+          <small>GIFs and animated emoji</small>
+        </span>
+      </button>
+    </div>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------- //
+// | Pictures, as tiles to tap | //
+// ------------------------------- //
+// Tap a picture to put it up; ★ in its corner pins it to Favorites. When  //
+// chalk drawings are among them, their color comes first.                  //
+type TileProps = {
+  place: (n: string) => void;
+  pin: (n: string) => void;
+  fav: Set<string>;
+  color: string;
+  setColor: (c: string) => void;
+};
+function Tiles({
+  list,
+  place,
+  pin,
+  fav,
+  color,
+  setColor,
+  more,
+  onMore
+}: TileProps & { list: string[]; more?: (n: string) => number; onMore?: (n: string) => void }) {
   return (
     <>
-      <input
-        type="search"
-        className="clipq"
-        placeholder="Search pictures and chalk drawings: pumpkin, mummy, cake…"
-        value={q}
-        onChange={e => setQ(e.target.value)}
-        aria-label="Search pictures"
-      />
-      {styles.length > 0 && (
-        <div className="segs cstyles" role="radiogroup" aria-label="Picture style">
-          {[FLUENT, ...styles, { prefix: 'all', name: 'All styles', credit: '', count: 1 }].map(s => (
-            <button
-              type="button"
-              key={s.prefix || 'fluent'}
-              role="radio"
-              aria-checked={style === s.prefix}
-              className={'seg' + (style === s.prefix ? ' on' : '')}
-              disabled={!s.count}
-              title={s.count ? undefined : 'Still being unpacked on the board - try again in a minute'}
-              onClick={() => {
-                setStyle(s.prefix);
-                setSet(0);
-              }}
-            >
-              {s.name}
-            </button>
-          ))}
+      {list.some(n => n.startsWith('gi-')) && (
+        <div className="chalkcolor">
+          <span className="sublbl">Chalk drawings in</span>
+          <Colors value={color} onChange={c => c && setColor(c)} set={CHALK} label="Drawing color" />
         </div>
       )}
-      <div className="segs">
-        {sets.map(([label], i) => (
-          <button
-            type="button"
-            key={label}
-            className={'seg' + (!q && i === set ? ' on' : '')}
-            onClick={() => {
-              setSet(i);
-              setQ('');
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {list.some(n => n.startsWith('gi-')) && (
-        <>
-          <div className="sublbl">Color for the chalk drawings</div>
-          <Colors value={color} onChange={c => c && setColor(c)} set={CHALK} label="Drawing color" />
-        </>
-      )}
-      <div className="cgrid big">
-        {err && <div className="empty">{err}</div>}
-        {names && !list.length && q && <div className="empty">Nothing for “{q}” - try another word</div>}
+      <div className="cgrid big pgrid">
         {list.map(n => (
-          <button
-            type="button"
-            key={n}
-            className="ctile"
-            title={clipLabel(n)}
-            aria-label={clipLabel(n)}
-            onClick={() => place(n)}
-          >
-            <img alt="" loading="lazy" src={clipSrc(n, color)} />
-          </button>
+          <div key={n} className="ptile">
+            <button
+              type="button"
+              className="ctile"
+              title={clipLabel(n)}
+              aria-label={clipLabel(n)}
+              onClick={() => place(n)}
+            >
+              <img alt="" loading="lazy" src={clipSrc(n, color)} />
+            </button>
+            <button
+              type="button"
+              className={'pin' + (fav.has(n) ? ' on' : '')}
+              aria-pressed={fav.has(n)}
+              aria-label={(fav.has(n) ? 'Unpin ' : 'Pin ') + clipLabel(n)}
+              onClick={() => pin(n)}
+            >
+              ★
+            </button>
+            {more && onMore && more(n) > 0 && (
+              <button
+                type="button"
+                className="looksn"
+                aria-label={`${more(n)} more looks for ${clipLabel(n)}`}
+                onClick={() => onMore(n)}
+              >
+                +{more(n)}
+              </button>
+            )}
+          </div>
         ))}
       </div>
-      <div className="sublbl">Clipart: {credit}</div>
     </>
   );
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
-// --------- //
-// | Emoji | //
-// --------- //
-function EmojiPane({ pick }: { pick: (s: Stamp) => void }) {
-  const [cat, setCat] = useState(0);
+// ------------ //
+// | One pack | //
+// ------------ //
+function PackView({ id, name, ...t }: TileProps & { id: string; name: string }) {
+  const [list, setList] = useState<string[] | null>(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    get<{ pictures: string[] }>('api/clip/pack/' + id).then(
+      r => setList(r.pictures),
+      e => setErr((e as Error).message)
+    );
+  }, [id]);
   return (
     <>
-      <div className="segs">
-        {EMOJI.map(([n], i) => (
-          <button type="button" key={n} className={'seg' + (i === cat ? ' on' : '')} onClick={() => setCat(i)}>
-            {n}
-          </button>
-        ))}
-      </div>
-      <div className="emojis">
-        {[...new Set(EMOJI[cat][1].split(' '))].map(e => (
-          <button
-            type="button"
-            key={e}
-            className="emoji"
-            aria-label={'Emoji ' + e}
-            onClick={() =>
-              pick({ name: e, items: [{ id: 0, k: 't', x: 0, y: 0, s: e, f: 0, z: 64, c: '#FFFFFF', m: true }] })
-            }
-          >
-            {e}
-          </button>
-        ))}
-      </div>
+      <h4 className="packname">{name}</h4>
+      {err && <div className="empty">{err}</div>}
+      {list && <Tiles list={list} {...t} />}
+    </>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | Favorites | //
+// ------------- //
+// The pinned pictures, then the family's own saved designs.               //
+function FavView({ items, pick, bg, ...t }: TileProps & { items: string[]; pick: (s: Stamp) => void; bg: number }) {
+  return (
+    <>
+      <h4 className="packname">Favorites</h4>
+      {items.length ? (
+        <Tiles list={items} {...t} />
+      ) : (
+        <div className="empty">Nothing pinned yet. Tap ★ on any picture to keep it here.</div>
+      )}
+      <h4 className="packname">Your designs</h4>
+      <MinePane pick={pick} bg={bg} />
+    </>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------- //
+// | Searching everything | //
+// ------------------------- //
+// Each subject once, in its best look; "+3" on a tile means it has more    //
+// looks, and tapping that shows them.                                      //
+function SearchView({ q, ...t }: TileProps & { q: string }) {
+  const [found, setFound] = useState<Found[] | null>(null);
+  const [looks, setLooks] = useState<Found | null>(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    setLooks(null);
+    const timer = setTimeout(() => {
+      get<{ found: Found[] }>('api/clip/search?q=' + encodeURIComponent(q.trim())).then(
+        r => {
+          setFound(r.found);
+          setErr('');
+        },
+        e => setErr((e as Error).message)
+      );
+    }, 200); // after a pause in typing
+    return () => clearTimeout(timer);
+  }, [q]);
+  const bySubject = useMemo(() => new Map((found || []).map(f => [f.id, f])), [found]);
+  return (
+    <>
+      {err && <div className="empty">{err}</div>}
+      {found && !found.length && <div className="empty">Nothing for “{q.trim()}” - try another word</div>}
+      {looks && (
+        <div className="looks">
+          <div className="sublbl">
+            Every look for “{looks.label}”{' '}
+            <button type="button" className="seg" onClick={() => setLooks(null)}>
+              Done
+            </button>
+          </div>
+          <Tiles list={looks.looks} {...t} />
+        </div>
+      )}
+      {found && !looks && (
+        <Tiles
+          list={found.map(f => f.id)}
+          {...t}
+          more={n => (bySubject.get(n)?.looks.length || 1) - 1}
+          onMore={n => setLooks(bySubject.get(n) || null)}
+        />
+      )}
     </>
   );
 }

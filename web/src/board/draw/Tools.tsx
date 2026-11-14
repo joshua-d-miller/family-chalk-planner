@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Tools.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   0.17.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-14
 
  Purpose:
      The drawing tools on the strip, and the cards they open: writing,
@@ -27,6 +27,9 @@
                                   stays at /classic.
 
  0.14.0    2026-11-07   joshua    The grouped font picker, with every font.
+                        claude
+
+ 0.17.0    2026-11-14   joshua    ★ Stamps is "Pictures", with its word.
                         claude
 ===============================================================================
 */
@@ -174,8 +177,9 @@ export function Tools({
       >
         <Ic d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" dash />
       </button>
-      <button type="button" className="tool" id="stampsBtn" aria-label="Stamps and pictures" onClick={onStamps}>
-        <Ic d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z" />
+      <button type="button" className="tool medium" id="stampsBtn" aria-label="Pictures" onClick={onStamps}>
+        <Ic d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM3 16l5-5 4 4 3-3 6 6M15.5 9.5h.01" />
+        Pictures
       </button>
       <button
         type="button"

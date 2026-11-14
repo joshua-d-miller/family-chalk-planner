@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | main.ts (the start)
 ===============================================================================
- Version:   0.15.1
+ Version:   0.17.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-10
+ Updated:   2026-11-14
 
  Purpose:
      Family Chalk Planner: a chalkboard-style family wall calendar. This
@@ -63,6 +63,9 @@
 
  0.15.1    2026-11-10   joshua    The calendar's saved copies.
                         claude
+
+ 0.17.0    2026-11-14   joshua    Picture packs and Favorites (server/packs.ts);
+                        claude    each screen's menu (in favorites.ts).
 ===============================================================================
 */
 
@@ -85,6 +88,7 @@ import { createCalendarSource } from './calendar/source.ts';
 import { makeCalendarCache } from './calendar/cache.ts';
 import { registerCalendarRoutes } from './calendar/routes.ts';
 import * as clipart from './clipart.ts';
+import * as packs from './packs.ts';
 import * as month from './month.ts';
 import * as art from './art.ts';
 import * as theme from './theme.ts';
@@ -308,6 +312,7 @@ registerCalendarRoutes({
 // Each month's options, the art and stamps, the board style, meals, jars    //
 // and chores.                                                               //
 const pictures = clipart.setup({ app, cacheDir: path.join(DATA_DIR, 'clipart-cache') });
+packs.setup({ app, kv, broadcast, today: clock.today, pictureOk: pictures.pictureOk });
 const months = month.setup({ app, db, kv, broadcast, chalk: clipart.CHALK, pictureOk: pictures.pictureOk });
 art.setup({ app, db, month: months, broadcast });
 theme.setup({ app, kv, broadcast });

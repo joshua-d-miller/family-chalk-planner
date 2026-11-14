@@ -2,14 +2,15 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | clip.ts
 ===============================================================================
- Version:   0.16.0
+ Version:   0.17.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-11
+ Updated:   2026-11-14
 
  Purpose:
      Clipart: the pictures the board has (Fluent emoji, Game Icons "gi-",
-     Tabler "tb-"), found by name or by an everyday word (pumpkin,
-     halloween, birthday...). The same words as the current board.
+     Tabler "tb-" in art placed before 0.17), found by name or by an
+     everyday word (pumpkin, halloween, birthday...). The same words as the
+     current board.
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -27,6 +28,9 @@
 
  0.16.0    2026-11-11   joshua    Search words for garland, lights, ornaments
                         claude    and wreaths.
+
+ 0.17.0    2026-11-14   joshua    Names of the weather (mc-) and food (ic-)
+                        claude    pictures read as words too.
 ===============================================================================
 */
 
@@ -104,7 +108,7 @@ export function searchClip(names: string[], q: string, max = 60) {
   return [...syn, ...names.filter(n => !syn.includes(n) && terms.every(t => n.includes(t)))].slice(0, max);
 }
 // a picture's name without its set's short name (gi- chalk drawings, tb- line drawings, se- no- om- tw- fx- eo- ip-
-// the other styles, cp- the board's own)
-export const clipLabel = (n: string) => n.replace(/^(gi|tb|se|no|om|tw|fx|eo|ip|cp)-/, '').replace(/-/g, ' ');
+// the other styles, cp- the board's own, mc- weather, ic- food)
+export const clipLabel = (n: string) => n.replace(/^(gi|tb|se|no|om|tw|fx|eo|ip|cp|mc|ic)-/, '').replace(/-/g, ' ');
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

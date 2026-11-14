@@ -10,10 +10,13 @@ Third-party components (fetched or installed separately, not part of this reposi
   data folder: Streamline Emojis (CC BY 4.0, Streamline, https://streamlinehq.com),
   Noto Emoji (Apache-2.0, Google), OpenMoji (CC BY-SA 4.0, https://openmoji.org), Twemoji
   (CC BY 4.0, Twitter), Firefox OS Emoji (Apache-2.0, Mozilla), EmojiOne 2 (CC BY 4.0, Emoji One) and
-  IconPark (Apache-2.0, ByteDance). Shown in Stamps as they come; the pictures are not changed.
-- Game Icons (CC BY 3.0), https://game-icons.net: the ✏️ chalk drawings (a hand-picked part of the set),
+  IconPark (Apache-2.0, ByteDance), Meteocons (MIT, Bas Milius, https://meteocons.com) and Iconito
+  (MIT, https://iconito.com). Shown in Pictures as they come, except that OpenMoji's and IconPark's
+  black outlines are drawn in chalk white so they show on a dark board.
+- Emojibase (MIT, Miles Johnson), https://emojibase.dev: the words that go with each emoji, so a
+  search finds them (clipart/words.json, made by clipart/words.py from emojibase-data).
+- Game Icons (CC BY 3.0), https://game-icons.net: the ✏️ chalk drawings (the family-friendly part of the set),
   installed with the board from npm (@iconify-json/game-icons). By Lorc, Delapouite and contributors.
-- Tabler Icons (MIT), https://tabler.io/icons: downloaded on first "Find more" clipart search.
 - Noto Animated Emoji (CC BY 4.0, Google), https://googlefonts.github.io/noto-emoji-animation/:
   fetched on first use and cached locally.
 - Google Fonts (SIL Open Font License): Dancing Script, Cormorant Garamond, Kalam, Caveat,

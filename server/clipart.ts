@@ -2,31 +2,28 @@
 ===============================================================================
  Family Chalk Planner | Server | clipart.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   0.17.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
- Updated:   2026-11-06
+ Updated:   2026-11-14
 
  Purpose:
      Pictures to place on the board:
       - Fluent Emoji (flat) by Microsoft, MIT: installed with the board
           (npm), so it works offline
-      - chalk drawings: a hand-picked, family-friendly part of Game Icons
-          (game-icons.net, CC BY 3.0), one-color
+      - chalk drawings: the family-friendly part of Game Icons
+          (game-icons.net, CC BY 3.0, about 3,200), one-color
         silhouettes in any color. Named "gi-<name>", or
             "gi-<name>--<rrggbb>" for a color (default chalk white)
-      - Tabler Icons (MIT), about 5,000 line drawings for "Find more":
-          downloaded once, cached, searched here
-        (brand logos left out: trademarks)
       - animated emoji: Noto Animated Emoji (Google, CC BY 4.0), fetched
           once and served from here, so the
         wall never depends on the internet to show one
 
  Routes:
+     GET    /api/clip/search
      GET    /api/clip/list
      GET    /api/clip/drawings
      GET    /api/clip/:name.svg
-     GET    /api/clipart/search
      GET    /api/anim/list
      GET    /api/anim/:cp/:kind
 
@@ -42,6 +39,14 @@
 
  0.14.0    2026-11-07   joshua    Serves the 7 other picture styles too.
                         claude
+
+ 0.17.0    2026-11-14   joshua    Every family-friendly chalk drawing (not just
+                        claude    the hand-picked groups); one search through
+                                  every picture the board has
+                                  (/api/clip/search, server/catalog.ts).
+                                  "Find more" (the Tabler line drawings) is
+                                  gone: the chalk drawings and the one search
+                                  cover it.
 ===============================================================================
 */
 
@@ -49,11 +54,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import type { Express } from 'express';
-import { makeStyles } from './clipstyles.ts';
+import { buildCatalog, search } from './catalog.ts';
+import type { Picture } from './catalog.ts';
+import { makeStyles, STYLES } from './clipstyles.ts';
 
 const require = createRequire(import.meta.url);
 export const CHALK = '#EDEAE0';
-const TABLER_VER = '3.49.0';
 const NAME = /^[a-z0-9-]{1,64}$/;
 const FOREVER = 'public, max-age=31536000, immutable';
 
@@ -79,6 +85,39 @@ const DRAWING_GROUPS: Record<string, string> = {
   Animals:
     'cat dog-house horse-head cow pig sheep rooster chicken duck turtle frog unicorn dinosaur-rex elephant-head lion bear-head owl'
 };
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------------------- //
+// | Chalk drawings not for a family board | //
+// ----------------------------------------- //
+// Game Icons is made for games: weapons, gore, monsters and grown-up       //
+// things are left out by the words in their names (whole words, so "arm"   //
+// doesn't take the farm with it). The hand-picked groups above are always  //
+// in, so Halloween keeps its skeleton and tombstone.                       //
+const BAD_WORDS = new Set(
+  (
+    'sword swords gun guns rifle pistol revolver bullet bullets cannon knife knives dagger daggers blade blades axe ' +
+    'axes spear mace halberd scythe bomb bombs grenade missile missiles launcher skull skulls bone bones blood ' +
+    'bloody gore corpse death dead guillotine noose hanged gallows wound wounded crossbow arrow arrows shuriken ' +
+    'katana scimitar saber sabre cutlass claymore lance trident whip flail dynamite explosion explosive nuke ' +
+    'radioactive poison poisoned toxic biohazard demon devil evil satan pentagram cult zombie brain brains guts ' +
+    'intestines organ organs syringe drug drugs pill pills cigar cigarette beer wine whiskey alcohol kill killer ' +
+    'murder assassin execution executioner prison handcuffs fist punch crime thief gamble casino poker sexy lips ' +
+    'kiss bikini vomit poop toilet tentacle tentacles gibbet stab slash shot shoot sniper tank warship battle war ' +
+    'weapon armor armour helmet helm shield claw claws fang fangs bite chainsaw hatchet cleaver pierced impaled ' +
+    'carnage massacre flesh eyeball monster horror reaper plague virus bacteria tumor surgery scalpel amputation ' +
+    'ammo cartridge holster bayonet musket blunderbuss catapult trebuchet ballista siege spiked thorns barbed ' +
+    'harpoon trap snare grave coffin ghoul lich necromancer occult curse cursed hex voodoo ritual sacrifice altar ' +
+    'drink hand hands finger fingers foot feet leg legs arm arms torso body bust breast naked nude bra underwear ' +
+    'abstract tomahawk sai p90 convict kidney kidneys lungs liver stomach spine skeleton ak47 uzi glock flintlock ' +
+    'bazooka minigun laser raygun taser knuckles burning burn fire flame flames blast bleeding broken heartbeat ' +
+    'mutant alien aliens robot cyborg ninja pirate skeletal tombstone grenades shells rocket rockets plane warplane'
+  ).split(' ')
+);
+// and inside a word, the roots that can only mean one thing (broadsword, shotgun, bomber)
+const BAD_ROOTS =
+  /sword|^gun|gun$|bomb|dagger|skull|knife|rifle|pistol|grenade|bullet|missile|blood|corpse|zombie|kill/;
+export const notForFamily = (name: string) => name.split('-').some(w => BAD_WORDS.has(w) || BAD_ROOTS.test(w));
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // -------------- //
@@ -122,6 +161,8 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
   // ---------------------- //
   // | The chalk drawings | //
   // ---------------------- //
+  // Every Game Icons drawing that suits a family board: the hand-picked groups, and the rest of the set
+  // less weapons, gore, scary and grown-up things (and abstract shapes nobody would look for)
   function drawingSet() {
     if (!gi) {
       const j = require('@iconify-json/game-icons/icons.json') as IconSet;
@@ -132,6 +173,7 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
           .split(' ')
           .filter(n => j.icons[n] && ok.add(n))
           .map(n => 'gi-' + n);
+      for (const n of Object.keys(j.icons)) if (NAME.test(n) && !notForFamily(n)) ok.add(n);
       gi = { icons: j.icons, w: j.width || 512, h: j.height || 512, ok, groups };
     }
     return gi;
@@ -219,76 +261,6 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
       );
   });
 
-  // ---- Tabler: "Find more" ----
-  interface TablerIcon {
-    name: string;
-    words: string;
-    nodes: unknown;
-  }
-  let tabler: TablerIcon[] | null = null;
-  let tablerLoading: Promise<TablerIcon[]> | null = null;
-  // ----------------------------------------- //
-  // | "Find more": the Tabler line drawings | //
-  // ----------------------------------------- //
-  // Downloaded once (about 5,000), kept in the cache folder, searched by    //
-  // name and tags. Brand logos are left out (trademarks).                   //
-  function loadTabler(): Promise<TablerIcon[]> {
-    if (tabler) return Promise.resolve(tabler);
-    if (tablerLoading) return tablerLoading;
-    const loading = (async () => {
-      fs.mkdirSync(cacheDir, { recursive: true });
-      const get = async (name: string) => {
-        const file = path.join(cacheDir, `${TABLER_VER}-${name}`);
-        if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8'));
-        const r = await fetch(`https://cdn.jsdelivr.net/npm/@tabler/icons@${TABLER_VER}/${name}`, {
-          signal: AbortSignal.timeout(30000)
-        });
-        if (!r.ok) throw new Error(`Clipart download failed (${r.status})`);
-        const text = await r.text();
-        fs.writeFileSync(file, text);
-        return JSON.parse(text);
-      };
-      const [meta, nodes] = (await Promise.all([get('icons.json'), get('tabler-nodes-outline.json')])) as [
-        Record<string, { category?: string; tags?: string[] }>,
-        Record<string, unknown>
-      ];
-      const list: TablerIcon[] = [];
-      for (const [name, m] of Object.entries(meta)) {
-        if (!nodes[name] || m.category === 'Brand' || name.startsWith('brand-')) continue;
-        const words = [name.replace(/-/g, ' '), (m.tags || []).join(' '), m.category || ''].join(' ').toLowerCase();
-        list.push({ name, words, nodes: nodes[name] });
-      }
-      return (tabler = list);
-    })().finally(() => {
-      tablerLoading = null;
-    });
-    tablerLoading = loading;
-    return loading;
-  }
-  app.get('/api/clipart/search', async (req, res) => {
-    const q = String(req.query.q || '')
-      .toLowerCase()
-      .trim()
-      .slice(0, 40);
-    if (!q) return res.json({ items: [] });
-    try {
-      const terms = q.split(/\s+/);
-      const scored: [number, { name: string; nodes: unknown }][] = [];
-      for (const it of await loadTabler()) {
-        if (!terms.every(t => it.words.includes(t))) continue;
-        if (it.name.endsWith('-off') && !q.includes('off')) continue; // crossed-out variants, unless asked for
-        scored.push([it.name.includes(terms[0]) ? 0 : 1, it]); // name matches first, then tag matches
-      }
-      scored.sort((a, b) => a[0] - b[0] || a[1].name.length - b[1].name.length);
-      res.json({
-        items: scored.slice(0, 60).map(([, it]) => ({ name: it.name, nodes: it.nodes })),
-        total: scored.length
-      });
-    } catch (e) {
-      res.status(502).json({ error: (e as Error).message });
-    }
-  });
-
   // ---- animated emoji ----
   let animIndex: { cp: string; tags: string; cat: string }[] | null = null;
   // ------------------ //
@@ -352,13 +324,44 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
     }
   });
 
+  // ------------------------- //
+  // | Every picture, searched | //
+  // ------------------------- //
+  // Built the first time it's wanted, and again once the other styles have  //
+  // finished unpacking (until then, Fluent and the chalk drawings).         //
+  let cat: Picture[] | null = null;
+  let catFull = false;
+  function catalog() {
+    if (cat && catFull) return cat;
+    const done = STYLES.every(st => styles.names(st.prefix));
+    if (cat && !done) return cat;
+    cat = buildCatalog({
+      emoji: fluentSet().names,
+      styles: STYLES.map(st => ({ prefix: st.prefix, own: !!st.own, names: styles.names(st.prefix) || [] })),
+      drawings: [...drawingSet().ok].map(n => 'gi-' + n)
+    });
+    catFull = done;
+    return cat;
+  }
+  void styles.unpacking.then(() => {
+    if (cat) catFull = false; // rebuilt with every style on the next search
+  });
+  app.get('/api/clip/search', (req, res) => {
+    const q = String(req.query.q || '').slice(0, 60);
+    try {
+      res.set('Cache-Control', 'no-cache').json({ found: search(catalog(), q) });
+    } catch {
+      res.status(500).json(notInstalled);
+    }
+  });
+
   // ------------------------------------ //
   // | Is this a picture the board has? | //
   // ------------------------------------ //
   // A clipart or chalk-drawing name the board has (for borders)             //
   const pictureOk = (n: string) =>
     n.startsWith('gi-') ? drawingSet().ok.has(n.slice(3)) : !!styles.fileOf(n) || !!fluentSet().icons[n];
-  return { pictureOk, styles };
+  return { pictureOk, styles, catalog };
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

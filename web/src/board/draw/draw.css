@@ -208,11 +208,21 @@
   white-space: pre-wrap;
   line-height: 1.2;
 }
-.libtabs {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px;
+/* ---- Pictures (Library.tsx): one search, then Favorites and the packs ---- */
+#libSheet {
+  width: min(980px, 100%);
+}
+/* the whole card scrolls (nothing in it squeezed), the search staying at the top */
+#libSheet > * {
+  flex-shrink: 0;
+}
+#libSheet .pickhead {
+  position: sticky;
+  top: -18px;
+  z-index: 2;
+  margin: -6px 0 0;
+  padding: 6px 0 8px;
+  background: var(--slate);
 }
 .lscroll {
   display: flex;
@@ -220,8 +230,182 @@
   gap: 10px;
   min-height: 300px;
 }
-#libSheet {
-  width: min(860px, 100%);
+.pickhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pickhead #picBack {
+  flex: none;
+}
+/* the search: always there, always every picture */
+.picsearch {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 18px;
+  border-radius: 26px;
+  border: 2px solid var(--yellow);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--yellow);
+}
+.picsearch .clipq {
+  flex: 1;
+  border: 0;
+  background: none;
+  font-size: 19px;
+  outline: none;
+  padding: 0;
+}
+/* the packs: big cards, a cover of four pictures each */
+.packs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.pack {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 104px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  border: 2px solid rgba(237, 234, 224, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--chalk);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.pack:active {
+  transform: scale(0.98);
+}
+.pack.now {
+  border-color: var(--yellow);
+  background: rgba(242, 212, 121, 0.08);
+}
+.pack.fav {
+  border-color: var(--pink);
+  background: rgba(246, 179, 203, 0.07);
+}
+.pack .cover {
+  flex: none;
+  width: 84px;
+  height: 84px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+.pack .cover img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+.pack .cover.star {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 46px;
+  color: var(--pink);
+  font-family: var(--emoji), sans-serif;
+}
+.pack .pk {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pack .pk b {
+  font-family: 'Kalam', cursive;
+  font-size: 21px;
+  line-height: 1.15;
+}
+.pack .pk small {
+  font-size: 14px;
+  color: rgba(237, 234, 224, 0.65);
+}
+.pack .pk em {
+  font-style: normal;
+  color: var(--yellow);
+}
+.packname {
+  margin: 4px 0 0;
+  font-family: var(--script);
+  font-size: 1.4em;
+  color: var(--pink);
+}
+/* a picture: tap to put it up; ★ pins it; +3: its other looks */
+.cgrid.pgrid {
+  gap: 10px;
+}
+.ptile {
+  position: relative;
+}
+.cgrid.big.pgrid .ctile {
+  width: 84px;
+  height: 84px;
+  padding: 10px;
+}
+.ptile .ctile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.ptile .pin {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(237, 234, 224, 0.35);
+  background: #1b1c1a;
+  color: rgba(237, 234, 224, 0.4);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+.ptile .pin.on {
+  color: var(--yellow);
+  border-color: var(--yellow);
+}
+.ptile .looksn {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  min-width: 30px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: 13px;
+  border: 1.5px solid rgba(237, 234, 224, 0.35);
+  background: #1b1c1a;
+  color: var(--chalk);
+  font:
+    700 13px 'Kalam',
+    cursive;
+  cursor: pointer;
+}
+.looks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.looks .sublbl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.chalkcolor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.sublbl.credit {
+  font-size: 12px;
+  opacity: 0.7;
 }
 .cgrid.big {
   max-height: none;

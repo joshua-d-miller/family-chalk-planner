@@ -88,6 +88,9 @@
                         colby     cork: the board gets the cork's room, and
                         claude    never moves for the button or the drawing
                                   tools (they pop over beside it).
+
+                                  ⭐ Pictures beside Draw / Decorate: straight
+                                  to the pictures.
 ===============================================================================
 */
 
@@ -908,6 +911,23 @@ export function Board({
               </span>{' '}
               {drawing ? (family ? 'Done' : 'Done drawing') : family ? 'Decorate' : 'Draw'}
             </button>
+            {m && !drawing && (
+              // straight to the pictures (and into decorating, to place one)
+              <button
+                type="button"
+                className="pill"
+                id="picturesBtn"
+                onClick={() => {
+                  toggleDraw();
+                  setEditing({ k: 'library' });
+                }}
+              >
+                <span className="ic" aria-hidden="true">
+                  ⭐
+                </span>{' '}
+                Pictures
+              </button>
+            )}
             {m && !drawing && (
               <>
                 {!family && (

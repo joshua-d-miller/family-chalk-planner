@@ -2,14 +2,17 @@
 ===============================================================================
  Family Chalk Planner | Server | clipstyles.ts
 ===============================================================================
- Version:   0.16.2
+ Version:   0.17.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-14
 
  Purpose:
-     More picture sets for Stamps, each in its own style (Streamline,
-     Noto, OpenMoji, Twitter, Firefox, EmojiOne, IconPark). Installed with
+     More picture sets for Pictures, each in its own style (Streamline,
+     Noto, OpenMoji, Twitter, Firefox, EmojiOne, IconPark, plus weather
+     from Meteocons and food from Iconito). Sets drawn with black outlines
+     (OpenMoji, IconPark) get chalk-white outlines instead, so they don't
+     vanish on a dark board. Installed with
      the board (npm), so they work offline. Each is unpacked once into the
      clipart cache, one file per picture, so the board doesn't keep tens
      of megabytes of pictures in memory. A picture's name starts with its
@@ -36,6 +39,11 @@
 
  0.16.2    2026-11-11   joshua    Says which styles have pictures of their own
                         claude    (the garland set).
+
+ 0.17.0    2026-11-14   joshua    Weather (Meteocons) and food (Iconito);
+                        claude    OpenMoji's and IconPark's black outlines in
+                                  chalk white. Each set says whether its
+                                  pictures are its own or the emoji redrawn.
 ===============================================================================
 */
 
@@ -57,21 +65,26 @@ export interface ClipStyle {
   pkg: string; // @iconify-json/<pkg>
   file?: string; // or the board's own pictures, in the same format (a file in the repository)
   credit: string; // for the line under the pictures (and NOTICE)
+  own?: boolean; // pictures of its own (garland, weather, food), not the everyday emoji redrawn
+  chalk?: boolean; // drawn in black outlines: they become chalk white (else they vanish on the board)
 }
 export const STYLES: ClipStyle[] = [
   { prefix: 'se', name: 'Streamline', pkg: 'streamline-emojis', credit: 'Streamline Emojis by Streamline (CC BY 4.0)' },
   { prefix: 'no', name: 'Noto', pkg: 'noto', credit: 'Noto Emoji by Google (Apache 2.0)' },
-  { prefix: 'om', name: 'OpenMoji', pkg: 'openmoji', credit: 'OpenMoji (CC BY-SA 4.0)' },
+  { prefix: 'om', name: 'OpenMoji', pkg: 'openmoji', credit: 'OpenMoji (CC BY-SA 4.0)', chalk: true },
   { prefix: 'tw', name: 'Twitter', pkg: 'twemoji', credit: 'Twemoji by Twitter (CC BY 4.0)' },
   { prefix: 'fx', name: 'Firefox', pkg: 'fxemoji', credit: 'Firefox OS Emoji by Mozilla (Apache 2.0)' },
   { prefix: 'eo', name: 'EmojiOne', pkg: 'emojione', credit: 'EmojiOne (CC BY 4.0)' },
-  { prefix: 'ip', name: 'IconPark', pkg: 'icon-park', credit: 'IconPark by ByteDance (Apache 2.0)' },
+  { prefix: 'ip', name: 'IconPark', pkg: 'icon-park', credit: 'IconPark by ByteDance (Apache 2.0)', chalk: true },
+  { prefix: 'mc', name: 'Weather', pkg: 'meteocons', credit: 'Meteocons by Bas Milius (MIT)', own: true },
+  { prefix: 'ic', name: 'Food', pkg: 'iconito', credit: 'Iconito (MIT)', own: true },
   {
     prefix: 'cp',
     name: 'Garland & trims',
     pkg: '',
     file: path.join(import.meta.dirname, '..', 'clipart', 'garland.json'),
-    credit: 'Drawn for Family Chalk Planner (CC0)'
+    credit: 'Drawn for Family Chalk Planner (CC0)',
+    own: true
   }
 ];
 export const stylePrefix = (name: string) => STYLES.find(s => name.startsWith(s.prefix + '-'));
@@ -80,6 +93,15 @@ export const stylePrefix = (name: string) => STYLES.find(s => name.startsWith(s.
 // ------------------------- //
 // | What a set looks like | //
 // ------------------------- //
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------- //
+// | Black outlines, chalk white | //
+// ------------------------------- //
+// OpenMoji and IconPark outline everything in black, which disappears on a //
+// dark board: the black becomes the board's chalk white (colors stay).     //
+const BLACK = /(stroke|fill)="(#000|#000000|black|#1d1d1b)"/gi;
+export const toChalk = (body: string) => body.replace(BLACK, (_m, a: string) => `${a}="#EDEAE0"`);
+
 interface IconSet {
   icons: Record<string, { body: string; width?: number; height?: number; left?: number; top?: number }>;
   aliases?: Record<string, { parent: string }>;
@@ -105,7 +127,7 @@ export function makeStyles(cacheDir: string) {
     } catch {
       /* not installed */
     }
-    return path.join(cacheDir, 'styles', `${s.prefix}-${ver}`);
+    return path.join(cacheDir, 'styles', `${s.prefix}-${ver}${s.chalk ? '-chalk1' : ''}`);
   };
 
   async function unpack(s: ClipStyle) {
@@ -137,7 +159,8 @@ export function makeStyles(cacheDir: string) {
           const h = i.height || j.height || 16;
           // its own shape (a garland is long and thin): the longest side 256
           const k = 256 / Math.max(w, h);
-          const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${i.left || 0} ${i.top || 0} ${w} ${h}" width="${Math.round(w * k)}" height="${Math.round(h * k)}">${i.body}</svg>`;
+          const body = s.chalk ? toChalk(i.body) : i.body;
+          const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${i.left || 0} ${i.top || 0} ${w} ${h}" width="${Math.round(w * k)}" height="${Math.round(h * k)}">${body}</svg>`;
           await fs.promises.writeFile(path.join(tmp, n + '.svg'), svg);
           names.push(n);
         })
@@ -167,7 +190,7 @@ export function makeStyles(cacheDir: string) {
         name: s.name,
         credit: s.credit,
         count: ready.get(s.prefix)?.length || 0,
-        own: !!s.file // pictures of its own (garland, lights), not the everyday ones redrawn
+        own: !!s.own // pictures of its own (garland, weather, food), not the everyday ones redrawn
       })),
     names: (prefix: string) => ready.get(prefix)?.map(n => prefix + '-' + n) || null,
     // the file for "no-jack-o-lantern", or null
