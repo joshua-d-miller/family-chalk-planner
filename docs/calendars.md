@@ -29,6 +29,10 @@ Calendar links are read again every 15 minutes, so a change made elsewhere can t
 Other iCloud calendars (a shared family calendar, the kids'): **More calendars from this account → List my
 calendars**.
 
+An app-specific password opens that Apple account's iCloud mail and contacts too, not just its calendars, and
+Apple has no way to narrow it. On a board at home that's fine; on a [rented server](cloud.md), consider an Apple ID
+just for the board that owns the family calendar ([why](cloud.md#whats-on-the-server-and-how-to-limit-it)).
+
 ## Google Calendar
 
 Google doesn't allow a password here; the board signs in to Google instead. That needs a small Google Cloud

@@ -25,12 +25,17 @@ connection to every screen. What Cloudflare *does* do for free is the hard part 
 Any small Linux server with Docker works. The board needs very little: **1 GB of memory** and a few GB of disk
 (more if you upload lots of GIFs). Images are published for both Intel/AMD (`amd64`) and ARM (`arm64`) servers.
 
-- **Free:** Oracle Cloud's *Always Free* ARM servers. Plenty for the board, but signing up needs a card, free
-  servers can be hard to get in busy regions, and Oracle changes the free allowance from time to time.
-- **Paid, simple:** Hetzner, DigitalOcean, Linode/Akamai, Vultr and others have servers for roughly $4–6 a month
-  (check their current prices). Pick a location near you.
-- **Avoid** "serverless" or app platforms that stop your app when it's idle or don't keep files between restarts:
-  the board must keep running and keep its `data` folder.
+| Provider | A plan that fits | About, per month | Chip | Good to know |
+| --- | --- | --- | --- | --- |
+| Oracle Cloud *Always Free* | Ampere A1, up to 2 cores and 12 GB in total | free | ARM | Needs a card to sign up; free servers can be hard to get in busy regions; Oracle cut the free allowance in half in 2026 and switches off servers over it, so stay within it. |
+| Hetzner Cloud | CX22 (2 cores, 4 GB), or an ARM CAX | about €4 | Intel/AMD or ARM | The most server for the money; Europe and US locations. |
+| Linode (Akamai) | Nanode 1 GB | about $5 | Intel/AMD | Many locations. |
+| Vultr | Cloud Compute 1 GB | about $5–6 | Intel/AMD | Many locations. |
+| DigitalOcean | Basic Droplet 1 GB | about $6 | Intel/AMD | The 512 MB plan is too small for the board. |
+
+Prices as of November 2026; check the provider's own page, they change. Any other provider with a small Linux
+server works the same way. Pick a location near you. **Avoid** "serverless" or app platforms that stop your app
+when it's idle or don't keep files between restarts: the board must keep running and keep its `data` folder.
 
 Create the server with **Ubuntu** (any current version), sign in to it over SSH (your provider shows how), then
 install Docker:
@@ -105,6 +110,49 @@ If a sign-in a month on the wall is too much, you can skip Access and rely on th
 or the authenticator for everyone, and look
 at **🛡 Security** now and then. Never set **Unpaired devices** to *May view the board* on a board that's on the
 internet.
+
+## What's on the server, and how to limit it
+A rented server is someone else's computer, so it's worth knowing what's on it. To keep the calendar in sync all
+day, the board keeps your calendar sign-in (an iCloud app-specific password, a Google sign-in, or your CalDAV
+password) and any private calendar links. They're encrypted in its database, which protects a stray copy of the
+database on its own. But the key sits on the same server (`data/secret.key`, also copied into `data/backup`)
+because the board has to unlock them by itself, so **anyone who gets into the server, and the company you rent it
+from, could read them**. Neither sign-in is read-only:
+
+- **An iCloud app-specific password** opens that Apple account's iCloud mail, contacts and calendars, not just the
+  calendar.
+- **A Google sign-in** can read and change every calendar in that Google account (not mail or files).
+
+(People's own board passwords are different: they're stored as slow one-way hashes and can't be read back.)
+
+Three things keep the risk small:
+
+1. **Give the board an account of its own.** Make an Apple ID or Google account just for the board, create the
+   family calendar in it, and share that calendar with everyone's own accounts (with permission to make changes).
+   Connect the board to that account. Then the most anyone could get from the server is that one calendar, not
+   someone's email.
+2. **Keep the board off the open internet**: Cloudflare Access (above) or Tailscale (below).
+3. **Know how to cut it off.** If you think the server was broken into, revoke the board's sign-in and make a new
+   one: the app-specific password at [account.apple.com](https://account.apple.com) (Sign-In and Security →
+   App-Specific Passwords), or the board's access in your Google account (Security → Your connections to
+   third-party apps & services), and any calendar links you used (most services can reset a private link).
+
+Optional: keep the key out of the data folder (and its backups) by setting your own `SECRET_KEY`
+([install.md](install.md#the-encryption-key-datasecretkey)). It protects copies of the folder, not a server
+someone is already inside.
+
+## Look after the server
+The board in the steps above isn't open to the internet on any port: only the tunnel reaches it, and it connects
+outward. Keep the rest of the server just as closed:
+
+- **Sign in with an SSH key, not a password.** Most providers let you add your key when you create the server.
+  Then turn password sign-ins off: set `PasswordAuthentication no` in `/etc/ssh/sshd_config` and run
+  `sudo systemctl restart ssh`.
+- **A firewall that lets in only SSH:** `sudo ufw allow OpenSSH && sudo ufw enable`. (Docker can open ports past
+  `ufw`, which is why the `compose.yaml` above publishes none; keep it that way.)
+- **Security updates by themselves:** `sudo apt install unattended-upgrades` (Ubuntu turns it on when installed).
+- **Many providers also have their own firewall** in their dashboard; allowing only SSH there is a good second
+  layer.
 
 ## Keep a copy of your data
 On a cloud server, the provider's disk is the only copy. The board writes a nightly backup to `data/backup`
