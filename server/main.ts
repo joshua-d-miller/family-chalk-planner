@@ -273,7 +273,16 @@ const holidayList = holidays.setup({ app, country: cfg.holidays, broadcast, toda
 // anything wrong).                                                          //
 const google = createGoogle(cfg.google, DATA_DIR);
 // the last good copy of each calendar's months, for when one can't be reached (server/calendar/cache.ts)
-const calendar = createCalendarSource(cfg.calendar, clock, google, makeCalendarCache(db));
+const calendar = createCalendarSource(cfg.calendar, clock, google, makeCalendarCache(db), ha);
+// ⚙️ Board → Calendar in the Home Assistant app: the calendars Home Assistant has, to pick from
+app.get('/api/board-settings/ha-calendars', async (_req, res) => {
+  if (!ha) return res.status(404).json({ error: 'Only in the Home Assistant app' });
+  try {
+    res.set('Cache-Control', 'no-store').json({ calendars: await calendar.haCalendars() });
+  } catch (e) {
+    res.status(502).json({ error: 'Home Assistant didn’t answer: ' + (e as Error).message });
+  }
+});
 registerGoogleRoutes(app, {
   google,
   enabled: cfg.calendar.provider === 'google',

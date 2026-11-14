@@ -86,6 +86,7 @@ export function registerSettingsRoutes(
       proxySeen: proxySeen(),
       key: keyInfo(),
       here: `${req.protocol}://${req.get('host')}`,
+      homeAssistant: !!env.SUPERVISOR_TOKEN, // the Home Assistant app: its calendars can be picked
       timezones: typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : []
     });
   });

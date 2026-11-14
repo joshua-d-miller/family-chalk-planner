@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Calendar | source.ts
 ===============================================================================
- Version:   0.15.1
+ Version:   1.0.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-10
+ Updated:   2026-11-14
 
  Purpose:
      The family's calendar: any CalDAV server (iCloud, Nextcloud,
@@ -40,6 +40,10 @@
                                   account, calendar links; CalDAV or Google)
                                   keeps a saved copy of each month in the
                                   database, shown when it can't be reached.
+
+ 1.0.0     2026-11-14   joshua    Home Assistant's calendars, as the Home
+                        claude    Assistant app: read, add, change and delete
+                                  where each calendar allows it.
 ===============================================================================
 */
 
@@ -51,18 +55,20 @@ import { mainOf } from './google.ts';
 import type { Google } from './google.ts';
 import { applyEventChange, makeIcal } from './ical.ts';
 import type { BoardEvent, EventChange, EventRef } from './ical.ts';
+import type { HaCalendar, HaEvent, HaEventIn, HomeAssistant } from '../homeassistant.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //
 // | Types | //
 // --------- //
 export interface CalendarConfig {
-  provider: 'caldav' | 'google';
+  provider: 'caldav' | 'google' | 'homeassistant';
   caldavUrl: string;
   user?: string;
   password?: string;
   calendarName?: string; // the main calendar, by its name
   extraCalendars: { id: string; name: string; color: string }[];
+  haCalendars: { id: string; name: string; color: string; main?: boolean }[]; // the Home Assistant app
   feeds: { name: string; url: string; color: string }[];
 }
 
@@ -138,7 +144,13 @@ export async function caldavCalendars(base: string, auth: string) {
 // ------------------------------- //
 // | The calendar the board uses | //
 // ------------------------------- //
-export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: Google, saved?: CalendarCache) {
+export function createCalendarSource(
+  cfg: CalendarConfig,
+  clock: Clock,
+  google: Google,
+  saved?: CalendarCache,
+  ha: HomeAssistant | null = null
+) {
   const ical = makeIcal(clock);
   const basicAuth = 'Basic ' + Buffer.from(`${cfg.user}:${cfg.password}`).toString('base64');
   const authHeader = async () => (cfg.provider === 'google' ? `Bearer ${await google.token()}` : basicAuth);
@@ -147,7 +159,13 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
   saved?.belongsTo(
     crypto
       .createHash('sha256')
-      .update(JSON.stringify([cfg.provider, cfg.caldavUrl, cfg.user || '', cfg.calendarName || '']))
+      .update(
+        JSON.stringify(
+          cfg.provider === 'homeassistant'
+            ? [cfg.provider, cfg.haCalendars.map(c => c.id)]
+            : [cfg.provider, cfg.caldavUrl, cfg.user || '', cfg.calendarName || '']
+        )
+      )
       .digest('hex')
   );
   let mainUrl: string | null = null; // found once, then remembered
@@ -255,6 +273,14 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
   // The calendars a new event can go in, the main one first (the edit card  //
   // offers them when there are several)                                     //
   function writable(): { id: string; name: string; color: string | null; main: boolean }[] {
+    if (cfg.provider === 'homeassistant') {
+      const main = haMain();
+      const can = (id: string) => !haCaps || !!haCaps.list.find(c => c.id === id)?.canCreate;
+      return cfg.haCalendars
+        .filter(c => can(c.id))
+        .map(c => ({ id: c.id, name: c.name, color: c.id === main?.id ? null : c.color, main: c.id === main?.id }))
+        .sort((a, b) => Number(b.main) - Number(a.main));
+    }
     if (cfg.provider === 'google') {
       const main = googleMain();
       if (!google.load().refresh || !main) return [];
@@ -310,6 +336,75 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
   // Every event shown in a month's weeks, from every calendar and link      //
   // (cached for a minute)                                                   //
   let down: string | null = null; // why a calendar couldn't be reached last time (null: all fine)
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+  // ---------------------------------------- //
+  // | Home Assistant's calendars (the app) | //
+  // ---------------------------------------- //
+  // The calendars picked in ⚙️ Board, the main one first; what each can do  //
+  // (add, change, delete) as Home Assistant says, asked every few minutes.  //
+  const haMain = () => cfg.haCalendars.find(c => c.main) || cfg.haCalendars[0] || null;
+  let haCaps: { at: number; list: HaCalendar[] } | null = null;
+  async function haCan(id: string): Promise<HaCalendar | null> {
+    if (!ha) return null;
+    if (!haCaps || Date.now() - haCaps.at > 5 * 60e3) haCaps = { at: Date.now(), list: await ha.calendars() };
+    return haCaps.list.find(c => c.id === id) || null;
+  }
+  // one Home Assistant event, as the board shows it
+  function fromHa(e: HaEvent, cal: HaCalendar | null): BoardEvent {
+    const title = e.summary || '(no title)';
+    let be: BoardEvent;
+    if (e.start.date) {
+      const s = e.start.date;
+      let last = e.end?.date ? addDays(e.end.date, -1) : s; // the end date is the day after
+      if (last < s) last = s;
+      be = { title, allDay: true, start: s, end: last, time: null, hm: null, minutes: null, sort: 0 };
+    } else {
+      const st = new Date(String(e.start.dateTime));
+      const en = e.end?.dateTime ? new Date(e.end.dateTime) : new Date(st.getTime() + 3600e3);
+      const sp = clock.zoned(st);
+      const ep = clock.zoned(new Date(en.getTime() - 1));
+      be = {
+        title,
+        allDay: false,
+        start: sp.dateStr,
+        end: ep.dateStr > sp.dateStr ? ep.dateStr : sp.dateStr,
+        time: clock.fmtTime(sp.h, sp.mi),
+        hm: `${String(sp.h).padStart(2, '0')}:${String(sp.mi).padStart(2, '0')}`,
+        minutes: Math.max(5, Math.round((en.getTime() - st.getTime()) / 60000)),
+        sort: sp.h * 60 + sp.mi
+      };
+    }
+    be.recurring = !!(e.rrule || e.recurrence_id);
+    // it can be changed from the board if its calendar can change events, or (one that doesn't repeat)
+    // delete and add them, which is how a change is made there
+    const canChange = !!cal && (cal.canUpdate || (!be.recurring && cal.canCreate && cal.canDelete));
+    if (cal && e.uid && (canChange || cal.canDelete))
+      be.ref = { href: 'ha:' + cal.id, etag: e.uid, rid: e.recurrence_id || null };
+    else be.readOnly = true;
+    return be;
+  }
+  async function haRange(c: { id: string }, from: Date, to: Date): Promise<BoardEvent[]> {
+    if (!ha) throw new Error('Home Assistant isn’t reachable from here');
+    const cal = await haCan(c.id);
+    if (!cal) throw new Error(`Home Assistant has no calendar ${c.id} any more`);
+    return (await ha.events(c.id, from, to)).map(e => fromHa(e, cal));
+  }
+  // the board's change, as Home Assistant's event fields
+  function toHa({ title, date, allDay, time, minutes, through }: EventChange): HaEventIn {
+    if (allDay) {
+      const last = through && through >= date ? through : date;
+      return { summary: title, dtstart: date, dtend: addDays(last, 1) };
+    }
+    const [y, m, d] = date.split('-').map(Number);
+    const [h, mi] = String(time).split(':').map(Number);
+    const start = clock.fromZoned(y, m, d, h, mi);
+    return {
+      summary: title,
+      dtstart: start.toISOString(),
+      dtend: new Date(start.getTime() + (minutes || 60) * 60000).toISOString()
+    };
+  }
+
   async function eventsForMonth(ym: string): Promise<BoardEvent[]> {
     const cached = monthCache.get(ym);
     if (cached && Date.now() - cached.at < 60 * 1000) return cached.events;
@@ -352,6 +447,45 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     const [ey, em, ed] = g.end.split('-').map(Number);
     const rangeStart = clock.fromZoned(sy, sm, sd, 0, 0);
     const rangeEnd = clock.fromZoned(ey, em, ed, 0, 0);
+    if (cfg.provider === 'homeassistant') {
+      const main = haMain();
+      const lists = await Promise.all(
+        cfg.haCalendars.map(async c => {
+          const isMain = c.id === main?.id;
+          const n = failed.length;
+          const ev = await kept(
+            ym,
+            isMain ? 'main' : 'cal:' + c.name,
+            async () =>
+              (await haRange(c, rangeStart, rangeEnd)).map(e =>
+                isMain ? e : { ...e, cal: c.name, calColor: c.color }
+              ),
+            failed,
+            isMain ? '' : `“${c.name}”: `
+          );
+          if (failed.length > n) problems.set(c.name, failed[failed.length - 1]);
+          else problems.delete(c.name);
+          return ev;
+        })
+      );
+      const feeds = await Promise.all(
+        cfg.feeds.map(f =>
+          kept(
+            ym,
+            'link:' + f.name,
+            async () =>
+              ical
+                .eventsFromIcs(await feedText(f), null, rangeStart, rangeEnd, [])
+                .map(e => ({ ...e, cal: f.name, calColor: f.color, readOnly: true })),
+            failed,
+            `“${f.name}”: `
+          )
+        )
+      );
+      return [...lists, ...feeds]
+        .flat()
+        .sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : a.sort - b.sort));
+    }
     const gMain = cfg.provider === 'google' ? googleMain() : null;
     // the main calendar: its problems show on the board
     let out = await kept(
@@ -415,6 +549,15 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
     { title, date, allDay, time, minutes, through }: EventChange,
     calendarId?: string
   ): Promise<string> {
+    if (cfg.provider === 'homeassistant') {
+      const target = (calendarId && cfg.haCalendars.find(c => c.id === calendarId)) || haMain();
+      if (!target || !ha) throw new Error('Pick a Home Assistant calendar first (admin console → ⚙️ Board)');
+      if (!(await haCan(target.id))?.canCreate)
+        throw new Error(`Home Assistant can’t add events to “${target.name}”: pick another calendar`);
+      await ha.createEvent(target.id, toHa({ title, date, allDay, time, minutes, through }));
+      monthCache.clear();
+      return 'ha:' + target.id;
+    }
     let url = await findCalendar();
     if (cfg.provider === 'google') {
       const target = (calendarId && googleCalendars().find(c => c.id === calendarId)) || googleMain();
@@ -472,6 +615,25 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
   // series, or one occurrence. If someone changed it meanwhile (its         //
   // version, the etag, moved on), nothing is overwritten.                   //
   async function changeEvent(ref: EventRef, scope: 'all' | 'one', change: EventChange | null) {
+    if (cfg.provider === 'homeassistant') {
+      const id = ref.href.replace(/^ha:/, '');
+      if (!ha || !ref.href.startsWith('ha:') || !cfg.haCalendars.some(c => c.id === id) || !ref.etag)
+        throw new Error('That event isn’t in one of the board’s calendars');
+      const cal = await haCan(id);
+      const rid = scope === 'one' ? ref.rid || null : null;
+      monthCache.clear();
+      if (!change) {
+        if (!cal?.canDelete) throw new Error('Home Assistant can’t delete events from that calendar');
+        return void (await ha.deleteEvent(id, ref.etag, rid));
+      }
+      if (cal?.canUpdate) return void (await ha.updateEvent(id, ref.etag, rid, toHa(change)));
+      // a calendar that can only add and delete (Home Assistant's Google calendars): delete it, add it again
+      if (cal?.canCreate && cal.canDelete && !ref.rid) {
+        await ha.createEvent(id, toHa(change));
+        return void (await ha.deleteEvent(id, ref.etag, null));
+      }
+      throw new Error('Home Assistant can’t change events in that calendar');
+    }
     const url = new URL(ref.href, await findCalendar()).toString();
     if (!(await editableCalendars()).some(c => sameUrl(url, c)))
       throw new Error('That event isn’t in the family calendar');
@@ -505,6 +667,7 @@ export function createCalendarSource(cfg: CalendarConfig, clock: Clock, google: 
   return {
     eventsForMonth,
     writable,
+    haCalendars: () => (ha ? ha.calendars() : Promise.resolve([] as HaCalendar[])),
     googleCalendars,
     googleMain,
     addEvent,

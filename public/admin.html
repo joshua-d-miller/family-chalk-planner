@@ -269,7 +269,14 @@ button:disabled{opacity:.5;cursor:default}
       </div>
       <div class="card">
         <h2>Calendar</h2>
-        <div class="seg" id="bfProv"><button data-p="caldav">🍎 iCloud or other CalDAV</button><button data-p="google">🟦 Google Calendar</button></div>
+        <div class="seg" id="bfProv"><button data-p="caldav">🍎 iCloud or other CalDAV</button><button data-p="google">🟦 Google Calendar</button><button data-p="homeassistant" id="bfProvHa" hidden>🏠 Home Assistant</button></div>
+        <div id="bfHa" hidden>
+          <p class="dim">The calendars already in Home Assistant (Local Calendar, Google, CalDAV, Outlook…). Tick the ones to show and pick the <b>main</b> one: new events go there. A calendar Home Assistant can’t change is shown read-only.</p>
+          <div class="actions" style="margin-top:4px"><button id="bfHaList">List Home Assistant’s calendars</button></div>
+          <div class="list" id="bfHaCals"></div>
+          <div class="err" id="bfHaErr"></div>
+          <input type="hidden" id="bfHaVal" data-k="HA_CALENDARS">
+        </div>
         <div id="bfCaldav">
           <p class="dim">iCloud: your Apple ID email and an <b>app-specific password</b> (account.apple.com → Sign-In and Security → App-Specific Passwords). Not your Apple ID password.</p>
           <label for="bfUrl">Server address</label><input id="bfUrl" data-k="CALDAV_URL" placeholder="https://caldav.icloud.com/">
@@ -479,7 +486,15 @@ button:disabled{opacity:.5;cursor:default}
   function bfSetProv(p) {
     bf.prov = p;
     Array.prototype.forEach.call(document.querySelectorAll('#bfProv button'), function (b) { b.classList.toggle('on', b.dataset.p === p); });
-    $('bfCaldav').hidden = p !== 'caldav'; $('bfGoogle').hidden = p !== 'google';
+    $('bfCaldav').hidden = p !== 'caldav'; $('bfGoogle').hidden = p !== 'google'; $('bfHa').hidden = p !== 'homeassistant';
+    $('bfMoreWrap').hidden = p === 'homeassistant';
+    if (p === 'homeassistant' && haAvail === null) $('bfHaList').click();
+  }
+  // the calendar the board uses now (the same choice server/config.ts makes)
+  function bfDefaultProv() {
+    var F = bf.data.fields, p = F.CALENDAR_PROVIDER.value;
+    if (!p) p = F.GOOGLE_CLIENT_ID.value ? 'google' : bf.data.homeAssistant && !F.CALDAV_USER.value ? 'homeassistant' : 'caldav';
+    return p === 'homeassistant' && !bf.data.homeAssistant ? 'caldav' : p;
   }
   // lists stored as JSON in hidden fields: more calendars (EXTRA_CALENDARS) and calendar links (ICS_FEEDS)
   var PALETTE = ['#9CC9E6', '#A9D8A0', '#F2D479', '#E8A35C', '#B49CE0', '#F6B3CB', '#F26B6B', '#7FD1C7'];
@@ -539,6 +554,50 @@ button:disabled{opacity:.5;cursor:default}
       drawMore();
     }).catch(function (e) { $('bfMoreErr').textContent = bf.prov === 'google' ? e.message + ' (connect Google in ⚙️ Settings on the board first)' : e.message; });
   });
+  // the Home Assistant app: a checklist of Home Assistant's calendars, one marked main, each with a color
+  var haAvail = null;
+  function drawHa() {
+    var box = $('bfHaCals'); box.innerHTML = '';
+    var chosen = jsonVal('bfHaVal'), byId = {};
+    chosen.forEach(function (c) { byId[c.id] = c; });
+    var all = (haAvail || []).slice();
+    chosen.forEach(function (c) { if (!all.some(function (a) { return a.id === c.id; })) all.push({ id: c.id, name: c.name, missing: true }); });
+    var mainId = (chosen.filter(function (c) { return c.main; })[0] || chosen[0] || {}).id;
+    function save(a) {   // exactly one main, if any are picked
+      if (a.length && !a.some(function (c) { return c.main; })) a[0].main = true;
+      setJson('bfHaVal', a); drawHa();
+    }
+    all.forEach(function (cal, i) {
+      var on = !!byId[cal.id], it = el('div', 'item'), line = el('div', 'line');
+      var cb = el('input'); cb.type = 'checkbox'; cb.checked = on; cb.style.cssText = 'width:22px;height:22px;flex:0 0 22px';
+      cb.setAttribute('aria-label', 'Show ' + cal.name);
+      var nm = el('div'); nm.style.cssText = 'flex:1 1 160px;min-width:0';
+      nm.appendChild(el('b', null, cal.name));
+      var what = cal.missing ? '⚠ not in Home Assistant any more' : cal.id + (cal.canCreate ? '' : ' · read-only');
+      nm.appendChild(el('div', 'dim', what)); nm.lastChild.style.fontSize = '13px';
+      var col = colorInput(on ? byId[cal.id].color : PALETTE[(i + 1) % PALETTE.length], function (c) { var a = jsonVal('bfHaVal'); a.forEach(function (x) { if (x.id === cal.id) x.color = c; }); setJson('bfHaVal', a); });
+      cb.addEventListener('change', function () {
+        var a = jsonVal('bfHaVal').filter(function (x) { return x.id !== cal.id; });
+        if (cb.checked) { if (a.length >= 12) { cb.checked = false; $('bfHaErr').textContent = 'At most 12 calendars'; return; } a.push({ id: cal.id, name: cal.name.slice(0, 100), color: col.value.toUpperCase() }); }
+        save(a);
+      });
+      line.appendChild(cb); line.appendChild(nm);
+      if (on) {
+        var mb = el('button', 'sm' + (cal.id === mainId ? ' on' : ''), cal.id === mainId ? '★ Main' : 'Make main'); mb.type = 'button';
+        mb.disabled = cal.id === mainId || cal.canCreate === false;
+        if (cal.canCreate === false && cal.id !== mainId) mb.title = 'Home Assistant can’t add events to this calendar';
+        mb.addEventListener('click', function () { save(jsonVal('bfHaVal').map(function (x) { var y = { id: x.id, name: x.name, color: x.color }; if (x.id === cal.id) y.main = true; return y; })); });
+        line.appendChild(mb);
+      }
+      line.appendChild(col); it.appendChild(line); box.appendChild(it);
+    });
+    if (!all.length) box.appendChild(el('div', 'dim', haAvail ? 'Home Assistant has no calendars yet: add one (Settings → Devices & services → Add integration → Local Calendar, Google Calendar…).' : 'Press “List Home Assistant’s calendars” to choose.'));
+  }
+  $('bfHaList').addEventListener('click', function () {
+    $('bfHaErr').textContent = '';
+    busy($('bfHaList'), api('api/board-settings/ha-calendars')).then(function (r) { haAvail = r.calendars; drawHa(); })
+      .catch(function (e) { $('bfHaErr').textContent = e.message; });
+  });
   function loadBoard() {
     api('api/board-settings').then(function (d) {
       bf.data = d; var F = d.fields;
@@ -561,8 +620,9 @@ button:disabled{opacity:.5;cursor:default}
         }
         inp.dataset.orig = inp.value;
       });
-      var p = F.CALENDAR_PROVIDER.value || (F.GOOGLE_CLIENT_ID.value ? 'google' : 'caldav');
-      bfSetProv(p === 'google' ? 'google' : 'caldav');
+      $('bfProvHa').hidden = !d.homeAssistant;
+      haAvail = null; drawHa();
+      bfSetProv(bfDefaultProv());
       $('bfVer').textContent = d.version; $('bfErr').textContent = '';
       $('bfHere').textContent = d.here;
       $('bfProxyUse').hidden = !d.proxySeen || F.TRUST_PROXY.value === d.proxySeen;
@@ -667,8 +727,7 @@ button:disabled{opacity:.5;cursor:default}
       if (f.type === 'secret') { if (inp.value) values[inp.dataset.k] = inp.value; }
       else if (inp.value !== inp.dataset.orig) values[inp.dataset.k] = inp.value;
     });
-    var F = bf.data.fields, curProv = F.CALENDAR_PROVIDER.value || '';
-    if (bf.prov !== (curProv || (F.GOOGLE_CLIENT_ID.value ? 'google' : 'caldav'))) values.CALENDAR_PROVIDER = bf.prov;
+    if (bf.prov !== bfDefaultProv()) values.CALENDAR_PROVIDER = bf.prov;
     $('bfErr').textContent = '';
     busy($('bfSave'), api('api/board-settings', { values: values })).then(function (r) {
       if (!r.restarting) { $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', 'Nothing changed.')); return; }

@@ -57,10 +57,17 @@ function jsonList<T>(v: string | undefined): T[] {
 // of these change while it runs.                                            //
 export function readConfig(env: NodeJS.ProcessEnv, appDir: string, dataDir: string) {
   const holidays = (env.HOLIDAYS || '').toLowerCase();
+  // in the Home Assistant app, its own calendars unless another account was set up
+  const asked = (
+    env.CALENDAR_PROVIDER ||
+    (env.GOOGLE_CLIENT_ID ? 'google' : env.SUPERVISOR_TOKEN && !env.CALDAV_USER ? 'homeassistant' : 'caldav')
+  ).toLowerCase();
   const provider =
-    (env.CALENDAR_PROVIDER || (env.GOOGLE_CLIENT_ID ? 'google' : 'caldav')).toLowerCase() === 'google'
+    asked === 'google'
       ? ('google' as const)
-      : ('caldav' as const);
+      : asked === 'homeassistant' && env.SUPERVISOR_TOKEN
+        ? ('homeassistant' as const)
+        : ('caldav' as const);
   const faceDir = env.FACE_DIR || path.join(appDir, 'face');
   const cfg = {
     port: num(env.PORT, 3002),
@@ -89,6 +96,7 @@ export function readConfig(env: NodeJS.ProcessEnv, appDir: string, dataDir: stri
       password: env.CALDAV_PASSWORD || env.ICLOUD_APP_PASSWORD,
       calendarName: env.CALDAV_CALENDAR || env.ICLOUD_CALENDAR,
       extraCalendars: jsonList<CalendarConfig['extraCalendars'][number]>(env.EXTRA_CALENDARS), // [{ id, name, color }] more calendars on the same account
+      haCalendars: jsonList<CalendarConfig['haCalendars'][number]>(env.HA_CALENDARS), // the Home Assistant app: its calendars
       feeds: jsonList<CalendarConfig['feeds'][number]>(env.ICS_FEEDS).map(f => ({
         ...f,
         url: String(f.url || '').replace(/^webcal:/i, 'https:')
@@ -117,6 +125,8 @@ export function readConfig(env: NodeJS.ProcessEnv, appDir: string, dataDir: stri
   const c = cfg.calendar;
   if (c.provider === 'google' && !cfg.google.id)
     console.error('Chalk Planner: CALENDAR_PROVIDER=google but GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not set');
+  if (c.provider === 'homeassistant' && !c.haCalendars.length)
+    console.error('Chalk Planner: no Home Assistant calendars picked yet (admin console → ⚙️ Board → Calendar)');
   if (c.provider === 'caldav' && (!c.user || !c.password || !c.calendarName))
     console.error('Chalk Planner: CALDAV_USER / CALDAV_PASSWORD / CALDAV_CALENDAR are not set - no calendar events');
   return cfg;

@@ -13,7 +13,8 @@
      Ingress (its admins are the board's admins; everyone else has the
      role set in the console, or the default), nobody else can claim to be
      them, the board's own sign-ins are off, and pages are served from the
-     ingress path and may be framed by Home Assistant only.
+     ingress path and may be framed by Home Assistant only. Its calendars
+     are the board's: read, added to, changed and deleted as each allows.
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -54,7 +55,12 @@ test.before(async () => {
       UPDATER: 'homeassistant',
       HA_API_URL: `http://127.0.0.1:${HA}/api`,
       HA_WS_URL: `ws://127.0.0.1:${HA}/api/websocket`,
-      HA_INGRESS_FROM: '127.0.0.1'
+      HA_INGRESS_FROM: '127.0.0.1',
+      HA_CALENDARS: JSON.stringify([
+        { id: 'calendar.family', name: 'Family', color: '#9CC9E6', main: true },
+        { id: 'calendar.work', name: 'Work', color: '#E8A35C' },
+        { id: 'calendar.holidays', name: 'Holidays', color: '#F26B6B' }
+      ])
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -161,4 +167,111 @@ test('pages inside Home Assistant: its ingress path as the base, framed by Home 
   const outside = await fetch(base + '/admin');
   assert.match(await outside.text(), /<base href="\/">/);
   assert.equal(outside.headers.get('x-frame-options'), 'DENY');
+});
+
+// ------------------------------- //
+// | Home Assistant's calendars | //
+// ------------------------------- //
+type Ev = { title: string; start: string; time: string | null; cal?: string; readOnly?: boolean; ref?: unknown };
+const month = async () =>
+  (await (await admin('/api/month?ym=2026-10')).json()) as {
+    events: Ev[];
+    calendars: { id: string; main: boolean }[];
+  };
+const find = (m: { events: Ev[] }, t: string) => m.events.find(e => e.title === t);
+
+test('Home Assistant’s calendars are the board’s', async () => {
+  const pick = await (await admin('/api/board-settings/ha-calendars')).json();
+  assert.deepEqual(
+    pick.calendars.map((c: { id: string; canCreate: boolean }) => [c.id, c.canCreate]),
+    [
+      ['calendar.family', true],
+      ['calendar.holidays', false],
+      ['calendar.work', true]
+    ],
+    'by name'
+  );
+  const m = await month();
+  assert.match(String(find(m, 'Soccer')?.time), /^9(:00)?\s?(am|AM)?/, 'at 9 in the board’s time zone');
+  assert.equal(find(m, 'Soccer')?.start, '2026-10-10');
+  assert.equal(find(m, 'Soccer')?.cal, undefined, 'the main calendar has no label');
+  assert.equal(find(m, 'Field trip')?.start, '2026-10-16');
+  assert.equal(find(m, 'Team offsite')?.cal, 'Work');
+  assert.equal(find(m, 'Halloween')?.readOnly, true, 'a calendar Home Assistant can’t change');
+  assert.deepEqual(
+    m.calendars.map(c => [c.id, c.main]),
+    [
+      ['calendar.family', true],
+      ['calendar.work', false]
+    ],
+    'new events can go to the calendars that take them, the main one first'
+  );
+});
+
+test('adding, changing and deleting go to Home Assistant', async () => {
+  let r = await post(admin, '/api/events', {
+    title: 'Piano',
+    date: '2026-10-21',
+    allDay: false,
+    time: '16:30',
+    minutes: 45
+  });
+  assert.equal(r.status, 200, await r.clone().text());
+  r = await post(admin, '/api/events', {
+    title: 'Book fair',
+    date: '2026-10-22',
+    allDay: true,
+    calendarId: 'calendar.work'
+  });
+  assert.equal(r.status, 200);
+  r = await post(admin, '/api/events', {
+    title: 'Nope',
+    date: '2026-10-22',
+    allDay: true,
+    calendarId: 'calendar.holidays'
+  });
+  assert.equal(r.status, 502, 'a calendar Home Assistant can’t add to');
+  assert.equal(find(await month(), 'Nope'), undefined);
+  const piano = ha.state().calendars['calendar.family'].events.find(e => e.summary === 'Piano')!;
+  assert.equal(new Date(piano.start.dateTime!).toISOString(), '2026-10-21T20:30:00.000Z', 'in the board’s time zone');
+  assert.equal(new Date(piano.end.dateTime!).getTime() - new Date(piano.start.dateTime!).getTime(), 45 * 60000);
+  const fair = ha.state().calendars['calendar.work'].events.find(e => e.summary === 'Book fair')!;
+  assert.deepEqual([fair.start.date, fair.end.date], ['2026-10-22', '2026-10-23'], 'all day: ends the next day');
+
+  let m = await month();
+  // a calendar that can change events
+  r = await post(admin, '/api/events/update', {
+    ref: find(m, 'Soccer')!.ref,
+    title: 'Soccer (away)',
+    date: '2026-10-10',
+    allDay: false,
+    time: '10:00',
+    minutes: 90
+  });
+  assert.equal(r.status, 200, await r.clone().text());
+  assert.ok(ha.state().calls.includes('update calendar.family ev-soccer Soccer (away)'));
+  // one that can only add and delete (Home Assistant's Google calendars): deleted and added again
+  r = await post(admin, '/api/events/update', {
+    ref: find(m, 'Team offsite')!.ref,
+    title: 'Team offsite',
+    date: '2026-10-15',
+    allDay: false,
+    time: '13:00',
+    minutes: 120
+  });
+  assert.equal(r.status, 200, await r.clone().text());
+  assert.ok(ha.state().calls.includes('delete calendar.work ev-standup'));
+  m = await month();
+  assert.equal(find(m, 'Team offsite')?.start, '2026-10-15');
+  // and deleting
+  r = await post(admin, '/api/events/delete', { ref: find(m, 'Field trip')!.ref, origDate: '2026-10-16' });
+  assert.equal(r.status, 200);
+  assert.equal(find(await month(), 'Field trip'), undefined);
+  // someone who may only look can't
+  await post(admin, '/api/ha/people', { id: 'u-kid', role: 'view' });
+  assert.equal((await post(kid, '/api/events/delete', { ref: find(m, 'Piano')!.ref })).status, 403);
+  await post(admin, '/api/ha/people', { id: 'u-kid', role: null });
+  // nor can a made-up calendar be reached
+  r = await post(admin, '/api/events/delete', { ref: { href: 'ha:calendar.secret', etag: 'x' } });
+  assert.equal(r.status, 502);
 });
