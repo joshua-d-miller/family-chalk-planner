@@ -38,6 +38,7 @@ jobs:
           fi
           echo "TAG=$v" >> "$GITHUB_ENV"
           echo "tag=$v" >> "$GITHUB_OUTPUT"
+          echo "version=${v#v}" >> "$GITHUB_OUTPUT"
           echo "go=true" >> "$GITHUB_OUTPUT"
       - if: steps.v.outputs.go == 'true'
         run: npm ci
@@ -89,6 +90,19 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            VERSION=${{ steps.v.outputs.version }}
+          # the plain number (0.17.1) is the tag the Home Assistant app installs
           tags: |
             ghcr.io/${{ github.repository }}:${{ steps.v.outputs.tag }}
+            ghcr.io/${{ github.repository }}:${{ steps.v.outputs.version }}
             ghcr.io/${{ github.repository }}:latest
+      # The Home Assistant app (family-chalk-planner-ha) follows releases by itself every few hours; with a
+      # token that may write to it (secret HA_REPO_TOKEN), it hears about this one right away
+      - if: steps.v.outputs.go == 'true'
+        name: Tell the Home Assistant app
+        env:
+          GH_TOKEN: ${{ secrets.HA_REPO_TOKEN }}
+        run: |
+          [ -n "$GH_TOKEN" ] || { echo "No HA_REPO_TOKEN: the app picks this release up on its next check"; exit 0; }
+          gh api "repos/${{ github.repository_owner }}/family-chalk-planner-ha/dispatches" -f event_type=board-released

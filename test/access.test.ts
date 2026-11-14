@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | access.test.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.17.1
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-06
+ Updated:   2026-11-14
 
  Purpose:
      Who may do what: paired screens (view / family), people (editor /
@@ -47,6 +47,10 @@
 
                                   Server and tests are all TypeScript (ES
                                   modules).
+
+ 0.17.1    2026-11-14   joshua    Sign-in test: one authenticator code, made
+                        claude    once (no flake when the 30 seconds roll
+                                  over mid-test).
 ===============================================================================
 */
 
@@ -430,16 +434,17 @@ test('the admin console needs its own sign-in; the board sign-in alone isn’t e
 
 test('sign-in: password + code; codes can’t be reused; wrong tries lock out', async () => {
   const p = await invitePerson('nora', 'editor', 'nora password 1');
+  // one code, used again below (made once: asking again could land in the next 30 seconds' code)
+  const code = totpNow(p.secret, 1);
   const good = await raw('/api/account/login', {
     username: 'nora',
     password: 'nora password 1',
-    code: totpNow(p.secret, 1)
+    code
   });
   assert.equal(good.status, 200);
   assert.match(good.headers.getSetCookie()[0], /^fcp_user=/);
   assert.equal(
-    (await raw('/api/account/login', { username: 'nora', password: 'nora password 1', code: totpNow(p.secret, 1) }))
-      .status,
+    (await raw('/api/account/login', { username: 'nora', password: 'nora password 1', code })).status,
     401,
     'same code twice'
   );
@@ -448,7 +453,7 @@ test('sign-in: password + code; codes can’t be reused; wrong tries lock out', 
       await raw('/api/account/login', {
         username: 'nora',
         password: 'nora password 1',
-        code: totpNow(p.secret, 1),
+        code,
         kind: 'admin'
       })
     ).status,

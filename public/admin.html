@@ -241,7 +241,7 @@ button:disabled{opacity:.5;cursor:default}
       <div class="card">
         <h2>Weather</h2>
         <p class="dim">Search your town (Open-Meteo, no account needed). Leave empty to hide the weather.</p>
-        <div class="row"><div><label for="bfPlace">Town</label><input id="bfPlace" autocomplete="off" placeholder="State College"></div></div>
+        <div class="row"><div><label for="bfPlace">Town</label><input id="bfPlace" autocomplete="off" placeholder="Your town"></div></div>
         <div class="list" id="bfPlaces"></div>
         <div class="row">
           <div><label for="bfLat">Latitude</label><input id="bfLat" inputmode="decimal" data-k="LATITUDE"></div>
@@ -618,7 +618,8 @@ button:disabled{opacity:.5;cursor:default}
       var line = 'This board is running ' + u.version + '.';
       if (st && st.message) line += ' ' + (UP_STATE[st.state] || '') + st.message + (st.at ? ' (' + new Date(st.at).toLocaleString() + ')' : '');
       else if (u.can) line += ' Each night it checks for a newer version.';
-      if (!u.can) line += ' Updates: with Docker, pull the new image and restart the container; otherwise run sudo bash deploy/update.sh on the server.';
+      if (u.updater === 'homeassistant') line += ' Home Assistant updates it: Settings → Apps → Family Chalk Planner shows Update when there’s a new version.';
+      else if (!u.can) line += ' Updates: with Docker, pull the new image and restart the container; otherwise run sudo bash deploy/update.sh on the server.';
       if (u.requested && !(st && st.state === 'running')) line += ' Starting the update…';
       $('upNow').textContent = line;
       $('upGo').hidden = !u.can; $('upGo').disabled = !!busyNow;

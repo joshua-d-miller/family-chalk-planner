@@ -99,3 +99,5 @@ jobs:
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:3002/api/today && break; sleep 1; done
           docker logs fcp 2>&1 | grep -q 'setup code' || { docker logs fcp; exit 1; }
           [ "$(docker exec fcp stat -c %u /data/chalkboard.db)" = 1000 ]
+      - name: Docker and the Home Assistant app (options, Reset the admin, restart after saved settings)
+        run: bash test/docker-smoke.sh fcp:ci
