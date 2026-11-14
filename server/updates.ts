@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Server | updates.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   0.17.1
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-14
 
  Purpose:
      Updates, from the admin console. The board can't update itself (it
@@ -28,6 +28,9 @@
  0.13.0    2026-11-07   joshua    Updates: database backup and restore, a real
                         claude    health check, Update now and nightly
                                   updates.
+
+ 0.17.1    2026-11-14   joshua    Says when Home Assistant updates the board
+                        claude    (the app: UPDATER=homeassistant).
 ===============================================================================
 */
 
@@ -93,6 +96,7 @@ export function setup({
     res.set('Cache-Control', 'no-store').json({
       version,
       can: updater === 'systemd', // Docker and hand-made installs update another way
+      updater: updater || '', // 'systemd', 'homeassistant' (the app: Home Assistant updates it), or none
       requested: fs.existsSync(requestFile),
       status: status()
     });
@@ -101,7 +105,9 @@ export function setup({
     if (updater !== 'systemd')
       return res.status(400).json({
         error:
-          'This board can’t update itself from here. With Docker: pull the new image and restart the container. Otherwise run sudo bash deploy/update.sh on the server.'
+          updater === 'homeassistant'
+            ? 'Home Assistant updates this board: Settings → Apps → Family Chalk Planner → Update.'
+            : 'This board can’t update itself from here. With Docker: pull the new image and restart the container. Otherwise run sudo bash deploy/update.sh on the server.'
       });
     fs.writeFileSync(requestFile, new Date().toISOString() + '\n', { mode: 0o640 });
     audit(req, 'update.requested', { detail: `from ${version}` });

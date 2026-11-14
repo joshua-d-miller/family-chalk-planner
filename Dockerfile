@@ -15,6 +15,12 @@ FROM node:22-bookworm-slim
 
 # Optional face finder for photo framing (OpenCV, ~220 MB): docker build --build-arg WITH_FACE=true .
 ARG WITH_FACE=false
+# The version, for Home Assistant: the same image runs as its app (family-chalk-planner-ha)
+ARG VERSION=dev
+LABEL io.hass.type="app" \
+      io.hass.version="${VERSION}" \
+      io.hass.arch="amd64|aarch64" \
+      org.opencontainers.image.source="https://github.com/joshua-d-miller/family-chalk-planner"
 
 ENV NODE_ENV=production \
     PORT=3002 \

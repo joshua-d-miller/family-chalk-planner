@@ -4,6 +4,23 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 0.17.1 — A Home Assistant app, and a getting-started guide
+- **Home Assistant app:** [family-chalk-planner-ha](https://github.com/joshua-d-miller/family-chalk-planner-ha)
+  runs the board as a Home Assistant app: install it from the app store, and Home Assistant updates it and
+  includes it in its backups. The app is only a few files; it runs this project's own image and follows its
+  releases by itself.
+  - Images are also tagged with the plain version (`0.17.1`), which the app installs, and carry Home
+    Assistant's labels.
+  - Saving settings restarts the board inside the container (Home Assistant doesn't restart an app that
+    stops); Docker installs get the same quicker restart.
+  - The app's **Reset the admin** option, for a family locked out of the console; the console's Updates
+    section says Home Assistant takes care of updates.
+- **[Getting started](docs/getting-started.md):** one guide from nothing to the calendar on the wall, with a
+  screenshot of every step. The README points to it, with each way to install side by side.
+- New README screenshots, from a made-up family (made by `test/e2e/readme-shots.spec.ts`, so they can be
+  taken again any time); the guide's by `test/docs-shots.ts`.
+- The weather town's example in the console is "Your town".
+
 ## 0.17.0 — Pictures, reworked, and the ☰ button instead of the cork
 - **⭐ Pictures, reworked** (Tarin's feedback: hard to get to, odd-looking on the board, not much
   there):
