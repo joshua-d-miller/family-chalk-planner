@@ -39,6 +39,7 @@ const cfg: CalendarConfig = {
   password: 'p',
   calendarName: 'Family',
   extraCalendars: [],
+  haCalendars: [],
   feeds: []
 };
 const noGoogle = {} as Parameters<typeof createCalendarSource>[2];

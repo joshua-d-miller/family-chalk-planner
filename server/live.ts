@@ -21,6 +21,7 @@
 ===============================================================================
 */
 
+import type { ReqLike } from './access/http.ts';
 import type { Express, Response } from 'express';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -43,7 +44,7 @@ export function createLive() {
   // stillAllowed: checked every 25 s; a removed screen or an ended sign-in stops getting updates
   function serve(
     app: Express,
-    { version, stillAllowed }: { version: () => string; stillAllowed: (cookie: string) => boolean }
+    { version, stillAllowed }: { version: () => string; stillAllowed: (req: ReqLike) => boolean }
   ) {
     app.get('/api/stream', (req, res) => {
       res.set({
@@ -56,9 +57,8 @@ export function createLive() {
       res.write('retry: 3000\n\n');
       res.write(`event: hello\ndata: ${JSON.stringify({ v: version() })}\n\n`);
       clients.add(res);
-      const cookie = req.get('cookie') || '';
       const ping = setInterval(() => {
-        if (!stillAllowed(cookie)) {
+        if (!stillAllowed(req)) {
           clients.delete(res);
           res.end();
           return;

@@ -21,23 +21,6 @@ bash /opt/family-chalk-planner/deploy/install.sh
 
 Any folder works (for example `/home/pi/family-chalk-planner` on a Pi; the checkout stays owned by whoever cloned it). Options: `--no-face` skips the photo face finder, `--data DIR` keeps data elsewhere, `--no-start` sets up without starting. If you move the folder later, run `deploy/install.sh --unit-only` from its new location.
 
-### Private repository (before the project is public)
-Give the machine a read-only **deploy key**:
-
-```bash
-ssh-keygen -t ed25519 -N '' -C "family-chalk-planner@$(hostname)" -f /root/.ssh/fcp_deploy
-printf 'Host github-fcp\n  HostName github.com\n  User git\n  IdentityFile /root/.ssh/fcp_deploy\n  IdentitiesOnly yes\n' >> /root/.ssh/config
-cat /root/.ssh/fcp_deploy.pub
-```
-
-On GitHub: repository → **Settings → Deploy keys → Add deploy key**, paste the key, and leave **Allow write access** unchecked. Then:
-
-```bash
-ssh -o StrictHostKeyChecking=accept-new -T github-fcp   # says "successfully authenticated"
-git clone github-fcp:joshua-d-miller/family-chalk-planner.git /opt/family-chalk-planner
-bash /opt/family-chalk-planner/deploy/install.sh
-```
-
 ### Without git
 Download the code (GitHub → Code → Download ZIP), unzip it where it should live, and run `bash deploy/install.sh` inside it. To update, replace the code files with a newer copy (keep `data/`) and restart the service. With git, `update.sh` does this for you.
 

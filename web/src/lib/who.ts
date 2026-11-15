@@ -40,6 +40,8 @@ export interface Who {
   homeSignin: boolean;
   openView: boolean;
   firstRun?: boolean; // no admin yet: the admin console sets the board up
+  // the Home Assistant app: opened inside Home Assistant, and who Home Assistant says this is
+  ha?: { inside: boolean; person: { name: string; role: 'view' | 'family' | 'editor' | 'admin' } | null } | null;
 }
 export const RANK = { view: 1, family: 2, editor: 3, admin: 4 };
 

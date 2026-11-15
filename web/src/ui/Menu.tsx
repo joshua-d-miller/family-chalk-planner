@@ -208,7 +208,9 @@ export function Menu({
           </section>
         )}
         <div className="who">
-          {who?.user ? (
+          {who?.ha?.person ? (
+            <>Signed in to Home Assistant as {who.ha.person.name}.</>
+          ) : who?.user ? (
             <>
               Signed in as {who.user.name}.{' '}
               <button

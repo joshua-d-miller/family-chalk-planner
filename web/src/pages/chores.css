@@ -26,16 +26,19 @@
   opacity: 0.75;
   margin-left: 6px;
 }
-#chCols {
+#chCols,
+#chHa {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
   gap: 0 28px;
 }
-#chCols .section + .section {
+#chCols .section + .section,
+#chHa .section + .section {
   margin-top: 0;
 }
 @media (min-width: 700px) {
-  #chCols .section + .section {
+  #chCols .section + .section,
+  #chHa .section + .section {
     border-top: none;
   }
 }

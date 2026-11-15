@@ -87,6 +87,44 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+  homeassistant:
+    name: The Home Assistant app against a real Home Assistant (logins, calendar, to-do list, sidebar, live updates)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # a brand-new Home Assistant (the current release), started first: it takes a minute or two
+      - name: Start Home Assistant
+        run: |
+          mkdir -p "$RUNNER_TEMP/ha" && cp test/real-homeassistant/configuration.yaml "$RUNNER_TEMP/ha/"
+          docker run -d --name ha --network host -e TZ=America/New_York -v "$RUNNER_TEMP/ha:/config" \
+            ghcr.io/home-assistant/home-assistant:stable
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        id: pw
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium || (sleep 30 && npx playwright install --with-deps chromium)
+        if: steps.pw.outputs.cache-hit != 'true'
+      - run: npx playwright install-deps chromium || (sleep 30 && npx playwright install-deps chromium)
+        if: steps.pw.outputs.cache-hit == 'true'
+      - run: npm run build
+      - run: npm run test:homeassistant
+      - name: Home Assistant's log
+        if: failure()
+        run: docker logs ha 2>&1 | tail -200
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: home-assistant-test-report
+          path: |
+            playwright-report-ha/
+            test-results-ha/
+          retention-days: 7
   docker:
     name: Docker image builds and starts
     runs-on: ubuntu-latest

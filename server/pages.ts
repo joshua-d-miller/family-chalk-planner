@@ -62,6 +62,7 @@
 ===============================================================================
 */
 
+import { baseFor } from './access/ingress.ts';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -356,7 +357,7 @@ export function setup({
           .type('html')
           .send(
             html
-              .replace(/<base href="[^"]*"\s*\/?>/, '<base href="/">')
+              .replace(/<base href="[^"]*"\s*\/?>/, `<base href="${baseFor(req)}">`)
               .replace(/<title>[^<]*<\/title>/, `<title>${safeTitle}</title>`)
               .replace(
                 '<!--MANIFEST-->',
@@ -393,8 +394,17 @@ export function setup({
     app.get('/classic/edit', sendBoard('edit'));
     app.get('/classic/chores', sendBoard('chores'));
     // the admin console (sign-in, screens, people, my account) and invite links
+    // (its addresses are relative to <base>: inside Home Assistant that's the ingress path)
     for (const p of ['/admin', '/join'])
-      app.get(p, (_req, res) => res.set('Cache-Control', 'no-cache').sendFile(path.join(publicDir, 'admin.html')));
+      app.get(p, (req, res, next) =>
+        fs.readFile(path.join(publicDir, 'admin.html'), 'utf8', (err, html) => {
+          if (err) return next(err);
+          res
+            .set('Cache-Control', 'no-cache')
+            .type('html')
+            .send(html.replace(/<base href="[^"]*"\s*\/?>/, `<base href="${baseFor(req)}">`));
+        })
+      );
     app.use(express.static(publicDir));
   }
 

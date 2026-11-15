@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | App.tsx
 ===============================================================================
- Version:   0.15.0
+ Version:   1.0.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-08
+ Updated:   2026-11-14
 
  Purpose:
      Which page this is, and whether this screen may see it (else: sign
@@ -52,6 +52,10 @@
 
                                   🗓️ Week, its own page (changes the week where
                                   the screen may).
+
+ 1.0.0     2026-11-14   joshua    Inside Home Assistant: its people go
+                        claude    straight to the board, and its sidebar
+                                  hides while the board is open.
 ===============================================================================
 */
 
@@ -60,6 +64,7 @@ import { paintSurface, surfaceOf } from './lib/surface.ts';
 import { RANK, kidOf, useWho } from './lib/who.ts';
 import { PAGES, homeHref } from './routes.ts';
 import { navigate, useHere } from './lib/nav.ts';
+import { useHaSidebarHidden } from './lib/haSidebar.ts';
 import { Shell } from './ui/Shell.tsx';
 import { Board } from './board/Board.tsx';
 import { Chores } from './pages/Chores.tsx';
@@ -115,6 +120,7 @@ export function App() {
   useSlate();
   const here = useHere();
   const who = useWho();
+  useHaSidebarHidden(!!who.data?.ha?.inside); // inside Home Assistant: the board takes the whole width
   const def = PAGES.find(p => p.id === here);
   const View = VIEWS[here];
   useEffect(() => {
@@ -137,6 +143,7 @@ export function App() {
     if (!w.rank && w.firstRun) return go('admin');
     if (!w.rank || (new URLSearchParams(location.search).has('pair') && !w.device)) return <Pair who={w} />;
     if (w.device?.role === 'family' && !w.user) return go('edit'); // a family screen edits right on the board
+    if (w.ha?.person && w.rank >= RANK.family) return go('edit'); // inside Home Assistant: its people edit
     if (kidOf(w)) return go('chores'); // a kid's tablet opens on their chores
   }
   if (!w.rank && w.firstRun) return go('admin');

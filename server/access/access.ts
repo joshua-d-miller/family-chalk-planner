@@ -86,6 +86,12 @@
                         colby     or the ☰ button), and pins pictures to
                         claude    Favorites, and keeps a picture from the
                                   web it places.
+
+ 1.0.0     2026-11-14   joshua    As the Home Assistant app: people are
+                        claude    Home Assistant's own, through its Ingress
+                                  (its admins are the board's; everyone
+                                  else has the role set in the console), and
+                                  the board's own sign-ins are off.
 ===============================================================================
 */
 
@@ -97,6 +103,8 @@ import type { Kv } from '../kv.ts';
 import { describe, openedByIp, parseCookies, privateAddress } from './http.ts';
 import type { ReqLike } from './http.ts';
 import { fmtCode, normCode, randCode, randomKey, safeEq, sha } from './secrets.ts';
+import { haApp, ingressPath, ingressUser } from './ingress.ts';
+import type { HomeAssistant } from '../homeassistant.ts';
 import { makeStore } from './store.ts';
 import type { Device, Session, User } from './store.ts';
 import { registerScreens } from './screens.ts';
@@ -156,6 +164,12 @@ export interface AuditInfo {
   refId?: string | number | bigint | null;
 }
 type Kind = 'edit' | 'admin';
+type HaRole = keyof typeof RANK;
+interface HaWho {
+  id: string;
+  name: string;
+  role: HaRole;
+}
 type SignedIn = Session & { user: User };
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -170,7 +184,8 @@ export function setup(
     dataDir,
     env,
     title,
-    broadcast
+    broadcast,
+    ha = null
   }: {
     db: DatabaseSync;
     kv: Kv;
@@ -178,6 +193,7 @@ export function setup(
     env: NodeJS.ProcessEnv;
     title: string;
     broadcast: (event: string, data: unknown) => void;
+    ha?: HomeAssistant | null;
   }
 ) {
   const q = makeStore(db);
@@ -210,7 +226,10 @@ export function setup(
   const secCfg = (): SecCfg => ({ ...SEC_DEFAULT, ...(kv.get<Partial<SecCfg>>('security') || {}) });
 
   // ---- who is this? (a paired screen, a signed-in person, or both); remembered for the request ----
-  const seen = new WeakMap<object, { dev?: Device | null; edit?: SignedIn | null; admin?: SignedIn | null }>();
+  const seen = new WeakMap<
+    object,
+    { dev?: Device | null; edit?: SignedIn | null; admin?: SignedIn | null; ha?: HaWho | null }
+  >();
   // ---------------- //
   // | Who is this? | //
   // ---------------- //
@@ -256,7 +275,59 @@ export function setup(
     if (s && now - s.last_seen > (kind === 'admin' ? 15e3 : 60e3)) q.sSeen(now, req.ip || '', s.key_hash);
     return (m[kind] = s && u ? { ...s, user: u } : null);
   }
-  const userOf = (req: ReqLike) => (sessionOf(req, 'admin') || sessionOf(req, 'edit'))?.user || null;
+  // ------------------------------------------ //
+  // | A Home Assistant person (the app only) | //
+  // ------------------------------------------ //
+  // Opened inside Home Assistant: Home Assistant already signed them in and //
+  // says who they are. Its admins are the board's admins; everyone else    //
+  // has the role an admin set for them in the console (or the default).    //
+  // Worked out before the rules (it asks Home Assistant who its admins     //
+  // are), then remembered for the request.                                 //
+  const haRoles = () => kv.get<Record<string, HaRole>>('haRoles') || {};
+  const haDefault = (): HaRole => kv.get<HaRole>('haDefaultRole') || 'family';
+  const haKnown = new Map<string, HaWho>(); // id -> who, as last seen (for live streams' re-checks)
+  async function resolveHa(req: ReqLike) {
+    const m = memo(req);
+    if (m.ha !== undefined) return m.ha;
+    const u = ingressUser(req);
+    if (!u || !ha) return (m.ha = null);
+    let admin: boolean;
+    try {
+      admin = !!(await ha.person(u.id))?.admin;
+    } catch (e) {
+      console.error(`Chalk Planner: couldn't ask Home Assistant who its admins are: ${(e as Error).message}`);
+      admin = haKnown.get(u.id)?.role === 'admin'; // the last answer, if there was one
+    }
+    const role: HaRole = admin ? 'admin' : haRoles()[u.id] || haDefault();
+    const who = { id: u.id, name: u.name, role };
+    haKnown.set(u.id, who);
+    return (m.ha = who);
+  }
+  const haOf = (req: ReqLike) => memo(req).ha || null;
+  // a Home Assistant person who may change things, as the board's other code expects a person
+  const haUser = (w: HaWho): User => ({
+    id: 'ha:' + w.id,
+    username: w.name,
+    name: w.name,
+    role: w.role === 'admin' ? 'admin' : 'editor',
+    pw_hash: null,
+    totp_secret: null,
+    totp_ok: 1,
+    totp_last: 0,
+    created: 0,
+    last_login: null
+  });
+  if (haApp())
+    app.use(async (req, _res, next) => {
+      await resolveHa(req);
+      next();
+    });
+
+  const userOf = (req: ReqLike) => {
+    const w = haOf(req);
+    if (w) return w.role === 'admin' || w.role === 'editor' ? haUser(w) : null;
+    return (sessionOf(req, 'admin') || sessionOf(req, 'edit'))?.user || null;
+  };
   // ------------------ //
   // | A kid's tablet | //
   // ------------------ //
@@ -267,8 +338,10 @@ export function setup(
     const m = /^kid:([a-z0-9]{1,16})$/.exec(deviceOf(req)?.role || '');
     return m ? m[1] : null;
   };
-  const whoOf = (req: ReqLike) => userOf(req)?.name || deviceOf(req)?.name || 'someone';
+  const whoOf = (req: ReqLike) => haOf(req)?.name || userOf(req)?.name || deviceOf(req)?.name || 'someone';
   function rankOf(req: ReqLike) {
+    const w = haOf(req);
+    if (w) return RANK[w.role];
     let r = openView ? 1 : 0;
     const d = deviceOf(req);
     if (d) r = Math.max(r, roleRank(d.role));
@@ -288,7 +361,7 @@ export function setup(
       const m = memo(req);
       const u = m.admin?.user || m.edit?.user;
       const d = m.dev;
-      actor = u ? u.username : d ? 'screen: ' + d.name : null;
+      actor = m.ha ? 'Home Assistant: ' + m.ha.name : u ? u.username : d ? 'screen: ' + d.name : null;
     }
     try {
       q.aAdd(
@@ -414,7 +487,8 @@ export function setup(
     });
     return newSetupCode();
   }
-  if (q.uAdmins() === 0) {
+  if (haApp()) console.log('Family Chalk Planner: open it from Home Assistant (its sidebar, or the app’s Open web UI)');
+  else if (q.uAdmins() === 0) {
     const code = setupOpen() && fs.existsSync(setupFile) ? fs.readFileSync(setupFile, 'utf8').trim() : newSetupCode();
     console.log(`Family Chalk Planner: no admin yet. Open /admin and enter the setup code ${code}`);
   }
@@ -476,7 +550,7 @@ export function setup(
   // at all. No framing, no referrer, no camera or microphone, and nothing   //
   // private is cached.                                                      //
   const CSP_CONSOLE =
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'";
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
   // the new screens (React): no inline scripts at all
   const CSP_APP =
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'";
@@ -502,7 +576,14 @@ export function setup(
             ? CSP_APP
             : CSP_OTHER
     );
-    if (/^\/api\/(whoami|account|users|devices|security|pair|passkey)/.test(p)) res.set('Cache-Control', 'no-store');
+    if (/^\/api\/(whoami|account|users|devices|security|pair|passkey|ha\/)/.test(p))
+      res.set('Cache-Control', 'no-store');
+    // inside Home Assistant the board is shown in its frame (same address as Home Assistant)
+    if (ingressPath(req)) {
+      res.removeHeader('X-Frame-Options');
+      const csp = String(res.get('Content-Security-Policy') || '');
+      res.set('Content-Security-Policy', csp.replace("frame-ancestors 'none'", "frame-ancestors 'self'"));
+    }
     next();
   });
 
@@ -580,6 +661,7 @@ export function setup(
     '/border',
     '/frame',
     '/chores/check',
+    '/chores/ha-check', // a Home Assistant to-do list
     // reminders, timers, the pantry and the right-hand column's pages
     '/reminders',
     '/reminders/item',
@@ -599,6 +681,7 @@ export function setup(
     '/clip/web/keep' // a public-domain picture from the web, onto the board
   ]);
   const ADMIN = [
+    /^\/ha\//,
     /^\/board-settings/,
     /^\/devices/,
     /^\/users/,
@@ -618,6 +701,9 @@ export function setup(
   app.use('/api', (req, res, next) => {
     const write = !(req.method === 'GET' || req.method === 'HEAD');
     if (write && req.get('X-Chalk') !== '1') return res.status(403).json({ error: 'Missing request header' }); // no cross-site form posts
+    // the app: people sign in to Home Assistant, not to the board
+    if (haApp() && (/^\/(account|passkey)\//.test(req.path) || /^\/users\/(invite|reinvite)/.test(req.path)))
+      return res.status(403).json({ error: 'Sign-in is Home Assistant’s: open the board from Home Assistant' });
     if (PUBLIC.some(r => r.test(req.path)) || SELF.some(r => r.test(req.path))) return next();
     const need = ADMIN.some(r => r.test(req.path))
       ? RANK.admin
@@ -674,20 +760,69 @@ export function setup(
     const d = deviceOf(req);
     const e = sessionOf(req, 'edit');
     const a = sessionOf(req, 'admin');
-    const u = (a || e)?.user;
+    const w = haOf(req);
+    const u = w ? userOf(req) : (a || e)?.user;
     res.json({
       device: d ? { id: d.id, name: d.name, role: d.role } : null,
       user: u ? { username: u.username, name: u.name, role: u.role } : null,
-      editor: !!e || !!a,
-      admin: !!a,
+      editor: w ? RANK[w.role] >= RANK.editor : !!e || !!a,
+      admin: w ? w.role === 'admin' : !!a,
       rank: rankOf(req),
-      setup: setupOpen(),
-      firstRun: q.uAdmins() === 0,
+      // the Home Assistant app: who Home Assistant says this is, and whether it's opened inside it
+      ha: haApp() ? { inside: !!ingressPath(req), person: w ? { name: w.name, role: w.role } : null } : null,
+      setup: haApp() ? false : setupOpen(),
+      firstRun: haApp() ? false : q.uAdmins() === 0,
       passkeys: passkeysHere(req),
       publicUrl: rp ? rp.origin : null,
       openView,
       homeSignin: homeSignin(req) // the board's sign-in needs no authenticator code here
     });
+  });
+
+  // ------------------------------------------- //
+  // | Home Assistant's people, and their roles | //
+  // ------------------------------------------- //
+  // The admin console's People, as the app: everyone with a Home Assistant  //
+  // login, the role each has on the board (its admins are always admins),  //
+  // and the role for anyone not set yet.                                    //
+  app.get('/api/ha/people', async (_req, res) => {
+    if (!ha) return res.status(404).json({ error: 'Only as the Home Assistant app' });
+    try {
+      const roles = haRoles();
+      res.json({
+        default: haDefault(),
+        people: (await ha.listPeople(true)).map(p => ({
+          id: p.id,
+          name: p.name,
+          admin: p.admin,
+          role: p.admin ? 'admin' : roles[p.id] || null
+        }))
+      });
+    } catch (e) {
+      res.status(502).json({ error: (e as Error).message });
+    }
+  });
+  app.post('/api/ha/people', (req, res) => {
+    if (!ha) return res.status(404).json({ error: 'Only as the Home Assistant app' });
+    const b = req.body || {};
+    const ok = (r: unknown): r is HaRole => typeof r === 'string' && r in RANK;
+    if (b.default !== undefined) {
+      if (!ok(b.default) || b.default === 'admin')
+        return res.status(400).json({ error: 'Pick view, family or editor' });
+      kv.set('haDefaultRole', b.default);
+      audit(req, 'ha.role', { target: 'anyone not set', detail: b.default });
+    }
+    if (b.id !== undefined) {
+      if (typeof b.id !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(b.id) || !(b.role === null || ok(b.role)))
+        return res.status(400).json({ error: 'Bad person or role' });
+      const roles = haRoles();
+      if (b.role === null) delete roles[b.id];
+      else roles[b.id] = b.role;
+      kv.set('haRoles', roles);
+      haKnown.delete(b.id);
+      audit(req, 'ha.role', { target: String(b.name || b.id).slice(0, 60), detail: b.role || 'the default' });
+    }
+    res.json({ ok: true });
   });
 
   // ------------------------------ //
@@ -730,8 +865,11 @@ export function setup(
   // ------------------ //
   // Still allowed? (for open live-update streams: re-checked so a removed   //
   // screen or ended sign-in stops getting updates)                          //
-  function stillAllowed(cookieHeader: string) {
-    const fake: ReqLike = { get: h => (String(h).toLowerCase() === 'cookie' ? cookieHeader : ''), ip: '' };
+  function stillAllowed(req: ReqLike) {
+    // inside Home Assistant: Home Assistant ends the session when they sign out of it
+    const u = ingressUser(req);
+    if (u) return RANK[haKnown.get(u.id)?.role || haDefault()] > 0;
+    const fake: ReqLike = { get: h => (String(h).toLowerCase() === 'cookie' ? req.get('cookie') : ''), ip: '' };
     return rankOf(fake) > 0;
   }
 

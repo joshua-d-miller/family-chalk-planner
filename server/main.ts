@@ -100,6 +100,8 @@ import * as reminders from './reminders.ts';
 import * as timers from './timers.ts';
 import * as pantry from './pantry.ts';
 import * as media from './media.ts';
+import { makeHomeAssistant } from './homeassistant.ts';
+import * as haTodos from './ha-todos.ts';
 import * as webclip from './webclip.ts';
 import * as photos from './photos/photos.ts';
 import * as pages from './pages.ts';
@@ -200,11 +202,27 @@ app.set('trust proxy', cfg.trustProxy);
 // Who may do what: paired screens and signed-in people, the admin console   //
 // (server/access/). Registered first: its rules run before every other      //
 // route.                                                                    //
-const who = access.setup(app, { db, kv, dataDir: DATA_DIR, env: ENV, title: cfg.title, broadcast });
+// The Home Assistant app: Home Assistant's people, calendars and to-do lists, through its Supervisor
+const ha = ENV.SUPERVISOR_TOKEN
+  ? makeHomeAssistant({
+      token: ENV.SUPERVISOR_TOKEN,
+      ...(ENV.HA_API_URL ? { api: ENV.HA_API_URL } : {}),
+      ...(ENV.HA_WS_URL ? { ws: ENV.HA_WS_URL } : {})
+    })
+  : null;
+const who = access.setup(app, { db, kv, dataDir: DATA_DIR, env: ENV, title: cfg.title, broadcast, ha });
 if (process.argv.includes('--reset-admin')) {
   // deploy/reset-admin.sh
-  console.log(`Removed every person, sign-in and paired screen. New setup code: ${who.resetAll()}`);
-  console.log('Open /admin on a tablet or computer, enter the code and create the admin again; then pair the screens.');
+  const code = who.resetAll();
+  if (ha)
+    // the app: Home Assistant's admins are the board's admins, so there's no setup code to use
+    console.log('Removed every paired screen. Pair them again from the admin console (in Home Assistant’s sidebar).');
+  else {
+    console.log(`Removed every person, sign-in and paired screen. New setup code: ${code}`);
+    console.log(
+      'Open /admin on a tablet or computer, enter the code and create the admin again; then pair the screens.'
+    );
+  }
   process.exit(0);
 }
 
@@ -264,7 +282,16 @@ const holidayList = holidays.setup({ app, country: cfg.holidays, broadcast, toda
 // anything wrong).                                                          //
 const google = createGoogle(cfg.google, DATA_DIR);
 // the last good copy of each calendar's months, for when one can't be reached (server/calendar/cache.ts)
-const calendar = createCalendarSource(cfg.calendar, clock, google, makeCalendarCache(db));
+const calendar = createCalendarSource(cfg.calendar, clock, google, makeCalendarCache(db), ha);
+// ⚙️ Board → Calendar in the Home Assistant app: the calendars Home Assistant has, to pick from
+app.get('/api/board-settings/ha-calendars', async (_req, res) => {
+  if (!ha) return res.status(404).json({ error: 'Only in the Home Assistant app' });
+  try {
+    res.set('Cache-Control', 'no-store').json({ calendars: await calendar.haCalendars() });
+  } catch (e) {
+    res.status(502).json({ error: 'Home Assistant didn’t answer: ' + (e as Error).message });
+  }
+});
 registerGoogleRoutes(app, {
   google,
   enabled: cfg.calendar.provider === 'google',
@@ -329,6 +356,8 @@ chores.setup({
   kidOf: req => who.kidOf(req),
   who: req => who.whoOf(req)
 });
+// the Home Assistant app: its to-do lists on the Chores page
+haTodos.setup({ app, ha, lists: cfg.haTodoLists, broadcast });
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------- //
@@ -418,7 +447,7 @@ registerSettingsRoutes(app, {
   audit: who.audit
 });
 updates.setup({ app, db, dataDir: DATA_DIR, version: VERSION, updater: ENV.UPDATER, audit: who.audit });
-live.serve(app, { version: site.boardVersion, stillAllowed: ck => who.stillAllowed(ck) });
+live.serve(app, { version: site.boardVersion, stillAllowed: req => who.stillAllowed(req) });
 site.serve(); // last: the pages, then any file in public/
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -1,6 +1,6 @@
 {
   "name": "family-chalk-planner",
-  "version": "0.17.2",
+  "version": "1.0.0",
   "description": "A chalkboard-style family wall calendar: CalDAV events, chalk art, photos, meal plan and reward jars, edited from a tablet.",
   "license": "AGPL-3.0-or-later",
   "private": true,
@@ -10,6 +10,7 @@
     "start": "node server/chalkboard.js",
     "test": "node --test test/*.test.ts",
     "test:e2e": "playwright test",
+    "test:homeassistant": "playwright test -c playwright.homeassistant.config.ts",
     "build": "vite build",
     "dev:web": "vite",
     "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json && tsc -p web/tsconfig.json",

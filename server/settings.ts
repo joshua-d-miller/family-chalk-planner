@@ -98,7 +98,27 @@ export const FIELDS: Record<string, Field> = {
   LONGITUDE: { type: 'num', min: -180, max: 180 },
   TEMP_UNIT: { type: 'enum', values: ['fahrenheit', 'celsius'] },
   // calendar
-  CALENDAR_PROVIDER: { type: 'enum', values: ['caldav', 'google'] },
+  CALENDAR_PROVIDER: { type: 'enum', values: ['caldav', 'google', 'homeassistant'] },
+  // the Home Assistant app: which of its calendars, the main one first: [{ id, name, color, main }]
+  HA_CALENDARS: {
+    type: 'json',
+    check: v =>
+      jsonList(
+        v,
+        c =>
+          typeof c.id === 'string' &&
+          /^calendar\.[a-z0-9_]{1,200}$/.test(c.id) &&
+          isName(c.name, 100) &&
+          isHex(c.color) &&
+          (c.main === undefined || typeof c.main === 'boolean')
+      )
+  },
+  // the Home Assistant app: its to-do lists on the Chores page: [{ id, name }]
+  HA_TODO_LISTS: {
+    type: 'json',
+    check: v =>
+      jsonList(v, c => typeof c.id === 'string' && /^todo\.[a-z0-9_]{1,200}$/.test(c.id) && isName(c.name, 100))
+  },
   CALDAV_URL: { type: 'url' },
   CALDAV_USER: { type: 'text', max: 200, private: true },
   CALDAV_PASSWORD: { type: 'secret' },
