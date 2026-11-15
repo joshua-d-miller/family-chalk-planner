@@ -40,8 +40,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const PORT = 3995,
-  GPORT = 5995,
+const PORT = 3998, // (each test file has its own ports: they run at the same time)
+  GPORT = 5998,
   PIN = '1357';
 const base = `http://127.0.0.1:${PORT}`;
 let server,
