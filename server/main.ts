@@ -213,8 +213,16 @@ const ha = ENV.SUPERVISOR_TOKEN
 const who = access.setup(app, { db, kv, dataDir: DATA_DIR, env: ENV, title: cfg.title, broadcast, ha });
 if (process.argv.includes('--reset-admin')) {
   // deploy/reset-admin.sh
-  console.log(`Removed every person, sign-in and paired screen. New setup code: ${who.resetAll()}`);
-  console.log('Open /admin on a tablet or computer, enter the code and create the admin again; then pair the screens.');
+  const code = who.resetAll();
+  if (ha)
+    // the app: Home Assistant's admins are the board's admins, so there's no setup code to use
+    console.log('Removed every paired screen. Pair them again from the admin console (in Home Assistant’s sidebar).');
+  else {
+    console.log(`Removed every person, sign-in and paired screen. New setup code: ${code}`);
+    console.log(
+      'Open /admin on a tablet or computer, enter the code and create the admin again; then pair the screens.'
+    );
+  }
   process.exit(0);
 }
 
