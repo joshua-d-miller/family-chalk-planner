@@ -2,13 +2,14 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Sheet.tsx
 ===============================================================================
- Version:   0.17.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-14
+ Updated:   2026-11-17
 
  Purpose:
-     A card over the page, for adding or changing one thing. Escape or a
-     tap outside closes it.
+     A card over the page, for adding or changing one thing. The ✕ at its
+     top right, Escape, or a tap outside closes it (the same as Cancel:
+     nothing is saved).
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -24,6 +25,11 @@
  0.17.0    2026-11-14   joshua    A card can open without focusing anything
                         claude    (Pictures: its search box would bring up the
                                   keyboard on a touch screen every time).
+
+ 1.1.0    2026-11-17   joshua    A ✕ at the top right of every card, so a
+                        claude    long one can be closed without scrolling
+                                  down to Cancel or tapping outside it. Its
+                                  title row stays put while the card scrolls.
 ===============================================================================
 */
 
@@ -55,7 +61,9 @@ export function Sheet({
   // redraws scrolled it back to the top while you were picking further down)
   useEffect(() => {
     if (focus)
-      ref.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus({ preventScroll: true });
+      ref.current
+        ?.querySelector<HTMLElement>('input, select, textarea, button:not(.closex)')
+        ?.focus({ preventScroll: true });
     const key = (e: KeyboardEvent) => e.key === 'Escape' && close.current();
     addEventListener('keydown', key);
     return () => removeEventListener('keydown', key);
@@ -72,10 +80,28 @@ export function Sheet({
       }}
     >
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title} ref={ref} id={id}>
-        <h3>{title}</h3>
+        {/* the title and the ✕: stay at the top while a long card scrolls */}
+        <div className="shead">
+          <h3>{title}</h3>
+          <CloseX onClose={onClose} />
+        </div>
         {children}
       </div>
     </div>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | The ✕ | //
+// --------- //
+// The close button at a card's (or the ☰ menu's) top right: big enough for  //
+// a child's finger, and named "Close" for screen readers.                   //
+export function CloseX({ onClose, label = 'Close' }: { onClose: () => void; label?: string }) {
+  return (
+    <button type="button" className="closex" aria-label={label} title={label} onClick={onClose}>
+      <span aria-hidden="true">✕</span>
+    </button>
   );
 }
 

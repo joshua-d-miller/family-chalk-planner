@@ -883,6 +883,8 @@ button:disabled{opacity:.5;cursor:default}
         var sel = el('select'); sel.setAttribute('aria-label', 'What it may do');
         Object.keys(SCREEN_ROLES).concat(chorePeople.map(function (p) { return 'kid:' + p.id; })).forEach(function (r) { var o = el('option', null, roleName(r)); o.value = r; sel.appendChild(o); });
         if (!Array.prototype.some.call(sel.options, function (o) { return o.value === x.role; })) { var o = el('option', null, roleName(x.role)); o.value = x.role; sel.appendChild(o); }
+        // a kid's tablet belongs to someone from Chores: with nobody there yet, say so rather than leave it out
+        if (!chorePeople.length) { var ko = el('option', null, '🧒 Kid’s tablet (add the family in 🧹 Chores first)'); ko.value = ''; ko.disabled = true; sel.appendChild(ko); }
         sel.value = x.role;
         sel.addEventListener('change', function () { api('api/devices/update', { id: x.id, role: sel.value }).catch(function (e) { $('dvErr').textContent = e.message; sel.value = x.role; }); });
         var rm = el('button', 'sm del', 'Remove');

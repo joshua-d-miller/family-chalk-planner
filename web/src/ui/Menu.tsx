@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Menu.tsx
 ===============================================================================
- Version:   0.17.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-12
+ Updated:   2026-11-17
 
  Purpose:
      The ☰ menu: every page, what this screen may open; 📌 keeps one on
@@ -35,6 +35,9 @@
  0.17.0    2026-11-12   joshua    From the right or the left (the ☰ button's
                         colby     drawer), with the calendar's tools at the
                         claude    top; "This screen's menu" at the bottom.
+
+ 1.1.0    2026-11-17   joshua    A ✕ at the top right to close it (a tap
+                        claude    outside still closes it too).
 ===============================================================================
 */
 
@@ -43,6 +46,7 @@ import { post } from '../lib/api.ts';
 import { MAX_FAVORITES, useFavorites } from '../lib/favorites.ts';
 import { MENU_STYLES, setMenuPref, useMenuPref } from '../lib/menuStyle.ts';
 import type { Who } from '../lib/who.ts';
+import { CloseX } from './Sheet.tsx';
 import { PAGES, homeHref, isHome } from '../routes.ts';
 import { useShell } from './Shell.tsx';
 
@@ -96,6 +100,7 @@ export function Menu({
         id="menuPanel"
         onClick={e => (e.target as Element).closest('a') && onClose()}
       >
+        <CloseX onClose={onClose} label="Close the menu" />
         {tools && (
           <section
             className="mtools"

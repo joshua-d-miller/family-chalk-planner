@@ -4,6 +4,14 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.1.0 — in progress
+
+- **A ✕ to close every card**, at its top right, and on the ☰ menu. It stays at the top while a long card
+  scrolls, so there's no scrolling down to Cancel or tapping outside the card. Like Cancel, it doesn't save.
+- **Admin console → 📺 Screens:** a paired screen's list now always shows 🧒 Kid's tablet. Before anyone is added
+  in 🧹 Chores it's greyed out and says to add the family there first (it used to be missing, leaving only View
+  only and Family).
+
 ## 1.0.0 — Ready for everyone, and part of Home Assistant
 The first public release. For Docker and Linux nothing changes for a board that's already running; this marks
 the board as ready for other families to install and rely on.

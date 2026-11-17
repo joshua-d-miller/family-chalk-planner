@@ -222,12 +222,55 @@
   flex-direction: column;
   gap: 12px;
 }
+/* the title and the ✕: pinned to the top while a long card scrolls (the negative
+   margins reach out over the card's padding so nothing shows through above it) */
+.sheet .shead {
+  position: sticky;
+  top: -18px;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: -18px -22px 0;
+  padding: 18px 14px 4px 22px;
+  background: var(--slate);
+}
+.sheet .shead h3 {
+  flex: 1;
+  min-width: 0;
+}
 .sheet h3 {
   margin: 0;
   font-family: var(--script);
   font-weight: 700;
   font-size: 2em;
   color: var(--pink);
+}
+/* the ✕ at the top right of a card or the ☰ menu: a round 44px target */
+.closex {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  margin: -4px 0 0;
+  border-radius: 50%;
+  border: 2px solid var(--faint);
+  background: rgba(20, 20, 19, 0.7);
+  color: var(--chalk);
+  font-family: var(--emoji), sans-serif;
+  font-size: 1.1em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.closex:hover,
+.closex:focus-visible {
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+.closex:active {
+  transform: scale(0.94);
 }
 .sheet .actions {
   display: flex;
