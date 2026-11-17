@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | fixtures.ts
 ===============================================================================
- Version:   0.14.2
+ Version:   1.1.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-08
+ Updated:   2026-11-17
 
  Purpose:
      A real board for the browser tests: the server with a fake calendar,
@@ -23,6 +23,10 @@
 
  0.14.2    2026-11-08   joshua    Waits for a screen to finish loading, not a
                         claude    fixed second.
+
+ 1.1.0    2026-11-17   joshua    Waits for the picture styles to unpack
+                        claude    before the tests start (two Pictures tests
+                                  failed when they ran before that).
 ===============================================================================
 */
 
@@ -115,6 +119,13 @@ async function startBoard(workerIndex: number) {
   const adm = await makeAdmin(url, data);
   const admin = client(url, adm.cookie);
   await admin.post('/api/photos/sync', {});
+  // the picture styles unpack in the background after the board starts: wait for them, so the
+  // Pictures tests never depend on how quickly the machine running them is
+  for (let i = 0; i < 180; i++) {
+    const st = await (await admin.api('/api/clip/styles')).json();
+    if (Array.isArray(st) && st.length && st.every((x: { count: number }) => x.count)) break;
+    await new Promise(r => setTimeout(r, 1000));
+  }
   // no overnight slideshow over the tests (it has its own test, with a night-time clock)
   await admin.post('/api/photos/settings', { night: false });
   // an editor, like a parent's own tablet: invited, password + authenticator code
