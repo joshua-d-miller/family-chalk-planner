@@ -125,6 +125,49 @@ jobs:
             playwright-report-ha/
             test-results-ha/
           retention-days: 7
+  realservers:
+    name: Real calendar and photo servers (Radicale CalDAV, Immich), no accounts
+    runs-on: ubuntu-latest
+    env:
+      IMMICH_VERSION: v3 # the major version tested; Immich's own compose file, without its machine learning
+    steps:
+      - uses: actions/checkout@v7
+      # Immich first: it takes a minute to start
+      - name: Start Immich
+        run: |
+          mkdir -p "$RUNNER_TEMP/immich" && cd "$RUNNER_TEMP/immich"
+          curl -fsSL -o docker-compose.yml https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml
+          curl -fsSL -o .env https://github.com/immich-app/immich/releases/latest/download/example.env
+          sed -i "s/^IMMICH_VERSION=.*/IMMICH_VERSION=$IMMICH_VERSION/" .env
+          docker compose up -d immich-server redis database
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Start Radicale
+        run: |
+          pip install radicale==3.5.4
+          bash test/real-servers/start-radicale.sh "$RUNNER_TEMP/radicale"
+      - name: Wait for Immich
+        run: |
+          for i in $(seq 1 90); do
+            curl -fsS http://127.0.0.1:2283/api/server/ping && exit 0
+            sleep 2
+          done
+          exit 1
+      - run: node --test test/real-servers.test.ts
+        env:
+          REAL_CALDAV_URL: http://127.0.0.1:5232/
+          REAL_CALDAV_USER: family
+          REAL_CALDAV_PASSWORD: secret
+          REAL_IMMICH_URL: http://127.0.0.1:2283
+      - name: Immich's log
+        if: failure()
+        run: docker logs immich_server 2>&1 | tail -200
   docker:
     name: Docker image builds and starts
     runs-on: ubuntu-latest

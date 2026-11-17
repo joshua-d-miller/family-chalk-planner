@@ -56,6 +56,7 @@
                                   picker too.
                                   The next countdown on the slideshow
                                   (showCountdown, on unless turned off).
+                                  Check connections: the album read now.
 ===============================================================================
 */
 
@@ -568,6 +569,22 @@ export function setup({
     await sync();
     res.json({ picked: ids.length, photos: state.list.length });
   });
+
+  // ------------------------------------- //
+  // | Check connections (admin console) | //
+  // ------------------------------------- //
+  // The album read now, with the board's own settings.                      //
+  async function check() {
+    if (!enabled) return { name: 'Photos', ok: null, detail: 'No photo album set up yet' };
+    await sync();
+    if (state.error) return { name: 'Photos', ok: false, detail: state.error };
+    return {
+      name: 'Photos',
+      ok: true,
+      detail: `Read the album: ${state.all.length} photos, ${state.list.length} shown on the board`
+    };
+  }
+  return { check };
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -564,6 +564,22 @@ test('countdowns in sleeps or days: nothing saved until a screen picks, and the 
   await post('/api/devices/sleeps', { id: 'wall1', sleeps: null });
 });
 
+test('Check connections: the calendar and the photos now, and a real round trip only when asked', async () => {
+  type C = { name: string; ok: boolean | null; detail: string };
+  let r = await (await post('/api/board-settings/check', {})).json();
+  const by = (n: string) => (r.checks as C[]).find(c => c.name === n);
+  assert.equal(by('Calendar')?.ok, true, by('Calendar')?.detail);
+  assert.equal(by('Photos')?.ok, true, by('Photos')?.detail);
+  assert.equal(by('Adding an event'), undefined, 'nothing added unless asked');
+  r = await (await post('/api/board-settings/check', { write: true })).json();
+  assert.equal(by('Adding an event')?.ok, true, by('Adding an event')?.detail);
+  // the test event is gone again
+  const y = new Date(Date.now() + 400 * 864e5).toISOString().slice(0, 7);
+  const m = await (await api('/api/month?ym=' + y)).json();
+  assert.ok(!m.events.some((e: { title: string }) => /Chalk Planner check/.test(e.title)));
+  assert.equal(r.outage, null);
+});
+
 test('the calendar can’t be reached: the month still shows, with its holidays and the problem', async () => {
   dav.close();
   (dav as unknown as { closeAllConnections?: () => void }).closeAllConnections?.();
@@ -572,6 +588,12 @@ test('the calendar can’t be reached: the month still shows, with its holidays 
   const m = await r.json();
   assert.equal(m.grid.weeks >= 4, true);
   assert.ok(m.problem, 'says what went wrong');
+  const ck = await (await post('/api/board-settings/check', {})).json();
+  assert.equal(
+    ck.checks.find((c: { name: string }) => c.name === 'Calendar').ok,
+    false,
+    'Check connections says so too'
+  );
   assert.ok(
     m.events.some((e: { title: string }) => /Patrick/.test(e.title)),
     'holidays still show'

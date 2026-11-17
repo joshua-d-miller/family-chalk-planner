@@ -21,6 +21,9 @@
 
  1.1.0    2026-11-17   joshua    A big album (20 photos) for picking, a few
                         claude    at random, and keeping only a few copies.
+                                  The big album acts like Immich 3: the album
+                                  only counts its photos, which are on its
+                                  timeline.
 ===============================================================================
 */
 
@@ -100,9 +103,22 @@ export function start(port: number): Promise<http.Server & { calls: string[] }> 
       if (alb) {
         if (alb[1].startsWith('1111')) return json(200, { assets: kids });
         if (alb[1].startsWith('3333')) return json(200, { assets: trip });
-        if (alb[1].startsWith('4444')) return json(200, { assets: BIG });
+        // Immich 3: the album only counts its photos; they're on its timeline
+        if (alb[1].startsWith('4444')) return json(200, { id: alb[1], albumName: 'Big', assetCount: BIG.length });
         return json(404, {});
       }
+      // Immich 3's timeline for an album: its months, then each month's photos as columns
+      if (u.pathname === '/api/timeline/buckets' && u.searchParams.get('albumId')?.startsWith('4444'))
+        return json(200, [{ timeBucket: '2024-03-01', count: BIG.length }]);
+      if (u.pathname === '/api/timeline/bucket' && u.searchParams.get('albumId')?.startsWith('4444'))
+        return json(200, {
+          id: BIG.map(a => a.id),
+          isImage: BIG.map(() => true),
+          fileCreatedAt: BIG.map(a => a.localDateTime),
+          ratio: BIG.map(() => 4 / 3),
+          isTrashed: BIG.map(() => false),
+          visibility: BIG.map(() => 'timeline')
+        });
       if (u.pathname === '/api/search/metadata') {
         const q = JSON.parse(body || '{}');
         return json(200, { assets: { items: q.isFavorite ? favorites : [...kids, ...trip] } });

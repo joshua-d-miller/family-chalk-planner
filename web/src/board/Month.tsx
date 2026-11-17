@@ -57,6 +57,7 @@
 
  1.1.0    2026-11-17   joshua    A badge on a starred countdown's day (in
                         claude    sleeps or days).
+                                  outage, from the month.
 ===============================================================================
 */
 
@@ -100,6 +101,7 @@ export interface MonthData {
   grid: { start: string; weeks: number; y: number; m: number; weekStart?: number; time24?: boolean };
   events: BoardEvent[];
   problem?: string;
+  outage?: string | null; // Apple's or Google's status page says their calendar has a problem
   cake?: boolean; // a 🎂 on birthdays // the calendar couldn't be reached (the board shows holidays and what it had)
 }
 export interface Bins {

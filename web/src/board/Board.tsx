@@ -94,6 +94,8 @@
 
  1.1.0    2026-11-17   joshua    A photo of your own as the background
                         claude    (dimmed).
+                                  What Apple or Google say, when the calendar
+                                  can't be reached.
 ===============================================================================
 */
 
@@ -828,7 +830,9 @@ export function Board({
           )}
           {m?.problem && !(note || ed.err || placing) && (
             <div className="status calproblem" role="status" title={m.problem}>
-              The calendar can’t be reached right now: showing what the board had
+              {m.outage
+                ? `${m.outage}: showing what the board had`
+                : 'The calendar can’t be reached right now: showing what the board had'}
             </div>
           )}
           {ask && !placing && (

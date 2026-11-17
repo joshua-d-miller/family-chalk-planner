@@ -35,6 +35,17 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **More backgrounds** (🎨 Board style → Style, Every month): navy and burgundy chalkboards, a felt letter board,
   brick, burlap, white barnwood and graph paper, plus **Your photo**: pick any photo and it becomes the background,
   dimmed so the writing stays readable.
+- **Immich 3:** albums and Immich share links work with Immich 3, which no longer lists an album's photos with
+  the album (the board reads them from its timeline, the way Immich's own album page does). Favorites, Everything and
+  On this day now read every photo, not just the newest 250.
+- **Check connections** (admin console → ⚙️ Board): reads the calendar, any extra calendars and calendar links, and
+  the photo album right now and says what's wrong, with an optional real round trip (a test event added, read back
+  and deleted).
+- **"It's not you, it's them":** when the calendar can't be reached, the board looks at **Apple's System Status** (for
+  iCloud) or **Google's Workspace Status Dashboard** and, if they report a calendar problem, says so instead of a bare
+  error.
+- **Tested against real servers** on every change, with no accounts anywhere: a real CalDAV server (Radicale, the
+  protocol iCloud uses) and a real, fresh Immich.
 - **🎨 Board style on tabs:** Style, Days, Events, Notes and Lines, instead of one long card to scroll through. Save
   and Cancel stay at the bottom, and a small dot marks a tab with changes of its own.
 

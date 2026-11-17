@@ -56,6 +56,9 @@
  1.1.0    2026-11-17   joshua    Countdowns: a picture of their own, ?all=1
                         claude    for every one in the next 60 days (the day
                                   badges), starred ones marked.
+                                  What Apple's or Google's status page says,
+                                  with the month's problem and in ⚙️'s
+                                  calendar status.
 ===============================================================================
 */
 
@@ -149,6 +152,7 @@ export interface CalendarRouteDeps {
   };
   showHolidays: boolean; // HOLIDAYS isn't 'none'
   status: () => Record<string, unknown>; // for ⚙️: which calendar, connected, problems
+  outage?: () => Promise<string | null>; // Apple's or Google's status page, when the calendar is failing
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -164,8 +168,12 @@ export function registerCalendarRoutes({
   broadcast,
   holidays,
   showHolidays,
-  status
+  status,
+  outage = async () => null
 }: CalendarRouteDeps) {
+  // the month doesn't wait on a status page: what's known now (the answer is kept for the next time)
+  const outageNow = () =>
+    Promise.race([outage(), new Promise<null>(r => setTimeout(() => r(null), 300))]).catch(() => null);
   const marks = <T>(key: string) => (kvGet(key) as Record<string, T> | null) || {};
   const colors = () => marks<string>('evcolors');
   const sizes = () => marks<string>('evsizes');
@@ -179,7 +187,12 @@ export function registerCalendarRoutes({
   // this occurrence's setting, else the whole series'
   const forEvent = <T>(all: Record<string, T>, ref: EventRef) => all[keyOf(ref)] ?? all[`${ref.href}|`];
 
-  app.get('/api/calendar/status', (_req, res) => res.json(status()));
+  // (with what Apple or Google say, when there's a problem)
+  app.get('/api/calendar/status', async (_req, res) => {
+    const st = status();
+    const failing = !!st.problem || Object.keys((st.problems as object) || {}).length > 0 || !!source.down();
+    res.json({ ...st, ...(failing ? { outage: await outage() } : {}) });
+  });
 
   // ----------- //
   // | A month | //
@@ -214,7 +227,7 @@ export function registerCalendarRoutes({
         calendars: source.writable(),
         today: clock.today(),
         cake: bdays().cake,
-        ...(down ? { problem: down } : {})
+        ...(down ? { problem: down, outage: await outageNow() } : {})
       });
     } catch (err) {
       // the calendar can't be reached and there's nothing saved yet: the month still shows (with its
@@ -229,7 +242,8 @@ export function registerCalendarRoutes({
           calendars: [],
           today: clock.today(),
           cake: bdays().cake,
-          problem: (err as Error).message
+          problem: (err as Error).message,
+          outage: await outageNow()
         });
       } catch {
         res.status(502).json({ error: (err as Error).message });

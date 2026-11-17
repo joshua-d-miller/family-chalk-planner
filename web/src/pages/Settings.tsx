@@ -35,6 +35,7 @@
                         claude
                                   This screen: sleeps or days; Photos: the
                                   next countdown on the slideshow.
+                                  What Apple or Google say about the calendar.
 ===============================================================================
 */
 
@@ -139,6 +140,7 @@ interface Status {
   calendars?: GCal[];
   problem?: string | null;
   problems?: Record<string, string>;
+  outage?: string | null; // Apple's or Google's status page
   paste?: boolean;
 }
 function Calendar() {
@@ -162,6 +164,7 @@ function Calendar() {
             {k}: {v}
           </p>
         ))}
+        {s.outage && <p className="err">{s.outage}. It isn’t something you can fix: it comes back by itself.</p>}
       </Card>
     );
   const start = async () => {
@@ -217,6 +220,7 @@ function Calendar() {
             </li>
           )}
           {s.problem && <li className="err">{s.problem}</li>}
+          {s.outage && <li className="err">{s.outage}. It isn’t something you can fix: it comes back by itself.</li>}
         </ol>
       )}
       {s.connected && !list && (

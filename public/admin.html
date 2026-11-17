@@ -360,6 +360,14 @@ button:disabled{opacity:.5;cursor:default}
         </div>
         <p class="dim" id="bfKeepNote" style="font-size:14px;margin:4px 0 0" hidden>The rest are fetched from the album when they come up, so the album has to be reachable. Keep at least as many as the slideshow shows side by side.</p>
       </div>
+      <div class="card" id="checkCard">
+        <h2>Check connections</h2>
+        <p class="dim" style="margin-top:0">Reads the calendar, any extra calendars and calendar links, and the photo album right now, with the settings saved here. If the calendar is down, it also says whether Apple or Google report a problem on their side.</p>
+        <label style="display:flex;gap:10px;align-items:flex-start;color:var(--chalk)"><input type="checkbox" id="ckWrite" style="width:22px;height:22px;flex:none;margin-top:2px"> <span>Also add a test event to the calendar, read it back and delete it (a year from now). <span class="dim">A calendar shared with others may tell them it was added.</span></span></label>
+        <div class="actions"><button class="go" id="ckGo">Check connections</button></div>
+        <div class="list" id="ckList"></div>
+        <div class="err" id="ckErr"></div>
+      </div>
       <div class="card">
         <h2>On your network</h2>
         <label for="bfPub">The board’s https:// address (through your reverse proxy)</label>
@@ -790,6 +798,21 @@ button:disabled{opacity:.5;cursor:default}
       $('bfPickCount').textContent = r.picked ? r.picked + ' picked' : 'nothing picked yet (every photo shows)';
       $('bfPickErr').innerHTML = ''; $('bfPickErr').appendChild(el('span', 'ok', '✓ Saved. The board shows ' + r.photos + ' photo' + (r.photos === 1 ? '' : 's') + '.'));
     }).catch(function (e) { $('bfPickErr').textContent = e.message; });
+  });
+  // ---- check connections ----
+  $('ckGo').addEventListener('click', function () {
+    $('ckErr').textContent = ''; $('ckList').innerHTML = '';
+    $('ckList').appendChild(el('p', 'dim', 'Checking…'));
+    busy($('ckGo'), api('api/board-settings/check', { write: $('ckWrite').checked })).then(function (r) {
+      var list = $('ckList'); list.innerHTML = '';
+      r.checks.forEach(function (c) {
+        var it = el('div', 'item'), line = el('div', 'line');
+        line.appendChild(el('b', c.ok === true ? 'ok' : c.ok === false ? 'err' : 'dim', (c.ok === true ? '✓ ' : c.ok === false ? '✗ ' : '– ') + c.name));
+        line.appendChild(el('span', 'dim', c.detail));
+        it.appendChild(line); list.appendChild(it);
+      });
+      if (r.outage) list.appendChild(el('p', 'err', '⚠ ' + r.outage + '. It isn’t something you can fix here: it comes back by itself.'));
+    }).catch(function (e) { $('ckList').innerHTML = ''; $('ckErr').textContent = e.message; });
   });
   function bfHomeWarn() { $('bfHomeWarn').hidden = $('bfHome').value !== 'on'; }
   $('bfHome').addEventListener('change', bfHomeWarn);
