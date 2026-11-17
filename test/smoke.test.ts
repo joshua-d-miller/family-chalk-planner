@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | smoke.test.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-14
+ Updated:   2026-11-17
 
  Purpose:
      End-to-end smoke test: real server + mock CalDAV + mock photo album,
@@ -71,6 +71,10 @@
  0.17.0    2026-11-14   joshua    Weather and food pictures; the rest of the
                         claude    chalk drawings (not the ones that aren't for
                                   a family board); OpenMoji in chalk white.
+
+ 1.1.0    2026-11-17   joshua    Countdown pictures, every countdown, sleeps
+                        claude    or days; the new backgrounds and a photo
+                                  background.
 ===============================================================================
 */
 
@@ -524,6 +528,29 @@ test('birthdays: no cake and no countdown unless asked; a starred one counts dow
   assert.ok(all.length >= (await cd()).length);
   assert.equal(all.find(c => /Amanda/.test(c.title))?.starred, true);
   await post('/api/events/delete', { ref: add.ref || { href: add.href }, scope: 'all', origDate: d });
+});
+
+test('backgrounds: the new ones, and a photo of your own only with a photo the board keeps', async () => {
+  for (const sf of ['navy', 'burgundy', 'felt', 'brick', 'burlap', 'barn', 'graph']) {
+    assert.equal((await (await post('/api/theme', { p: 'classic', s: sf })).json()).s, sf);
+  }
+  // a photo the board keeps: the background
+  const up = await (
+    await api('/api/media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/png' },
+      body: Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(40)])
+    })
+  ).json();
+  const t = await (await post('/api/theme', { p: 'classic', s: 'photo', img: up.src })).json();
+  assert.deepEqual([t.s, t.img], ['photo', up.src]);
+  // anything else isn't a photo the board keeps: the slate
+  const bad = await (await post('/api/theme', { p: 'classic', s: 'photo', img: 'https://example.com/x.jpg' })).json();
+  assert.equal(bad.s, undefined);
+  assert.equal(bad.img, undefined);
+  // another background drops the photo
+  assert.equal((await (await post('/api/theme', { p: 'classic', s: 'navy', img: up.src })).json()).img, undefined);
+  await post('/api/theme', { p: 'classic' });
 });
 
 test('countdowns in sleeps or days: nothing saved until a screen picks, and the console sets any screen’s', async () => {

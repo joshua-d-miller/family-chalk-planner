@@ -38,12 +38,14 @@
                         claude    instead of one long card; a dot marks a tab
                                   with changes; Save and Cancel stay at the
                                   bottom.
+                                  The new backgrounds, and Your photo: pick a
+                                  photo for the background.
 ===============================================================================
 */
 
 import { FontPicker } from '../../ui/FontPicker.tsx';
-import { useEffect, useState } from 'react';
-import { post } from '../../lib/api.ts';
+import { useEffect, useRef, useState } from 'react';
+import { post, upload, url as apiUrl } from '../../lib/api.ts';
 import { SURFACES } from '../../lib/surface.ts';
 import { Btn, Segs, Tabs } from '../../ui/bits.tsx';
 import { Colors } from '../../ui/Colors.tsx';
@@ -200,6 +202,18 @@ export function StyleEditor({
   // just this month unless asked: a change can't reach every month by accident
   const [scope, setScope] = useState<'all' | 'month'>('month');
   const [tab, setTab] = useState<Tab>('style');
+  const file = useRef<HTMLInputElement>(null); // a photo of your own, for the background
+  // a photo of your own: kept on the board, then the background
+  async function pickPhoto(f: File | undefined) {
+    if (!f) return;
+    setErr('');
+    try {
+      const { src } = await upload(f);
+      setD({ ...d, s: 'photo', img: src });
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  }
   const [lk, setLk] = useState<Record<string, string>>(() => ({ ...(look || {}) }));
   useEffect(() => onPreview(d), [d, onPreview]);
   useEffect(() => onPreviewLook(lk), [lk, onPreviewLook]);
@@ -292,16 +306,26 @@ export function StyleEditor({
           <div className="surfaces">
             {SURFACES.map(sf => {
               const light = sf.lum > 0.18;
+              const photo = sf.id === 'photo';
               return (
                 <button
                   type="button"
                   key={sf.id}
+                  id={'surface-' + sf.id}
                   className={(d.s || 'slate') === sf.id ? 'on' : ''}
                   aria-pressed={(d.s || 'slate') === sf.id}
-                  style={{ background: `radial-gradient(circle at 50% 40%, ${sf.base[0]}, ${sf.base[1]})` }}
+                  style={{
+                    background:
+                      photo && d.img
+                        ? `linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)), url("${apiUrl(d.img)}") center / cover`
+                        : `radial-gradient(circle at 50% 40%, ${sf.base[0]}, ${sf.base[1]})`
+                  }}
                   onClick={() => {
+                    // your photo: pick one (again, to change it)
+                    if (photo) return file.current?.click();
                     const n: Theme = { ...d, s: sf.id };
                     if (sf.id === 'slate') delete n.s;
+                    delete n.img;
                     setD(n);
                   }}
                 >
@@ -315,6 +339,23 @@ export function StyleEditor({
               );
             })}
           </div>
+          <input
+            ref={file}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+            id="surfacePhoto"
+            onChange={e => {
+              void pickPhoto(e.target.files?.[0]);
+              e.target.value = '';
+            }}
+          />
+          {d.s === 'photo' && (
+            <div className="sublbl">
+              Your photo is dimmed so the writing stays readable. A calm photo (a sky, a lake, a wall) works best; a
+              busy one can make small writing hard to read. Tap it again for another photo.
+            </div>
+          )}
           <label className="tick">
             <input
               type="checkbox"

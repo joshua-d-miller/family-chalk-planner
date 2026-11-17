@@ -32,6 +32,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   - The **overnight slideshow** shows the next countdown in a corner, from 30 days out (Settings → Photos to turn
     it off).
   - **Sleeps or days**, per screen: Settings → This screen, or any screen in the admin console → 📺 Screens.
+- **More backgrounds** (🎨 Board style → Style, Every month): navy and burgundy chalkboards, a felt letter board,
+  brick, burlap, white barnwood and graph paper, plus **Your photo**: pick any photo and it becomes the background,
+  dimmed so the writing stays readable.
 - **🎨 Board style on tabs:** Style, Days, Events, Notes and Lines, instead of one long card to scroll through. Save
   and Cancel stay at the bottom, and a small dot marks a tab with changes of its own.
 
