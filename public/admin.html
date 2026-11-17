@@ -61,6 +61,11 @@ button:disabled{opacity:.5;cursor:default}
 .nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
 .or{display:flex;align-items:center;gap:10px;color:var(--dim);margin:14px 0 2px}.or::before,.or::after{content:'';flex:1;border-top:1px solid var(--line)}
 [hidden]{display:none!important}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;max-height:60vh;overflow-y:auto;margin-top:10px;padding:2px}
+.pgrid label{position:relative;margin:0;aspect-ratio:1;border-radius:8px;overflow:hidden;border:3px solid transparent;cursor:pointer;background:#141412}
+.pgrid label.on{border-color:var(--yellow)}
+.pgrid img{width:100%;height:100%;object-fit:cover;display:block}
+.pgrid input{position:absolute;top:4px;left:4px;width:22px;height:22px;margin:0;accent-color:var(--yellow)}
 </style>
 </head>
 <body>
@@ -336,6 +341,24 @@ button:disabled{opacity:.5;cursor:default}
         <label for="bfImAlbum">Which photos</label>
         <div class="row"><div><select id="bfImAlbum" data-k="IMMICH_ALBUM"><option value="">Favorites (else recent photos)</option><option value="favorites">Favorites</option><option value="all">Everything (most recent)</option><option value="thisday">On this day, other years</option></select></div><div style="flex:0 1 auto"><button id="bfImList">List my albums</button></div></div>
         <div class="err" id="bfImErr"></div>
+        <h3 style="margin:16px 0 0;font-size:17px">Which photos, and copies on the board</h3>
+        <p class="dim" style="margin:2px 0 0;font-size:14px">For any album above. A big album (thousands of photos) can show just some of them, or keep copies of only the last few shown.</p>
+        <div class="row">
+          <div><label for="bfPick">Show</label><select id="bfPick" data-k="PHOTO_PICK"><option value="">(default: every photo)</option><option value="all">Every photo</option><option value="picked">Only the ones I pick</option><option value="random">A few at random, new ones each day</option></select></div>
+          <div id="bfRandWrap" hidden><label for="bfRand">How many a day</label><input id="bfRand" type="number" min="5" max="1000" inputmode="numeric" data-k="PHOTO_RANDOM_COUNT" placeholder="50"></div>
+        </div>
+        <div id="bfPickWrap" class="actions" hidden><button id="bfPickBtn">Pick photos…</button><span class="dim" id="bfPickCount"></span></div>
+        <div id="bfPicker" hidden>
+          <p class="dim" style="margin:8px 0 0;font-size:14px">Tick the photos to show. Nothing ticked = every photo. (Changed the album above? Save first.)</p>
+          <div class="actions"><button class="sm" id="bfPickAll">Tick all</button><button class="sm" id="bfPickNone">Untick all</button><button class="go sm" id="bfPickSave">Save my picks</button><span class="dim" id="bfPickInfo"></span></div>
+          <div class="pgrid" id="bfPickGrid"></div>
+          <div class="err" id="bfPickErr"></div>
+        </div>
+        <div class="row">
+          <div><label for="bfKeep">Copies on the board</label><select id="bfKeep" data-k="PHOTO_KEEP"><option value="">(default: a copy of every photo)</option><option value="all">A copy of every photo (they still show when the album is offline)</option><option value="few">Only the last few shown (for a big album)</option></select></div>
+          <div id="bfKeepWrap" hidden><label for="bfKeepN">How many copies</label><input id="bfKeepN" type="number" min="2" max="50" inputmode="numeric" data-k="PHOTO_KEEP_COUNT" placeholder="5"></div>
+        </div>
+        <p class="dim" id="bfKeepNote" style="font-size:14px;margin:4px 0 0" hidden>The rest are fetched from the album when they come up, so the album has to be reachable. Keep at least as many as the slideshow shows side by side.</p>
       </div>
       <div class="card">
         <h2>On your network</h2>
@@ -658,6 +681,8 @@ button:disabled{opacity:.5;cursor:default}
       haAvail = null; drawHa();
       $('bfTodoCard').hidden = !d.homeAssistant; todoAvail = null; drawTodos();
       bfSetProv(bfDefaultProv());
+      bfPhotoShow();
+      if ($('bfPick').value === 'picked') bfPickLoad().catch(function () {});
       $('bfVer').textContent = d.version; $('bfErr').textContent = '';
       $('bfHere').textContent = d.here;
       $('bfProxyUse').hidden = !d.proxySeen || F.TRUST_PROXY.value === d.proxySeen;
@@ -719,6 +744,52 @@ button:disabled{opacity:.5;cursor:default}
         sel.value = keep;
         $('bfImErr').innerHTML = ''; $('bfImErr').appendChild(el('span', 'ok', '✓ Connected. ' + r.albums.length + ' album' + (r.albums.length === 1 ? '' : 's') + ' found.'));
       }).catch(function (e) { $('bfImErr').textContent = e.message; });
+  });
+  // ---- which photos, copies on the board, and the photo picker ----
+  function bfPhotoShow() {
+    $('bfRandWrap').hidden = $('bfPick').value !== 'random';
+    $('bfPickWrap').hidden = $('bfPick').value !== 'picked';
+    if ($('bfPickWrap').hidden) $('bfPicker').hidden = true;
+    $('bfKeepWrap').hidden = $('bfKeepNote').hidden = $('bfKeep').value !== 'few';
+  }
+  $('bfPick').addEventListener('change', bfPhotoShow);
+  $('bfKeep').addEventListener('change', bfPhotoShow);
+  function bfPickTicked() { return Array.prototype.filter.call($('bfPickGrid').querySelectorAll('input'), function (i) { return i.checked; }); }
+  function bfPickInfo() { var n = bfPickTicked().length, all = $('bfPickGrid').querySelectorAll('input').length; $('bfPickInfo').textContent = n ? n + ' of ' + all + ' ticked' : 'Nothing ticked: every photo shows'; }
+  function bfPickLoad() {
+    return api('api/board-settings/photo-choices').then(function (c) {
+      $('bfPickCount').textContent = c.picked.length ? c.picked.length + ' picked' : 'nothing picked yet (every photo shows)';
+      return c;
+    });
+  }
+  $('bfPickBtn').addEventListener('click', function () {
+    $('bfPickErr').textContent = '';
+    busy($('bfPickBtn'), bfPickLoad()).then(function (c) {
+      var grid = $('bfPickGrid'), on = {}; grid.innerHTML = '';
+      c.picked.forEach(function (id) { on[id] = true; });
+      if (c.error) $('bfPickErr').textContent = c.error;
+      if (!c.photos.length) grid.appendChild(el('p', 'dim', c.enabled ? 'No photos in the album yet.' : 'Set up an album above (and Save) first.'));
+      c.photos.forEach(function (p) {
+        var l = el('label', on[p.id] ? 'on' : ''), i = el('input'), im = el('img');
+        i.type = 'checkbox'; i.checked = !!on[p.id];
+        i.setAttribute('aria-label', p.date ? 'Photo from ' + new Date(p.date).toLocaleDateString() : 'Photo');
+        i.addEventListener('change', function () { l.className = i.checked ? 'on' : ''; bfPickInfo(); });
+        im.loading = 'lazy'; im.alt = ''; im.src = 'api/board-settings/photo-thumb/' + encodeURIComponent(p.id);
+        l.dataset.id = p.id; l.appendChild(im); l.appendChild(i); grid.appendChild(l);
+      });
+      $('bfPicker').hidden = false; bfPickInfo();
+    }).catch(function (e) { $('bfPickErr').textContent = e.message; $('bfPicker').hidden = false; });
+  });
+  function bfPickSet(v) { Array.prototype.forEach.call($('bfPickGrid').querySelectorAll('input'), function (i) { i.checked = v; i.parentNode.className = v ? 'on' : ''; }); bfPickInfo(); }
+  $('bfPickAll').addEventListener('click', function () { bfPickSet(true); });
+  $('bfPickNone').addEventListener('click', function () { bfPickSet(false); });
+  $('bfPickSave').addEventListener('click', function () {
+    var ids = bfPickTicked().map(function (i) { return i.parentNode.dataset.id; });
+    $('bfPickErr').textContent = '';
+    busy($('bfPickSave'), api('api/board-settings/photo-picked', { ids: ids })).then(function (r) {
+      $('bfPickCount').textContent = r.picked ? r.picked + ' picked' : 'nothing picked yet (every photo shows)';
+      $('bfPickErr').innerHTML = ''; $('bfPickErr').appendChild(el('span', 'ok', '✓ Saved. The board shows ' + r.photos + ' photo' + (r.photos === 1 ? '' : 's') + '.'));
+    }).catch(function (e) { $('bfPickErr').textContent = e.message; });
   });
   function bfHomeWarn() { $('bfHomeWarn').hidden = $('bfHome').value !== 'on'; }
   $('bfHome').addEventListener('change', bfHomeWarn);

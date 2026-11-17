@@ -11,6 +11,12 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **Admin console → 📺 Screens:** a paired screen's list now always shows 🧒 Kid's tablet. Before anyone is added
   in 🧹 Chores it's greyed out and says to add the family there first (it used to be missing, leaving only View
   only and Family).
+- **Big photo albums** (like an Immich album with thousands of photos), in the admin console → ⚙️ Board → Photos:
+  - **Which photos:** every photo, **only the ones you pick** (a new **Pick photos…** grid to tick them), or **a
+    few at random**, new ones each day.
+  - **Copies on the board:** a copy of every photo as before, or **only the last few shown** (5 unless you pick
+    another number), so a giant album isn't copied onto the board. The rest are fetched from the album when they
+    come up.
 
 ## 1.0.0 — Ready for everyone, and part of Home Assistant
 The first public release. For Docker and Linux nothing changes for a board that's already running; this marks

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | settings.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      Board settings: all kept in the database and changed in the admin
@@ -45,6 +45,11 @@
                                   Updates: database backup and restore, a real
                                   health check, Update now and nightly
                                   updates.
+
+ 1.1.0    2026-11-17   joshua    Photo choices: all, picked or a few at
+                        claude    random each day, and whether the board keeps
+                                  a copy of every photo or only the last few
+                                  shown.
 ===============================================================================
 */
 
@@ -158,6 +163,12 @@ export const FIELDS: Record<string, Field> = {
   IMMICH_URL: { type: 'url' },
   IMMICH_API_KEY: { type: 'secret' },
   IMMICH_ALBUM: { type: 'text', max: 200 },
+  // which of the album's photos: all of them, the ones picked in the console, or a few at random each day
+  PHOTO_PICK: { type: 'enum', values: ['all', 'picked', 'random'] },
+  PHOTO_RANDOM_COUNT: { type: 'num', min: 5, max: 1000 },
+  // a copy of every photo kept on the board (default), or only the last few shown (big albums)
+  PHOTO_KEEP: { type: 'enum', values: ['all', 'few'] },
+  PHOTO_KEEP_COUNT: { type: 'num', min: 2, max: 50 },
   // the board on your network
   PUBLIC_URL: { type: 'url' },
   TRUST_PROXY: { type: 'proxy' },

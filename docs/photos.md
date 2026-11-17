@@ -22,6 +22,16 @@ You only need the album's **share link**. No password or sign-in is involved.
 Open the admin console (`/admin`) → **⚙️ Board** → **Photos**, paste the link into **Album link**, and tap **Save and restart**. (The link is stored encrypted, since anyone with it can see the album.)
 Within a minute, 📷 on the tablet shows how many photos it found.
 
+## A big album: which photos, and copies on the board
+Under **⚙️ Board** → **Photos** → **Which photos, and copies on the board** (for any album, Immich too):
+
+- **Show:** **every photo** (the default), **only the ones I pick** (tap **Pick photos…**, tick the ones you want and
+  **Save my picks**; with nothing ticked every photo shows), or **a few at random, new ones each day** (say how many).
+- **Copies on the board:** **a copy of every photo** (the default: they keep showing when the album is offline), or
+  **only the last few shown** (5 unless you choose another number). With thousands of photos, the board then doesn't
+  copy the whole album: it fetches each photo from the album when it comes up, so the album has to be reachable.
+  Keep at least as many copies as the slideshow shows side by side.
+
 ## Good to know
 - **Videos are skipped.** Only photos are shown.
 - **Faces:** photos are framed around people's faces when the optional face finder is installed (the installer sets it up unless you used `--no-face`).

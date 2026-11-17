@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | config.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      The board's settings, read once at start-up: the environment (.env),
@@ -25,6 +25,10 @@
                         colby
                                   Immich photos, slideshow extras, a filled-in
                                   today, and the frame's thickness.
+
+ 1.1.0    2026-11-17   joshua    Which photos, and how many copies the board
+                        claude    keeps (PHOTO_PICK, PHOTO_RANDOM_COUNT,
+                                  PHOTO_KEEP, PHOTO_KEEP_COUNT).
 ===============================================================================
 */
 
@@ -116,6 +120,14 @@ export function readConfig(env: NodeJS.ProcessEnv, appDir: string, dataDir: stri
     photos: {
       album: { url: (env.PHOTO_ALBUM_URL || '').trim(), googleHost: env.PHOTO_GOOGLE_HOST, ckHost: env.PHOTO_CK_HOST },
       immich: { url: env.IMMICH_URL || '', key: env.IMMICH_API_KEY || '', album: env.IMMICH_ALBUM || '' },
+      // which photos, and how many copies the board keeps (server/photos/photos.ts)
+      choose: {
+        pick: (['picked', 'random'].includes(env.PHOTO_PICK || '') ? env.PHOTO_PICK : 'all') as
+          'all' | 'picked' | 'random',
+        randomCount: Math.min(1000, Math.max(5, Math.round(Number(env.PHOTO_RANDOM_COUNT) || 50))),
+        keep: (env.PHOTO_KEEP === 'few' ? 'few' : 'all') as 'all' | 'few',
+        keepCount: Math.min(50, Math.max(2, Math.round(Number(env.PHOTO_KEEP_COUNT) || 5)))
+      },
       faceDir,
       facePython: env.FACE_PYTHON || path.join(faceDir, 'venv', 'bin', 'python')
     },

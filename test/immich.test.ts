@@ -2,15 +2,16 @@
 ===============================================================================
  Family Chalk Planner | Tests | immich.test.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      Photos from Immich (from Colby Way's board): picked by an admin in
      the console, synced in the background, faces from Immich kept for
      framing, WebP previews taken from Immich only, and an Immich share
-     link.
+     link. Which photos (all, picked in the console, or a few at random
+     each day), and a big album where only the last few shown are kept.
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -19,6 +20,9 @@
  0.13.0    2026-11-07   joshua    Immich photos, slideshow extras, a filled-in
                         colby     today, and the frame's thickness.
                         claude
+
+ 1.1.0    2026-11-17   joshua    Which photos, a big album with a few copies,
+                        claude    and the console's photo picker.
 ===============================================================================
 */
 
@@ -62,6 +66,7 @@ test('the console lists the albums, owned and shared, and says what’s wrong wi
     [
       ['Kids', false],
       ['Trip', false],
+      ['Big', false],
       ['Grandma', true]
     ]
   );
@@ -122,4 +127,67 @@ test('the frame’s thickness and the "filled in" today style', async () => {
 test('the slideshow extras are saved with the photo settings', async () => {
   const r = await (await ed.post('/api/photos/settings', { showEvents: true, showTemp: true, sidePanel: true })).json();
   assert.deepEqual([r.showEvents, r.showTemp, r.showReminders, r.sidePanel, r.night], [true, true, false, true, true]);
+});
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------------------------- //
+// | A big album: which photos, and a few copies | //
+// ----------------------------------------------- //
+async function restartWith(values: Record<string, string>) {
+  assert.equal((await ed.post('/api/board-settings', { values })).status, 200);
+  await board.exited;
+  board = await startServer(PORT, {}, board.data);
+  assert.ok(board.up, board.output());
+}
+const copies = () => fs.readdirSync(path.join(board.data, 'photo-cache')).filter(f => f.endsWith('.jpg')).length;
+
+test('a big album keeps only the last few photos shown, and fetches the rest when asked', async () => {
+  await restartWith({
+    PHOTO_ALBUM_URL: '',
+    IMMICH_URL: imUrl,
+    IMMICH_API_KEY: 'KEY',
+    IMMICH_ALBUM: 'big',
+    PHOTO_KEEP: 'few',
+    PHOTO_KEEP_COUNT: '3'
+  });
+  const p = await synced();
+  assert.equal(p.photos.length, 20, 'every photo is listed');
+  assert.equal(copies(), 0, 'none copied yet');
+  for (const ph of p.photos.slice(0, 6)) {
+    const img = await ed.api('/api/photos/img/' + ph.id);
+    assert.equal(img.status, 200);
+    assert.equal(img.headers.get('cache-control'), 'public, max-age=86400');
+  }
+  assert.equal(copies(), 3, 'only the last 3 shown are kept');
+  assert.equal((await ed.api('/api/photos/img/im_notinthealbum')).status, 404);
+});
+
+test('a few at random each day: the same few all day', async () => {
+  await restartWith({ PHOTO_PICK: 'random', PHOTO_RANDOM_COUNT: '5' });
+  const a = await synced();
+  assert.equal(a.photos.length, 5);
+  const b = await synced();
+  assert.deepEqual(
+    b.photos.map(x => x.id),
+    a.photos.map(x => x.id)
+  );
+});
+
+test('photos picked in the console: all of them until some are picked', async () => {
+  await restartWith({ PHOTO_PICK: 'picked', PHOTO_KEEP: 'all' });
+  assert.equal((await synced()).photos.length, 20, 'nothing picked yet: all of them');
+  const c = await (await ed.api('/api/board-settings/photo-choices')).json();
+  assert.equal(c.photos.length, 20);
+  assert.deepEqual(c.picked, []);
+  const thumb = await ed.api('/api/board-settings/photo-thumb/' + c.photos[0].id);
+  assert.equal(thumb.status, 200);
+  assert.equal(thumb.headers.get('content-type'), 'image/jpeg', 'the small picture');
+  const ids = [c.photos[0].id, c.photos[3].id];
+  const r = await (await ed.post('/api/board-settings/photo-picked', { ids })).json();
+  assert.equal(r.photos, 2);
+  const p = await (await ed.api('/api/photos')).json();
+  assert.deepEqual(p.photos.map(x => x.id).sort(), [...ids].sort());
+  assert.equal(copies(), 2, 'copies of just the picked ones');
+  assert.equal((await ed.post('/api/board-settings/photo-picked', { ids: ['../x'] })).status, 400);
+  assert.equal((await fetch(base + '/api/board-settings/photo-choices')).status, 401, 'admins only');
 });
