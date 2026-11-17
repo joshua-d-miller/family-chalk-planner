@@ -46,6 +46,10 @@ both. Locally: `pip install radicale==3.5.4 && bash test/real-servers/start-radi
 `REAL_CALDAV_URL=http://127.0.0.1:5232/ REAL_CALDAV_USER=family REAL_CALDAV_PASSWORD=secret node --test test/real-servers.test.ts`
 (add `REAL_IMMICH_URL=http://127.0.0.1:2283` for a fresh Immich from its own compose file).
 
+**Two TypeScripts, for now:** `npm run typecheck` uses TypeScript 7 (`typescript-7` in `package.json`). TypeScript
+6 stays installed only because ESLint's `typescript-eslint` doesn't support 7 yet; `.github/dependabot.yml` holds
+its major updates back until it does. `@types/node` stays on 22, the Node the board runs on.
+
 ## How the code is laid out
 The server is TypeScript that Node runs directly (no build step); `npm run typecheck` checks it.
 - `server/main.ts`: puts the server together (`server/chalkboard.js` just starts it, so every install

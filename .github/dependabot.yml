@@ -9,6 +9,16 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # Node's types follow the Node the board runs on (22: the Dockerfile, deploy/install.sh and
+      # "engines"), so the code can't use something a family's board doesn't have. Move both together.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # "typescript" stays on 6 only for ESLint (typescript-eslint supports TypeScript below 6.1);
+      # the type check itself runs on TypeScript 7 ("typescript-7"). Remove this once typescript-eslint
+      # supports 7, then drop the 6 and point "typecheck" back at plain tsc.
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:

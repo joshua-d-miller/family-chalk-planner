@@ -13,7 +13,7 @@
     "test:homeassistant": "playwright test -c playwright.homeassistant.config.ts",
     "build": "vite build",
     "dev:web": "vite",
-    "typecheck": "tsc -p tsconfig.json && tsc -p test/tsconfig.json && tsc -p web/tsconfig.json",
+    "typecheck": "node node_modules/typescript-7/bin/tsc -p tsconfig.json && node node_modules/typescript-7/bin/tsc -p test/tsconfig.json && node node_modules/typescript-7/bin/tsc -p web/tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write --no-error-on-unmatched-pattern \"server/**/*.ts\" \"shared/**/*.ts\" \"test/**/*.ts\" \"web/**/*.{ts,tsx,css}\" \"*.config.ts\"",
     "format:check": "prettier --check --no-error-on-unmatched-pattern \"server/**/*.ts\" \"shared/**/*.ts\" \"test/**/*.ts\" \"web/**/*.{ts,tsx,css}\" \"*.config.ts\""
@@ -118,6 +118,7 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "typescript": "6.0.3",
+    "typescript-7": "npm:typescript@7.0.2",
     "typescript-eslint": "8.72.1",
     "vite": "8.3.6"
   },
