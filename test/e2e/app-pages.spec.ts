@@ -58,6 +58,10 @@
 
  1.1.0    2026-11-17   joshua    Calendar lines are on the board style's
                         claude    Lines tab.
+                                  Waits for 'Tap the board' before putting up
+                                  the second picture (on a slow machine the
+                                  tap could land before the Pictures card had
+                                  closed).
 ===============================================================================
 */
 
@@ -566,6 +570,7 @@ test('the board (new screen, tablet): draw, undo and redo, erase, write, select,
     .locator('.looksn')
     .click();
   await lib.locator('.looks .ctile img[src*="/api/clip/no-birthday-cake"]').click();
+  await expect(t.locator('.slate .status')).toContainText('Tap the board'); // (the card has closed: tap now)
   await t.mouse.click(...at(650, 450));
   type Pic = { k?: string; src?: string };
   await expect.poll(async () => ((await artOf()) as Pic[]).filter(x => x.k === 'g').length).toBe(2);
