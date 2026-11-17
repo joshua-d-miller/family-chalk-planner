@@ -25,6 +25,9 @@
 import { expect, test } from './fixtures.ts';
 
 test('a paired screen can always see the kid’s tablet role', async ({ as, board }) => {
+  // (the board is shared with other tests: start with nobody in Chores, and put back what was there)
+  const was = await (await board.admin.api('/api/chores')).json();
+  await board.admin.post('/api/chores/save', { people: [], chores: [] });
   await as('wall'); // pairs a screen, so the list has one
   const page = await as('admin', { path: '/admin' });
   const role = page.locator('#dvList select[aria-label="What it may do"]').first();
@@ -47,4 +50,5 @@ test('a paired screen can always see the kid’s tablet role', async ({ as, boar
   await expect(role.locator('option[value^="kid:"]').first()).toBeAttached();
   await expect(role.locator('option[value^="kid:"]:disabled')).toHaveCount(0);
   await expect(role.locator('option', { hasText: 'add the family' })).toHaveCount(0);
+  await board.admin.post('/api/chores/save', { people: was.people, chores: was.chores });
 });

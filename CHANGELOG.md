@@ -17,6 +17,11 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   - **Copies on the board:** a copy of every photo as before, or **only the last few shown** (5 unless you pick
     another number), so a giant album isn't copied onto the board. The rest are fetched from the album when they
     come up.
+- **🎨 Look of cards and menus**, at the bottom of the ☰ menu and in Settings → This screen. Each screen picks a
+  look for its cards, ☰ menu and Settings: **Chalk** (as before), **Light**, **Dark** or **High contrast**, plus an
+  **accent color** for headings and what's picked, and **larger text** (Large or Larger) for reading from further
+  away. It's saved on the board, so clearing the browser doesn't lose it. The calendar keeps its own style (🎨 Board
+  style).
 
 ## 1.0.0 — Ready for everyone, and part of Home Assistant
 The first public release. For Docker and Linux nothing changes for a board that's already running; this marks

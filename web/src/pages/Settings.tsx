@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Settings.tsx
 ===============================================================================
- Version:   0.16.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-17
 
  Purpose:
      ⚙️ Settings on the board (signed-in people). Admins also get the
@@ -30,6 +30,9 @@
 
  0.16.0    2026-11-11   joshua    Birthdays: a cake, and counting down to every
                         claude    one.
+
+ 1.1.0    2026-11-17   joshua    This screen: 🎨 Look of cards and menus.
+                        claude
 ===============================================================================
 */
 
@@ -40,6 +43,7 @@ import { setSpeaksHere, speaksHere } from '../lib/timers.ts';
 import { DAY_NAMES } from '../lib/today.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn, Field, Pick } from '../ui/bits.tsx';
+import { openLookCard } from '../ui/LookCard.tsx';
 import { Page } from '../ui/Page.tsx';
 import './settings.css';
 
@@ -592,6 +596,11 @@ function ThisScreen() {
         />
         <span className="t">Say a timer’s name out loud when it’s done</span>
       </label>
+      <p style={{ marginTop: 12 }}>
+        <Btn id="lookOpen" onClick={openLookCard}>
+          🎨 Look of cards and menus…
+        </Btn>
+      </p>
     </Card>
   );
 }

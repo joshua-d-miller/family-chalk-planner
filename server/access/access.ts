@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | access.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-12
+ Updated:   2026-11-17
 
  Purpose:
      Who may do what.
@@ -92,6 +92,9 @@
                                   (its admins are the board's; everyone
                                   else has the role set in the console), and
                                   the board's own sign-ins are off.
+
+ 1.1.0    2026-11-17   joshua    Family screens may change the look of their
+                        claude    own cards and ☰ menu.
 ===============================================================================
 */
 
@@ -677,6 +680,7 @@ export function setup(
     '/favorites', // a view-only screen (the wall) has no strip, so it never sends any
     '/notesbottom', // (the wall's is set in the admin console)
     '/menustyle', // the cork or the ☰ button (the wall has neither)
+    '/uilook', // the look of its cards and ☰ menu
     '/clip/favorites', // ★ a picture into Favorites
     '/clip/web/keep' // a public-domain picture from the web, onto the board
   ]);

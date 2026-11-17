@@ -1,0 +1,139 @@
+/* The look of a screen's cards, ☰ menu and Settings (🎨 Look of cards and menus, web/src/ui/LookCard.tsx).
+   Chalk is the board's own look and needs nothing here. The others swap the colors the cards already use
+   (--chalk for text, --slate behind, --wood for the frame, --pink for headings, --yellow for what's picked)
+   inside just those parts, so the calendar keeps its own style. <html data-look data-uisize> and --accent
+   are set by web/src/lib/uiLook.ts. */
+
+/* ---- every look but chalk: plain, easy-to-read letters and solid fields ---- */
+html[data-look] :is(.sheet, .menu, #settings .scard) {
+  --hand: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, var(--emoji), sans-serif;
+  --script: var(--hand);
+  color: var(--chalk);
+  font-family: var(--hand);
+}
+html[data-look] .sheet h3 {
+  font-size: 1.45em;
+}
+html[data-look] .menu h4 {
+  font-size: 0.95em;
+  letter-spacing: 0.02em;
+}
+html[data-look] :is(.sheet, .menu, #settings .scard) :is(.btn, .seg, .closex, .field select) {
+  background: var(--field);
+}
+html[data-look] :is(.sheet, .menu, #settings .scard) .field :is(input, textarea) {
+  border-bottom-color: var(--faint);
+}
+/* parts of the cards drawn in chalk-white of their own: follow the look's letters instead */
+html[data-look] :is(.sheet, .menu, #settings .scard) .sublbl {
+  color: var(--dim);
+}
+html[data-look] :is(.sheet, .menu, #settings .scard) :is(.check .box, .clipq) {
+  border-color: var(--faint);
+}
+html[data-look] :is(.sheet, .menu, #settings .scard) .threl {
+  border-top-color: var(--line);
+}
+html[data-look] :is(.sheet, .menu, #settings .scard) .colors :is(.dot.none, .dot.pick) > span {
+  box-shadow: inset 0 0 0 2px var(--faint);
+}
+html[data-look] #settings .section + .section {
+  border-top-color: var(--line);
+}
+html[data-look] :is(.menu, .menu > .closex) {
+  background: var(--slate);
+}
+/* Settings: each part on a card of its own, so the look shows there too */
+html[data-look] #settings .scard {
+  background: var(--slate);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 2px 18px 14px;
+  margin-bottom: 14px;
+}
+
+/* ---- light: dark letters on paper ---- */
+html[data-look='light'] :is(.sheet, .menu, #settings .scard) {
+  color-scheme: light;
+  --chalk: #23211d;
+  --dim: rgba(35, 33, 29, 0.68);
+  --faint: rgba(35, 33, 29, 0.32);
+  --line: rgba(35, 33, 29, 0.2);
+  --slate: #fbf9f4;
+  --wood: #d6cfbf;
+  --field: #ffffff;
+  --pink: #a8325c;
+  --yellow: #7a5c00;
+  --blue: #1f5f8b;
+  --green: #2e7032;
+  --red: #b3261e;
+  --orange: #a65a00;
+  --purple: #5b3fa0;
+}
+
+/* ---- dark: plain and calm, no chalk ---- */
+html[data-look='dark'] :is(.sheet, .menu, #settings .scard) {
+  --chalk: #f1f1f1;
+  --dim: rgba(241, 241, 241, 0.7);
+  --faint: rgba(241, 241, 241, 0.3);
+  --line: rgba(255, 255, 255, 0.16);
+  --slate: #1d1e21;
+  --wood: #3a3c41;
+  --field: #2a2b30;
+  --pink: #ff9ec4;
+  --yellow: #ffd866;
+}
+
+/* ---- high contrast: white on black, bright yellow, thick outlines ---- */
+html[data-look='contrast'] :is(.sheet, .menu, #settings .scard) {
+  --chalk: #ffffff;
+  --dim: #e8e8e8;
+  --faint: rgba(255, 255, 255, 0.8);
+  --line: #ffffff;
+  --slate: #000000;
+  --wood: #ffffff;
+  --field: #000000;
+  --pink: #ffe14d;
+  --yellow: #ffe14d;
+  --green: #7cfc8a;
+  --blue: #8fd3ff;
+  --red: #ff8a80;
+  font-weight: 600;
+}
+html[data-look='contrast'] :is(.sheet, .menu, #settings .scard) :is(.btn, .seg, .closex, .field select) {
+  border-width: 3px;
+  border-color: var(--chalk);
+}
+html[data-look='contrast'] :is(.sheet, .menu, #settings .scard) :is(.btn.go, .btn.on, .seg.on) {
+  border-color: var(--yellow);
+}
+html[data-look='contrast'] :is(.sheet, .menu) .dim {
+  color: var(--dim);
+}
+
+/* ---- an accent of this screen's own: headings and what's picked, in any look ---- */
+html.has-accent :is(.sheet, .menu, #settings .scard) {
+  --pink: var(--accent);
+  --yellow: var(--accent);
+}
+
+/* ---- larger text, for reading from further away ---- */
+html[data-uisize='large'] :is(.sheet, .menu, #settings) {
+  font-size: calc(var(--text) * 1.15);
+}
+html[data-uisize='larger'] :is(.sheet, .menu, #settings) {
+  font-size: calc(var(--text) * 1.3);
+}
+html[data-uisize] .menu {
+  width: min(420px, 92vw);
+}
+html[data-uisize] .sheet {
+  width: min(720px, 100%);
+}
+
+/* the look card's rows */
+.lookrow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

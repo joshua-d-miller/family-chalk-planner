@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Shell.tsx
 ===============================================================================
- Version:   0.17.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-12
+ Updated:   2026-11-17
 
  Purpose:
      The bar that stays at the bottom while the pages change. A family
@@ -53,6 +53,11 @@
  0.17.0    2026-11-12   joshua    The ☰ button and its drawer, on the right or
                         colby     the left, instead of the cork (each screen
                         claude    picks). The board gets the cork's room.
+
+ 1.1.0    2026-11-17   joshua    This screen's look for its cards, ☰ menu and
+                        claude    Settings (light, dark, high contrast, an
+                                  accent color, larger text), and the card
+                                  that changes it.
 ===============================================================================
 */
 
@@ -60,6 +65,8 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import type { ReactNode } from 'react';
 import { useFavorites } from '../lib/favorites.ts';
 import { useMenuPref } from '../lib/menuStyle.ts';
+import { applyUiLook, useUiLook } from '../lib/uiLook.ts';
+import { LookHost } from './LookCard.tsx';
 import type { Who } from '../lib/who.ts';
 import { PAGES, homeHref, isHome } from '../routes.ts';
 import { Menu } from './Menu.tsx';
@@ -131,6 +138,10 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
   const kind = shellKind(who);
   // only a screen that would get the cork can swap it for the button (phones and tablets keep their tab bar)
   const pref = useMenuPref();
+  // this screen's look for its cards, ☰ menu and Settings (🎨 Look of cards and menus)
+  const look = useUiLook();
+  const { look: lk, accent, size } = look;
+  useEffect(() => applyUiLook({ look: lk, accent, size }), [lk, accent, size]);
   const side = kind === 'cork' && pref.style !== 'cork' ? pref.style : null;
   const drawBtn = !!side && pref.draw; // a ✏️ Draw button beside the ☰ (on the calendar)
   const [slot, setSlot] = useState<HTMLElement | null>(null);
@@ -196,6 +207,7 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
       {kind === 'cork' && !side && !onBoard && <CorkBar onSlot={setSlot} />}
       {side && !onBoard && <PagesFab side={side} />}
       {kind === 'tabs' && <TabBar onHeight={setNavH} mini={busyBoard && onBoard} />}
+      <LookHost />
     </Ctx.Provider>
   );
 }
