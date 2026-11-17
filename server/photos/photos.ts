@@ -28,6 +28,7 @@
      POST   /api/board-settings/immich-albums
      GET    /api/board-settings/photo-choices
      GET    /api/board-settings/photo-thumb/:id
+     GET    /api/photos/thumb/:id
      POST   /api/board-settings/photo-picked
 
  Used by:
@@ -48,6 +49,11 @@
                                   album copies of only the last few shown, the
                                   rest fetched when they come up. The
                                   console's photo picker.
+                                  A big album that can't be reached: the last
+                                  photo shown stands in, and the screens are
+                                  told it's offline.
+                                  Small pictures for the board's own photo
+                                  picker too.
 ===============================================================================
 */
 
@@ -156,7 +162,8 @@ export function setup({
     all: [] as Source[], // every photo the album had when it was last read (for picking, and fetching)
     synced: 0,
     error: null as string | null,
-    running: false
+    running: false,
+    offline: false // a big album that can't be reached: its last copy is shown instead
   };
   const few = choose.keep === 'few';
   const cfg = (): PhotoCfg => ({ ...CFG_DEFAULT, ...(kv.get<Partial<PhotoCfg>>('photoCfg') || {}) });
@@ -274,6 +281,23 @@ export function setup({
       fs.rmSync(path.join(cacheDir, f.replace(/\.jpg$/, '.json')), { force: true });
     }
   }
+  // the album can't be reached (or can again): the screens show a small note
+  function setOffline(v: boolean) {
+    if (state.offline === v) return;
+    state.offline = v;
+    broadcast('photos', {});
+  }
+  // the copy shown most recently, for when the album can't be reached
+  function lastCopy(): string | null {
+    const copies = fs.existsSync(cacheDir)
+      ? fs
+          .readdirSync(cacheDir)
+          .filter(f => f.endsWith('.jpg'))
+          .map(f => ({ f, t: fs.statSync(path.join(cacheDir, f)).mtimeMs }))
+          .sort((a, b) => b.t - a.t)
+      : [];
+    return copies.length ? path.join(cacheDir, copies[0].f) : null;
+  }
   function fetchOne(id: string): Promise<boolean> {
     const a = state.all.find(x => x.id === id);
     if (!a) return Promise.resolve(false);
@@ -287,6 +311,7 @@ export function setup({
           fs.writeFileSync(file + '.part', buf);
           fs.renameSync(file + '.part', file);
           trimCopies();
+          setOffline(false);
           return true;
         })
         .catch(() => false)
@@ -387,18 +412,35 @@ export function setup({
       const hits = onThisDay(photos, today());
       if (hits.length) photos = hits;
     }
-    res.json({ enabled, kind, photos, cfg: cfg(), synced: state.synced, error: state.error });
+    res.json({
+      enabled,
+      kind,
+      photos,
+      cfg: cfg(),
+      synced: state.synced,
+      error: state.error,
+      offline: few && state.offline,
+      few // only the last few kept: pictures for picking come from /api/photos/thumb
+    });
   });
 
   app.get('/api/photos/img/:id', async (req, res) => {
     if (!/^[A-Za-z0-9_-]{1,80}$/.test(req.params.id)) return res.sendStatus(404);
-    const file = fileOf(req.params.id, 'jpg');
+    let file = fileOf(req.params.id, 'jpg');
+    let stand = false; // the last photo shown, standing in while the album can't be reached
     if (few) {
       // a big album: fetched now if there's no copy (the board was just started: read the album first)
       if (!fs.existsSync(file)) {
         if (!state.all.length) await sync();
-        if (!state.list.some(p => p.id === req.params.id) || !(await fetchOne(req.params.id)))
-          return res.sendStatus(404);
+        if (!state.list.some(p => p.id === req.params.id)) return res.sendStatus(404);
+        if (!(await fetchOne(req.params.id))) {
+          // the album can't be reached: the last photo shown, not a blank frame (and not kept by the screen)
+          setOffline(true);
+          const last = lastCopy();
+          if (!last) return res.sendStatus(404);
+          file = last;
+          stand = true;
+        }
       } else {
         const now = new Date();
         fs.utimesSync(file, now, now); // just shown: among the last few, so it stays
@@ -415,7 +457,9 @@ export function setup({
       return res.sendStatus(404);
     }
     // (a big album's copies come and go: screens keep theirs a day, not a year)
-    res.set('Cache-Control', few ? 'public, max-age=86400' : 'public, max-age=31536000, immutable').type(type);
+    res
+      .set('Cache-Control', stand ? 'no-store' : few ? 'public, max-age=86400' : 'public, max-age=31536000, immutable')
+      .type(type);
     res.sendFile(file, err => {
       if (err && !res.headersSent) res.sendStatus(404);
     });
@@ -494,7 +538,9 @@ export function setup({
       picked: state.all.filter(a => picked.has(a.id)).map(a => a.id)
     });
   });
-  app.get('/api/board-settings/photo-thumb/:id', async (req, res) => {
+  // also for the board's own photo picker (📷 Photos I pick), so a big album's pictures aren't all copied
+  app.get(['/api/board-settings/photo-thumb/:id', '/api/photos/thumb/:id'], async (req, res) => {
+    if (!state.all.length && enabled) await sync();
     const a = state.all.find(x => x.id === req.params.id);
     if (!a) return res.sendStatus(404);
     try {

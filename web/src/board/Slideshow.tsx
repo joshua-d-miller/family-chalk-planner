@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Slideshow.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      The overnight slideshow on the wall: a photo, or a collage of 2-3,
@@ -29,6 +29,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 1.1.0    2026-11-17   joshua    A small 'Photos are offline' note when a big
+                        claude    album can't be reached.
 ===============================================================================
 */
 
@@ -433,6 +436,7 @@ export function Slideshow({
         ))}
         <div className="dim" style={{ opacity: 1 - (cfg.dim || 50) / 100 }} />
       </div>
+      {photos.offline && <div className="offnote">📷 Photos are offline</div>}
       {side ? (
         <div className="slide-sidebar">
           {clockEl}

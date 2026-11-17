@@ -160,6 +160,24 @@ test('a big album keeps only the last few photos shown, and fetches the rest whe
   }
   assert.equal(copies(), 3, 'only the last 3 shown are kept');
   assert.equal((await ed.api('/api/photos/img/im_notinthealbum')).status, 404);
+  // the board's own picker: small pictures, not copied
+  const th = await ed.api('/api/photos/thumb/' + p.photos[10].id);
+  assert.equal(th.status, 200);
+  assert.equal(copies(), 3, 'a picture for picking is not kept');
+  assert.equal(p.few, true);
+
+  // ------------------------------------------------------------ //
+  // | Immich can't be reached: the last photo stands in, noted | //
+  // ------------------------------------------------------------ //
+  im.closeAllConnections();
+  await new Promise(r => im.close(r));
+  const stand = await ed.api('/api/photos/img/' + p.photos[15].id);
+  assert.equal(stand.status, 200, 'the last photo shown, not a blank frame');
+  assert.equal(stand.headers.get('cache-control'), 'no-store', 'not kept by the screen');
+  assert.equal((await (await ed.api('/api/photos')).json()).offline, true);
+  im = await mockImmich.start(IM);
+  assert.equal((await ed.api('/api/photos/img/' + p.photos[15].id)).status, 200);
+  assert.equal((await (await ed.api('/api/photos')).json()).offline, false, 'back once a photo comes through');
 });
 
 test('a few at random each day: the same few all day', async () => {

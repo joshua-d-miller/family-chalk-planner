@@ -30,7 +30,8 @@ Under **⚙️ Board** → **Photos** → **Which photos, and copies on the boar
 - **Copies on the board:** **a copy of every photo** (the default: they keep showing when the album is offline), or
   **only the last few shown** (5 unless you choose another number). With thousands of photos, the board then doesn't
   copy the whole album: it fetches each photo from the album when it comes up, so the album has to be reachable.
-  Keep at least as many copies as the slideshow shows side by side.
+  Keep at least as many copies as the slideshow shows side by side. If the album can't be reached, the last photo shown stands in and
+  the slideshow says **📷 Photos are offline** until it can be again.
 
 ## Good to know
 - **Videos are skipped.** Only photos are shown.
