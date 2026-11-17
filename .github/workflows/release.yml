@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
       # TAG for every step after this; on main, made from package.json (and skipped if it exists)
       - name: Which version

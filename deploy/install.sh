@@ -3,10 +3,10 @@
 ===============================================================================
  Family Chalk Planner | Deploy | install.sh
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-10-11
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      Installs Family Chalk Planner on a Debian or Ubuntu machine (a
@@ -88,6 +88,9 @@
 
                                   Releases carry the built screens; servers
                                   fetch them instead of building.
+
+ 1.1.0    2026-11-17   joshua    Node.js 26 on a 64-bit machine, 22 on 32-bit
+                        claude    ARM (deploy/node-version.sh).
 ===============================================================================
 HEADER
 
@@ -218,12 +221,15 @@ if [ "${SKIP_PACKAGES:-}" != 1 ]; then
   say "Installing packages (curl, git, ca-certificates)"
   apt-get update -qq
   apt-get install -y -qq curl git ca-certificates >/dev/null
+  # Node.js 26 on a 64-bit machine; 22 on 32-bit ARM, the newest built for it (deploy/node-version.sh)
+  # shellcheck source=deploy/node-version.sh
+  . "$APP_DIR/deploy/node-version.sh"
   if ! node_ok; then
-    say "Installing Node.js 22 (NodeSource)"
-    curl -fsSL https://deb.nodesource.com/setup_22.x -o /tmp/nodesource_setup.sh
-    bash /tmp/nodesource_setup.sh >/dev/null
-    apt-get install -y -qq nodejs >/dev/null
-    rm -f /tmp/nodesource_setup.sh
+    say "Installing Node.js $(node_target) (NodeSource)"
+    node_install "$(node_target)" || die "Couldn't install Node.js $(node_target) from NodeSource"
+  fi
+  if node_is_32bit; then
+    say "A 32-bit system: the board runs on Node.js $NODE_32BIT, supported until $NODE_32BIT_UNTIL. For updates after that, use a 64-bit system (docs/install.md → Node.js)."
   fi
 fi
 node_ok || die "Node.js 22.18 or newer is required (found: $(node -v 2>/dev/null || echo none))"

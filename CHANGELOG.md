@@ -49,6 +49,10 @@ or the admin console → 📺 Screens).
 - **Admin console → 📺 Screens:** a paired screen's list now always shows 🧒 Kid's tablet. Before anyone is added
   in 🧹 Chores it's greyed out and says to add the family there first (it used to be missing, leaving only View
   only and Family).
+- **Node.js 26:** the Docker image and the Home Assistant app run on Node.js 26, and **Update now** moves a Linux
+  board installed from NodeSource up to it. A **32-bit Raspberry Pi OS** stays on Node.js 22 (the newest Node.js
+  built for it), supported until April 30, 2027; the [install guide](docs/install.md#nodejs) says how to move to
+  the 64-bit Raspberry Pi OS to keep getting updates after that.
 - **Tested against real servers** on every change, with no accounts anywhere: a real CalDAV server (Radicale, the
   protocol iCloud uses) and a real, fresh Immich.
 
