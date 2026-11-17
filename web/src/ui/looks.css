@@ -40,6 +40,10 @@ html[data-look] :is(.sheet, .menu, #settings .scard) .colors :is(.dot.none, .dot
 html[data-look] #settings .section + .section {
   border-top-color: var(--line);
 }
+html[data-look] :is(.sheet, .menu) .ctab:not(.on) {
+  background: var(--field);
+  border-color: var(--line);
+}
 html[data-look] :is(.menu, .menu > .closex) {
   background: var(--slate);
 }

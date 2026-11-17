@@ -235,6 +235,74 @@
   padding: 18px 14px 4px 22px;
   background: var(--slate);
 }
+.sheet .shead {
+  flex-wrap: wrap;
+}
+/* more pinned under the title (tabs, say): the whole width, below the ✕ */
+.sheet .sheadx {
+  flex: 1 0 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 8px 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+/* a card as tall as the screen allows, so switching tabs doesn't make it jump */
+.sheet.tall {
+  height: calc(100dvh - 32px);
+}
+/* Save and Cancel pinned to the bottom of a long card */
+.sheet .actions.sfoot {
+  position: sticky;
+  bottom: -22px;
+  z-index: 2;
+  margin: auto -22px -22px;
+  padding: 12px 22px 22px;
+  background: var(--slate);
+  border-top: 1px solid var(--line);
+}
+/* tabs: the parts of a long card, a row that slides sideways when it doesn't fit */
+.ctabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px;
+  margin: 0 -2px;
+}
+.ctabs::-webkit-scrollbar {
+  display: none;
+}
+.ctab {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 22px;
+  border: 2px solid transparent;
+  background: rgba(237, 234, 224, 0.08);
+  color: var(--dim);
+  font-family: var(--hand);
+  font-weight: 700;
+  font-size: 0.8em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.ctab.on {
+  background: var(--pink);
+  color: var(--slate);
+}
+.ctab .tdot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--yellow);
+}
+.ctab.on .tdot {
+  background: var(--slate);
+}
 .sheet .shead h3 {
   flex: 1;
   min-width: 0;

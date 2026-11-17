@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | app-pages.spec.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-14
+ Updated:   2026-11-17
 
  Purpose:
      The new screens (React): the meal plan, reminders, timers, the
@@ -55,6 +55,9 @@
 
  0.17.0    2026-11-14   joshua    Pictures: a picture by searching and its
                         claude    other looks; the garland as a pack.
+
+ 1.1.0    2026-11-17   joshua    Calendar lines are on the board style's
+                        claude    Lines tab.
 ===============================================================================
 */
 
@@ -654,6 +657,7 @@ test('board style: a style and colors just for this month', async ({ as, board }
     .click();
   // a style of its own (December in Holiday, the rest as they were)
   await t.locator('#styleSheet .presets button', { hasText: 'Holiday' }).click();
+  await t.locator('#styleSheet').getByRole('tab', { name: 'Lines' }).click(); // (on its own tab)
   const lines = t.locator('#styleSheet .threl', { hasText: 'Calendar lines' }).locator('.colors button');
   await lines.nth(2).click();
   const picked = await lines.nth(2).getAttribute('aria-label');

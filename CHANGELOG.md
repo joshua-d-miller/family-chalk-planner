@@ -22,6 +22,8 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   **accent color** for headings and what's picked, and **larger text** (Large or Larger) for reading from further
   away. It's saved on the board, so clearing the browser doesn't lose it. The calendar keeps its own style (🎨 Board
   style).
+- **🎨 Board style on tabs:** Style, Days, Events, Notes and Lines, instead of one long card to scroll through. Save
+  and Cancel stay at the bottom, and a small dot marks a tab with changes of its own.
 
 ## 1.0.0 — Ready for everyone, and part of Home Assistant
 The first public release. For Docker and Linux nothing changes for a board that's already running; this marks

@@ -30,6 +30,9 @@
                         claude    long one can be closed without scrolling
                                   down to Cancel or tapping outside it. Its
                                   title row stays put while the card scrolls.
+                                  A card can pin more under its title (tabs),
+                                  and keep its full height so switching tabs
+                                  doesn't make it jump.
 ===============================================================================
 */
 
@@ -45,13 +48,17 @@ export function Sheet({
   onClose,
   children,
   id,
-  focus = true
+  focus = true,
+  head,
+  tall = false
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   id?: string;
   focus?: boolean; // focus the first field when it opens (not where that brings up a keyboard for nothing)
+  head?: ReactNode; // pinned under the title with the ✕ (tabs, say), so it stays while the card scrolls
+  tall?: boolean; // as tall as the screen allows, so switching tabs doesn't make it jump
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const down = useRef(false);
@@ -79,11 +86,19 @@ export function Sheet({
         down.current = false;
       }}
     >
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title} ref={ref} id={id}>
-        {/* the title and the ✕: stay at the top while a long card scrolls */}
+      <div
+        className={'sheet' + (tall ? ' tall' : '')}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        ref={ref}
+        id={id}
+      >
+        {/* the title and the ✕ (and any tabs): stay at the top while a long card scrolls */}
         <div className="shead">
           <h3>{title}</h3>
           <CloseX onClose={onClose} />
+          {head && <div className="sheadx">{head}</div>}
         </div>
         {children}
       </div>
