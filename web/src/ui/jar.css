@@ -65,7 +65,8 @@
   stroke-width: 2.2;
   stroke-linejoin: round;
 }
-.jars .jar.full .jarline {
+.jars .jar.full .jarline,
+.jzcard.full .jarline {
   stroke: #f2d479;
   animation: jarglow 2.4s ease-in-out infinite;
 }
@@ -75,7 +76,8 @@
   }
 }
 .jars .jar .pc.drop,
-.jarpic .pc.drop {
+.jarpic .pc.drop,
+.jzjar .pc.drop {
   animation: pcdrop 0.9s cubic-bezier(0.3, 0.1, 0.4, 1) both;
 }
 @keyframes pcdrop {
@@ -98,8 +100,203 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .jars .jar .pc.drop,
-  .jars .jar.full .jarline {
+  .jarpic .pc.drop,
+  .jzjar .pc.drop,
+  .jars .jar.full .jarline,
+  .jzcard.full .jarline,
+  .burst {
     animation: none;
+  }
+}
+
+/* Home page Big Jar Zoom overlay */
+#jarZoom {
+  position: fixed;
+  inset: 0;
+  z-index: 26;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0);
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    background 0.34s ease,
+    visibility 0.34s;
+  --jzx: 0px;
+  --jzy: 0px;
+  --jzs: 0.32;
+}
+#jarZoom.starting {
+  visibility: visible;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0);
+  transition: none;
+}
+#jarZoom.open {
+  visibility: visible;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.62);
+}
+#jarZoom.closing {
+  visibility: visible;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0);
+}
+#jarZoom .jzcard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 32px 22px;
+  border-radius: 28px;
+  background: rgba(22, 25, 22, 0.94);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75);
+  transform: translate(var(--jzx), var(--jzy)) scale(var(--jzs));
+  opacity: 0;
+  transition:
+    transform 0.42s cubic-bezier(0.2, 0.9, 0.25, 1),
+    opacity 0.28s ease;
+  position: relative;
+  max-width: 92vw;
+}
+#jarZoom.starting .jzcard {
+  transform: translate(var(--jzx), var(--jzy)) scale(var(--jzs));
+  opacity: 0.35;
+  transition: none;
+}
+#jarZoom.open .jzcard {
+  transform: translate(0, 0) scale(1);
+  opacity: 1;
+}
+#jarZoom.closing .jzcard {
+  transform: translate(var(--jzx), var(--jzy)) scale(var(--jzs));
+  opacity: 0;
+  transition:
+    transform 0.36s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease;
+}
+#jarZoom .jztitle {
+  font:
+    700 42px / 1.05 'Dancing Script',
+    cursive;
+  color: var(--pink, #ff4fa3);
+  text-align: center;
+}
+#jarZoom .jzjar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0;
+}
+#jarZoom .jzjar svg {
+  width: 200px;
+  height: 275px;
+  display: block;
+  overflow: visible;
+}
+#jarZoom .jzjar .jarline {
+  fill: none;
+  stroke: rgba(var(--ink, 237, 234, 224), 0.85);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+#jarZoom .jzcard.full .jarline {
+  stroke: #f2d479;
+}
+#jarZoom .jzcount {
+  font:
+    700 22px / 1.1 'Kalam',
+    cursive;
+  color: var(--yellow, #ffe500);
+}
+#jarZoom .jzpick {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 4px;
+}
+#jarZoom .jzpick .jpc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 68px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--chalk, #edeae0);
+  font:
+    700 15px / 1 'Kalam',
+    cursive;
+  cursor: pointer;
+  transition:
+    transform 0.12s,
+    border-color 0.15s;
+}
+#jarZoom .jzpick .jpc:hover {
+  border-color: var(--yellow, #ffe500);
+}
+#jarZoom .jzpick .jpc:active {
+  transform: scale(0.92);
+}
+#jarZoom .jzpick .jpc svg {
+  width: 32px;
+  height: 32px;
+  display: block;
+}
+#jarZoom .jzactions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 2px;
+}
+#jarZoom .jzactions button {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 19px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: var(--chalk, #edeae0);
+  font:
+    700 17px 'Kalam',
+    cursive;
+  cursor: pointer;
+}
+#jarZoom .jzactions button.rew {
+  border-color: var(--yellow, #ffe500);
+  color: var(--yellow, #ffe500);
+}
+#jarZoom .jzhint {
+  font:
+    400 14px 'Kalam',
+    cursive;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+}
+
+/* Burst celebration particles */
+.burst {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 9;
+  animation: burst 2.2s ease-out forwards;
+}
+@keyframes burst {
+  0% {
+    transform: translate(0, 0) rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) rotate(540deg);
+    opacity: 0;
   }
 }
 

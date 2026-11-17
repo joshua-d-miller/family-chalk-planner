@@ -243,6 +243,26 @@ body.boardpage {
   color: #ede6d2;
   text-align: center;
 }
+/* the ☰, slideshow and week buttons: the last row of the Notes column */
+.slate .ndock {
+  margin-top: auto;
+  flex: none;
+  min-height: 46px;
+}
+.slate .ndock .dockrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.slate .ndock .menufab {
+  position: static;
+  width: 42px;
+  height: 42px;
+  font-size: 20px;
+  font-family: var(--emoji), sans-serif;
+  box-shadow: inset 0 0 0 2px rgba(185, 141, 88, 0.55);
+}
 .slate .nslot {
   display: flex;
   flex-direction: column;

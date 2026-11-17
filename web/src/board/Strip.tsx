@@ -59,6 +59,10 @@ export function Strip({
   drawLabel = 'Draw',
   tools,
   add,
+  dock,
+  onSlides,
+  weekly,
+  onWeek,
   children
 }: {
   drawing: boolean;
@@ -66,6 +70,10 @@ export function Strip({
   drawLabel?: string; // what ✏️ says on this screen (Draw, or Decorate on a family screen)
   tools?: ReactNode; // the drawing tools, while drawing
   add?: ReactNode; // + Add event
+  dock?: HTMLElement | null; // the bottom row of the Notes column: the ☰ and its neighbors live there
+  onSlides?: () => void; // ▶ start the slideshow (only given when there are photos)
+  weekly?: boolean; // the week page (the toggle goes back to the month)
+  onWeek?: () => void; // 🗓️ week or month
   children: ReactNode; // the board's own buttons
 }) {
   const { kind, side } = useShell();
@@ -75,7 +83,18 @@ export function Strip({
   }, [drawing]);
   if (kind === 'cork' && side)
     return (
-      <SideStrip side={side} drawing={drawing} onDraw={onDraw} drawLabel={drawLabel} tools={tools} add={add}>
+      <SideStrip
+        side={side}
+        drawing={drawing}
+        onDraw={onDraw}
+        drawLabel={drawLabel}
+        tools={tools}
+        add={add}
+        dock={dock}
+        onSlides={onSlides}
+        weekly={weekly}
+        onWeek={onWeek}
+      >
         {children}
       </SideStrip>
     );
@@ -141,6 +160,10 @@ function SideStrip({
   drawLabel,
   tools,
   add,
+  dock,
+  onSlides,
+  weekly,
+  onWeek,
   children
 }: {
   side: 'left' | 'right';
@@ -149,6 +172,10 @@ function SideStrip({
   drawLabel: string;
   tools?: ReactNode;
   add?: ReactNode;
+  dock?: HTMLElement | null;
+  onSlides?: () => void;
+  weekly?: boolean;
+  onWeek?: () => void;
   children: ReactNode;
 }) {
   const { who, here, drawBtn } = useShell();
@@ -161,50 +188,73 @@ function SideStrip({
       setShown(true); // every time drawing starts, the tools are out
     }
   }, [drawing]);
-  // the buttons, the ☰ (or ✏️ Done) always in the corner
+  // the buttons: in the Notes column's last row when it has one, else floating in the corner
+  const idle = (
+    <>
+      {drawBtn && onDraw && (
+        <button type="button" className="menufab inrow" id="drawFab" aria-label={drawLabel} onClick={onDraw}>
+          <span aria-hidden="true">✏️</span>
+        </button>
+      )}
+      {dock && onSlides && (
+        <button
+          type="button"
+          className="menufab inrow"
+          id="slidesFab"
+          aria-label="Start the slideshow"
+          onClick={onSlides}
+        >
+          <span aria-hidden="true">▶️</span>
+        </button>
+      )}
+      {dock && onWeek && (
+        <button
+          type="button"
+          className="menufab inrow"
+          id="weekFab"
+          aria-label={weekly ? 'Show the month' : 'Show the week'}
+          title={weekly ? 'Month view' : 'Week view'}
+          onClick={onWeek}
+        >
+          <span aria-hidden="true">{weekly ? '📅' : '🗓️'}</span>
+        </button>
+      )}
+      <MenuFab side={side} open={open} onClick={() => setOpen(true)} label="Menu and the calendar's tools" inRow />
+    </>
+  );
   return createPortal(
     <>
-      <div className={'fabwrap ' + side} style={{ zoom: z }}>
-        {drawing && shown && (
-          <div className="cork drawpop" id="drawPop" aria-label="Drawing tools">
-            {tools}
-          </div>
-        )}
-        <div className="fabrow">
-          {drawing ? (
-            <>
-              <button
-                type="button"
-                className={'menufab inrow small' + (shown ? ' on' : '')}
-                id="toolsFab"
-                aria-label={shown ? 'Hide the drawing tools' : 'Show the drawing tools'}
-                aria-expanded={shown}
-                onClick={() => setShown(v => !v)}
-              >
-                <span aria-hidden="true">🎨</span>
-              </button>
-              <button type="button" className="menufab inrow done" id="doneFab" onClick={onDraw}>
-                <span aria-hidden="true">✏️</span> Done
-              </button>
-            </>
-          ) : (
-            <>
-              {drawBtn && onDraw && (
-                <button type="button" className="menufab inrow" id="drawFab" aria-label={drawLabel} onClick={onDraw}>
-                  <span aria-hidden="true">✏️</span>
-                </button>
-              )}
-              <MenuFab
-                side={side}
-                open={open}
-                onClick={() => setOpen(true)}
-                label="Menu and the calendar's tools"
-                inRow
-              />
-            </>
+      {dock && !drawing && createPortal(<div className="dockrow">{idle}</div>, dock)}
+      {(drawing || !dock) && (
+        <div className={'fabwrap ' + side} style={{ zoom: z }}>
+          {drawing && shown && (
+            <div className="cork drawpop" id="drawPop" aria-label="Drawing tools">
+              {tools}
+            </div>
           )}
+          <div className="fabrow">
+            {drawing ? (
+              <>
+                <button
+                  type="button"
+                  className={'menufab inrow small' + (shown ? ' on' : '')}
+                  id="toolsFab"
+                  aria-label={shown ? 'Hide the drawing tools' : 'Show the drawing tools'}
+                  aria-expanded={shown}
+                  onClick={() => setShown(v => !v)}
+                >
+                  <span aria-hidden="true">🎨</span>
+                </button>
+                <button type="button" className="menufab inrow done" id="doneFab" onClick={onDraw}>
+                  <span aria-hidden="true">✏️</span> Done
+                </button>
+              </>
+            ) : (
+              idle
+            )}
+          </div>
         </div>
-      </div>
+      )}
       {open && !drawing && (
         <Menu
           who={who}

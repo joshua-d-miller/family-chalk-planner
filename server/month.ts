@@ -274,7 +274,14 @@ export function setup({
   // How thick the frame around the board is, in board pixels (0-80): the    //
   // same every month. From Colby Way's board.                               //
   app.post('/api/frame', (req, res) => {
-    const pad = Number((req.body || {}).pad);
+    const raw = (req.body || {}).pad;
+    if (raw === null) {
+      // back to the usual (a frame on a tablet, none on the wall)
+      kv.set('boardPad', null);
+      broadcast('meta', { ym: '*' });
+      return res.json({ boardPad: null });
+    }
+    const pad = Number(raw);
     if (!Number.isFinite(pad)) return res.status(400).json({ error: 'bad frame' });
     kv.set('boardPad', Math.min(Math.max(Math.round(pad), 0), 80));
     broadcast('meta', { ym: '*' });

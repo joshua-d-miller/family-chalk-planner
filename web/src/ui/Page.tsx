@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Page.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   0.17.1
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-16
 
  Purpose:
      The frame of every page: the ☰ menu, the page's title and its buttons
@@ -19,6 +19,8 @@
 
  0.14.0    2026-11-07   joshua    No ☰ at the top: its tools go on the cork,
                         claude    or stay at the top on a phone.
+
+ 0.17.1    2026-11-16   colby     Back button on pages that request one.
 ===============================================================================
 */
 
@@ -39,12 +41,14 @@ export function Page({
   title,
   who,
   tools,
+  onBack,
   children
 }: {
   id: string;
   title: string;
   who: Who | null;
   tools?: ReactNode;
+  onBack?: () => void;
   children: ReactNode;
 }) {
   const [menu, setMenu] = useState(false);
@@ -55,7 +59,12 @@ export function Page({
   return (
     <div className="page" id={id}>
       <header className="phead">
-        {shell.kind === 'none' && (
+        {onBack && (
+          <button type="button" className="btn round" aria-label="Back" onClick={onBack} id="backBtn">
+            ‹
+          </button>
+        )}
+        {shell.kind === 'none' && !onBack && (
           <button
             type="button"
             className="btn round"

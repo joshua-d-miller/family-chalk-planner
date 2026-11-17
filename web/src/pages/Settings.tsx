@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Settings.tsx
 ===============================================================================
- Version:   0.16.0
+ Version:   0.17.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-16
 
  Purpose:
      ⚙️ Settings on the board (signed-in people). Admins also get the
@@ -30,13 +30,20 @@
 
  0.16.0    2026-11-11   joshua    Birthdays: a cake, and counting down to every
                         claude    one.
+
+ 0.17.1    2026-11-16   colby     Back button in the upper left to return to
+                                  the calendar. Hide the zoom buttons in This
+                                  screen.
 ===============================================================================
 */
 
 import { useState } from 'react';
 import { post } from '../lib/api.ts';
 import { useLive } from '../lib/live.ts';
+import { navigate } from '../lib/nav.ts';
+import { homeHref } from '../routes.ts';
 import { setSpeaksHere, speaksHere } from '../lib/timers.ts';
+import { hideZoomHere, setHideZoomHere } from '../lib/zoomControls.ts';
 import { DAY_NAMES } from '../lib/today.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn, Field, Pick } from '../ui/bits.tsx';
@@ -52,7 +59,15 @@ export function Settings({ who }: { who: Who | null }) {
   const admin = who?.user?.role === 'admin' && who.admin;
   const adminPerson = who?.user?.role === 'admin';
   return (
-    <Page id="settings" title="Settings" who={who}>
+    <Page
+      id="settings"
+      title="Settings"
+      who={who}
+      onBack={() => {
+        if (history.length > 1) history.back();
+        else navigate(homeHref(who));
+      }}
+    >
       {adminPerson && !admin && (
         <p className="dim">
           The calendar and trash day need the admin console’s sign-in: <a href="admin">sign in there</a>, then come
@@ -65,6 +80,7 @@ export function Settings({ who }: { who: Who | null }) {
       <Photos />
       {admin && <Trash />}
       <RightColumn />
+      <Frame />
       <ThisScreen />
       <p className="dim small about">
         Family Chalk Planner {document.querySelector<HTMLMetaElement>('meta[name=app-version]')?.content} · free
@@ -574,11 +590,39 @@ function RightColumn() {
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------- //
+// | The frame on the board | //
+// -------------------------- //
+// The lighter brown wooden frame around the calendar: on, or off for every //
+// screen.                                                                   //
+function Frame() {
+  const ym = new Date().toISOString().slice(0, 7);
+  const m = useLive<{ boardPad?: number }>(`api/meta?ym=${ym}`, ['meta']);
+  const sv = useSaved();
+  if (!m.data) return null;
+  const off = m.data.boardPad === 0;
+  const set = (hide: boolean) => {
+    m.set({ ...m.data!, boardPad: hide ? 0 : undefined });
+    sv.run(post('api/frame', { pad: hide ? 0 : null }));
+  };
+  return (
+    <Card title="The frame around the calendar">
+      <label className="check">
+        <input type="checkbox" checked={off} onChange={e => set(e.target.checked)} />
+        <span className="t">Hide the lighter brown wooden frame around the calendar</span>
+      </label>
+      {sv.line}
+    </Card>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // -------------------- //
 // | This screen only | //
 // -------------------- //
 function ThisScreen() {
   const [speak, setSpeak] = useState(speaksHere());
+  const [hideZoom, setHideZoom] = useState(hideZoomHere());
   return (
     <Card title="This screen">
       <label className="check">
@@ -591,6 +635,17 @@ function ThisScreen() {
           }}
         />
         <span className="t">Say a timer’s name out loud when it’s done</span>
+      </label>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={hideZoom}
+          onChange={e => {
+            setHideZoomHere(e.target.checked);
+            setHideZoom(e.target.checked);
+          }}
+        />
+        <span className="t">Hide the − / + / Fit buttons on the calendar</span>
       </label>
     </Card>
   );
