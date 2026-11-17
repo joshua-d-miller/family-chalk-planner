@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   0.17.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-12
+ Updated:   2026-11-17
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -91,13 +91,18 @@
 
                                   ⭐ Pictures beside Draw / Decorate: straight
                                   to the pictures.
+
+ 1.1.0    2026-11-17   joshua    A photo of your own as the background
+                        claude    (dimmed).
+                                  What Apple or Google say, when the calendar
+                                  can't be reached.
 ===============================================================================
 */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent } from 'react';
 import { useLive, useOnline } from '../lib/live.ts';
-import { paintSurface, seasonOf, surfaceOf } from '../lib/surface.ts';
+import { paintSurface, photoBackground, seasonOf, surfaceOf } from '../lib/surface.ts';
 import type { Who } from '../lib/who.ts';
 import { Art } from './Art.tsx';
 import type { ArtItem } from './Art.tsx';
@@ -132,7 +137,7 @@ import { useArt } from './draw/useArt.ts';
 import { coveredBy, writingOn } from './cover.ts';
 import type { Writing } from './cover.ts';
 import { BORDER_PAD, relayout, unionBox, xform } from './geom.ts';
-import { post } from '../lib/api.ts';
+import { post, url as apiUrl } from '../lib/api.ts';
 import { CLIENT } from './draw/useArt.ts';
 import { RANK } from '../lib/who.ts';
 import type { ArtItem as Item } from './Art.tsx';
@@ -398,13 +403,15 @@ export function Board({
   const [borderDraft, setBorderDraft] = useState<Border | null | undefined>(undefined);
   const sf = surfaceOf(theme?.s || 'slate');
   const season = theme?.z && shown ? seasonOf(+shown.slice(5, 7), false) : '';
+  const photoBg = sf.id === 'photo' && theme?.img ? theme.img : null; // a photo of your own
   const bg = useMemo(() => {
+    if (photoBg) return photoBackground(apiUrl(photoBg));
     try {
       return paintSurface(sf, season, res);
     } catch {
       return 'none';
     }
-  }, [sf, season, res]);
+  }, [sf, season, res, photoBg]);
   useEffect(() => {
     document.body.classList.add('boardpage');
     return () => document.body.classList.remove('boardpage');
@@ -823,7 +830,9 @@ export function Board({
           )}
           {m?.problem && !(note || ed.err || placing) && (
             <div className="status calproblem" role="status" title={m.problem}>
-              The calendar can’t be reached right now: showing what the board had
+              {m.outage
+                ? `${m.outage}: showing what the board had`
+                : 'The calendar can’t be reached right now: showing what the board had'}
             </div>
           )}
           {ask && !placing && (

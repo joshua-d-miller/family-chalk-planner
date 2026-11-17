@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | theme.ts
 ===============================================================================
- Version:   0.16.1
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-17
 
  Purpose:
      The board's style ("theme"): a preset plus the family's tweaks
@@ -30,6 +30,9 @@
 
  0.16.1    2026-11-11   joshua    A month's look: its own style, or the
                         claude    board's, with its tweaks.
+
+ 1.1.0    2026-11-17   joshua    A photo background (img).
+                        claude
 ===============================================================================
 */
 
@@ -40,7 +43,7 @@ import { lum, readable } from './color.ts';
 // ------------- //
 // | The style | //
 // ------------- //
-export type Theme = { p: string; o?: Record<string, string>; s?: string; z?: 1 };
+export type Theme = { p: string; o?: Record<string, string>; s?: string; z?: 1; img?: string };
 export type ThemeVals = Record<string, string>;
 
 export const TFONTS: Record<string, { n: string; ff: string; w: number; z: number; g: string }> = Object.fromEntries(

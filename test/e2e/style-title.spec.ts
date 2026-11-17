@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | style-title.spec.ts
 ===============================================================================
- Version:   0.16.1
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-11
+ Updated:   2026-11-17
 
  Purpose:
      Board style (background, presets) and the month title card.
@@ -28,6 +28,10 @@
 
  0.16.1    2026-11-11   joshua    The style opens on just this month.
                         claude
+
+ 1.1.0    2026-11-17   joshua    Board style's tabs: each shows only its own
+                        claude    rows, Save stays in reach, and a tab with
+                                  changes gets a dot.
 ===============================================================================
 */
 
@@ -94,4 +98,34 @@ test('fonts: a Regular group with plain serif and sans (like Times and Arial)', 
   expect(await t.locator('#monthName .mn').evaluate(e => getComputedStyle(e).fontFamily)).toContain('serif');
   // the font itself arrives from the board (no fallback)
   await expect.poll(() => t.evaluate(() => document.fonts.check('400 20px Tinos'))).toBe(true);
+});
+
+test('board style: its parts on tabs, with Save and Cancel always in reach', async ({ as }) => {
+  const t = await as('tablet', { path: '/edit' });
+  await t.locator('#styleBtn').click();
+  const card = t.locator('#styleSheet');
+  const tabs = card.getByRole('tab');
+  await expect(tabs).toHaveText(['Style', 'Days', 'Events', 'Notes', 'Lines']);
+  await expect(card.getByRole('tab', { name: 'Style' })).toHaveAttribute('aria-selected', 'true');
+  await expect(card.locator('.presets')).toBeVisible();
+  await expect(card.locator('.threl')).toHaveCount(0); // the rows wait on their tabs
+  // each tab shows only its own rows
+  const rows: [string, string[]][] = [
+    ['Days', ['Day numbers', 'Number boxes', 'Today', 'Weekday names']],
+    ['Events', ['Events', 'All-day events', 'Holidays']],
+    ['Notes', ['Headings', '“Notes” color', '“Meal Plan” color', 'Notes text']],
+    ['Lines', ['Calendar lines']]
+  ];
+  for (const [tab, labels] of rows) {
+    await card.getByRole('tab', { name: tab }).click();
+    await expect(card.locator('.threl > b')).toHaveText(labels);
+    await expect(card.locator('.presets')).toBeHidden();
+    await expect(card.getByRole('button', { name: 'Save' })).toBeInViewport();
+  }
+  // a tab with changes of its own gets a dot
+  await card.locator('.threl .colors button').nth(3).click();
+  await expect(card.getByRole('tab', { name: 'Lines' }).locator('.tdot')).toHaveCount(1);
+  await expect(card.getByRole('tab', { name: 'Days' }).locator('.tdot')).toHaveCount(0);
+  await card.getByRole('button', { name: 'Cancel' }).click();
+  await expect(card).toHaveCount(0);
 });

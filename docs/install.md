@@ -1,7 +1,7 @@
 # Installing Family Chalk Planner
 
 ## What you need
-- A small always-on Linux machine: Debian 12/13 or Ubuntu 22.04/24.04, amd64 or arm64. A Proxmox LXC with 1 CPU, 512 MB RAM and 4 GB of disk is plenty (plus ~250 MB for the optional face finder).
+- A small always-on Linux machine: Debian 12/13 or Ubuntu 22.04/24.04, amd64 or arm64 (a 32-bit Raspberry Pi OS works too, until April 2027: see [Node.js](#nodejs)). A Proxmox LXC with 1 CPU, 512 MB RAM and 4 GB of disk is plenty (plus ~250 MB for the optional face finder).
 - A calendar reachable over CalDAV (iCloud, Nextcloud, Fastmail, Radicale…).
 - A screen for the wall (any browser in kiosk mode) and a tablet or phone for editing.
 
@@ -103,6 +103,25 @@ Or, from 0.13: admin console → ⚙️ Board → **Updates** → **Update now**
 Every update first copies the database to `BACKUP_DIR/pre-update/` (the last 3 are kept). If the new version doesn't start properly (the health check: the board answers, its database is up to date, it's the new version, the page loads), the board goes back to the version it had **and to that copy of its database**, since a newer version may have changed the database in a way an older one can't read. A board refuses to start on a database from a newer version rather than misread it; if that ever happens after going back by hand, copy the newest `pre-update` file over `data/chalkboard.db` with the service stopped.
 
 With Docker, update by pulling the new image: `docker compose pull && docker compose up -d`.
+
+### Node.js
+The board runs on Node.js, which the installer sets up from NodeSource:
+
+| Your machine | Node.js | Supported until |
+| --- | --- | --- |
+| 64-bit (amd64, arm64: most PCs, Proxmox containers, a Raspberry Pi 3/4/5 on the 64-bit Raspberry Pi OS) | **26** (recommended) | April 2029 |
+| 32-bit ARM (a Raspberry Pi on the 32-bit Raspberry Pi OS) | **22**, the newest Node.js built for it | **April 30, 2027** |
+| Docker and the Home Assistant app | 26, inside the image | (comes with the image) |
+
+- **Moving up:** from 1.1, **Update now** moves a NodeSource install to the recommended Node.js by itself (the
+  overnight updates leave that to Update now, since a new Node.js is a bigger change). If it can't, the board carries
+  on with the Node.js it has.
+- **32-bit Raspberry Pi OS:** Node.js stopped making builds for 32-bit ARM with version 24, so these boards stay on
+  Node.js 22. The board keeps working on 22 until its end of life on April 30, 2027; after that, board updates need a
+  newer Node.js, and a 32-bit board stays on the last version that runs on 22. To keep getting updates, move to the
+  **64-bit Raspberry Pi OS** (any Raspberry Pi 3, 4 or 5 can run it): install the board there and restore your backup
+  (see [Backups](#backups)).
+- Node.js installed some other way (not from NodeSource) is left as it is; the board needs 22.18 or newer.
 
 ## Backups
 Every night the board writes a consistent copy of its database to `BACKUP_DIR` (default `data/backup`) and keeps 14 of them. Uploaded GIFs live in `BACKUP_DIR/media`. Back up that folder with your usual tools (it has everything, settings included). The photo cache and face finder can always be rebuilt, so they don't need backing up.

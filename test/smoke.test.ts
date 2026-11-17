@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | smoke.test.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-14
+ Updated:   2026-11-17
 
  Purpose:
      End-to-end smoke test: real server + mock CalDAV + mock photo album,
@@ -71,6 +71,10 @@
  0.17.0    2026-11-14   joshua    Weather and food pictures; the rest of the
                         claude    chalk drawings (not the ones that aren't for
                                   a family board); OpenMoji in chalk white.
+
+ 1.1.0    2026-11-17   joshua    Countdown pictures, every countdown, sleeps
+                        claude    or days; the new backgrounds and a photo
+                                  background.
 ===============================================================================
 */
 
@@ -508,7 +512,72 @@ test('birthdays: no cake and no countdown unless asked; a starred one counts dow
   const ev = (await month()).events.find((e: { title: string }) => /Amanda/.test(e.title));
   assert.equal((await post('/api/countdowns', { ref: ev.ref, on: true, title: ev.title, date: ev.start })).status, 200);
   assert.equal((await cd()).find(c => /Amanda/.test(c.title))?.icon, '⭐');
+  // a picture of its own: on the countdown and on the event (for its day's badge)
+  assert.equal(
+    (await post('/api/countdowns', { ref: ev.ref, on: true, title: ev.title, date: ev.start, icon: '🎁' })).status,
+    200
+  );
+  assert.equal((await cd()).find(c => /Amanda/.test(c.title))?.icon, '🎁');
+  assert.equal((await month()).events.find((e: { title: string }) => /Amanda/.test(e.title)).cdIcon, '🎁');
+  assert.equal(
+    (await post('/api/countdowns', { ref: ev.ref, on: true, title: ev.title, date: ev.start, icon: 'x' })).status,
+    400
+  );
+  // ?all=1: every one in the next 60 days, the starred ones marked
+  const all = (await (await api('/api/countdowns?all=1')).json()) as { title: string; starred?: boolean }[];
+  assert.ok(all.length >= (await cd()).length);
+  assert.equal(all.find(c => /Amanda/.test(c.title))?.starred, true);
   await post('/api/events/delete', { ref: add.ref || { href: add.href }, scope: 'all', origDate: d });
+});
+
+test('backgrounds: the new ones, and a photo of your own only with a photo the board keeps', async () => {
+  for (const sf of ['navy', 'burgundy', 'felt', 'brick', 'burlap', 'barn', 'graph']) {
+    assert.equal((await (await post('/api/theme', { p: 'classic', s: sf })).json()).s, sf);
+  }
+  // a photo the board keeps: the background
+  const up = await (
+    await api('/api/media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/png' },
+      body: Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(40)])
+    })
+  ).json();
+  const t = await (await post('/api/theme', { p: 'classic', s: 'photo', img: up.src })).json();
+  assert.deepEqual([t.s, t.img], ['photo', up.src]);
+  // anything else isn't a photo the board keeps: the slate
+  const bad = await (await post('/api/theme', { p: 'classic', s: 'photo', img: 'https://example.com/x.jpg' })).json();
+  assert.equal(bad.s, undefined);
+  assert.equal(bad.img, undefined);
+  // another background drops the photo
+  assert.equal((await (await post('/api/theme', { p: 'classic', s: 'navy', img: up.src })).json()).img, undefined);
+  await post('/api/theme', { p: 'classic' });
+});
+
+test('countdowns in sleeps or days: nothing saved until a screen picks, and the console sets any screen’s', async () => {
+  assert.deepEqual(await (await api('/api/sleeps')).json(), { sleeps: null });
+  assert.deepEqual(await (await post('/api/sleeps', { sleeps: true })).json(), { sleeps: true });
+  assert.deepEqual(await (await api('/api/sleeps')).json(), { sleeps: true });
+  assert.equal((await post('/api/sleeps', { sleeps: 'yes' })).status, 400);
+  assert.deepEqual(await (await post('/api/sleeps', { sleeps: null })).json(), { sleeps: null });
+  assert.deepEqual(await (await post('/api/devices/sleeps', { id: 'wall1', sleeps: true })).json(), { sleeps: true });
+  assert.deepEqual((await (await api('/api/devices/sleeps')).json()).sleeps, { wall1: true });
+  await post('/api/devices/sleeps', { id: 'wall1', sleeps: null });
+});
+
+test('Check connections: the calendar and the photos now, and a real round trip only when asked', async () => {
+  type C = { name: string; ok: boolean | null; detail: string };
+  let r = await (await post('/api/board-settings/check', {})).json();
+  const by = (n: string) => (r.checks as C[]).find(c => c.name === n);
+  assert.equal(by('Calendar')?.ok, true, by('Calendar')?.detail);
+  assert.equal(by('Photos')?.ok, true, by('Photos')?.detail);
+  assert.equal(by('Adding an event'), undefined, 'nothing added unless asked');
+  r = await (await post('/api/board-settings/check', { write: true })).json();
+  assert.equal(by('Adding an event')?.ok, true, by('Adding an event')?.detail);
+  // the test event is gone again
+  const y = new Date(Date.now() + 400 * 864e5).toISOString().slice(0, 7);
+  const m = await (await api('/api/month?ym=' + y)).json();
+  assert.ok(!m.events.some((e: { title: string }) => /Chalk Planner check/.test(e.title)));
+  assert.equal(r.outage, null);
 });
 
 test('the calendar can’t be reached: the month still shows, with its holidays and the problem', async () => {
@@ -519,6 +588,12 @@ test('the calendar can’t be reached: the month still shows, with its holidays 
   const m = await r.json();
   assert.equal(m.grid.weeks >= 4, true);
   assert.ok(m.problem, 'says what went wrong');
+  const ck = await (await post('/api/board-settings/check', {})).json();
+  assert.equal(
+    ck.checks.find((c: { name: string }) => c.name === 'Calendar').ok,
+    false,
+    'Check connections says so too'
+  );
   assert.ok(
     m.events.some((e: { title: string }) => /Patrick/.test(e.title)),
     'holidays still show'

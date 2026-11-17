@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | surface.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      The board's surfaces (black slate, green chalkboard, cork...),
@@ -25,6 +25,11 @@
  0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
                         colby     plan, reminders, timers, pantry, jars and
                         claude    chores.
+
+ 1.1.0    2026-11-17   joshua    More backgrounds: navy and burgundy
+                        claude    chalkboards, felt letter board, brick,
+                                  burlap, white barnwood, graph paper, and a
+                                  photo of your own.
 ===============================================================================
 */
 
@@ -60,8 +65,28 @@ export const SURFACES: Surface[] = [
   { id: 'wood', name: 'Dark wood', lum: 0.037, base: ['#5b3e2a', '#3c291d'], frame: null },
   { id: 'glass', name: 'Black glass', lum: 0.009, base: ['#1c1e22', '#0c0d10'], frame: null },
   { id: 'linen', name: 'Linen paper', lum: 0.75, base: ['#f2ecdf', '#e2d8c4'], frame: null },
-  { id: 'peg', name: 'Pegboard', lum: 0.36, base: ['#cba571', '#b58e5a'], frame: null }
+  { id: 'peg', name: 'Pegboard', lum: 0.36, base: ['#cba571', '#b58e5a'], frame: null },
+  // 1.1: more to pick from
+  { id: 'navy', name: 'Navy chalkboard', lum: 0.02, base: ['#25334d', '#151e30'], dust: '228,234,244', frame: null },
+  {
+    id: 'burgundy',
+    name: 'Burgundy chalkboard',
+    lum: 0.025,
+    base: ['#4d242b', '#30151a'],
+    dust: '244,230,232',
+    frame: null
+  },
+  { id: 'felt', name: 'Felt letter board', lum: 0.006, base: ['#1c1c1c', '#111111'], frame: null },
+  { id: 'brick', name: 'Brick', lum: 0.07, base: ['#87503c', '#6a3a2b'], frame: null },
+  { id: 'burlap', name: 'Burlap', lum: 0.3, base: ['#b79d72', '#9f865c'], frame: null },
+  { id: 'barn', name: 'White barnwood', lum: 0.55, base: ['#e3ddd2', '#cfc6b6'], frame: null },
+  { id: 'graph', name: 'Graph paper', lum: 0.86, base: ['#fbfcf8', '#eef1ea'], frame: null },
+  // a photo of your own (uploaded in 🎨 Board style), dimmed so the writing stays readable
+  { id: 'photo', name: 'Your photo', lum: 0.02, base: ['#2a2a2a', '#151515'], frame: null }
 ];
+// a photo of your own as the background: dimmed, so light writing reads on any photo
+export const photoBackground = (src: string) =>
+  `linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url("${src.replace(/["\\]/g, '')}")`;
 // the seasonal pattern for a month (1-12): holidays in February and October, otherwise the season
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -450,6 +475,97 @@ export function paintSurface(sf: Surface, season: string, scale = 1) {
         g.arc(x, y, 2.5, 0, 6.29);
         g.fill();
       }
+  } else if (sf.id === 'felt') {
+    // felt letter board: fine ribs for the letters to slot into, and a soft fuzz
+    for (y = 6; y < H; y += 14) {
+      g.fillStyle = 'rgba(0,0,0,.55)';
+      g.fillRect(0, y, W, 2);
+      g.fillStyle = 'rgba(255,255,255,.035)';
+      g.fillRect(0, y + 2, W, 1);
+    }
+    img = g.getImageData(0, 0, c.width, c.height);
+    d = img.data;
+    for (px = 0; px < d.length; px += 4) {
+      n = (rnd() - 0.5) * 18;
+      d[px] += n;
+      d[px + 1] += n;
+      d[px + 2] += n;
+    }
+    g.putImageData(img, 0, 0);
+  } else if (sf.id === 'brick') {
+    // brick: running bond, each brick its own shade, soft mortar (muted, so writing still reads)
+    let bw = 92,
+      bh = 34;
+    g.fillStyle = 'rgba(205,190,170,.42)';
+    g.fillRect(0, 0, W, H);
+    for (j = 0, y = 0; y < H; j++, y += bh) {
+      for (x = j % 2 ? -bw / 2 : 0; x < W; x += bw) {
+        let sh = (rnd() - 0.5) * 0.22;
+        g.fillStyle = sf.base[rnd() < 0.5 ? 0 : 1];
+        g.fillRect(x + 3, y + 3, bw - 6, bh - 6);
+        g.fillStyle = sh > 0 ? 'rgba(255,200,170,' + sh * 0.6 + ')' : 'rgba(0,0,0,' + -sh + ')';
+        g.fillRect(x + 3, y + 3, bw - 6, bh - 6);
+      }
+    }
+    img = g.getImageData(0, 0, c.width, c.height);
+    d = img.data;
+    for (px = 0; px < d.length; px += 4) {
+      n = (rnd() - 0.5) * 16;
+      d[px] += n;
+      d[px + 1] += n;
+      d[px + 2] += n;
+    }
+    g.putImageData(img, 0, 0);
+    // a dark wash over it all, so light writing reads on it
+    g.fillStyle = 'rgba(20,10,6,.38)';
+    g.fillRect(0, 0, W, H);
+  } else if (sf.id === 'burlap') {
+    // burlap: a coarse open weave of thick, uneven threads
+    for (y = 0; y < H; y += 5) {
+      g.fillStyle = 'rgba(70,50,25,' + (0.08 + rnd() * 0.12) + ')';
+      g.fillRect(0, y, W, 2 + rnd() * 1.2);
+    }
+    for (x = 0; x < W; x += 5) {
+      g.fillStyle = 'rgba(70,50,25,' + (0.06 + rnd() * 0.1) + ')';
+      g.fillRect(x, 0, 2 + rnd() * 1.2, H);
+    }
+    for (i = 0; i < 1600; i++) {
+      g.fillStyle = 'rgba(235,215,170,' + (0.06 + rnd() * 0.1) + ')';
+      g.fillRect(rnd() * W, rnd() * H, 2 + rnd() * 3, 1);
+    }
+  } else if (sf.id === 'barn') {
+    // white barnwood: wide boards washed white, the grain and gaps showing through
+    let pw = W / 7;
+    for (j = 0; j < 7; j++) {
+      let x0 = j * pw;
+      for (k = 0; k < 26; k++) {
+        let gx = x0 + rnd() * pw,
+          amp = 1 + rnd() * 3,
+          fq = 0.006 + rnd() * 0.01,
+          phs = rnd() * 6.28;
+        g.strokeStyle = 'rgba(110,95,75,' + (0.05 + rnd() * 0.1) + ')';
+        g.lineWidth = 0.6 + rnd() * 1.4;
+        g.beginPath();
+        for (y = 0; y <= H; y += 12) {
+          x = gx + Math.sin(y * fq + phs) * amp;
+          if (y) g.lineTo(x, y);
+          else g.moveTo(x, y);
+        }
+        g.stroke();
+      }
+      g.fillStyle = 'rgba(80,65,50,.45)';
+      g.fillRect(Math.round(x0) - 1, 0, 3, H);
+    }
+  } else if (sf.id === 'graph') {
+    // graph paper: a light blue grid, a darker line every fifth square
+    for (x = 0; x < W; x += 16) {
+      g.fillStyle = x % 80 ? 'rgba(90,150,210,.16)' : 'rgba(90,150,210,.32)';
+      g.fillRect(x, 0, 1, H);
+    }
+    for (y = 0; y < H; y += 16) {
+      g.fillStyle = y % 80 ? 'rgba(90,150,210,.16)' : 'rgba(90,150,210,.32)';
+      g.fillRect(0, y, W, 1);
+    }
   } else if (sf.id === 'white') {
     // whiteboard: faint ghosts of old marker and a soft sheen
     g.lineCap = 'round';

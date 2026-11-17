@@ -40,6 +40,20 @@ read once, on a fresh data folder's first start — handy for tests and scripts.
    (see `.github/CODEOWNERS`); the maintainer merges.
 4. Add a line to the top section of `CHANGELOG.md` in plain words a family member would understand.
 
+**Against real servers, no accounts:** `test/real-servers.test.ts` runs the board against Radicale (a real CalDAV
+server, the protocol iCloud uses) and a fresh Immich in Docker; CI's "Real calendar and photo servers" job starts
+both. Locally: `pip install radicale==3.5.4 && bash test/real-servers/start-radicale.sh`, then
+`REAL_CALDAV_URL=http://127.0.0.1:5232/ REAL_CALDAV_USER=family REAL_CALDAV_PASSWORD=secret node --test test/real-servers.test.ts`
+(add `REAL_IMMICH_URL=http://127.0.0.1:2283` for a fresh Immich from its own compose file).
+
+**Two TypeScripts, for now:** `npm run typecheck` uses TypeScript 7 (`typescript-7` in `package.json`). TypeScript
+6 stays installed only because ESLint's `typescript-eslint` doesn't support 7 yet; `.github/dependabot.yml` holds
+its major updates back until it does.
+
+**Node.js:** the board runs on Node.js 26 (Docker, the Home Assistant app, 64-bit installs, CI) and still on 22 for
+32-bit Raspberry Pi OS until 2027-04-30 (`deploy/node-version.sh`, docs/install.md → Node.js). Keep the code working on
+22: `@types/node` stays on 22, and CI runs the server's tests on 22 too.
+
 ## How the code is laid out
 The server is TypeScript that Node runs directly (no build step); `npm run typecheck` checks it.
 - `server/main.ts`: puts the server together (`server/chalkboard.js` just starts it, so every install

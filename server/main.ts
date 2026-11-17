@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | main.ts (the start)
 ===============================================================================
- Version:   0.17.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-14
+ Updated:   2026-11-17
 
  Purpose:
      Family Chalk Planner: a chalkboard-style family wall calendar. This
@@ -67,6 +67,9 @@
  0.17.0    2026-11-14   joshua    Picture packs and Favorites (server/packs.ts);
                         claude    each screen's menu (in favorites.ts);
                                   "From the web" (server/webclip.ts).
+
+ 1.1.0    2026-11-17   joshua    Check connections and the Apple/Google
+                        claude    status pages.
 ===============================================================================
 */
 
@@ -108,6 +111,15 @@ import * as pages from './pages.ts';
 import { registerSettingsRoutes } from './settings-routes.ts';
 import * as updates from './updates.ts';
 import * as favorites from './favorites.ts';
+import { makeOutages } from './outages.ts';
+import { registerCheck } from './check.ts';
+const hostOf = (u: string) => {
+  try {
+    return new URL(u).hostname;
+  } catch {
+    return '';
+  }
+};
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // -------------------- //
@@ -298,6 +310,17 @@ registerGoogleRoutes(app, {
   broadcast,
   calendarChanged: () => calendar.reset()
 });
+// when the calendar fails: does Apple's or Google's status page say why?
+const outage = makeOutages({
+  company: () =>
+    cfg.calendar.provider === 'google'
+      ? 'google'
+      : cfg.calendar.provider === 'caldav' && /(^|\.)icloud\.com$/i.test(hostOf(cfg.calendar.caldavUrl))
+        ? 'apple'
+        : null,
+  appleUrl: process.env.APPLE_STATUS_URL || undefined, // (tests)
+  googleUrl: process.env.GOOGLE_STATUS_URL || undefined
+});
 registerCalendarRoutes({
   app,
   source: calendar,
@@ -307,6 +330,7 @@ registerCalendarRoutes({
   showHolidays: cfg.holidays !== 'none',
   kvGet,
   kvSet,
+  outage,
   status: () => {
     const c = cfg.calendar;
     if (c.provider === 'google') {
@@ -412,7 +436,28 @@ webclip.setup({
 // ---------- //
 // A shared album or Immich: the photos beside the month name and the        //
 // overnight slideshow.                                                      //
-photos.setup({ app, kv, broadcast, today: clock.today, cacheDir: path.join(DATA_DIR, 'photo-cache'), ...cfg.photos });
+const photoChecks = photos.setup({
+  app,
+  kv,
+  broadcast,
+  today: clock.today,
+  cacheDir: path.join(DATA_DIR, 'photo-cache'),
+  ...cfg.photos
+});
+// Check connections (admin console → ⚙️ Board): the calendar, its extras and the photos, now
+registerCheck({
+  app,
+  source: calendar,
+  clock,
+  calendarSetUp: () => {
+    const c = cfg.calendar;
+    if (c.provider === 'google') return !!cfg.google.id;
+    if (c.provider === 'homeassistant') return c.haCalendars.length > 0;
+    return !!(c.user && c.password && c.calendarName);
+  },
+  photos: photoChecks.check,
+  outage
+});
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // -------------------------------------------- //

@@ -695,3 +695,8 @@ body.boardpage {
   top: 0;
   pointer-events: none;
 }
+/* the background on the slate itself (a framed board): covering it, a photo of your own too */
+.slate {
+  background-size: cover;
+  background-position: center;
+}

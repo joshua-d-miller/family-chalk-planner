@@ -1,0 +1,174 @@
+/* The big countdown card, the paper chain and "It's today!" (web/src/board/Countdown.tsx) */
+.cdcard {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 18px;
+  padding: 16px 22px;
+  border-radius: 18px;
+  border: 2px dashed rgba(242, 212, 121, 0.55);
+  background: rgba(20, 20, 19, 0.6);
+  color: var(--chalk);
+}
+.cdcard .cdpic {
+  font-size: 64px;
+  line-height: 1;
+}
+.cdcard .cdnum {
+  font-family: var(--hand);
+  line-height: 1;
+  color: var(--yellow);
+}
+.cdcard .cdnum b {
+  font-size: 72px;
+  font-weight: 700;
+}
+.cdcard .cdnum span {
+  font-size: 26px;
+  font-weight: 700;
+}
+.cdcard .cdtitle {
+  font-family: var(--script);
+  font-weight: 700;
+  font-size: 30px;
+  color: var(--pink);
+  line-height: 1.15;
+}
+.cdcard .cdtoday {
+  font-family: var(--script);
+  font-weight: 700;
+  font-size: 54px;
+  line-height: 1.05;
+  color: var(--yellow);
+}
+.cdcard.today {
+  border-style: solid;
+  border-color: var(--yellow);
+  background: rgba(242, 212, 121, 0.12);
+}
+.cdcard.today .cdpic {
+  animation: cdbounce 1.2s ease-in-out 3;
+}
+@keyframes cdbounce {
+  50% {
+    transform: translateY(-10px) rotate(-6deg);
+  }
+}
+
+/* the slideshow's corner: smaller and calm (no confetti) */
+.cdcard.corner {
+  padding: 10px 16px;
+  gap: 2px 12px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 0;
+}
+.cdcard.corner .cdpic {
+  font-size: 40px;
+}
+.cdcard.corner .cdnum b {
+  font-size: 44px;
+}
+.cdcard.corner .cdnum span {
+  font-size: 18px;
+}
+.cdcard.corner .cdtitle {
+  font-size: 22px;
+}
+.cdcard.corner .cdtoday {
+  font-size: 34px;
+}
+
+/* the paper chain: loops seen flat, with every other loop seen edge-on threaded through them */
+.chain {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 0;
+  margin-top: 12px;
+}
+.chain svg {
+  display: block;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.4));
+}
+.chain .chainmore {
+  margin-left: 14px;
+  font-family: var(--hand);
+  font-size: 18px;
+  color: var(--dim);
+}
+
+/* confetti: a short burst, once */
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.confetti i {
+  position: absolute;
+  top: -12px;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: cdfall 2.6s ease-in forwards;
+}
+@keyframes cdfall {
+  0% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 220px;
+    rotate: 540deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
+}
+
+/* the day badge on the month: "⭐ 5 days" on a starred day, in its top row (left of the number) */
+.slate .day .top .cdb {
+  margin-left: auto;
+  margin-right: 28px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: rgba(242, 212, 121, 0.16);
+  border: 1.5px solid rgba(242, 212, 121, 0.6);
+  color: var(--yellow);
+  font-family: var(--hand);
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.slate .day .top .cdb.today {
+  background: var(--yellow);
+  color: #1a1a19;
+}
+
+/* the event card: the countdown's picture */
+.cdicons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -4px 0 4px 34px;
+}
+.cdicons button {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: rgba(237, 234, 224, 0.06);
+  font-size: 24px;
+  line-height: 1;
+}
+.cdicons button.on {
+  border-color: var(--yellow);
+  background: rgba(242, 212, 121, 0.14);
+}

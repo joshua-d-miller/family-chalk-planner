@@ -2,15 +2,18 @@
 ===============================================================================
  Family Chalk Planner | Server | Photos | photos.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      Photos: a shared album feeds the photos beside the month name and the
-     overnight slideshow. Every photo is copied into photo-cache/ so the
-     wall never waits on the album.
+     overnight slideshow. Which of its photos: all of them, the ones picked
+     in the admin console, or a few at random each day. Every chosen photo
+     is copied into photo-cache/ so the wall never waits on the album; or,
+     for a big album, only the last few shown are kept and the rest are
+     fetched when they come up.
 
      Face finding (optional): OpenCV's YuNet model run by
      face/facefocus.py in its own Python venv. Each photo is checked once;
@@ -23,6 +26,10 @@
      POST   /api/photos/settings
      POST   /api/photos/sync
      POST   /api/board-settings/immich-albums
+     GET    /api/board-settings/photo-choices
+     GET    /api/board-settings/photo-thumb/:id
+     GET    /api/photos/thumb/:id
+     POST   /api/board-settings/photo-picked
 
  Used by:
      server/main.ts
@@ -36,10 +43,25 @@
                         colby
                                   Immich photos, slideshow extras, a filled-in
                                   today, and the frame's thickness.
+
+ 1.1.0    2026-11-17   joshua    Which photos (all, picked in the console, or
+                        claude    a few at random each day), and for a big
+                                  album copies of only the last few shown, the
+                                  rest fetched when they come up. The
+                                  console's photo picker.
+                                  A big album that can't be reached: the last
+                                  photo shown stands in, and the screens are
+                                  told it's offline.
+                                  Small pictures for the board's own photo
+                                  picker too.
+                                  The next countdown on the slideshow
+                                  (showCountdown, on unless turned off).
+                                  Check connections: the album read now.
 ===============================================================================
 */
 
 import { execFile } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Express } from 'express';
@@ -64,6 +86,16 @@ interface Photo {
   faces?: Face[];
 }
 type AlbumPhotoLike = { id: string; url: string; w: number; h: number; date: number };
+type Source = AlbumPhotoLike & Partial<ImmichPhoto>; // a photo in the album, and where to get it
+// which photos, and how many copies are kept (admin console → ⚙️ Board → Photos)
+export interface PhotoChoice {
+  pick: 'all' | 'picked' | 'random';
+  randomCount: number; // pick 'random': how many a day
+  keep: 'all' | 'few'; // a copy of every chosen photo, or only the last few shown
+  keepCount: number; // keep 'few': how many copies
+}
+const CHOICE_DEFAULT: PhotoChoice = { pick: 'all', randomCount: 50, keep: 'all', keepCount: 5 };
+const MAX_PICKED = 5000;
 interface FaceResult {
   file: string;
   w?: number;
@@ -89,7 +121,8 @@ const CFG_DEFAULT = {
   showEvents: false,
   showTemp: false,
   showReminders: false,
-  sidePanel: false
+  sidePanel: false,
+  showCountdown: true // the next countdown on the slideshow (from 30 days out)
 };
 type PhotoCfg = typeof CFG_DEFAULT;
 
@@ -114,7 +147,8 @@ export function setup({
   immich,
   cacheDir,
   faceDir,
-  facePython
+  facePython,
+  choose = CHOICE_DEFAULT
 }: {
   app: Express;
   kv: Kv;
@@ -125,13 +159,17 @@ export function setup({
   cacheDir: string;
   faceDir: string;
   facePython: string;
+  choose?: PhotoChoice;
 }) {
   const state = {
     list: kv.get<Photo[]>('photos') || [],
+    all: [] as Source[], // every photo the album had when it was last read (for picking, and fetching)
     synced: 0,
     error: null as string | null,
-    running: false
+    running: false,
+    offline: false // a big album that can't be reached: its last copy is shown instead
   };
+  const few = choose.keep === 'few';
   const cfg = (): PhotoCfg => ({ ...CFG_DEFAULT, ...(kv.get<Partial<PhotoCfg>>('photoCfg') || {}) });
   // Where the photos come from: Immich (with a key), an Immich share link, Google Photos or iCloud
   const immichUrl = normalizeImmichUrl(immich.url);
@@ -203,6 +241,111 @@ export function setup({
 
   const fileOf = (id: string, ext: string) => path.join(cacheDir, `${id}.${ext}`);
 
+  // ---------------- //
+  // | Which photos | //
+  // ---------------- //
+  // All of them, the ones picked in the console (all of them until some     //
+  // are), or a few at random: the same few all day, new ones each day.      //
+  function chosen(all: Source[]): Source[] {
+    if (choose.pick === 'picked') {
+      const picked = new Set(kv.get<string[]>('photoPicked') || []);
+      const hits = all.filter(a => picked.has(a.id));
+      return hits.length ? hits : all;
+    }
+    if (choose.pick === 'random') {
+      const day = today();
+      const rank = new Map(
+        all.map(a => [a.id, crypto.createHash('sha1').update(`${day}|${a.id}`).digest('hex')] as const)
+      );
+      return [...all]
+        .sort((a, b) => (rank.get(a.id)! < rank.get(b.id)! ? -1 : 1))
+        .slice(0, choose.randomCount)
+        .sort((a, b) => b.date - a.date);
+    }
+    return all;
+  }
+
+  // ----------------------------- //
+  // | A big album: a few copies | //
+  // ----------------------------- //
+  // The board lists every chosen photo but keeps copies of only the last    //
+  // few shown (enough for the slideshow's photos side by side); the rest    //
+  // are fetched from the album when a screen asks for them. Immich's own    //
+  // faces come along in the list (the face finder needs a copy, so it       //
+  // only runs when every photo is kept).                                    //
+  const fetching = new Map<string, Promise<boolean>>();
+  function trimCopies() {
+    const copies = fs
+      .readdirSync(cacheDir)
+      .filter(f => f.endsWith('.jpg'))
+      .map(f => ({ f, t: fs.statSync(path.join(cacheDir, f)).mtimeMs }))
+      .sort((a, b) => b.t - a.t);
+    for (const { f } of copies.slice(choose.keepCount)) {
+      fs.rmSync(path.join(cacheDir, f), { force: true });
+      fs.rmSync(path.join(cacheDir, f.replace(/\.jpg$/, '.json')), { force: true });
+    }
+  }
+  // the album can't be reached (or can again): the screens show a small note
+  function setOffline(v: boolean) {
+    if (state.offline === v) return;
+    state.offline = v;
+    broadcast('photos', {});
+  }
+  // the copy shown most recently, for when the album can't be reached
+  function lastCopy(): string | null {
+    const copies = fs.existsSync(cacheDir)
+      ? fs
+          .readdirSync(cacheDir)
+          .filter(f => f.endsWith('.jpg'))
+          .map(f => ({ f, t: fs.statSync(path.join(cacheDir, f)).mtimeMs }))
+          .sort((a, b) => b.t - a.t)
+      : [];
+    return copies.length ? path.join(cacheDir, copies[0].f) : null;
+  }
+  function fetchOne(id: string): Promise<boolean> {
+    const a = state.all.find(x => x.id === id);
+    if (!a) return Promise.resolve(false);
+    let p = fetching.get(id);
+    if (!p) {
+      p = getImage(a.url, a.headers, a.fallbackUrl)
+        .then(buf => {
+          if (!buf) return false;
+          fs.mkdirSync(cacheDir, { recursive: true });
+          const file = fileOf(id, 'jpg');
+          fs.writeFileSync(file + '.part', buf);
+          fs.renameSync(file + '.part', file);
+          trimCopies();
+          setOffline(false);
+          return true;
+        })
+        .catch(() => false)
+        .finally(() => fetching.delete(id));
+      fetching.set(id, p);
+    }
+    return p;
+  }
+  function keepFew(assets: Source[]) {
+    const list: Photo[] = assets.map(({ id, w, h, date, faces }) =>
+      faces?.length ? { id, w, h, date, faces: faces as unknown as Face[] } : { id, w, h, date }
+    );
+    // copies of photos no longer chosen go; then only the newest few stay
+    const keep = new Set(list.map(p => `${p.id}.jpg`));
+    for (const f of fs.readdirSync(cacheDir)) if (!keep.has(f)) fs.rmSync(path.join(cacheDir, f), { force: true });
+    trimCopies();
+    done(list);
+  }
+  // the new list: saved, and the screens told if it changed
+  function done(list: Photo[]) {
+    const changed = JSON.stringify(list) !== JSON.stringify(state.list);
+    state.list = list;
+    state.synced = Date.now();
+    state.error = null;
+    if (changed) {
+      kv.set('photos', list);
+      broadcast('photos', {});
+    }
+  }
+
   // --------------------------------- //
   // | Keeping the copies up to date | //
   // --------------------------------- //
@@ -212,10 +355,12 @@ export function setup({
     if (!enabled || state.running) return;
     state.running = true;
     try {
-      const assets: (AlbumPhotoLike & Partial<ImmichPhoto>)[] = immichSrc
-        ? await readImmich(immichSrc, today())
-        : await readAlbum(album);
+      const read: Source[] = immichSrc ? await readImmich(immichSrc, today()) : await readAlbum(album);
+      // only photos from the album service's own hosts are ever fetched
+      state.all = read.filter(a => hostOk(a.url) && (!a.fallbackUrl || hostOk(a.fallbackUrl)));
+      const assets = chosen(state.all);
       fs.mkdirSync(cacheDir, { recursive: true });
+      if (few) return keepFew(assets);
       for (const a of assets) {
         const file = fileOf(a.id, 'jpg');
         if (fs.existsSync(file) || !hostOk(a.url) || (a.fallbackUrl && !hostOk(a.fallbackUrl))) continue;
@@ -247,14 +392,7 @@ export function setup({
       });
       const keep = new Set(list.flatMap(p => [`${p.id}.jpg`, `${p.id}.json`]));
       for (const f of fs.readdirSync(cacheDir)) if (!keep.has(f)) fs.rmSync(path.join(cacheDir, f), { force: true }); // removed from the album
-      const changed = JSON.stringify(list) !== JSON.stringify(state.list);
-      state.list = list;
-      state.synced = Date.now();
-      state.error = null;
-      if (changed) {
-        kv.set('photos', list);
-        broadcast('photos', {});
-      }
+      done(list);
     } catch (e) {
       state.error = (e as Error).message;
       console.error('Photo sync:', state.error);
@@ -278,12 +416,40 @@ export function setup({
       const hits = onThisDay(photos, today());
       if (hits.length) photos = hits;
     }
-    res.json({ enabled, kind, photos, cfg: cfg(), synced: state.synced, error: state.error });
+    res.json({
+      enabled,
+      kind,
+      photos,
+      cfg: cfg(),
+      synced: state.synced,
+      error: state.error,
+      offline: few && state.offline,
+      few // only the last few kept: pictures for picking come from /api/photos/thumb
+    });
   });
 
-  app.get('/api/photos/img/:id', (req, res) => {
+  app.get('/api/photos/img/:id', async (req, res) => {
     if (!/^[A-Za-z0-9_-]{1,80}$/.test(req.params.id)) return res.sendStatus(404);
-    const file = fileOf(req.params.id, 'jpg');
+    let file = fileOf(req.params.id, 'jpg');
+    let stand = false; // the last photo shown, standing in while the album can't be reached
+    if (few) {
+      // a big album: fetched now if there's no copy (the board was just started: read the album first)
+      if (!fs.existsSync(file)) {
+        if (!state.all.length) await sync();
+        if (!state.list.some(p => p.id === req.params.id)) return res.sendStatus(404);
+        if (!(await fetchOne(req.params.id))) {
+          // the album can't be reached: the last photo shown, not a blank frame (and not kept by the screen)
+          setOffline(true);
+          const last = lastCopy();
+          if (!last) return res.sendStatus(404);
+          file = last;
+          stand = true;
+        }
+      } else {
+        const now = new Date();
+        fs.utimesSync(file, now, now); // just shown: among the last few, so it stays
+      }
+    }
     let type: string;
     try {
       const fd = fs.openSync(file, 'r');
@@ -294,7 +460,10 @@ export function setup({
     } catch {
       return res.sendStatus(404);
     }
-    res.set('Cache-Control', 'public, max-age=31536000, immutable').type(type);
+    // (a big album's copies come and go: screens keep theirs a day, not a year)
+    res
+      .set('Cache-Control', stand ? 'no-store' : few ? 'public, max-age=86400' : 'public, max-age=31536000, immutable')
+      .type(type);
     res.sendFile(file, err => {
       if (err && !res.headersSent) res.sendStatus(404);
     });
@@ -317,7 +486,8 @@ export function setup({
       showEvents: b.showEvents === undefined ? cur.showEvents : !!b.showEvents,
       showTemp: b.showTemp === undefined ? cur.showTemp : !!b.showTemp,
       showReminders: b.showReminders === undefined ? cur.showReminders : !!b.showReminders,
-      sidePanel: b.sidePanel === undefined ? cur.sidePanel : !!b.sidePanel
+      sidePanel: b.sidePanel === undefined ? cur.sidePanel : !!b.sidePanel,
+      showCountdown: b.showCountdown === undefined ? cur.showCountdown : !!b.showCountdown
     };
     kv.set('photoCfg', next);
     broadcast('photos', {});
@@ -354,6 +524,67 @@ export function setup({
       res.status(400).json({ error: (e as Error).message });
     }
   });
+
+  // ---------------------------- //
+  // | Picking photos (console) | //
+  // ---------------------------- //
+  // Admin console → ⚙️ Board → Photos → Pick photos: every photo in the     //
+  // album as a small picture to tick. The small pictures come straight      //
+  // from the album and aren't kept.                                         //
+  app.get('/api/board-settings/photo-choices', async (_req, res) => {
+    if (!enabled) return res.json({ enabled, photos: [], picked: [] });
+    if (!state.all.length) await sync();
+    const picked = new Set(kv.get<string[]>('photoPicked') || []);
+    res.json({
+      enabled,
+      error: state.error,
+      pick: choose.pick,
+      photos: state.all.map(({ id, date }) => ({ id, date })),
+      picked: state.all.filter(a => picked.has(a.id)).map(a => a.id)
+    });
+  });
+  // also for the board's own photo picker (📷 Photos I pick), so a big album's pictures aren't all copied
+  app.get(['/api/board-settings/photo-thumb/:id', '/api/photos/thumb/:id'], async (req, res) => {
+    if (!state.all.length && enabled) await sync();
+    const a = state.all.find(x => x.id === req.params.id);
+    if (!a) return res.sendStatus(404);
+    try {
+      const buf = await getImage(a.fallbackUrl || a.url, a.headers);
+      if (!buf) return res.sendStatus(502);
+      const type = buf.readUInt32BE(0) === 0x89504e47 ? 'image/png' : isWebp(buf) ? 'image/webp' : 'image/jpeg';
+      res.set('Cache-Control', 'private, max-age=3600').type(type).send(buf);
+    } catch {
+      res.sendStatus(502);
+    }
+  });
+  app.post('/api/board-settings/photo-picked', async (req, res) => {
+    const ids = (req.body || {}).ids;
+    if (
+      !Array.isArray(ids) ||
+      ids.length > MAX_PICKED ||
+      !ids.every(i => typeof i === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(i))
+    )
+      return res.status(400).json({ error: `A list of up to ${MAX_PICKED} photos` });
+    kv.set('photoPicked', [...new Set(ids as string[])]);
+    await sync();
+    res.json({ picked: ids.length, photos: state.list.length });
+  });
+
+  // ------------------------------------- //
+  // | Check connections (admin console) | //
+  // ------------------------------------- //
+  // The album read now, with the board's own settings.                      //
+  async function check() {
+    if (!enabled) return { name: 'Photos', ok: null, detail: 'No photo album set up yet' };
+    await sync();
+    if (state.error) return { name: 'Photos', ok: false, detail: state.error };
+    return {
+      name: 'Photos',
+      ok: true,
+      detail: `Read the album: ${state.all.length} photos, ${state.list.length} shown on the board`
+    };
+  }
+  return { check };
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

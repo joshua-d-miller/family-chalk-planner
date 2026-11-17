@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Photos | immich.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      Immich (a photo server many families run at home): an album,
@@ -23,6 +23,12 @@
  0.13.0    2026-11-07   joshua    Immich photos, slideshow extras, a filled-in
                         colby     today, and the frame's thickness.
                         claude
+
+ 1.1.0    2026-11-17   joshua    Immich 3: an album's photos come from its
+                        claude    timeline (it no longer lists them with the
+                                  album), share links too; searches page
+                                  through every result (cursor or page
+                                  number).
 ===============================================================================
 */
 
@@ -136,6 +142,7 @@ export function toPhotos(assets: any[], base: string, key?: string, shareKey?: s
   const seen = new Set<string>();
   for (const a of assets || []) {
     if (!a?.id || a.isTrashed || a.isArchived || seen.has(a.id)) continue;
+    if (['archive', 'hidden', 'locked'].includes(String(a.visibility || '').toLowerCase())) continue; // (newer Immich)
     if (String(a.type || '').toUpperCase() === 'VIDEO' || /video|mp4|quicktime/i.test(String(a.originalMimeType || '')))
       continue;
     seen.add(a.id);
@@ -196,6 +203,43 @@ export function onThisDay<T extends { date: number }>(photos: T[], today: string
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------------------- //
+// | An album's photos, on any Immich | //
+// ----------------------------------- //
+// Older Immich lists an album's photos with the album; Immich 3 only        //
+// counts them, so they're read from its timeline instead (month by month,   //
+// the way Immich's own album page does; it works with a share link too).    //
+// The timeline gives each photo's shape, not its size or faces.             //
+const MAX_PHOTOS = 20000; // a sanity limit for one album or search
+async function albumAssets(base: string, key: string | undefined, id: string, shareKey?: string): Promise<any[]> {
+  const k = shareKey ? `key=${encodeURIComponent(shareKey)}` : '';
+  const alb = await request(base, key, `/api/albums/${encodeURIComponent(id)}${k ? '?' + k : ''}`);
+  if (Array.isArray(alb?.assets) && alb.assets.length) return alb.assets;
+  if (!(alb?.assetCount > 0)) return [];
+  const q = (more: string) => `albumId=${encodeURIComponent(id)}${k ? '&' + k : ''}${more}`;
+  const buckets = await request(base, key, `/api/timeline/buckets?${q('')}`);
+  const out: any[] = [];
+  for (const b of Array.isArray(buckets) ? buckets : []) {
+    if (!b?.timeBucket || out.length >= MAX_PHOTOS) continue;
+    const c = await request(base, key, `/api/timeline/bucket?${q('&timeBucket=' + encodeURIComponent(b.timeBucket))}`);
+    const ids: string[] = Array.isArray(c?.id) ? c.id : [];
+    ids.forEach((aid, i) => {
+      const ratio = +c.ratio?.[i] || 1;
+      out.push({
+        id: aid,
+        type: c.isImage?.[i] === false ? 'VIDEO' : 'IMAGE',
+        fileCreatedAt: c.fileCreatedAt?.[i],
+        width: Math.round(1000 * ratio),
+        height: 1000,
+        isTrashed: !!c.isTrashed?.[i],
+        visibility: c.visibility?.[i]
+      });
+    });
+  }
+  return out;
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ---------------------- //
 // | Reading the photos | //
 // ---------------------- //
@@ -205,19 +249,29 @@ export async function readImmich(src: ImmichSource, today: string): Promise<Immi
     const k = encodeURIComponent(src.shareKey);
     const info = await request(src.url, undefined, `/api/shared-links/me?key=${k}`);
     let assets = info?.assets?.length ? info.assets : info?.album?.assets || [];
-    if (!assets.length && info?.album?.id) {
-      const alb = await request(src.url, undefined, `/api/albums/${encodeURIComponent(info.album.id)}?key=${k}`);
-      assets = alb?.assets || [];
-    }
+    if (!assets.length && info?.album?.id) assets = await albumAssets(src.url, undefined, info.album.id, src.shareKey);
     return toPhotos(assets, src.url, undefined, src.shareKey);
   }
+  // a search, page after page (Immich 3.2+ hands back a cursor, older ones a page number)
   const search = async (extra: Record<string, unknown>) => {
-    const r = await request(src.url, src.key, '/api/search/metadata', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'IMAGE', size: 250, withExif: true, withPeople: true, ...extra })
-    });
-    return Array.isArray(r?.assets?.items) ? r.assets.items : Array.isArray(r) ? r : [];
+    const all: any[] = [];
+    let more: Record<string, unknown> = {};
+    for (;;) {
+      const r = await request(src.url, src.key, '/api/search/metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'IMAGE', size: 1000, withExif: true, withPeople: true, ...extra, ...more })
+      });
+      const items = Array.isArray(r?.assets?.items) ? r.assets.items : Array.isArray(r) ? r : [];
+      all.push(...items);
+      const cursor = r?.assets?.nextCursor;
+      const page = r?.assets?.nextPage;
+      if (!items.length || all.length >= MAX_PHOTOS) break;
+      if (cursor) more = { cursor };
+      else if (page) more = { page: +page };
+      else break;
+    }
+    return all;
   };
   const photos = (assets: any[]) => toPhotos(assets, src.url, src.key);
   const want = (src.album || '').trim();
@@ -229,8 +283,6 @@ export async function readImmich(src: ImmichSource, today: string): Promise<Immi
   }
   if (['__favorites__', 'favorites'].includes(kind)) return photos(await search({ isFavorite: true }));
   if (['__all__', 'all'].includes(kind)) return photos(await search({}));
-  const albumAssets = async (id: string) =>
-    (await request(src.url, src.key, `/api/albums/${encodeURIComponent(id)}`))?.assets || [];
   if (want) {
     let id = want;
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(want)) {
@@ -238,7 +290,7 @@ export async function readImmich(src: ImmichSource, today: string): Promise<Immi
       if (!hit) throw new Error(`Immich album “${want}” not found`);
       id = hit.id;
     }
-    return photos(await albumAssets(id));
+    return photos(await albumAssets(src.url, src.key, id));
   }
   // nothing chosen: Favorites, else recent photos, else the first album with photos
   const favs = await search({ isFavorite: true }).catch(() => []);
@@ -246,7 +298,7 @@ export async function readImmich(src: ImmichSource, today: string): Promise<Immi
   const recent = await search({}).catch(() => []);
   if (recent.length) return photos(recent);
   const first = (await immichAlbums(src.url, src.key || '')).find(a => a.count > 0);
-  return first ? photos(await albumAssets(first.id)) : [];
+  return first ? photos(await albumAssets(src.url, src.key, first.id)) : [];
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

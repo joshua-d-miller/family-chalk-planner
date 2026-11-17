@@ -211,7 +211,8 @@ That's it: the board is up. The [user guide](user-guide.md) shows what every but
 | What you see | What to do |
 | --- | --- |
 | The setup code doesn't work | It works once. Lost it or used it? Linux: `sudo /opt/family-chalk-planner/deploy/reset-admin.sh`. Docker: `docker compose exec -u 1000:1000 board node server/chalkboard.js --reset-admin`, then `docker compose restart`. Home Assistant has no setup code: its administrators are the board's admins. Each prints a new code. |
-| "Calendar unavailable" on the board | iCloud needs an **app-specific password**, not your Apple ID password. Check ⚙️ Board → Calendar, tap **Find my calendars** again, then **Save and restart**. |
+| "Calendar unavailable" on the board | iCloud needs an **app-specific password**, not your Apple ID password. Check ⚙️ Board → Calendar, tap **Find my calendars** again, then **Save and restart**. If the board says **Apple's** (or **Google's**) status page shows a problem, it's on their side: it comes back by itself. |
+| Something stopped working | Admin console → ⚙️ Board → **Check connections** reads the calendar, any extra calendars and calendar links, and the photo album right now, and says which one is the problem. |
 | The wall screen keeps showing a pairing code | The code changes every 15 minutes; pair it with the one showing now. |
 | Can't open the board from another device | Use the server's IP address and port 3002 (`http://192.168.1.20:3002/`); check the server's firewall allows port 3002. |
 | The wall doesn't update until you reload it | A reverse proxy is buffering: turn off response buffering for the board ([install.md](install.md#5-https-and-a-nice-name-recommended)). |

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Chores.tsx
 ===============================================================================
- Version:   1.0.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-14
+ Updated:   2026-11-17
 
  Purpose:
      Chores: today's, this week's and this month's, a column per person
@@ -39,6 +39,9 @@
 
  1.0.0     2026-11-14   joshua    Home Assistant's to-do lists, under the
                         claude    board's own chores.
+
+ 1.1.0    2026-11-17   joshua    A kid's tablet: the next countdown, big,
+                        claude    with its paper chain.
 ===============================================================================
 */
 
@@ -47,7 +50,9 @@ import { useShell } from '../ui/Shell.tsx';
 import { useEffect, useMemo, useState } from 'react';
 import type { Chore, ChoreProgress, ChoresView, Every, HaTodoView, Person } from '../../../shared/chores.ts';
 import { post } from '../lib/api.ts';
+import { useCountdowns, useSleeps } from '../lib/countdowns.ts';
 import { useLive } from '../lib/live.ts';
+import { CountdownCard } from '../board/Countdown.tsx';
 import { RANK } from '../lib/who.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn } from '../ui/bits.tsx';
@@ -99,6 +104,9 @@ export function entries(d: ChoresView, every: Every): Entry[] {
 export function Chores({ who }: { who: Who | null }) {
   const live = useLive<ChoresView>('api/chores', ['chores']);
   const d = live.data;
+  // a kid's tablet: the next countdown, big, with its paper chain
+  const next = useCountdowns()[0];
+  const sleeps = useSleeps();
   // Home Assistant's to-do lists (the app): asked again every minute, as they change there too
   const haLive = useLive<HaTodoView>('api/chores/ha', ['chores']);
   const haLists = d?.mine ? [] : haLive.data?.lists || [];
@@ -239,6 +247,11 @@ export function Chores({ who }: { who: Who | null }) {
         </>
       }
     >
+      {d?.mine && next && (
+        <div className="chcd">
+          <CountdownCard c={next} sleeps={sleeps} chain />
+        </div>
+      )}
       {d && have.length > 0 && (
         <div className="chtabs" id="chTabs">
           {have.map(([t, label]) => {

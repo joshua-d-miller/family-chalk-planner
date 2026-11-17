@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Settings.tsx
 ===============================================================================
- Version:   0.16.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-17
 
  Purpose:
      ⚙️ Settings on the board (signed-in people). Admins also get the
@@ -30,6 +30,12 @@
 
  0.16.0    2026-11-11   joshua    Birthdays: a cake, and counting down to every
                         claude    one.
+
+ 1.1.0    2026-11-17   joshua    This screen: 🎨 Look of cards and menus.
+                        claude
+                                  This screen: sleeps or days; Photos: the
+                                  next countdown on the slideshow.
+                                  What Apple or Google say about the calendar.
 ===============================================================================
 */
 
@@ -40,6 +46,8 @@ import { setSpeaksHere, speaksHere } from '../lib/timers.ts';
 import { DAY_NAMES } from '../lib/today.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn, Field, Pick } from '../ui/bits.tsx';
+import { openLookCard } from '../ui/LookCard.tsx';
+import { setSleeps, useSleeps } from '../lib/countdowns.ts';
 import { Page } from '../ui/Page.tsx';
 import './settings.css';
 
@@ -132,6 +140,7 @@ interface Status {
   calendars?: GCal[];
   problem?: string | null;
   problems?: Record<string, string>;
+  outage?: string | null; // Apple's or Google's status page
   paste?: boolean;
 }
 function Calendar() {
@@ -155,6 +164,7 @@ function Calendar() {
             {k}: {v}
           </p>
         ))}
+        {s.outage && <p className="err">{s.outage}. It isn’t something you can fix: it comes back by itself.</p>}
       </Card>
     );
   const start = async () => {
@@ -210,6 +220,7 @@ function Calendar() {
             </li>
           )}
           {s.problem && <li className="err">{s.problem}</li>}
+          {s.outage && <li className="err">{s.outage}. It isn’t something you can fix: it comes back by itself.</li>}
         </ol>
       )}
       {s.connected && !list && (
@@ -391,6 +402,7 @@ interface PhotoCfg {
   showTemp: boolean;
   showReminders: boolean;
   sidePanel: boolean;
+  showCountdown: boolean;
 }
 function Photos() {
   const p = useLive<{ enabled: boolean; kind: string; cfg: PhotoCfg; photos: unknown[]; error: string | null }>(
@@ -406,7 +418,11 @@ function Photos() {
   };
   const box = (k: keyof PhotoCfg, label: string) => (
     <label className="check">
-      <input type="checkbox" checked={!!c[k]} onChange={e => set({ [k]: e.target.checked })} />
+      <input
+        type="checkbox"
+        checked={k === 'showCountdown' ? c[k] !== false : !!c[k]}
+        onChange={e => set({ [k]: e.target.checked })}
+      />
       <span className="t">{label}</span>
     </label>
   );
@@ -444,6 +460,7 @@ function Photos() {
           {box('showEvents', 'With today’s events')}
           {box('showTemp', 'With the temperature')}
           {box('showReminders', 'With reminders')}
+          {box('showCountdown', 'With the next countdown, from 30 days out')}
           {box('sidePanel', 'Photos beside the board instead of over it')}
         </>
       )}
@@ -579,6 +596,7 @@ function RightColumn() {
 // -------------------- //
 function ThisScreen() {
   const [speak, setSpeak] = useState(speaksHere());
+  const sleeps = useSleeps();
   return (
     <Card title="This screen">
       <label className="check">
@@ -592,6 +610,15 @@ function ThisScreen() {
         />
         <span className="t">Say a timer’s name out loud when it’s done</span>
       </label>
+      <label className="check">
+        <input id="sleepsBox" type="checkbox" checked={sleeps} onChange={e => void setSleeps(e.target.checked)} />
+        <span className="t">Count down in sleeps (“3 sleeps!”) instead of days</span>
+      </label>
+      <p style={{ marginTop: 12 }}>
+        <Btn id="lookOpen" onClick={openLookCard}>
+          🎨 Look of cards and menus…
+        </Btn>
+      </p>
     </Card>
   );
 }

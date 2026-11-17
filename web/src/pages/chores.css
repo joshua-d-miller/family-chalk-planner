@@ -51,3 +51,7 @@
   cursor: default;
   opacity: 1;
 }
+/* a kid's tablet: the next countdown above their chores */
+.chcd {
+  margin: 0 0 16px;
+}
