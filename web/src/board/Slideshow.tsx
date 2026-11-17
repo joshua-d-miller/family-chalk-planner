@@ -32,6 +32,7 @@
 
  1.1.0    2026-11-17   joshua    A small 'Photos are offline' note when a big
                         claude    album can't be reached.
+                                  The next countdown in a corner.
 ===============================================================================
 */
 
@@ -41,6 +42,8 @@ import { useLive } from '../lib/live.ts';
 import { fmtTime } from '../lib/today.ts';
 import { isDone } from '../pages/Reminders.tsx';
 import { frameFor, photoSrc } from './photos.ts';
+import { CountdownCard } from './Countdown.tsx';
+import { useCountdowns, useSleeps } from '../lib/countdowns.ts';
 import type { Photo, PhotoCfg, Photos } from './photos.ts';
 import './slides.css';
 
@@ -333,6 +336,10 @@ export function Slideshow({
 }) {
   const cfg = photos.cfg;
   const side = !!cfg.sidePanel;
+  // the next countdown in a corner, from 30 days out (unless turned off in Settings → Photos)
+  const nextCd = useCountdowns()[0];
+  const sleeps = useSleeps();
+  const showCd = cfg.showCountdown !== false && nextCd && nextCd.days <= 30;
   const plan = useRef(planner());
   const [slides, setSlides] = useState<[Slide | null, Slide | null]>([null, null]);
   const [cur, setCur] = useState(0);
@@ -437,6 +444,11 @@ export function Slideshow({
         <div className="dim" style={{ opacity: 1 - (cfg.dim || 50) / 100 }} />
       </div>
       {photos.offline && <div className="offnote">📷 Photos are offline</div>}
+      {showCd && (
+        <div className="cdslide">
+          <CountdownCard c={nextCd} sleeps={sleeps} size="corner" />
+        </div>
+      )}
       {side ? (
         <div className="slide-sidebar">
           {clockEl}

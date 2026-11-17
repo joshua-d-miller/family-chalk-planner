@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Month.tsx
 ===============================================================================
- Version:   0.16.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-17
 
  Purpose:
      The month: its name, the weekdays, and a box per day with its events,
@@ -54,6 +54,9 @@
 
                                   A border of light bulbs is a string of
                                   lights: on a wire, pointing out, twinkling.
+
+ 1.1.0    2026-11-17   joshua    A badge on a starred countdown's day (in
+                        claude    sleeps or days).
 ===============================================================================
 */
 
@@ -62,6 +65,8 @@ import { clipSrc } from './clip.ts';
 import { hash } from './geom.ts';
 import { TODAY_MARKS } from './theme.ts';
 import { readable } from './color.ts';
+import { howLong, useSleeps } from '../lib/countdowns.ts';
+import './countdown.css';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------------ //
@@ -83,6 +88,7 @@ export interface BoardEvent {
   minutes?: number | null;
   recurring?: boolean;
   countdown?: boolean;
+  cdIcon?: string; // a countdown's own picture (⭐ unless one was picked)
   cal?: string; // which calendar, when there are several
   ref?: { href: string; etag: string | null; rid?: string | null };
 }
@@ -220,6 +226,7 @@ export function Month({
 }) {
   const g = data.grid;
   const ws = g.weekStart || 0;
+  const sleeps = useSleeps(); // a countdown badge in sleeps or days
   const pad = border ? BORDER_SZ[border.size] + 6 : 0;
   // the weeks shown: the month's, or one of them
   const w0 = week ? Math.max(0, Math.round((Date.parse(week) - Date.parse(g.start)) / (7 * 864e5))) : 0;
@@ -310,6 +317,17 @@ export function Month({
                 {b.length === 2 && !same ? 'Trash + recycling' : b[0] === 'trash' ? 'Trash' : 'Recycling'}
               </>
             )}
+            {(() => {
+              // a starred event's day, within the next 60: "⭐ 5 days" (or sleeps), "🎉 Today!" on the day
+              const star = data.events.find(e => e.countdown && e.start === ds);
+              const n = Math.round((Date.parse(ds) - Date.parse(data.today)) / 864e5);
+              if (!star || n < 0 || n > 60) return null;
+              return (
+                <span className={'cdb' + (n === 0 ? ' today' : '')} title={star.title}>
+                  {n === 0 ? '🎉 Today!' : `${star.cdIcon || '⭐'} ${howLong(n, sleeps)}`}
+                </span>
+              );
+            })()}
           </div>
           {lanesHere > 0 && <div style={{ height: lanesHere * 24, flex: 'none' }} />}
           {list.slice(0, show).map((ev, i) => {

@@ -14,7 +14,8 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 - **Add:** tap **+ Add event** (or tap a day). Pick what, day, time and length, or tick **All day** (with an optional **Through** date for multi-day events like trips).
 - **Change or delete:** tap the event on the board (or tap the day to see its full list). For repeating events, choose **Just this one** or **All of them** before saving or deleting.
 - **Size on the board:** **Normal**, **Large** or **Extra large** — make a birthday or a big day stand out. Like the color, it's only on the board (your calendar never sees it), and for a repeating event it follows **Just this one / All of them**. Extra large wraps onto two lines; if the day has more, they're under **+N more**.
-- **⭐ Count down to this:** adds the event to the countdown list in Notes.
+- **⭐ Count down to this:** adds the event to the countdown list in Notes, and puts a badge on its day ("🎉 5 days").
+  Pick a picture for it right under the tick: it's on the badge and the big countdown card.
 - Long event names wrap onto a second line when the day has room; when a day is full they shorten but keep the time.
 - **Color on the board:** pick a color for the event. Colors that would be hard to read on the board's background are adjusted automatically (same hue). It's board-only (your calendar never sees it). The dashed circle means "use the board style's normal color". For repeating events it follows Just this one / All of them.
 - Adds, edits and deletes go to your real calendar (iCloud, Google, Nextcloud, …), so they show on everyone's phones too.
@@ -29,6 +30,12 @@ The admin can add **more calendars from the same account** (kids' activities, wo
 - **Birthdays:** ⚙️ Settings → **Birthdays** can put a 🎂 on birthdays (events with "birthday" or "bday" in their name) and count down to every one in Notes. Both are off to start; a birthday you star for a countdown always counts down.
 - **US holidays** appear in light blue italics with an icon (board only, never written to your calendar). **Tap a holiday** to see the whole list and hide the ones you don't want (every year, from the calendar and the countdowns); tap a hidden one to bring it back. Family screens can do this too. When no holiday is showing to tap, open the same list from ⚙️ Settings → **Holidays** (everyone signed in on a tablet has ⚙️; the calendar, trash and Notes settings in it are for admins).
 - **Countdowns** in Notes: the next 3 things within 60 days — big holidays, any event with "birthday" or "bday" in the title (🎂), and anything ticked ⭐.
+- **Countdowns for the kids:** a kid's tablet shows the next countdown big above their chores, in **sleeps** ("5 sleeps
+  to go"), with a **paper chain** under it: one link for each day left, so one comes off every morning. On the day it
+  says **It's today!** with a burst of confetti. The overnight slideshow shows the next one in a corner from 30 days
+  out (⚙️ Settings → Photos to turn it off).
+- **Sleeps or days:** kids' tablets count sleeps, everything else counts days. Change it for one screen in ⚙️
+  Settings → **This screen**, or for any screen (the wall too) in the admin console → 📺 Screens.
 - **Trash / recycling** labels on the right days (set in ⚙️ Settings), and **weather** (today / tomorrow) in Notes.
 
 ### Drawing and decorating (tap **Draw**)

@@ -53,6 +53,7 @@ export type PhotoCfg = {
   showEvents: boolean;
   showTemp: boolean;
   showReminders: boolean;
+  showCountdown?: boolean; // the next countdown in a corner (on unless turned off)
   sidePanel: boolean;
 };
 export type Photos = {

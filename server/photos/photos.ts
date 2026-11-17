@@ -54,6 +54,8 @@
                                   told it's offline.
                                   Small pictures for the board's own photo
                                   picker too.
+                                  The next countdown on the slideshow
+                                  (showCountdown, on unless turned off).
 ===============================================================================
 */
 
@@ -118,7 +120,8 @@ const CFG_DEFAULT = {
   showEvents: false,
   showTemp: false,
   showReminders: false,
-  sidePanel: false
+  sidePanel: false,
+  showCountdown: true // the next countdown on the slideshow (from 30 days out)
 };
 type PhotoCfg = typeof CFG_DEFAULT;
 
@@ -482,7 +485,8 @@ export function setup({
       showEvents: b.showEvents === undefined ? cur.showEvents : !!b.showEvents,
       showTemp: b.showTemp === undefined ? cur.showTemp : !!b.showTemp,
       showReminders: b.showReminders === undefined ? cur.showReminders : !!b.showReminders,
-      sidePanel: b.sidePanel === undefined ? cur.sidePanel : !!b.sidePanel
+      sidePanel: b.sidePanel === undefined ? cur.sidePanel : !!b.sidePanel,
+      showCountdown: b.showCountdown === undefined ? cur.showCountdown : !!b.showCountdown
     };
     kv.set('photoCfg', next);
     broadcast('photos', {});

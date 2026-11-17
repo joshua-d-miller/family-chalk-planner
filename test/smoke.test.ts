@@ -508,7 +508,33 @@ test('birthdays: no cake and no countdown unless asked; a starred one counts dow
   const ev = (await month()).events.find((e: { title: string }) => /Amanda/.test(e.title));
   assert.equal((await post('/api/countdowns', { ref: ev.ref, on: true, title: ev.title, date: ev.start })).status, 200);
   assert.equal((await cd()).find(c => /Amanda/.test(c.title))?.icon, '⭐');
+  // a picture of its own: on the countdown and on the event (for its day's badge)
+  assert.equal(
+    (await post('/api/countdowns', { ref: ev.ref, on: true, title: ev.title, date: ev.start, icon: '🎁' })).status,
+    200
+  );
+  assert.equal((await cd()).find(c => /Amanda/.test(c.title))?.icon, '🎁');
+  assert.equal((await month()).events.find((e: { title: string }) => /Amanda/.test(e.title)).cdIcon, '🎁');
+  assert.equal(
+    (await post('/api/countdowns', { ref: ev.ref, on: true, title: ev.title, date: ev.start, icon: 'x' })).status,
+    400
+  );
+  // ?all=1: every one in the next 60 days, the starred ones marked
+  const all = (await (await api('/api/countdowns?all=1')).json()) as { title: string; starred?: boolean }[];
+  assert.ok(all.length >= (await cd()).length);
+  assert.equal(all.find(c => /Amanda/.test(c.title))?.starred, true);
   await post('/api/events/delete', { ref: add.ref || { href: add.href }, scope: 'all', origDate: d });
+});
+
+test('countdowns in sleeps or days: nothing saved until a screen picks, and the console sets any screen’s', async () => {
+  assert.deepEqual(await (await api('/api/sleeps')).json(), { sleeps: null });
+  assert.deepEqual(await (await post('/api/sleeps', { sleeps: true })).json(), { sleeps: true });
+  assert.deepEqual(await (await api('/api/sleeps')).json(), { sleeps: true });
+  assert.equal((await post('/api/sleeps', { sleeps: 'yes' })).status, 400);
+  assert.deepEqual(await (await post('/api/sleeps', { sleeps: null })).json(), { sleeps: null });
+  assert.deepEqual(await (await post('/api/devices/sleeps', { id: 'wall1', sleeps: true })).json(), { sleeps: true });
+  assert.deepEqual((await (await api('/api/devices/sleeps')).json()).sleeps, { wall1: true });
+  await post('/api/devices/sleeps', { id: 'wall1', sleeps: null });
 });
 
 test('the calendar can’t be reached: the month still shows, with its holidays and the problem', async () => {

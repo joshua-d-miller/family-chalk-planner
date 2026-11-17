@@ -28,6 +28,9 @@
        kv 'uilook'  { 'p:...' | 's:...': { look: 'light' | 'dark' |
            'contrast' | 'chalk', accent: '#rrggbb' | null, size: 'normal'
            | 'large' | 'larger' } }
+     And whether its countdowns count in sleeps ("3 sleeps!") or days
+     (a kid's tablet counts sleeps unless told otherwise):
+       kv 'sleeps'  { 'p:...' | 's:...': true | false }
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -52,6 +55,9 @@
                         claude    chalk, light, dark or high contrast, an
                                   accent color and a larger text size, kept on
                                   the board.
+                                  Countdowns in sleeps or days, per screen (or
+                                  person); the admin console sets any
+                                  screen's.
 ===============================================================================
 */
 
@@ -229,6 +235,46 @@ export function setup({
     kv.set('uilook', map);
     broadcast('uilook', {});
     res.json({ ...lookOf(map[k]), saved: true });
+  });
+
+  // ------------------- //
+  // | Sleeps, or days | //
+  // ------------------- //
+  // A countdown in sleeps ("3 sleeps!") or days. Nothing saved: the screen  //
+  // decides (sleeps on a kid's tablet, days elsewhere). The admin console   //
+  // sets any screen's, the wall's too.                                      //
+  const sleeps = () => kv.get<Record<string, boolean>>('sleeps') || {};
+  const setSleeps = (k: string, v: unknown) => {
+    const map = sleeps();
+    if (v === null) delete map[k];
+    else map[k] = !!v;
+    kv.set('sleeps', map);
+    broadcast('sleeps', {});
+    return k in map ? map[k] : null;
+  };
+  app.get('/api/sleeps', (req, res) => {
+    const k = whose(req);
+    const v = k ? sleeps()[k] : undefined;
+    res.json({ sleeps: v === undefined ? null : v });
+  });
+  app.post('/api/sleeps', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const v = (req.body || {}).sleeps;
+    if (!(v === null || typeof v === 'boolean')) return res.status(400).json({ error: 'Sleeps or days' });
+    res.json({ sleeps: setSleeps(k, v) });
+  });
+  app.get('/api/devices/sleeps', (_req, res) => {
+    const out: Record<string, boolean> = {};
+    for (const [k, v] of Object.entries(sleeps())) if (k.startsWith('s:')) out[k.slice(2)] = v;
+    res.json({ sleeps: out });
+  });
+  app.post('/api/devices/sleeps', (req, res) => {
+    const id = String(req.body?.id || '');
+    const v = req.body?.sleeps;
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    if (!(v === null || typeof v === 'boolean')) return res.status(400).json({ error: 'Sleeps or days' });
+    res.json({ sleeps: setSleeps('s:' + id, v) });
   });
 }
 

@@ -95,6 +95,8 @@
 
  1.1.0    2026-11-17   joshua    Family screens may change the look of their
                         claude    own cards and ☰ menu.
+                                  Family screens may choose sleeps or days for
+                                  their countdowns.
 ===============================================================================
 */
 
@@ -681,6 +683,7 @@ export function setup(
     '/notesbottom', // (the wall's is set in the admin console)
     '/menustyle', // the cork or the ☰ button (the wall has neither)
     '/uilook', // the look of its cards and ☰ menu
+    '/sleeps', // its countdowns in sleeps or days
     '/clip/favorites', // ★ a picture into Favorites
     '/clip/web/keep' // a public-domain picture from the web, onto the board
   ]);

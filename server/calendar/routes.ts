@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Calendar | routes.ts
 ===============================================================================
- Version:   0.16.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-11
+ Updated:   2026-11-17
 
  Purpose:
      What the screens ask the calendar for: a month (with holidays and the
@@ -17,7 +17,7 @@
      'href|' for a whole event or series.
        kv 'evcolors'    { key: '#RRGGBB' }
        kv 'evsizes'     { key: 'l' | 'xl' }
-       kv 'countdowns'  { key: { title, date } }
+       kv 'countdowns'  { key: { title, date, icon? } }
 
  Routes:
      GET    /api/calendar/status
@@ -52,6 +52,10 @@
  0.16.0    2026-11-11   joshua    Birthdays: a cake and counting down to every
                         claude    one are settings, both off; otherwise a
                                   birthday counts down only when starred.
+
+ 1.1.0    2026-11-17   joshua    Countdowns: a picture of their own, ?all=1
+                        claude    for every one in the next 60 days (the day
+                                  badges), starred ones marked.
 ===============================================================================
 */
 
@@ -67,6 +71,27 @@ import type { EventChange, EventRef } from './ical.ts';
 // | Board-only marks | //
 // -------------------- //
 const EV_SIZES = ['l', 'xl'];
+// the pictures a countdown can have (its big card and badge); ⭐ unless one is picked
+export const CD_ICONS = [
+  '⭐',
+  '🎉',
+  '🎂',
+  '🎁',
+  '🎄',
+  '🎃',
+  '🦃',
+  '🐰',
+  '💝',
+  '🎆',
+  '🏖️',
+  '🏕️',
+  '✈️',
+  '🎢',
+  '⚽',
+  '🎓',
+  '🏫',
+  '🎭'
+];
 const keyOf = (ref: EventRef) => `${ref.href}|${ref.rid || ''}`;
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -144,7 +169,7 @@ export function registerCalendarRoutes({
   const marks = <T>(key: string) => (kvGet(key) as Record<string, T> | null) || {};
   const colors = () => marks<string>('evcolors');
   const sizes = () => marks<string>('evsizes');
-  const countdowns = () => marks<{ title: string; date: string }>('countdowns');
+  const countdowns = () => marks<{ title: string; date: string; icon?: string }>('countdowns');
   // birthdays: a 🎂 on them, and counting down to every one without starring it (both off unless asked)
   const isBirthday = (t: string) => /birthday|bday|🎂/i.test(t);
   const bdays = () => {
@@ -175,7 +200,7 @@ export function registerCalendarRoutes({
         const z = forEvent(sz, e.ref);
         return {
           ...e,
-          ...(cd[keyOf(e.ref)] ? { countdown: true } : {}),
+          ...(cd[keyOf(e.ref)] ? { countdown: true, cdIcon: cd[keyOf(e.ref)].icon || '⭐' } : {}),
           ...(c ? { color: c } : {}),
           ...(z ? { size: z } : {})
         };
@@ -295,10 +320,17 @@ export function registerCalendarRoutes({
   // ---------------------- //
   // Count down to this                                                      //
   app.post('/api/countdowns', (req, res) => {
-    const { ref, title, date, on } = req.body || {};
+    const { ref, title, date, on, icon } = req.body || {};
     if (!markRef(ref) || !isDate(date)) return res.status(400).json({ error: 'bad countdown' });
+    if (icon !== undefined && !CD_ICONS.includes(icon))
+      return res.status(400).json({ error: 'Pick one of the pictures' });
     const all = countdowns();
-    if (on) all[keyOf(ref)] = { title: String(title || '').slice(0, 80), date };
+    if (on)
+      all[keyOf(ref)] = {
+        title: String(title || '').slice(0, 80),
+        date,
+        ...(icon && icon !== '⭐' ? { icon } : {})
+      };
     else delete all[keyOf(ref)];
     const today = clock.today();
     for (const k of Object.keys(all)) if (all[k].date < addDays(today, -2)) delete all[k]; // long past
@@ -330,11 +362,12 @@ export function registerCalendarRoutes({
   // | The countdowns | //
   // ------------------ //
   // The next 3 within 60 days: big holidays and starred events (and every  //
-  // birthday in the calendar, when Settings → Birthdays says so)            //
-  app.get('/api/countdowns', async (_req, res) => {
+  // birthday in the calendar, when Settings → Birthdays says so). ?all=1:   //
+  // every one in those 60 days (the day badges on the month).               //
+  app.get('/api/countdowns', async (req, res) => {
     const today = clock.today();
     const horizon = addDays(today, 60);
-    const items: { icon: string; title: string; date: string }[] = [];
+    const items: { icon: string; title: string; date: string; starred?: boolean }[] = [];
     for (const h of holidays.between(today, horizon)) {
       const big = holidays.ofYear(+h.start.slice(0, 4)).find(x => x.date === h.start && x.title === h.title);
       if (big && big.big) items.push({ icon: h.icon, title: h.title, date: h.start });
@@ -344,7 +377,7 @@ export function registerCalendarRoutes({
     const plain = (t: string) => t.replace(/🎂/g, '').trim();
     for (const m of Object.values(countdowns()))
       if (m.date >= today && m.date <= horizon)
-        items.push({ icon: icon(m.title), title: plain(m.title), date: m.date });
+        items.push({ icon: m.icon || icon(m.title), title: plain(m.title), date: m.date, starred: true });
     if (bd.countdown)
       try {
         const ym = today.slice(0, 7);
@@ -358,6 +391,7 @@ export function registerCalendarRoutes({
       }
     const seen = new Set<string>();
     const list = items
+      .sort((a, b) => Number(!!b.starred) - Number(!!a.starred)) // a starred one wins over its twin
       .filter(i => {
         const k = i.date + i.title;
         if (seen.has(k)) return false;
@@ -366,7 +400,7 @@ export function registerCalendarRoutes({
       })
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
       .map(i => ({ ...i, days: Math.round((Date.parse(i.date) - Date.parse(today)) / 864e5) }));
-    res.json(list.slice(0, 3));
+    res.json(req.query.all === '1' ? list : list.slice(0, 3));
   });
 
   // ------------------- //

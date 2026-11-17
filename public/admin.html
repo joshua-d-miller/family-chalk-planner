@@ -940,9 +940,27 @@ button:disabled{opacity:.5;cursor:default}
     box.appendChild(lbl); box.appendChild(ticks); draw();
     return box;
   }
+  // countdowns in sleeps ("3 sleeps!") or days: the screen's own default is sleeps on a kid's tablet, days elsewhere
+  function sleepsLine(x, cur) {
+    var box = el('div', 'nbot');
+    box.appendChild(el('span', 'dim', 'Countdowns:'));
+    var sel = el('select'); sel.setAttribute('aria-label', 'Countdowns on ' + x.name);
+    var kid = /^kid:/.test(x.role);
+    [['', kid ? 'In sleeps (a kid’s tablet)' : 'In days'], ['days', 'In days'], ['sleeps', 'In sleeps (“3 sleeps!”)']].forEach(function (o) {
+      if (o[0] === (kid ? 'sleeps' : 'days')) return;   // (the same as the default)
+      var op = el('option', null, o[1]); op.value = o[0]; sel.appendChild(op);
+    });
+    sel.value = cur === true ? (kid ? '' : 'sleeps') : cur === false ? (kid ? 'days' : '') : '';
+    sel.addEventListener('change', function () {
+      var v = sel.value === 'sleeps' ? true : sel.value === 'days' ? false : null;
+      api('api/devices/sleeps', { id: x.id, sleeps: v }).catch(function (e) { $('dvErr').textContent = e.message; });
+    });
+    box.appendChild(sel);
+    return box;
+  }
   function loadScreens() {
-    var bottoms = {};
-    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
+    var bottoms = {}, sleeps = {};
+    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
       var w = $('dvWaiting'); w.innerHTML = '';
       d.waiting.forEach(function (p) { w.appendChild(el('p', 'dim', '⏳ ' + p.agent + ' is showing a code (' + ago(p.created) + ') - type it above.')); });
       var list = $('dvList'); list.innerHTML = '';
@@ -963,6 +981,7 @@ button:disabled{opacity:.5;cursor:default}
         line.appendChild(nm); line.appendChild(sel); line.appendChild(rm); it.appendChild(line);
         it.appendChild(el('div', 'meta', x.agent + ' · paired ' + new Date(x.created).toLocaleDateString() + ' · last seen ' + ago(x.last_seen)));
         if (!/^kid:/.test(x.role)) it.appendChild(bottomLine(x, bottoms[x.id] || null));
+        it.appendChild(sleepsLine(x, x.id in sleeps ? sleeps[x.id] : null));
         list.appendChild(it);
       });
     }).catch(function (e) { if (!(e.body && e.body.admin)) $('dvErr').textContent = e.message; });
