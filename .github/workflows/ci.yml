@@ -139,6 +139,8 @@ jobs:
           curl -fsSL -o docker-compose.yml https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml
           curl -fsSL -o .env https://github.com/immich-app/immich/releases/latest/download/example.env
           sed -i "s/^IMMICH_VERSION=.*/IMMICH_VERSION=$IMMICH_VERSION/" .env
+          # (the image registry sometimes says "too many requests": try the download a few times)
+          for i in 1 2 3 4; do docker compose pull -q immich-server redis database && break; sleep $((i * 20)); done
           docker compose up -d immich-server redis database
       - uses: actions/setup-node@v7
         with:
