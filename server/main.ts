@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | main.ts (the start)
 ===============================================================================
- Version:   1.1.0
+ Version:   1.1.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-17
+ Updated:   2026-11-18
 
  Purpose:
      Family Chalk Planner: a chalkboard-style family wall calendar. This
@@ -70,6 +70,9 @@
 
  1.1.0    2026-11-17   joshua    Check connections and the Apple/Google
                         claude    status pages.
+
+ 1.1.1    2026-11-18   joshua    A new day: every screen is told, so the wall
+                        claude    moves to it without a reload.
 ===============================================================================
 */
 
@@ -82,6 +85,7 @@ import { readConfig } from './config.ts';
 import * as settings from './settings.ts';
 import { makeKv } from './kv.ts';
 import { makeClock } from './dates.ts';
+import { watchDay } from './newday.ts';
 import { createLive } from './live.ts';
 import * as access from './access/access.ts';
 import * as backup from './backup.ts';
@@ -198,6 +202,8 @@ const clock = makeClock({
 });
 const live = createLive();
 const broadcast = live.broadcast;
+// a new day where the board is: every screen moves to it by itself (server/newday.ts)
+watchDay(() => clock.today(), broadcast);
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------ //
