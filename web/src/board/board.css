@@ -720,3 +720,9 @@ body.boardpage {
   background-size: cover;
   background-position: center;
 }
+/* a wall's title: room where the arrows would be, so the month name stays centred */
+.slate .navgap {
+  width: 44px;
+  height: 44px;
+  flex: none;
+}

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Menu.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.1.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-18
 
  Purpose:
      The ☰ menu: every page, what this screen may open; 📌 keeps one on
@@ -39,6 +39,9 @@
  1.1.0    2026-11-17   joshua    A ✕ at the top right to close it (a tap
                         claude    outside still closes it too).
                                   🎨 Look of cards and menus, at the bottom.
+
+ 1.1.1    2026-11-18   joshua    Reload the board, now that there's no pull-
+                        claude    to-refresh.
 ===============================================================================
 */
 
@@ -228,6 +231,13 @@ export function Menu({
             🎨
           </span>
           <span className="lbl">Look of cards and menus</span>
+        </button>
+        {/* reload the board: there's no pull-to-refresh any more (it reloaded wall screens by accident) */}
+        <button type="button" className="item" id="reloadBtn" onClick={() => location.reload()}>
+          <span className="ic" aria-hidden="true">
+            ↻
+          </span>
+          <span className="lbl">Reload the board</span>
         </button>
         <div className="who">
           {who?.ha?.person ? (
