@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | EventEditor.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      Adding or changing an event: what, when, how long (or all day,
@@ -23,6 +23,9 @@
  0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
                         claude    events, the month's title and border, the
                                   board style.
+
+ 1.1.0    2026-11-17   joshua    A picture for a countdown.
+                        claude
 ===============================================================================
 */
 
@@ -32,6 +35,7 @@ import { ApiError, post } from '../lib/api.ts';
 import { Btn, Segs } from '../ui/bits.tsx';
 import { Colors } from '../ui/Colors.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
+import { CD_ICONS } from '../lib/countdowns.ts';
 import type { BoardEvent, WritableCal } from './Month.tsx';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -71,6 +75,7 @@ export function EventEditor({
   const [len, setLen] = useState(ev?.minutes || 60);
   const [thru, setThru] = useState(ev?.allDay && ev.end !== ev.start ? ev.end : '');
   const [count, setCount] = useState(!!ev?.countdown);
+  const [cdIcon, setCdIcon] = useState(ev?.cdIcon || '⭐'); // the countdown's picture
   const [color, setColor] = useState<string | null>(ev?.color || null);
   const [size, setSize] = useState<'' | 'l' | 'xl'>(ev?.size || '');
   const [scope, setScope] = useState<'one' | 'all'>('one');
@@ -97,7 +102,8 @@ export function EventEditor({
       // the board-only marks follow the event (a new one says where the calendar put it)
       if (ref) {
         const marks: Promise<unknown>[] = [];
-        if (count || ev?.countdown) marks.push(post('api/countdowns', { ref, title, date: day, on: count }));
+        if (count || ev?.countdown)
+          marks.push(post('api/countdowns', { ref, title, date: day, on: count, icon: cdIcon }));
         if (color !== (ev?.color || null)) marks.push(post('api/evcolor', { ref, color }));
         if (size !== (ev?.size || '')) marks.push(post('api/evsize', { ref, size: size || null }));
         await Promise.allSettled(marks);
@@ -188,6 +194,24 @@ export function EventEditor({
           <input id="evCount" type="checkbox" checked={count} onChange={e => setCount(e.target.checked)} /> ⭐ Count
           down to this
         </label>
+        {/* the countdown's picture: on its big card and its day */}
+        {count && (
+          <div className="cdicons" role="radiogroup" aria-label="Countdown picture">
+            {CD_ICONS.map(i => (
+              <button
+                key={i}
+                type="button"
+                role="radio"
+                aria-checked={i === cdIcon}
+                aria-label={i}
+                className={'emoji' + (i === cdIcon ? ' on' : '')}
+                onClick={() => setCdIcon(i)}
+              >
+                {i}
+              </button>
+            ))}
+          </div>
+        )}
         {!ev && calendars.length > 1 && (
           <label className="field">
             <span>Calendar</span>

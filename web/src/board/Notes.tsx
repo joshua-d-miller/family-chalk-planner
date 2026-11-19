@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Notes.tsx
 ===============================================================================
- Version:   0.15.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-08
+ Updated:   2026-11-17
 
  Purpose:
      The right-hand column: up to 3 pages, chosen in ⚙️ Settings (weather,
@@ -39,6 +39,9 @@
 
                                   Each screen can pick its own bottom and what
                                   the switch flips to.
+
+ 1.1.0    2026-11-17   joshua    Countdowns in sleeps or days.
+                        claude
 ===============================================================================
 */
 
@@ -54,6 +57,7 @@ import { readable } from './color.ts';
 import { addDays } from './Month.tsx';
 import { frameFor, photoSrc, shuffleBag } from './photos.ts';
 import type { Photo, Photos } from './photos.ts';
+import { howLong, useCountdowns, useSleeps } from '../lib/countdowns.ts';
 import { useLive } from '../lib/live.ts';
 import { fmtLeft, left, useTimers } from '../lib/timers.ts';
 import { fmtTime } from '../lib/today.ts';
@@ -103,7 +107,8 @@ interface Extras {
 }
 
 function Info({ x }: { x: Extras }) {
-  const cd = useLive<{ icon: string; title: string; days: number }[]>('api/countdowns', ['countdowns', 'calendar']);
+  const cd = useCountdowns();
+  const sleeps = useSleeps();
   const w = x.weather;
   return (
     <div className="npage info-page">
@@ -153,10 +158,10 @@ function Info({ x }: { x: Extras }) {
           </div>
         </div>
       )}
-      {(cd.data || []).map(c => (
+      {cd.map(c => (
         <div className="cd" key={c.title}>
           <span className="emoji">{c.icon}</span> <span className="ct">{c.title}</span>
-          <b>{c.days === 0 ? 'today' : c.days === 1 ? 'tomorrow' : `${c.days} days`}</b>
+          <b>{howLong(c.days, sleeps)}</b>
         </div>
       ))}
     </div>

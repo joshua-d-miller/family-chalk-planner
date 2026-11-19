@@ -2,13 +2,14 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Sheet.tsx
 ===============================================================================
- Version:   0.17.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-14
+ Updated:   2026-11-17
 
  Purpose:
-     A card over the page, for adding or changing one thing. Escape or a
-     tap outside closes it.
+     A card over the page, for adding or changing one thing. The ✕ at its
+     top right, Escape, or a tap outside closes it (the same as Cancel:
+     nothing is saved).
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -24,6 +25,14 @@
  0.17.0    2026-11-14   joshua    A card can open without focusing anything
                         claude    (Pictures: its search box would bring up the
                                   keyboard on a touch screen every time).
+
+ 1.1.0    2026-11-17   joshua    A ✕ at the top right of every card, so a
+                        claude    long one can be closed without scrolling
+                                  down to Cancel or tapping outside it. Its
+                                  title row stays put while the card scrolls.
+                                  A card can pin more under its title (tabs),
+                                  and keep its full height so switching tabs
+                                  doesn't make it jump.
 ===============================================================================
 */
 
@@ -39,13 +48,17 @@ export function Sheet({
   onClose,
   children,
   id,
-  focus = true
+  focus = true,
+  head,
+  tall = false
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   id?: string;
   focus?: boolean; // focus the first field when it opens (not where that brings up a keyboard for nothing)
+  head?: ReactNode; // pinned under the title with the ✕ (tabs, say), so it stays while the card scrolls
+  tall?: boolean; // as tall as the screen allows, so switching tabs doesn't make it jump
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const down = useRef(false);
@@ -55,7 +68,9 @@ export function Sheet({
   // redraws scrolled it back to the top while you were picking further down)
   useEffect(() => {
     if (focus)
-      ref.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus({ preventScroll: true });
+      ref.current
+        ?.querySelector<HTMLElement>('input, select, textarea, button:not(.closex)')
+        ?.focus({ preventScroll: true });
     const key = (e: KeyboardEvent) => e.key === 'Escape' && close.current();
     addEventListener('keydown', key);
     return () => removeEventListener('keydown', key);
@@ -71,11 +86,37 @@ export function Sheet({
         down.current = false;
       }}
     >
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title} ref={ref} id={id}>
-        <h3>{title}</h3>
+      <div
+        className={'sheet' + (tall ? ' tall' : '')}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        ref={ref}
+        id={id}
+      >
+        {/* the title and the ✕ (and any tabs): stay at the top while a long card scrolls */}
+        <div className="shead">
+          <h3>{title}</h3>
+          <CloseX onClose={onClose} />
+          {head && <div className="sheadx">{head}</div>}
+        </div>
         {children}
       </div>
     </div>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------- //
+// | The ✕ | //
+// --------- //
+// The close button at a card's (or the ☰ menu's) top right: big enough for  //
+// a child's finger, and named "Close" for screen readers.                   //
+export function CloseX({ onClose, label = 'Close' }: { onClose: () => void; label?: string }) {
+  return (
+    <button type="button" className="closex" aria-label={label} title={label} onClick={onClose}>
+      <span aria-hidden="true">✕</span>
+    </button>
   );
 }
 

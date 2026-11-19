@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | main.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      Where the screens start: the fonts, the shared styles, and the App,
@@ -20,6 +20,9 @@
 
  0.14.0    2026-11-07   joshua    A crash shows a message instead of a blank
                         claude    page.
+
+ 1.1.0    2026-11-17   joshua    The looks of cards and menus (looks.css).
+                        claude
 ===============================================================================
 */
 
@@ -29,6 +32,7 @@ import { App } from './App.tsx';
 import { Oops } from './ui/Oops.tsx';
 import './ui/theme.css';
 import './ui/ui.css';
+import './ui/looks.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

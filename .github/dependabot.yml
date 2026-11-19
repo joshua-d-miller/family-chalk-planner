@@ -9,6 +9,17 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # Node's types follow the oldest Node the board still runs on: 22, for 32-bit Raspberry Pi OS
+      # (deploy/node-version.sh, "engines"; supported until 2027-04-30), so the code can't use something
+      # those boards don't have. Move to newer types when 32-bit support ends.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # "typescript" stays on 6 only for ESLint (typescript-eslint supports TypeScript below 6.1);
+      # the type check itself runs on TypeScript 7 ("typescript-7"). Remove this once typescript-eslint
+      # supports 7, then drop the 6 and point "typecheck" back at plain tsc.
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:

@@ -286,3 +286,8 @@
 #board.edit {
   touch-action: none;
 }
+/* Board style's tabs: the first row on a tab needs no line above it (the tabs have one) */
+#styleSheet .surfaces.presets[hidden] + .threl {
+  border-top: 0;
+  padding-top: 0;
+}

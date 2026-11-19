@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | bits.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      Small building blocks: buttons, fields, segmented choices
@@ -16,6 +16,9 @@
  0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
                         colby     plan, reminders, timers, pantry, jars and
                         claude    chores.
+
+ 1.1.0    2026-11-17   joshua    Tabs: the parts of a long card, one at a
+                        claude    time.
 ===============================================================================
 */
 
@@ -84,6 +87,48 @@ export function Segs<T extends string>({
           onClick={() => onChange(v)}
         >
           {text}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------- //
+// | Tabs | //
+// -------- //
+// The parts of a long card, one at a time: a row of tabs that slides        //
+// sideways when it doesn't fit. A dot marks a tab with changes of its own.  //
+export function Tabs<T extends string>({
+  value,
+  options,
+  onChange,
+  label,
+  marked = []
+}: {
+  value: T;
+  options: [T, string][];
+  onChange: (v: T) => void;
+  label: string;
+  marked?: T[];
+}) {
+  return (
+    <div className="ctabs" role="tablist" aria-label={label}>
+      {options.map(([v, text]) => (
+        <button
+          key={v}
+          type="button"
+          role="tab"
+          id={'tab-' + v}
+          aria-selected={v === value}
+          className={'ctab' + (v === value ? ' on' : '')}
+          onClick={e => {
+            onChange(v);
+            (e.currentTarget as HTMLElement).scrollIntoView({ block: 'nearest', inline: 'nearest' });
+          }}
+        >
+          {text}
+          {marked.includes(v) && <span className="tdot" aria-label="changed" />}
         </button>
       ))}
     </div>

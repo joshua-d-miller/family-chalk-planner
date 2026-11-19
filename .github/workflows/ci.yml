@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
       - run: npm ci
       - run: node --check server/chalkboard.js
@@ -39,10 +39,24 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
       - run: npm ci
       - run: npm run build # some tests load the screens
+      - run: npm test
+  server-node22:
+    # 32-bit Raspberry Pi OS can't run Node.js 24 or newer, so the board stays on 22 there until 22's end of
+    # life (2027-04-30, deploy/node-version.sh): the server's tests run on it too
+    name: Server and API tests on Node.js 22 (32-bit Raspberry Pi)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
       - run: npm test
   install:
     name: Install and update scripts (fresh install, updates, a failed update undone)
@@ -51,7 +65,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
       - run: npm ci
       - run: npm run build
@@ -63,7 +77,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
       - run: npm ci
       # the browser is kept between runs (it only changes with Playwright); its system packages are quick
@@ -100,7 +114,7 @@ jobs:
             ghcr.io/home-assistant/home-assistant:stable
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
       - run: npm ci
       - uses: actions/cache@v4
@@ -125,6 +139,51 @@ jobs:
             playwright-report-ha/
             test-results-ha/
           retention-days: 7
+  realservers:
+    name: Real calendar and photo servers (Radicale CalDAV, Immich), no accounts
+    runs-on: ubuntu-latest
+    env:
+      IMMICH_VERSION: v3 # the major version tested; Immich's own compose file, without its machine learning
+    steps:
+      - uses: actions/checkout@v7
+      # Immich first: it takes a minute to start
+      - name: Start Immich
+        run: |
+          mkdir -p "$RUNNER_TEMP/immich" && cd "$RUNNER_TEMP/immich"
+          curl -fsSL -o docker-compose.yml https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml
+          curl -fsSL -o .env https://github.com/immich-app/immich/releases/latest/download/example.env
+          sed -i "s/^IMMICH_VERSION=.*/IMMICH_VERSION=$IMMICH_VERSION/" .env
+          # (the image registry sometimes says "too many requests": try the download a few times)
+          for i in 1 2 3 4; do docker compose pull -q immich-server redis database && break; sleep $((i * 20)); done
+          docker compose up -d immich-server redis database
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Start Radicale
+        run: |
+          pip install radicale==3.5.4
+          bash test/real-servers/start-radicale.sh "$RUNNER_TEMP/radicale"
+      - name: Wait for Immich
+        run: |
+          for i in $(seq 1 90); do
+            curl -fsS http://127.0.0.1:2283/api/server/ping && exit 0
+            sleep 2
+          done
+          exit 1
+      - run: node --test test/real-servers.test.ts
+        env:
+          REAL_CALDAV_URL: http://127.0.0.1:5232/
+          REAL_CALDAV_USER: family
+          REAL_CALDAV_PASSWORD: secret
+          REAL_IMMICH_URL: http://127.0.0.1:2283
+      - name: Immich's log
+        if: failure()
+        run: docker logs immich_server 2>&1 | tail -200
   docker:
     name: Docker image builds and starts
     runs-on: ubuntu-latest

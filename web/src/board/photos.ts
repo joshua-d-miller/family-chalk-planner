@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | photos.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      The family's photos (the shared album or Immich): framing them on the
@@ -30,6 +30,9 @@
                                   The new wall board: the overnight slideshow,
                                   the photo frame, the day view, reminders and
                                   timers.
+
+ 1.1.0    2026-11-17   joshua    offline and few from the board, and small
+                        claude    pictures for picking.
 ===============================================================================
 */
 
@@ -50,11 +53,19 @@ export type PhotoCfg = {
   showEvents: boolean;
   showTemp: boolean;
   showReminders: boolean;
+  showCountdown?: boolean; // the next countdown in a corner (on unless turned off)
   sidePanel: boolean;
 };
-export type Photos = { photos: Photo[]; cfg: PhotoCfg };
+export type Photos = {
+  photos: Photo[];
+  cfg: PhotoCfg;
+  offline?: boolean; // a big album that can't be reached right now
+  few?: boolean; // only the last few photos are kept on the board
+};
 
 export const photoSrc = (p: Photo) => url('api/photos/img/' + p.id);
+// a small picture for picking (a big album's aren't copied onto the board for it)
+export const thumbSrc = (p: Photo) => url('api/photos/thumb/' + p.id);
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //

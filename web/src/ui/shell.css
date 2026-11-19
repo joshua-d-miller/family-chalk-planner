@@ -389,6 +389,15 @@ html.shell-drawer .page {
     animation: none;
   }
 }
+/* the ✕ at the menu's top right: stays in reach while the menu scrolls */
+.menu > .closex {
+  align-self: flex-end;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 0 2px;
+  background: #151615;
+}
 /* the calendar's tools at the top of the drawer, as menu rows */
 .menu .mtools {
   display: flex;

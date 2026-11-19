@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Server | favorites.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-12
+ Updated:   2026-11-17
 
  Purpose:
      Favorites: the few things each person (and each family screen) uses
@@ -23,6 +23,14 @@
      Draw button beside it:
        kv 'menustyle'  { 'p:...' | 's:...': { style: 'right' | 'left',
            draw: true | false } }
+     And the look of its cards and ☰ menu (chalk unless changed), an
+     accent color, and their text size:
+       kv 'uilook'  { 'p:...' | 's:...': { look: 'light' | 'dark' |
+           'contrast' | 'chalk', accent: '#rrggbb' | null, size: 'normal'
+           | 'large' | 'larger' } }
+     And whether its countdowns count in sleeps ("3 sleeps!") or days
+     (a kid's tablet counts sleeps unless told otherwise):
+       kv 'sleeps'  { 'p:...' | 's:...': true | false }
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -42,6 +50,14 @@
  0.17.0    2026-11-12   joshua    Each screen's menu: the cork or the ☰ button
                         colby     (right or left), kept on the board so
                         claude    clearing the browser doesn't lose it.
+
+ 1.1.0    2026-11-17   joshua    The look of each screen's cards and ☰ menu:
+                        claude    chalk, light, dark or high contrast, an
+                                  accent color and a larger text size, kept on
+                                  the board.
+                                  Countdowns in sleeps or days, per screen (or
+                                  person); the admin console sets any
+                                  screen's.
 ===============================================================================
 */
 
@@ -172,6 +188,93 @@ export function setup({
     kv.set('menustyle', map);
     broadcast('menustyle', {});
     res.json({ ...view(map[k]), saved: true });
+  });
+
+  // ------------------------------------ //
+  // | The look of its cards and ☰ menu | //
+  // ------------------------------------ //
+  // Chalk (as before), light, dark or high contrast; an accent color for    //
+  // headings and what's picked; and a larger text size. Kept on the board   //
+  // like the menu, per screen (or per person on a computer). A change can   //
+  // send just one of the three.                                             //
+  const LOOKS = ['chalk', 'light', 'dark', 'contrast'];
+  const SIZES = ['normal', 'large', 'larger'];
+  interface UiLook {
+    look: string;
+    accent: string | null;
+    size: string;
+  }
+  const looks = () => kv.get<Record<string, UiLook>>('uilook') || {};
+  const lookOf = (p: Partial<UiLook> | undefined): UiLook => ({
+    look: p?.look && LOOKS.includes(p.look) ? p.look : 'chalk',
+    accent: typeof p?.accent === 'string' && /^#[0-9a-fA-F]{6}$/.test(p.accent) ? p.accent : null,
+    size: p?.size && SIZES.includes(p.size) ? p.size : 'normal'
+  });
+  app.get('/api/uilook', (req, res) => {
+    const k = whose(req);
+    res.json({ ...lookOf(k ? looks()[k] : undefined), saved: !!k });
+  });
+  app.post('/api/uilook', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const b = req.body || {};
+    const map = looks();
+    const now = lookOf(map[k]);
+    const next = {
+      look: b.look ?? now.look,
+      accent: b.accent === undefined ? now.accent : b.accent,
+      size: b.size ?? now.size
+    };
+    if (!LOOKS.includes(next.look) || !SIZES.includes(next.size))
+      return res.status(400).json({ error: 'Pick a look and a text size' });
+    if (next.accent !== null && !(typeof next.accent === 'string' && /^#[0-9a-fA-F]{6}$/.test(next.accent)))
+      return res.status(400).json({ error: 'Pick a color' });
+    if (next.look === 'chalk' && !next.accent && next.size === 'normal')
+      delete map[k]; // (the look everyone starts with)
+    else map[k] = next;
+    kv.set('uilook', map);
+    broadcast('uilook', {});
+    res.json({ ...lookOf(map[k]), saved: true });
+  });
+
+  // ------------------- //
+  // | Sleeps, or days | //
+  // ------------------- //
+  // A countdown in sleeps ("3 sleeps!") or days. Nothing saved: the screen  //
+  // decides (sleeps on a kid's tablet, days elsewhere). The admin console   //
+  // sets any screen's, the wall's too.                                      //
+  const sleeps = () => kv.get<Record<string, boolean>>('sleeps') || {};
+  const setSleeps = (k: string, v: unknown) => {
+    const map = sleeps();
+    if (v === null) delete map[k];
+    else map[k] = !!v;
+    kv.set('sleeps', map);
+    broadcast('sleeps', {});
+    return k in map ? map[k] : null;
+  };
+  app.get('/api/sleeps', (req, res) => {
+    const k = whose(req);
+    const v = k ? sleeps()[k] : undefined;
+    res.json({ sleeps: v === undefined ? null : v });
+  });
+  app.post('/api/sleeps', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const v = (req.body || {}).sleeps;
+    if (!(v === null || typeof v === 'boolean')) return res.status(400).json({ error: 'Sleeps or days' });
+    res.json({ sleeps: setSleeps(k, v) });
+  });
+  app.get('/api/devices/sleeps', (_req, res) => {
+    const out: Record<string, boolean> = {};
+    for (const [k, v] of Object.entries(sleeps())) if (k.startsWith('s:')) out[k.slice(2)] = v;
+    res.json({ sleeps: out });
+  });
+  app.post('/api/devices/sleeps', (req, res) => {
+    const id = String(req.body?.id || '');
+    const v = req.body?.sleeps;
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    if (!(v === null || typeof v === 'boolean')) return res.status(400).json({ error: 'Sleeps or days' });
+    res.json({ sleeps: setSleeps('s:' + id, v) });
   });
 }
 

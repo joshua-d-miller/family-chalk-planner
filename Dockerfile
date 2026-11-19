@@ -2,7 +2,7 @@
 # Everything the board keeps (database, settings key, uploads, caches, nightly backups) lives in /data.
 
 # The screens (React) are built here, in a stage of their own: the image itself has no build tools
-FROM node:22-bookworm-slim AS screens
+FROM node:26-bookworm-slim AS screens
 WORKDIR /build
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund --loglevel=error
@@ -11,7 +11,7 @@ COPY web ./web
 COPY shared ./shared
 RUN npm run build
 
-FROM node:22-bookworm-slim
+FROM node:26-bookworm-slim
 
 # Optional face finder for photo framing (OpenCV, ~220 MB): docker build --build-arg WITH_FACE=true .
 ARG WITH_FACE=false

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | PhotosEditor.tsx
 ===============================================================================
- Version:   0.15.0
+ Version:   1.1.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-08
+ Updated:   2026-11-17
 
  Purpose:
      📷 Beside the month name: the family's photos (a random few, or ones
@@ -28,6 +28,9 @@
 
  0.15.0    2026-11-08   joshua    A family screen isn't sent to Settings.
                         claude
+
+ 1.1.0    2026-11-17   joshua    Small pictures for picking from a big album,
+                        claude    and a note when the album can't be reached.
 ===============================================================================
 */
 
@@ -36,7 +39,7 @@ import { post } from '../../lib/api.ts';
 import { Btn, Segs } from '../../ui/bits.tsx';
 import { Sheet } from '../../ui/Sheet.tsx';
 import type { MonthMeta } from '../Board.tsx';
-import { photoSrc } from '../photos.ts';
+import { photoSrc, thumbSrc } from '../photos.ts';
 import type { Photos } from '../photos.ts';
 import type { Side } from '../TitlePhotos.tsx';
 
@@ -96,6 +99,11 @@ export function PhotosEditor({
         label="Beside the month name"
       />
       {!list.length && <div className="sublbl">No photos yet: add the family album in the admin console.</div>}
+      {photos?.offline && (
+        <div className="sublbl" id="photosOffline">
+          ⚠ The album can’t be reached right now, so the last photo shown stands in. Check that the photo server is on.
+        </div>
+      )}
       {key === 'chosen' && (
         <div className="ppick">
           {list.map(p => {
@@ -113,7 +121,7 @@ export function PhotosEditor({
                   })
                 }
               >
-                <img alt="" loading="lazy" src={photoSrc(p)} />
+                <img alt="" loading="lazy" src={photos?.few ? thumbSrc(p) : photoSrc(p)} />
                 {n >= 0 && <b>{n + 1}</b>}
               </button>
             );

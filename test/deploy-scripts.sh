@@ -3,9 +3,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | deploy-scripts.sh
 ===============================================================================
- Version:   0.13.1
+ Version:   1.1.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      Runs deploy/install.sh and deploy/update.sh the way a real server
@@ -41,6 +41,9 @@
 
  0.13.1    2026-11-07   joshua    Tests finishing an upgrade from 0.12.
                         claude
+
+ 1.1.0    2026-11-17   joshua    Which Node.js a machine gets: 26 on 64-bit,
+                        claude    22 on 32-bit ARM.
 ===============================================================================
 HEADER
 
@@ -179,4 +182,8 @@ bash "$W/app/deploy/update.sh" > "$W/out" 2>&1 && grep -q "Already up to date" "
 grep -q 'screens for v0.99.0' "$W/app/web/dist/index.html" || fail "finishing an upgrade from 0.12 fetches the screens"
 [ -f /etc/systemd/system/family-chalk-planner-update.path ] || fail "finishing an upgrade from 0.12 turns on Update now"
 pass "a second run finishes an upgrade from 0.12"
+# 10. which Node.js a machine gets: 26 on a 64-bit one, 22 (the newest built for it) on 32-bit ARM
+nt() { CHALK_NODE_ARCH="$1" bash -c '. "$1/deploy/node-version.sh"; node_target' _ "$W/app"; }
+[ "$(nt amd64)" = 26 ] && [ "$(nt arm64)" = 26 ] && [ "$(nt armhf)" = 22 ] && [ "$(nt armv7l)" = 22 ] || fail "Node.js 26 on 64-bit, 22 on 32-bit ARM"
+pass "Node.js 26 on 64-bit, 22 on 32-bit ARM"
 echo "deploy scripts: all passed"

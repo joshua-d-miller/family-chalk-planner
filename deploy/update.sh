@@ -3,10 +3,10 @@
 ===============================================================================
  Family Chalk Planner | Deploy | update.sh
 ===============================================================================
- Version:   0.13.1
+ Version:   1.1.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-10-11
- Updated:   2026-11-07
+ Updated:   2026-11-17
 
  Purpose:
      Updates the board to the newest release, then restarts it. The
@@ -87,6 +87,11 @@
  0.13.1    2026-11-07   joshua    A second run finishes an upgrade from 0.12:
                         claude    the screens, Update now and the nightly
                                   check.
+
+ 1.1.0    2026-11-17   joshua    Moves a NodeSource install to the
+                        claude    recommended Node.js (26, or 22 on 32-bit
+                                  ARM) on Update now; says when 32-bit support
+                                  ends.
 ===============================================================================
 HEADER
 
@@ -267,6 +272,31 @@ if [ -n "$need_node" ] && ! node_at_least "$need_node"; then
     apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nodejs >/dev/null || true
   fi
   node_at_least "$need_node" || die "This version needs Node.js $need_node or newer (found $(node -v)). Update Node.js, then run this again. Nothing was changed."
+fi
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #
+### --------------------------- ###
+### | The recommended Node.js | ###
+### --------------------------- ###
+### Node.js 26 on a 64-bit machine (22 on 32-bit ARM, the newest built for ###
+### it): a NodeSource install that's older moves to it, on Update now (not ###
+### overnight: a new Node.js is a bigger change). If that doesn't work,    ###
+### the board carries on with the Node.js it has (still new enough).       ###
+if [ "${SKIP_PACKAGES:-}" != 1 ] && [ -f "$APP_DIR/deploy/node-version.sh" ]; then
+  # shellcheck source=deploy/node-version.sh
+  . "$APP_DIR/deploy/node-version.sh"
+  want="$(node_target)"
+  if from_nodesource && [ "$(node_major)" -lt "$want" ]; then
+    if [ "$MODE" = nightly ]; then
+      say "Node.js $want is recommended (you have $(node -v)): it comes with the next Update now"
+    else
+      say "Moving to Node.js $want (you have $(node -v))"
+      node_install "$want" || say "Couldn't move to Node.js $want: carrying on with $(node -v)"
+    fi
+  fi
+  if node_is_32bit; then
+    say "A 32-bit system: the board runs on Node.js $NODE_32BIT, supported until $NODE_32BIT_UNTIL. For updates after that, use a 64-bit system (docs/install.md → Node.js)."
+  fi
 fi
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #
