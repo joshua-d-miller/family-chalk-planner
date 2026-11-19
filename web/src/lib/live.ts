@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | live.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-18
 
  Purpose:
      Live updates: one connection to the board (/api/stream) for the whole
@@ -40,6 +40,10 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 1.1.1    2026-11-18   joshua    A screen that wakes up reads everything
+                        claude    again (it may have missed a new day while
+                                  asleep).
 ===============================================================================
 */
 
@@ -72,6 +76,11 @@ function connect() {
   source.onmessage = null;
   source.onopen = () => setOnline(true);
   source.onerror = () => setOnline(false); // EventSource keeps trying by itself
+  // a screen that was asleep (turned off overnight, a kiosk app in the background) may have missed
+  // updates, a new day among them: everything is read again as soon as it's seen
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') emit('hello', {});
+  });
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

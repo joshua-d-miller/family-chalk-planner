@@ -32,6 +32,8 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  /* no pull-to-refresh and no bounce: a swipe down on a wall screen reloaded the board */
+  overscroll-behavior: none;
   background: #121312;
   color: var(--chalk);
   font: var(--text) / 1.35 var(--hand);

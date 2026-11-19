@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Month.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.1.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-18
 
  Purpose:
      The month: its name, the weekdays, and a box per day with its events,
@@ -58,6 +58,9 @@
  1.1.0    2026-11-17   joshua    A badge on a starred countdown's day (in
                         claude    sleeps or days).
                                   outage, from the month.
+
+ 1.1.1    2026-11-18   joshua    No month arrows where they don't work (the
+                        claude    wall).
 ===============================================================================
 */
 
@@ -376,7 +379,8 @@ export function Month({
   return (
     <div className="cal">
       <div className="titlerow">
-        <NavBtn dir="prev" onClick={nav?.prev} />
+        {/* the arrows only where they work (not on a wall) */}
+        {nav ? <NavBtn dir="prev" onClick={nav.prev} /> : <span className="navgap" aria-hidden="true" />}
         {title ?? (
           <h1 id="monthName">
             <span className="mn" data-text={MONTHS[g.m - 1]}>
@@ -385,7 +389,7 @@ export function Month({
             {g.y !== Number(data.today.slice(0, 4)) && <small>{g.y}</small>}
           </h1>
         )}
-        <NavBtn dir="next" onClick={nav?.next} />
+        {nav ? <NavBtn dir="next" onClick={nav.next} /> : <span className="navgap" aria-hidden="true" />}
       </div>
       <div
         className={'calbody' + (border ? ' bordered' : '')}

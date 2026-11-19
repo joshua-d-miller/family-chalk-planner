@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   0.16.0
+ Version:   1.1.1
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-11
+ Updated:   2026-11-18
 
  Purpose:
      The board itself: this month on the tablet, moving between months,
@@ -34,6 +34,9 @@
 
  0.16.0    2026-11-11   joshua    The cork stays put between the calendar and a
                         claude    page.
+
+ 1.1.1    2026-11-18   joshua    A swipe down never reloads a wall screen.
+                        claude
 ===============================================================================
 */
 
@@ -45,6 +48,12 @@ test('the tablet opens on this month, with weather, countdowns and no errors', a
   await expect(page.locator(`[data-date="${thisMonth().date}"]`)).toBeVisible();
   await expect(page.locator('#wNow')).toContainText('58°');
   expect(page.errors).toEqual([]);
+});
+
+test('a wall screen: a swipe down never reloads it (no pull-to-refresh)', async ({ as }) => {
+  const wall = await as('wall');
+  for (const el of ['html', 'body'])
+    expect(await wall.locator(el).evaluate(e => getComputedStyle(e).overscrollBehaviorY)).toBe('none');
 });
 
 test('next and previous month', async ({ as }) => {

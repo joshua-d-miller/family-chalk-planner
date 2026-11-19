@@ -567,3 +567,13 @@ body:has(.scrim) .fabwrap,
 body:has(.menuScrim) .fabwrap {
   visibility: hidden;
 }
+
+/* the drawer of the ☰ button: sized to the screen like the board is (a fixed 340px drawer and 24px letters
+   took a third of a smaller wall screen) */
+html.shell-drawer .menu:not(.up) {
+  width: clamp(240px, 26vw, 340px);
+  font-size: clamp(15px, 0.9vw + 8px, 21px);
+}
+html.shell-drawer .menu:not(.up) :is(.item, .mtools .pill) {
+  min-height: 44px;
+}
