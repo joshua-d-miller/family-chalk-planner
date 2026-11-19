@@ -13,6 +13,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **A family screen where someone is also signed in** now opens the board ready to edit, with the cork or ☰ and
   working month arrows. Before, it showed the wall's view-only board instead.
 - **The wall** no longer shows month arrows that do nothing.
+- **↻ Reload the board** in the ☰ menu (instead of pull-to-refresh).
+- **The ☰ button's drawer** is sized to the screen: it took about a third of a smaller wall screen.
+- **Tested the way Colby runs it:** Chrome in kiosk mode on Linux, on 1080p, 2K and 4K touch screens, on every change.
 
 ## 1.1.0 — Countdowns, looks and big photo albums
 Nothing to do when updating. Two things are on from the start, and both can be turned off: the next countdown on the
