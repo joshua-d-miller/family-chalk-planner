@@ -10,6 +10,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   reloaded it. A screen that was asleep (turned off overnight) also catches up as soon as it's on again.
 - **No more pull-to-refresh:** a swipe down on a wall or touch screen no longer reloads the board in Chrome-based
   browsers. In Fully Kiosk, also turn off its own pull-to-refresh setting if it's on.
+- **A family screen where someone is also signed in** now opens the board ready to edit, with the cork or ☰ and
+  working month arrows. Before, it showed the wall's view-only board instead.
+- **The wall** no longer shows month arrows that do nothing.
 
 ## 1.1.0 — Countdowns, looks and big photo albums
 Nothing to do when updating. Two things are on from the start, and both can be turned off: the next countdown on the

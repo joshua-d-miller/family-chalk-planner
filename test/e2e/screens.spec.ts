@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | screens.spec.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.1.1
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-18
 
  Purpose:
      The other kinds of screen: the wall (view only), a family touch
@@ -27,6 +27,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 1.1.1    2026-11-18   joshua    A family screen with someone signed in still
+                        claude    edits; the wall has no dead month arrows.
 ===============================================================================
 */
 
@@ -117,4 +120,29 @@ test('the admin console asks for password and authenticator code', async ({ brow
   await expect(page.locator('#liUser')).toBeVisible();
   await expect(page.locator('#liCode')).toBeVisible();
   await ctx.close();
+});
+
+test('a family screen with someone also signed in still opens the board to edit (Colby’s kitchen screen)', async ({
+  as,
+  board
+}) => {
+  const fam = await as('family', { path: '/' });
+  // the family screen's pairing plus a person's sign-in, on the same browser
+  await fam.context().addCookies(
+    board.editorCookie.split('; ').map(c => {
+      const [name, ...v] = c.split('=');
+      return { name, value: v.join('='), url: board.url };
+    })
+  );
+  await fam.goto(board.url + '/');
+  await expect(fam).toHaveURL(/\/edit$/);
+  await expect(fam.locator('#addBtn')).toBeVisible();
+  await expect(fam.getByRole('button', { name: 'Next month' })).toBeVisible();
+});
+
+test('the wall: no month arrows that do nothing', async ({ as }) => {
+  const wall = await as('wall');
+  await expect(wall.locator('#monthName')).toBeVisible();
+  await expect(wall.getByRole('button', { name: 'Next month' })).toHaveCount(0);
+  await expect(wall.getByRole('button', { name: 'Previous month' })).toHaveCount(0);
 });

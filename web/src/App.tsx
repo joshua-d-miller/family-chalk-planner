@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | App.tsx
 ===============================================================================
- Version:   1.0.0
+ Version:   1.1.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-14
+ Updated:   2026-11-18
 
  Purpose:
      Which page this is, and whether this screen may see it (else: sign
@@ -56,6 +56,10 @@
  1.0.0     2026-11-14   joshua    Inside Home Assistant: its people go
                         claude    straight to the board, and its sidebar
                                   hides while the board is open.
+
+ 1.1.1    2026-11-18   joshua    A family screen opens the board to edit even
+                        claude    when someone is also signed in on it (it
+                                  showed the wall instead).
 ===============================================================================
 */
 
@@ -142,7 +146,8 @@ export function App() {
     // nobody yet: the admin console sets the board up; an unpaired screen shows its pairing code
     if (!w.rank && w.firstRun) return go('admin');
     if (!w.rank || (new URLSearchParams(location.search).has('pair') && !w.device)) return <Pair who={w} />;
-    if (w.device?.role === 'family' && !w.user) return go('edit'); // a family screen edits right on the board
+    // a family screen edits right on the board, whether or not someone is also signed in on it
+    if (w.device?.role === 'family') return go('edit');
     if (w.ha?.person && w.rank >= RANK.family) return go('edit'); // inside Home Assistant: its people edit
     if (kidOf(w)) return go('chores'); // a kid's tablet opens on their chores
   }
