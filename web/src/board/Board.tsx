@@ -1008,7 +1008,7 @@ export function Board({
           </Strip>
         )}
       </div>
-      {(!edit || family) && photos && (
+      {(!edit || family || slides.on) && photos && (
         <Slideshow photos={photos} on={slides.on} time24={!!today?.time24} onTap={slides.tapSlides} />
       )}
       <ReminderAlert time24={!!today?.time24} />
