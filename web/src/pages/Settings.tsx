@@ -50,6 +50,7 @@ import { homeHref } from '../routes.ts';
 import { setSpeaksHere, speaksHere } from '../lib/timers.ts';
 import { hideZoomHere, setHideZoomHere } from '../lib/zoomControls.ts';
 import { rollingWeekHere, setRollingWeekHere } from '../lib/weekStyle.ts';
+import { INSET_MAX, INSET_MIN, boardInsetHere, setBoardInsetHere } from '../lib/boardInset.ts';
 import { DAY_NAMES } from '../lib/today.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn, Field, Pick } from '../ui/bits.tsx';
@@ -641,6 +642,7 @@ function ThisScreen() {
   const [speak, setSpeak] = useState(speaksHere());
   const [hideZoom, setHideZoom] = useState(hideZoomHere());
   const [rolling, setRolling] = useState(rollingWeekHere());
+  const [inset, setInset] = useState(boardInsetHere());
   const sleeps = useSleeps();
   return (
     <Card title="This screen">
@@ -677,6 +679,23 @@ function ThisScreen() {
           }}
         />
         <span className="t">Week page: start on today and always show the next 7 days</span>
+      </label>
+      <label className="check" style={{ flexWrap: 'wrap' }}>
+        <span className="t">Space around the board: {inset} px (0 fits the screen; less fills it)</span>
+        <input
+          id="boardInset"
+          type="range"
+          min={INSET_MIN}
+          max={INSET_MAX}
+          step={5}
+          value={inset}
+          style={{ width: '100%' }}
+          onChange={e => {
+            const px = Number(e.target.value);
+            setBoardInsetHere(px);
+            setInset(px);
+          }}
+        />
       </label>
       <label className="check">
         <input id="sleepsBox" type="checkbox" checked={sleeps} onChange={e => void setSleeps(e.target.checked)} />

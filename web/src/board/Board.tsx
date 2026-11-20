@@ -105,6 +105,7 @@ import type { PointerEvent } from 'react';
 import { useLive, useOnline } from '../lib/live.ts';
 import { useHideZoom } from '../lib/zoomControls.ts';
 import { useRollingWeek } from '../lib/weekStyle.ts';
+import { useBoardInset } from '../lib/boardInset.ts';
 import { paintSurface, photoBackground, seasonOf, surfaceOf } from '../lib/surface.ts';
 import type { Who } from '../lib/who.ts';
 import { Art } from './Art.tsx';
@@ -177,10 +178,13 @@ export type MonthMeta = {
 // ----------------------------------- //
 // The board is always 1252 by 642, scaled to fit; a tablet adds the cork    //
 // strip and the wooden frame around it.                                     //
-function useFit(pad: number, h: number, below = 0) {
+function useFit(pad: number, h: number, below = 0, inset = 0) {
   // below: the tab bar's height on a phone or tablet (the board fits above it)
   const calc = () => {
-    const scale = Math.min(innerWidth / (W + 2 * pad), (visibleHeight() - below) / (h + 2 * pad));
+    const scale = Math.min(
+      (innerWidth - 2 * inset) / (W + 2 * pad),
+      (visibleHeight() - below - 2 * inset) / (h + 2 * pad)
+    );
     return { scale, res: Math.max(1, Math.min(4, Math.round(scale * (devicePixelRatio || 1) * 2) / 2)) };
   };
   const [fit, setFit] = useState(calc);
@@ -193,7 +197,7 @@ function useFit(pad: number, h: number, below = 0) {
       removeEventListener('resize', on);
       window.visualViewport?.removeEventListener('resize', on);
     };
-  }, [pad, h, below]);
+  }, [pad, h, below, inset]);
   return fit;
 }
 
@@ -293,7 +297,8 @@ export function Board({
   const barZ = useBarZoom();
   // the ☰ button floats over the board's bottom corner (the board keeps its size); on the right it's
   // over the bottom of the Notes column, whose list stops above it
-  const fit = useFit(pad, bh, shell.navH);
+  const inset = useBoardInset(); // Settings → This screen: the space around the board
+  const fit = useFit(pad, bh, shell.navH, inset);
   // the Notes column's last row, where the ☰ lives on a screen that picked the button
   const [dockEl, setDockEl] = useState<HTMLElement | null>(null);
   const fabClear = (() => {

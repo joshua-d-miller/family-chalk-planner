@@ -4,6 +4,7 @@ body.boardpage {
   background: #151615;
 }
 #stage {
+  overflow: hidden; /* a board bigger than the screen (Settings → space around the board) is trimmed */
   position: fixed;
   inset: 0;
   display: flex;
