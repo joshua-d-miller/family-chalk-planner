@@ -104,6 +104,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { PointerEvent } from 'react';
 import { useLive, useOnline } from '../lib/live.ts';
 import { useHideZoom } from '../lib/zoomControls.ts';
+import { useRollingWeek } from '../lib/weekStyle.ts';
 import { paintSurface, photoBackground, seasonOf, surfaceOf } from '../lib/surface.ts';
 import type { Who } from '../lib/who.ts';
 import { Art } from './Art.tsx';
@@ -254,10 +255,16 @@ export function Board({
   // first day in wk (null is this week). A week belongs to the month of its //
   // middle day.                                                             //
   const [wk, setWk] = useState<string | null>(null);
-  const thisWeek = today?.today ? weekOf(today.today, today.weekStart || 0) : null;
+  // (Settings → This screen: the week can start on today, so it's always the next 7 days)
+  const rolling = useRollingWeek();
+  const thisWeek = today?.today ? (rolling ? today.today : weekOf(today.today, today.weekStart || 0)) : null;
   const week = weekly ? wk || thisWeek : null;
   const shown = week ? addDays(week, 3).slice(0, 7) : ym || today?.ym || null;
   const month = useLive<MonthData>(shown ? `api/month?ym=${shown}` : 'api/today', ['calendar']);
+  // a rolling week can run into the next month (or start in the last): ask for that month's events too
+  const otherYm =
+    rolling && week ? [week.slice(0, 7), addDays(week, 6).slice(0, 7)].find(x => x !== shown) || null : null;
+  const spill = useLive<MonthData>(otherYm ? `api/month?ym=${otherYm}` : 'api/today', ['calendar']);
   // the art: the month's, or in the week view the week's own (kept under its first day)
   const artKey = week || shown;
   const art = useLive<ArtItem[]>(artKey ? `api/art?ym=${artKey}` : 'api/today', [
@@ -444,7 +451,19 @@ export function Board({
   const monthLook = lookDraft || (meta && 'artPad' in meta ? meta.look : undefined);
   const tv = useMemo(() => monthVals(theme, monthLook), [theme, monthLook]);
   const css = useMemo(() => themeCss(tv, sf.lum), [tv, sf.lum]);
-  const m = month.data && 'grid' in month.data ? month.data : null;
+  const m = useMemo(() => {
+    const base = month.data && 'grid' in month.data ? month.data : null;
+    if (!base || !rolling || !week) return base;
+    // the 7 days from `week`, as one row: this month's events and the neighbor's, without doubles
+    const more = otherYm && spill.data && 'grid' in spill.data ? spill.data.events : [];
+    const seen = new Set<string>();
+    const events = [...base.events, ...more].filter(e => {
+      const k = JSON.stringify([e.title, e.start, e.end, e.time, e.holiday, e.ref?.href, e.ref?.rid]);
+      return seen.has(k) ? false : (seen.add(k), true);
+    });
+    const dow = new Date(week + 'T12:00:00Z').getUTCDay();
+    return { ...base, events, grid: { ...base.grid, start: week, weeks: 1, weekStart: dow } };
+  }, [month.data, spill.data, otherYm, rolling, week]);
   const slides = useSlides(photos, !edit || family);
   const [day, setDay] = useState<string | null>(null);
   const closeDay = useCallback(() => setDay(null), []);
@@ -639,8 +658,9 @@ export function Board({
       const other = dates.find(d => d && d.slice(0, 7) !== shown);
       if (other && !dates.some(d => d?.slice(0, 7) === shown) && !week) setYm(other.slice(0, 7));
       month.reload();
+      if (otherYm) spill.reload();
     },
-    [shown, month]
+    [shown, month, spill, otherYm]
   );
   // ------------------------ //
   // | Art over the writing | //

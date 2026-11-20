@@ -49,6 +49,7 @@ import { navigate } from '../lib/nav.ts';
 import { homeHref } from '../routes.ts';
 import { setSpeaksHere, speaksHere } from '../lib/timers.ts';
 import { hideZoomHere, setHideZoomHere } from '../lib/zoomControls.ts';
+import { rollingWeekHere, setRollingWeekHere } from '../lib/weekStyle.ts';
 import { DAY_NAMES } from '../lib/today.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn, Field, Pick } from '../ui/bits.tsx';
@@ -639,6 +640,7 @@ function Frame() {
 function ThisScreen() {
   const [speak, setSpeak] = useState(speaksHere());
   const [hideZoom, setHideZoom] = useState(hideZoomHere());
+  const [rolling, setRolling] = useState(rollingWeekHere());
   const sleeps = useSleeps();
   return (
     <Card title="This screen">
@@ -663,6 +665,18 @@ function ThisScreen() {
           }}
         />
         <span className="t">Hide the − / + / Fit buttons on the calendar</span>
+      </label>
+      <label className="check">
+        <input
+          id="rollingWeekBox"
+          type="checkbox"
+          checked={rolling}
+          onChange={e => {
+            setRollingWeekHere(e.target.checked);
+            setRolling(e.target.checked);
+          }}
+        />
+        <span className="t">Week page: start on today and always show the next 7 days</span>
       </label>
       <label className="check">
         <input id="sleepsBox" type="checkbox" checked={sleeps} onChange={e => void setSleeps(e.target.checked)} />

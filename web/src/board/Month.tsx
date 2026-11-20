@@ -378,7 +378,13 @@ export function Month({
   }
   return (
     <div className="cal">
-      <div className="titlerow">
+      {/* tapping the month's name reloads the page (a quick refresh on a wall or tablet) */}
+      <div
+        className="titlerow"
+        onClick={e => {
+          if ((e.target as Element).closest('#monthName')) location.reload();
+        }}
+      >
         {/* the arrows only where they work (not on a wall) */}
         {nav ? <NavBtn dir="prev" onClick={nav.prev} /> : <span className="navgap" aria-hidden="true" />}
         {title ?? (

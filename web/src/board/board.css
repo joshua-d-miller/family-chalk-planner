@@ -726,3 +726,8 @@ body.boardpage {
   height: 44px;
   flex: none;
 }
+
+/* tapping the month's name reloads the page */
+.titlerow #monthName {
+  cursor: pointer;
+}
