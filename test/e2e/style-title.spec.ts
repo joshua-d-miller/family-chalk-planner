@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | style-title.spec.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.1.2
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-17
+ Updated:   2026-11-20
 
  Purpose:
      Board style (background, presets) and the month title card.
@@ -32,10 +32,13 @@
  1.1.0    2026-11-17   joshua    Board style's tabs: each shows only its own
                         claude    rows, Save stays in reach, and a tab with
                                   changes gets a dot.
+
+ 1.1.2    2026-11-20   joshua    The backgrounds show on Just this month too,
+                        claude    and are saved for every month.
 ===============================================================================
 */
 
-import { test, expect } from './fixtures.ts';
+import { test, expect, thisMonth } from './fixtures.ts';
 
 const surfaceOf = (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.querySelector<HTMLElement>('.slate')!.dataset.surface);
@@ -46,8 +49,9 @@ test('board style: a different background and preset, saved and sent to the wall
   const wall = await as('wall');
   await page.locator('#styleBtn').click();
   await expect(page.locator('#styleSheet')).toBeVisible();
-  // it opens on just this month: every month is asked for
-  await expect(page.locator('#styleSheet .surfaces:not(.presets)')).toHaveCount(0);
+  // it opens on just this month, and the backgrounds are there too (a month can have its own)
+  await expect(page.locator('#styleSheet .surfaces:not(.presets) button').first()).toBeVisible();
+  await expect(page.locator('#styleSheet')).toContainText('now the same as every month');
   await page.locator('#styleSheet').getByRole('radio', { name: 'Every month' }).click();
   await page.locator('#styleSheet .surfaces:not(.presets) button').nth(3).click(); // cork
   await page.locator('#styleSheet .presets button').filter({ hasText: 'Pastel' }).click();
@@ -128,4 +132,31 @@ test('board style: its parts on tabs, with Save and Cancel always in reach', asy
   await expect(card.getByRole('tab', { name: 'Days' }).locator('.tdot')).toHaveCount(0);
   await card.getByRole('button', { name: 'Cancel' }).click();
   await expect(card).toHaveCount(0);
+});
+
+test('board style: a background just for this month; every other month keeps the board’s', async ({ as, board }) => {
+  const { ym } = thisMonth();
+  await board.admin.post('/api/theme', { p: 'classic', o: {}, s: 'green' });
+  const page = await as('tablet', { path: '/edit' });
+  await expect.poll(() => surfaceOf(page)).toBe('green');
+  await page.locator('#styleBtn').click();
+  const card = page.locator('#styleSheet');
+  await expect(card).toContainText('now the same as every month');
+  await card.locator('#surface-navy').click();
+  await expect.poll(() => surfaceOf(page)).toBe('navy');
+  await expect(card).toContainText('Background just for');
+  await card.getByRole('button', { name: 'Save' }).click();
+  await expect.poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).look?.s).toBe('navy');
+  expect((await (await board.admin.api('/api/theme')).json()).s).toBe('green'); // the board's own is unchanged
+  // the next month: the board's background
+  await page.getByRole('button', { name: 'Next month' }).click();
+  await expect.poll(() => surfaceOf(page)).toBe('green');
+  // Like every month takes it away
+  await page.getByRole('button', { name: 'Previous month' }).click();
+  await page.locator('#styleBtn').click();
+  await card.locator('#lookClear').click();
+  await expect.poll(() => surfaceOf(page)).toBe('green');
+  await card.getByRole('button', { name: 'Cancel' }).click();
+  await board.admin.post('/api/meta', { ym, look: null });
+  await board.admin.post('/api/theme', { p: 'classic', o: {} });
 });

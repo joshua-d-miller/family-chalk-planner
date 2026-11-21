@@ -4,6 +4,12 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.1.2 — A background for each month
+- **Backgrounds are back in sight:** 🎨 Board style → Style shows the backgrounds whichever is picked above (they only
+  showed after tapping Every month, so they seemed to have gone).
+- **A background just for one month:** on **Just November**, pick a background for that month only (a photo of your
+  own too); every other month keeps the board's. **Like every month** takes it away.
+
 ## 1.1.1 — The wall moves to a new day by itself
 - **A new day, without a reload:** at midnight every screen now moves to the new day by itself: today's ring, Up
   next, the countdowns, and a new month on the 1st. Before, a quiet wall could stay on yesterday until someone

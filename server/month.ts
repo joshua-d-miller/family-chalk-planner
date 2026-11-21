@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | month.ts
 ===============================================================================
- Version:   0.16.1
+ Version:   1.1.2
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-11
+ Updated:   2026-11-20
 
  Purpose:
      Each month's own options: the typed title's style (or a hand-lettered
@@ -48,6 +48,9 @@
 
  0.16.1    2026-11-11   joshua    A month can have a style of its own, and its
                         claude    own fonts and lines, not just colors.
+
+ 1.1.2    2026-11-20   joshua    A month's own background (s, and img for a
+                        claude    photo of your own).
 ===============================================================================
 */
 
@@ -56,7 +59,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { isYm } from './dates.ts';
 import type { Kv } from './kv.ts';
 import { BOARD_FONTS } from '../shared/fonts.ts';
-import { okPreset, okTweak } from './theme.ts';
+import { SURFACES, okImg, okPreset, okTweak } from './theme.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //
@@ -87,12 +90,20 @@ interface Stored {
   look?: Record<string, string>; // this month's own style (p) and tweaks over the board style's
 }
 // a month's own look: a style of its own (p: 'holiday') and tweaks to it
-// or to the board style (colors, fonts, lines); anything else left out
+// or to the board style (colors, fonts, lines), and a background of its own
+// (s, and img for a photo of your own); anything else left out
 function cleanLook(v: unknown): Record<string, string> | undefined {
   if (!v || typeof v !== 'object') return undefined;
+  const raw = v as Record<string, unknown>;
   const out: Record<string, string> = {};
-  for (const [k, c] of Object.entries(v as Record<string, unknown>))
-    if (typeof c === 'string' && (k === 'p' ? okPreset(c) : okTweak(k, c))) out[k] = c;
+  for (const [k, c] of Object.entries(raw)) {
+    if (typeof c !== 'string') continue;
+    if (k === 's') {
+      if (SURFACES.includes(c) && (c !== 'photo' || okImg(raw.img))) out.s = c;
+    } else if (k === 'img') {
+      if (raw.s === 'photo' && okImg(c)) out.img = c;
+    } else if (k === 'p' ? okPreset(c) : okTweak(k, c)) out[k] = c;
+  }
   return Object.keys(out).length ? out : undefined;
 }
 export interface MonthMeta extends Omit<Stored, 'border'> {

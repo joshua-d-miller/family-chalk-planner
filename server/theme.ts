@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Server | theme.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.1.2
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-17
+ Updated:   2026-11-20
 
  Purpose:
      Board style ("theme"): a preset name plus the family's tweaks to it,
@@ -34,6 +34,9 @@
 
  1.1.0    2026-11-17   joshua    More backgrounds, and a photo of your own
                         claude    (one the board keeps) as the background.
+
+ 1.1.2    2026-11-20   joshua    The backgrounds and the photo check, shared
+                        claude    with month.ts.
 ===============================================================================
 */
 
@@ -76,7 +79,7 @@ export function okTweak(k: string, v: unknown): v is string {
   return kind === 'color' ? /^#[0-9a-fA-F]{6}$/.test(v) : kind === 'font' ? FONTS.includes(v) : kind.includes(v);
 }
 export const okPreset = (v: unknown): v is string => typeof v === 'string' && /^[a-z]{2,20}$/.test(v);
-const SURFACES = [
+export const SURFACES = [
   'slate',
   'green',
   'blue',
@@ -97,7 +100,7 @@ const SURFACES = [
   'graph',
   'photo' // a photo of your own: img says which (one the board keeps, /api/media/...)
 ];
-const okImg = (v: unknown): v is string =>
+export const okImg = (v: unknown): v is string =>
   typeof v === 'string' && /^\/api\/media\/[a-z0-9]{16}\.(jpg|png|webp)$/.test(v);
 
 export interface Theme {

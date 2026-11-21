@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | StyleEditor.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.1.2
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-20
 
  Purpose:
      🎨 Board style: the background, a preset, and her own tweaks to it
@@ -40,6 +40,12 @@
                                   bottom.
                                   The new backgrounds, and Your photo: pick a
                                   photo for the background.
+
+ 1.1.2    2026-11-20   joshua    The backgrounds are on the Style tab in both
+                        claude    modes (they only showed after tapping Every
+                                  month).
+                                  A background just for this month (Just ...),
+                                  or for every month.
 ===============================================================================
 */
 
@@ -209,12 +215,36 @@ export function StyleEditor({
     setErr('');
     try {
       const { src } = await upload(f);
-      setD({ ...d, s: 'photo', img: src });
+      setBg('photo', src);
     } catch (e) {
       setErr((e as Error).message);
     }
   }
   const [lk, setLk] = useState<Record<string, string>>(() => ({ ...(look || {}) }));
+  // ------------------ //
+  // | The background | //
+  // ------------------ //
+  // Just this month: its own (lk.s, lk.img), or none = the board's. Every   //
+  // month: the board's (d.s, d.img).                                        //
+  const bgNow = scope === 'month' && lk.s ? { s: lk.s, img: lk.img } : { s: d.s || 'slate', img: d.img };
+  function setBg(sId: string, img?: string) {
+    if (scope === 'month') {
+      const o = { ...lk };
+      delete o.s;
+      delete o.img;
+      // the same as the board's: nothing of its own
+      if (!(sId === (d.s || 'slate') && (sId !== 'photo' || img === d.img))) {
+        o.s = sId;
+        if (img) o.img = img;
+      }
+      return setLk(o);
+    }
+    const n: Theme = { ...d, s: sId };
+    if (sId === 'slate') delete n.s;
+    delete n.img;
+    if (img) n.img = img;
+    setD(n);
+  }
   useEffect(() => onPreview(d), [d, onPreview]);
   useEffect(() => onPreviewLook(lk), [lk, onPreviewLook]);
   const base = themeVals(d);
@@ -236,10 +266,11 @@ export function StyleEditor({
   };
   // a style just for this month (its tweaks start over); the board's own: none
   const pickMonth = (id: string) => {
-    const tweaks = Object.keys(lk).filter(k => k !== 'p').length;
+    const tweaks = Object.keys(lk).filter(k => !['p', 's', 'img'].includes(k)).length;
     const name = PRESETS.find(x => x.id === id)?.name;
     if (tweaks && !confirm(`Switch ${monthName} to ${name}? Its own tweaks will be cleared.`)) return;
-    setLk(id === d.p ? {} : { p: id });
+    const bg = { ...(lk.s ? { s: lk.s } : {}), ...(lk.img ? { img: lk.img } : {}) }; // its background stays
+    setLk(id === d.p ? bg : { ...bg, p: id });
   };
   const pick = (id: string) => {
     if (scope === 'month') return pickMonth(id);
@@ -296,13 +327,19 @@ export function StyleEditor({
     >
       {tab === 'style' && scope === 'month' && (
         <div className="sublbl">
-          A style, fonts and colors just for {monthName}; every other month keeps the board style. The background stays
-          the same for every month.
+          A style, fonts and colors just for {monthName}; every other month keeps the board style.
         </div>
       )}
-      {tab === 'style' && scope === 'all' && (
+      {/* the background: this month's own (Just {month}), or the board's (Every month) */}
+      {tab === 'style' && (
         <>
-          <div className="sublbl">Background</div>
+          <div className="sublbl">
+            {scope === 'month'
+              ? lk.s
+                ? `Background just for ${monthName}`
+                : `Background for ${monthName} (now the same as every month: pick one to change it)`
+              : 'Background for every month'}
+          </div>
           <div className="surfaces">
             {SURFACES.map(sf => {
               const light = sf.lum > 0.18;
@@ -312,21 +349,18 @@ export function StyleEditor({
                   type="button"
                   key={sf.id}
                   id={'surface-' + sf.id}
-                  className={(d.s || 'slate') === sf.id ? 'on' : ''}
-                  aria-pressed={(d.s || 'slate') === sf.id}
+                  className={bgNow.s === sf.id ? 'on' : ''}
+                  aria-pressed={bgNow.s === sf.id}
                   style={{
                     background:
-                      photo && d.img
-                        ? `linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)), url("${apiUrl(d.img)}") center / cover`
+                      photo && bgNow.img
+                        ? `linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)), url("${apiUrl(bgNow.img)}") center / cover`
                         : `radial-gradient(circle at 50% 40%, ${sf.base[0]}, ${sf.base[1]})`
                   }}
                   onClick={() => {
                     // your photo: pick one (again, to change it)
                     if (photo) return file.current?.click();
-                    const n: Theme = { ...d, s: sf.id };
-                    if (sf.id === 'slate') delete n.s;
-                    delete n.img;
-                    setD(n);
+                    setBg(sf.id);
                   }}
                 >
                   <span className="smp" style={{ color: light ? '#B0275F' : '#F6B3CB' }}>
@@ -350,13 +384,13 @@ export function StyleEditor({
               e.target.value = '';
             }}
           />
-          {d.s === 'photo' && (
+          {bgNow.s === 'photo' && (
             <div className="sublbl">
               Your photo is dimmed so the writing stays readable. A calm photo (a sky, a lake, a wall) works best; a
               busy one can make small writing hard to read. Tap it again for another photo.
             </div>
           )}
-          <label className="tick">
+          <label className="tick" hidden={scope === 'month'}>
             <input
               type="checkbox"
               checked={!!d.z}

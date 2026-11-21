@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | smoke.test.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.1.2
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-17
+ Updated:   2026-11-20
 
  Purpose:
      End-to-end smoke test: real server + mock CalDAV + mock photo album,
@@ -75,6 +75,9 @@
  1.1.0    2026-11-17   joshua    Countdown pictures, every countdown, sleeps
                         claude    or days; the new backgrounds and a photo
                                   background.
+
+ 1.1.2    2026-11-20   joshua    A month's own background.
+                        claude
 ===============================================================================
 */
 
@@ -489,6 +492,13 @@ test('a turned picture keeps its turn; a month keeps its own colors', async () =
   m = await (await post('/api/meta', { ym: '2026-12', side: { mode: 'art' } })).json();
   assert.deepEqual(m.look, { lineC: '#C62828', numC: '#A9D8A0' }, 'kept when something else changes');
   assert.equal((await (await api('/api/meta?ym=2026-11')).json()).look, undefined, 'only December');
+  // a background of its own (a photo only with one the board keeps)
+  m = await (await post('/api/meta', { ym: '2026-12', look: { s: 'navy' } })).json();
+  assert.deepEqual(m.look, { s: 'navy' });
+  m = await (await post('/api/meta', { ym: '2026-12', look: { s: 'photo', img: 'https://example.com/x.jpg' } })).json();
+  assert.equal(m.look, undefined, 'not a photo the board keeps');
+  m = await (await post('/api/meta', { ym: '2026-12', look: { s: 'nope' } })).json();
+  assert.equal(m.look, undefined);
   m = await (await post('/api/meta', { ym: '2026-12', look: null })).json();
   assert.equal(m.look, undefined);
 });
