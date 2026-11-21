@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Month.tsx
 ===============================================================================
- Version:   1.1.1
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-18
+ Updated:   2026-11-21
 
  Purpose:
      The month: its name, the weekdays, and a box per day with its events,
@@ -61,6 +61,17 @@
 
  1.1.1    2026-11-18   joshua    No month arrows where they don't work (the
                         claude    wall).
+
+ 1.2.0    2026-11-21   joshua    A week starts on its own first day (today,
+                        claude    on a screen whose week starts today).
+                        colby     A tap on the month's name can reload the
+                                  board (from Colby Way's board).
+                                  Split View: the week as a band, and what
+                                  the screen picked under it. Taller days on
+                                  a screen that fills itself.
+                                  The family's events stay in their own words
+                                  in another language (holidays are
+                                  translated).
 ===============================================================================
 */
 
@@ -133,6 +144,7 @@ export const MONTHS = [
 const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 const EV_SIZE = { l: 1.35, xl: 1.8 };
 const GRID_H = 642 - 8 - 10 - 70 - 28; // the slate, less its padding, the title and the weekdays
+export const SPLIT_BAND = 0.46; // Split View: how much of the calendar's height (under the title) the week takes
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------- //
@@ -216,7 +228,10 @@ export function Month({
   today = { shape: 'ring', color: '#F6B3CB' },
   border = null,
   nav,
-  week = null
+  onTitle,
+  week = null,
+  under = null,
+  height = 642
 }: {
   data: MonthData;
   bins: Bins | null;
@@ -224,26 +239,32 @@ export function Month({
   today?: { shape: string; color: string };
   border?: Border | null;
   nav?: { prev: () => void; next: () => void };
+  onTitle?: () => void; // a tap on the month's name (a screen that edits: reload the board)
   week?: string | null; // just this week (its first day), in the whole height
+  under?: ReactNode; // Split View: the week as a band across the top, and this under it
+  height?: number; // the slate's height on this screen (taller where it fills the screen)
   onDay?: (date: string) => void;
   onEvent?: (ev: BoardEvent) => void;
   title?: ReactNode;
 }) {
   const g = data.grid;
-  const ws = g.weekStart || 0;
+  // a week starts on its own first day (today, on a screen whose 🗓️ Week starts today)
+  const ws = week ? new Date(week + 'T12:00:00Z').getUTCDay() : g.weekStart || 0;
   const sleeps = useSleeps(); // a countdown badge in sleeps or days
   const pad = border ? BORDER_SZ[border.size] + 6 : 0;
   // the weeks shown: the month's, or one of them
-  const w0 = week ? Math.max(0, Math.round((Date.parse(week) - Date.parse(g.start)) / (7 * 864e5))) : 0;
   const nWeeks = week ? 1 : g.weeks;
-  const cellH = (GRID_H - 2 * pad) / nWeeks;
+  // (Split View: the week's band is SPLIT_BAND of the height, the spaces under it the rest)
+  const gridAll = GRID_H + (height - 642); // (a taller slate: taller days)
+  const gridH = under ? (gridAll + 28) * SPLIT_BAND - 28 : gridAll;
+  const cellH = (gridH - 2 * pad) / nWeeks;
   const big = week ? 1.35 : 1; // a week has the room for bigger writing
   const single = data.events.filter(e => e.start === e.end);
   const multi = data.events.filter(e => e.start !== e.end);
   const color = (e: BoardEvent) => (e.color || e.calColor ? readable((e.color || e.calColor)!, bg) : undefined);
   const weeks: ReactNode[] = [];
-  for (let w = w0; w < w0 + nWeeks; w++) {
-    const weekStart = addDays(g.start, w * 7);
+  for (let w = 0; w < nWeeks; w++) {
+    const weekStart = week || addDays(g.start, w * 7);
     const weekEnd = addDays(weekStart, 6);
     const lanes: [number, number][][] = [];
     const dayLanes = [0, 0, 0, 0, 0, 0, 0];
@@ -267,7 +288,7 @@ export function Month({
           style={{ gridColumn: `${c1} / ${c2 + 1}`, marginTop: 31 + lane * 24, borderColor: c }}
           onClick={onEvent && (() => onEvent(e))}
         >
-          <span className="chalk" style={{ color: c }}>
+          <span className="chalk" style={{ color: c }} translate={e.holiday ? undefined : 'no'}>
             {e.title}
           </span>
         </div>
@@ -347,6 +368,7 @@ export function Month({
                   (ev.size ? ' sz-' + ev.size : '')
                 }
                 title={full}
+                translate={ev.holiday ? undefined : 'no'}
                 style={{
                   color: color(ev),
                   fontSize: ev.size ? 13 * big * EV_SIZE[ev.size] : week ? 13 * big : undefined
@@ -378,7 +400,10 @@ export function Month({
   }
   return (
     <div className="cal">
-      <div className="titlerow">
+      <div
+        className={'titlerow' + (onTitle ? ' tapname' : '')}
+        onClick={onTitle && (e => (e.target as Element).closest?.('#monthName') && onTitle())}
+      >
         {/* the arrows only where they work (not on a wall) */}
         {nav ? <NavBtn dir="prev" onClick={nav.prev} /> : <span className="navgap" aria-hidden="true" />}
         {title ?? (
@@ -392,9 +417,11 @@ export function Month({
         {nav ? <NavBtn dir="next" onClick={nav.next} /> : <span className="navgap" aria-hidden="true" />}
       </div>
       <div
-        className={'calbody' + (border ? ' bordered' : '')}
+        className={'calbody' + (border ? ' bordered' : '') + (under ? ' band' : '')}
         id="calbody"
-        style={{ '--bpad': pad + 'px' } as CSSProperties}
+        style={
+          { '--bpad': pad + 'px', ...(under ? { flex: `0 0 ${(SPLIT_BAND * 100).toFixed(2)}%` } : {}) } as CSSProperties
+        }
       >
         <div className="weekdays">
           {Array.from({ length: 7 }, (_, i) => (
@@ -410,6 +437,7 @@ export function Month({
         </div>
         {border && <BorderLayer border={border} />}
       </div>
+      {under && <div className="under">{under}</div>}
     </div>
   );
 }

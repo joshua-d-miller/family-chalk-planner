@@ -3,10 +3,10 @@
 ===============================================================================
  Family Chalk Planner | Deploy | update.sh
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-10-11
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      Updates the board to the newest release, then restarts it. The
@@ -92,6 +92,9 @@
                         claude    recommended Node.js (26, or 22 on 32-bit
                                   ARM) on Update now; says when 32-bit support
                                   ends.
+
+ 1.2.0    2026-11-21   joshua    Node.js 26 on a 64-bit machine, overnight
+                        claude    too (needed from 1.2).
 ===============================================================================
 HEADER
 
@@ -279,20 +282,20 @@ fi
 ### | The recommended Node.js | ###
 ### --------------------------- ###
 ### Node.js 26 on a 64-bit machine (22 on 32-bit ARM, the newest built for ###
-### it): a NodeSource install that's older moves to it, on Update now (not ###
-### overnight: a new Node.js is a bigger change). If that doesn't work,    ###
-### the board carries on with the Node.js it has (still new enough).       ###
+### it): a NodeSource install that's older moves to it, overnight too (it  ###
+### is needed from 1.2). If that doesn't work, or Node.js came from        ###
+### elsewhere, the board carries on with the one it has and says so.       ###
 if [ "${SKIP_PACKAGES:-}" != 1 ] && [ -f "$APP_DIR/deploy/node-version.sh" ]; then
   # shellcheck source=deploy/node-version.sh
   . "$APP_DIR/deploy/node-version.sh"
   want="$(node_target)"
+  # (from 1.2 a 64-bit board needs Node.js 26, so a NodeSource install moves up overnight too; the board's
+  # code still runs on 22, so if it can't, the board carries on and says so)
   if from_nodesource && [ "$(node_major)" -lt "$want" ]; then
-    if [ "$MODE" = nightly ]; then
-      say "Node.js $want is recommended (you have $(node -v)): it comes with the next Update now"
-    else
-      say "Moving to Node.js $want (you have $(node -v))"
-      node_install "$want" || say "Couldn't move to Node.js $want: carrying on with $(node -v)"
-    fi
+    say "Moving to Node.js $want (you have $(node -v))"
+    node_install "$want" || say "Couldn't move to Node.js $want: carrying on with $(node -v)"
+  elif [ "$(node_major)" -lt "$want" ]; then
+    say "Node.js $want is needed on this machine (you have $(node -v), not from NodeSource): install it to keep getting updates"
   fi
   if node_is_32bit; then
     say "A 32-bit system: the board runs on Node.js $NODE_32BIT, supported until $NODE_32BIT_UNTIL. For updates after that, use a 64-bit system (docs/install.md → Node.js)."

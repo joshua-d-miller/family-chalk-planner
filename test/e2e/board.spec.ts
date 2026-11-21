@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   1.1.1
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-18
+ Updated:   2026-11-21
 
  Purpose:
      The board itself: this month on the tablet, moving between months,
@@ -37,10 +37,16 @@
 
  1.1.1    2026-11-18   joshua    A swipe down never reloads a wall screen.
                         claude
+
+ 1.2.0    2026-11-21   joshua    🗓️ Week from today, and every week after it
+                        claude    has all its events (across two months too).
+                                  Hiding the − / + / Fit buttons; a tap on the
+                                  month's name reloads (not on the wall); a ✕
+                                  on every page. Split View; ⚙️ Week.
 ===============================================================================
 */
 
-import { test, expect, thisMonth } from './fixtures.ts';
+import { test, expect, thisMonth, longPress } from './fixtures.ts';
 
 test('the tablet opens on this month, with weather, countdowns and no errors', async ({ as }) => {
   const page = await as('tablet');
@@ -103,8 +109,9 @@ test('🗓️ Week: its own page in the menu, pinnable; the wall shows it at /we
   const { day } = thisMonth();
   const page = await as('family', { context: { viewport: { width: 1280, height: 800 } } });
   await page.locator('#menuBtn').click();
-  await page.locator('#menuPanel').getByRole('button', { name: 'Pin Week' }).click();
-  await page.locator('#menuPanel').getByRole('link', { name: 'Calendar' }).click(); // closes the menu
+  await longPress(page, '#tile-week'); // press and hold: pinned
+  await expect(page.locator('#tile-week .pinned')).toBeVisible();
+  await page.locator('#tile-calendar').click(); // closes the menu
   const cork = page.locator('.cork .corknav');
   await cork.locator('a.pill', { hasText: 'Week' }).click();
   await expect(page).toHaveURL(/\/week$/);
@@ -160,6 +167,148 @@ test('the bottom of Notes on this screen: what it shows and what the switch can 
   await page.locator('#notesBtn').click();
   await page.locator('#notesSheet').getByRole('button', { name: 'Like the rest of the board' }).click();
   await expect(page.locator('.notes .bslide')).toBeVisible();
+});
+
+test('🗓️ Week from today: today and the next 6 days, a week at a time, with every event', async ({ as }) => {
+  const page = await as('family', { path: '/week', context: { viewport: { width: 1280, height: 800 } } });
+  const today = await page.evaluate(async () => (await (await fetch('api/today')).json()).today as string);
+  const plus = (ds: string, n: number) =>
+    new Date(Date.parse(ds + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+  const firstDay = () => page.locator('#grid .day').first().getAttribute('data-date');
+  await expect.poll(firstDay).not.toBe(null);
+  const sunday = await firstDay();
+  // the board's own week first (Sunday), then from today
+  await page.locator('#editBtn').click();
+  await page.locator('#weekSetBtn').click(); // ⚙️ Week: Settings → Week
+  const card = page.locator('#settingsCard');
+  await expect(card.getByRole('radio', { name: 'Sunday' })).toHaveAttribute('aria-checked', 'true');
+  await card.getByRole('radio', { name: /Today/ }).click();
+  await expect(card.getByRole('radio', { name: /Today/ })).toHaveAttribute('aria-checked', 'true');
+  await card.locator('.shead .closex').click();
+  await expect.poll(firstDay).toBe(today);
+  const names = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  await expect(page.locator('.weekdays div').first()).toHaveText(names[new Date(today + 'T12:00:00Z').getUTCDay()]);
+  // every week from here has its Saturday soccer and Tuesday piano, even one that starts in the month before
+  // (from a Saturday, the week of Sat 28 Nov goes past the start of December's own grid)
+  for (let w = 0; w < 8; w++) {
+    const start = plus(today, 7 * w);
+    await expect.poll(firstDay).toBe(start);
+    for (let d = 0; d < 7; d++) {
+      const ds = plus(start, d);
+      const dow = new Date(ds + 'T12:00:00Z').getUTCDay();
+      if (dow !== 6 && dow !== 2) continue;
+      await expect(page.locator(`#grid .day[data-date="${ds}"]`)).toContainText(dow === 6 ? 'Soccer' : 'Piano');
+    }
+    await page.locator('.titlerow button').last().click(); // (quick taps: no photo frame)
+  }
+  await expect(page.locator('#slides.on')).toHaveCount(0);
+  // back to the board's week (and the wall's can be set from the admin console)
+  if (!(await page.locator('#weekSetBtn').isVisible())) await page.locator('#editBtn').click();
+  await page.locator('#weekSetBtn').click();
+  await card.getByRole('radio', { name: 'Sunday' }).click();
+  await card.locator('.shead .closex').click();
+  await expect.poll(firstDay).toBe(sunday);
+  expect(page.errors).toEqual([]);
+});
+
+test('⚙️ Settings → This screen hides the − / + / Fit buttons, and brings them back', async ({ as }) => {
+  const page = await as('tablet');
+  await expect(page.locator('.zoom')).toBeVisible();
+  await page.goto(page.url().replace(/edit$/, 'settings'));
+  await page.locator('#hideZoomBox').click(); // (ticked once the board has it)
+  await expect(page.locator('#hideZoomBox')).toBeChecked();
+  await page.goto(page.url().replace(/settings$/, 'edit'));
+  await expect(page.locator('#grid')).toBeVisible();
+  await expect(page.locator('.zoom')).toHaveCount(0);
+  await page.goto(page.url().replace(/edit$/, 'settings'));
+  await page.locator('#hideZoomBox').click();
+  await expect(page.locator('#hideZoomBox')).not.toBeChecked();
+  await page.goto(page.url().replace(/settings$/, 'edit'));
+  await expect(page.locator('.zoom')).toBeVisible();
+  expect(page.errors).toEqual([]);
+});
+
+test('a tap on the month’s name reloads a screen that edits, but not the wall', async ({ as }) => {
+  const fam = await as('family');
+  await fam.evaluate(() => ((window as unknown as { stay: number }).stay = 1));
+  await Promise.all([fam.waitForEvent('load'), fam.locator('#monthName').click()]);
+  expect(await fam.evaluate(() => (window as unknown as { stay?: number }).stay)).toBeUndefined();
+  const wall = await as('wall');
+  await wall.evaluate(() => ((window as unknown as { stay: number }).stay = 1));
+  await wall.locator('#monthName').click();
+  await wall.waitForTimeout(600);
+  expect(await wall.evaluate(() => (window as unknown as { stay?: number }).stay)).toBe(1);
+});
+
+test('every page has a ✕ back to the calendar, like the cards; a kid’s own Chores doesn’t', async ({ as, board }) => {
+  const page = await as('tablet', { path: '/settings' });
+  await page.getByRole('button', { name: 'Back to the calendar' }).click();
+  await expect(page).toHaveURL(/\/edit$/);
+  await page.goto(board.url + '/meals');
+  await page.getByRole('button', { name: 'Back to the calendar' }).click();
+  await expect(page).toHaveURL(/\/edit$/);
+  expect(page.errors).toEqual([]);
+});
+
+test('🗓️ Split View: the week as a band and what the screen picks under it; the Notes column has the weather', async ({
+  as,
+  board
+}) => {
+  await board.admin.post('/api/jars', { jars: [{ id: 'nora', name: 'Nora', pieces: ['star'], count: 3, goal: 10 }] });
+  const page = await as('family', { path: '/week', context: { viewport: { width: 1280, height: 800 } } });
+  await expect(page.locator('#grid .week')).toHaveCount(1);
+  // Split View is a choice: a screen that hasn't picked it has the week in the whole height
+  await expect(page.locator('.slate .under')).toHaveCount(0);
+  const fullH = (await page.locator('#grid').boundingBox())!.height;
+  // ⚙️ Week, in the Week page's tools: Settings → Week
+  await page.locator('#editBtn').click();
+  await page.locator('#weekSetBtn').click();
+  const card = page.locator('#settingsCard');
+  await expect(card.locator('#setTab-week')).toHaveAttribute('aria-selected', 'true');
+  await card.getByRole('radio', { name: 'Split View' }).click();
+  await card
+    .getByRole('radiogroup', { name: 'Under the week, on the right' })
+    .getByRole('radio', { name: /Reward jars/ })
+    .click();
+  await card.locator('.shead .closex').click();
+  // the week is a band; under it the photos and the jars, side by side
+  await expect(page.locator('.slate .under .space')).toHaveCount(2);
+  await expect(page.locator('.space-photos .sphoto img')).toBeVisible();
+  await expect(page.locator('.space-jars .jar[data-id="nora"]')).toBeVisible();
+  // a tap on a jar there opens the big jar, as in the Notes column
+  await page.locator('.space-jars .jar[data-id="nora"]').click();
+  await expect(page.locator('#jarZoom #jzTitle')).toHaveText('Nora’s Jar');
+  await page.locator('#jarZoom .jzx .closex').click();
+  await expect(page.locator('#jarZoom.open')).toHaveCount(0);
+  expect((await page.locator('#grid').boundingBox())!.height).toBeLessThan(fullH * 0.6);
+  // the Notes column: the weather, trash day and countdowns, nothing to switch
+  await expect(page.locator('.slate .notes #wNow')).toBeVisible();
+  await expect(page.locator('.slate .notes .nslot')).toHaveCount(1);
+  // a photo alone: centered in the whole width, its own shape
+  await page.evaluate(() =>
+    fetch('api/weekview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+      body: JSON.stringify({ b: 'none' })
+    })
+  );
+  await expect(page.locator('.slate .under .space')).toHaveCount(1);
+  const sp = (await page.locator('.space-photos').boundingBox())!;
+  const im = (await page.locator('.space-photos img').boundingBox())!;
+  expect(Math.abs(im.x + im.width / 2 - (sp.x + sp.width / 2))).toBeLessThan(2); // centered
+  // the month is still the month
+  await page.goto(board.url + '/edit');
+  await expect.poll(() => page.locator('#grid .week').count()).toBeGreaterThan(3);
+  await expect(page.locator('.slate .under')).toHaveCount(0);
+  await page.evaluate(() =>
+    fetch('api/weekview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+      body: JSON.stringify({ split: false, a: 'photos', b: 'draw' })
+    })
+  );
+  await board.admin.post('/api/jars', { jars: [] });
+  expect(page.errors).toEqual([]);
 });
 
 test('week view: decorating a week keeps it to that week', async ({ as }) => {

@@ -4,6 +4,91 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.2.0 — Made for the wall screen, and en español
+- **En español:** the board in Spanish, everywhere: the board itself, ⚙️ Settings, the app pages, the menus and
+  cards, the messages, the setup guide and the admin console. Pick the board's language in the admin console →
+  ⚙️ Board, and any screen can pick its own (⚙️ Settings → This screen, or 📺 Screens in the admin console), so the
+  kitchen can be in Spanish and a tablet in English. What the family wrote (events, meals, chores, names, the
+  writing on the board) stays in their own words; holidays and the month and day names are translated. The guides
+  in `docs/` are still in English.
+- **A setup guide for a new board:** right after the admin account is made, the console walks through the board's
+  name and time zone, the weather, the calendar, the photos and pairing the first wall screen, one step at a time.
+  Any step can be skipped, and **🧭 Setup guide** runs it again later.
+- **A new ☰ menu:** only for getting places. The pages are big tiles, easy to hit from across the kitchen;
+  **press and hold** a tile to pin it to the bar (a small 📌 marks the pinned ones). The calendar's tools are a row
+  of chips at the top of the drawer. At the bottom: **🖥️ This screen…** (the screen's menu, its look, sleeps or
+  days and the rest, in ⚙️ Settings; a family screen too) and **↻ Reload**. Everything fits on a wall screen without
+  scrolling.
+- **The menu in the Notes column** (Colby Way's dock): another choice for a family screen's menu, beside the cork and
+  the corner button. The ☰ and up to 3 buttons you pick sit in the last row of the Notes column, so nothing floats
+  over the board: + Add event, ▶ Slideshow, 🗓️ Week / 📅 month, Decorate, a page (chores, meals, reminders, timers,
+  pantry, jars) or Reload. Pick them in ⚙️ Settings → This screen.
+- **Family screens do everything but freehand drawing:** a family screen can now set the month's title (🔤 Month
+  title) and open ⚙️ Settings for the board's own parts (holidays, birthdays, photos and the slideshow, the Notes
+  column, 🗓️ Week and This screen), without a parent signing in. The calendar and trash day stay the admin's, and
+  freehand chalk and paint pens stay on phones and tablets, where they're accurate.
+- **⚙️ Settings opens over the board** on a wall or family screen (and a computer), like every other card, with a
+  ✕: the parts down the side and the one picked beside them, so closing it puts you back where you were. On a phone
+  or tablet it's still a page. Checkboxes are on/off switches, and the slideshow's timing (5 to 120 seconds) and
+  brightness are sliders. **🗓️ Week** has its own part (where the week starts), and **🖥️ This screen** now holds the
+  screen's menu and its look of cards and menus too.
+- **🗓️ Week from today:** a screen's Week can start on today and show the next 6 days, instead of starting on Sunday.
+  Set it in **⚙️ Week** (in the Week page's tools, or ⚙️ Settings → Week), and for any screen (the wall too) in the
+  admin console → 📺 Screens. The arrows go a week at a time from there, and a week that starts at the end of one
+  month shows all its events.
+  (Colby Way built this too, on his own board.)
+- **🗓️ Split View** (Colby Way's idea): the week as a band across the top, so it no longer leaves a tall empty
+  space, and one or two things under it, picked for each screen in ⚙️ Week: **photos** (the whole photo, centered and
+  never stretched; swipe for the next or the last), **room to draw**, the **meal plan**, the **pantry**, the **reward
+  jars**, **chores**, **reminders** or **up next**. The Notes column then shows the weather, trash day and
+  countdowns. The admin console sets the wall's.
+- **Fill the screen** (Colby Way's idea, for his 2K screen): the board is drawn about twice as wide as it is tall,
+  so 16:9 and 16:10 screens had bands above and below. Turn on **Fill the screen** (⚙️ Settings → This screen, or
+  🎨 Board style → Style → On this screen; the admin console sets the wall's) and the days get taller instead.
+  Drawings and pictures move down with their days and keep their size, and anything drawn on a taller screen shows
+  on the same day on every other screen.
+- **The wooden frame is optional**, for each screen (🎨 Board style → Style → On this screen): a screen that sits in a
+  frame of its own can leave it off.
+- **Screens on the wall don't zoom, and stay awake:** on the wall, a family screen or a kid's tablet, a pinch or a
+  double tap no longer zooms the page by accident, and the screen asks the browser to stay on while the board shows
+  (and again when it wakes). Tablets signed in to draw still pinch to zoom in.
+- **Node.js 26 on 64-bit machines:** a new install on a 64-bit machine needs Node.js 26 (the installer sets it up),
+  and updates now move a NodeSource install up to it overnight too, not only on Update now. A board that can't move
+  up keeps running and the update says why. 32-bit Raspberry Pi OS stays on Node.js 22 until April 30, 2027.
+- **A guide for every wall screen** ([docs/kiosk.md](docs/kiosk.md)): Android with FreeKiosk (and its Home Assistant
+  controls) or Fully Kiosk, Linux and Raspberry Pi with Chromium in kiosk mode, Windows with Edge kiosk, and Mac:
+  full screen, awake, starting by itself, and what to do when a screen is slow.
+- **Low-power screen** (⚙️ Settings → This screen, or the admin console for the wall): for a slow wall screen, nothing
+  moves (no weather motion, GIFs or fades) and the chalk is drawn plainer, so taps and moving pictures keep up.
+- **The big jar** (from Colby Way's board): on a screen that edits, tap a reward jar in the Notes column and it opens
+  big. Drop in a heart, rainbow, star, lightning bolt or critter, take one out, and when it's full, **★ Reward!**
+  celebrates and empties it. A jar that fills up bursts into confetti.
+- **Hide the − / + / Fit buttons** (from Colby Way's board): ⚙️ Settings → This screen, for a touch screen that never
+  zooms. It's kept on the board, so a cleared browser keeps it.
+- **A tap on the month's name reloads the board** (from Colby Way's board), on family screens and tablets. Not on
+  the wall, and not while drawing.
+- **Swipe the slideshow** (from Colby Way's board): right to left for the next photos, left to right to go back
+  through the last ones, which helps with a big album. A swipe doesn't close the slideshow, and the next photos wait
+  their full time after it.
+- **A ✕ on every page**, at the top right like every card: back to the calendar (Colby Way's back button on
+  Settings, for every page).
+- **"Discard your changes?"** A card with changes not saved yet (an event, a meal, a reminder, a jar, the chores,
+  the board style, a month's title or border, writing on the board) asks before the ✕, Escape or a tap outside closes
+  it: **Keep editing** or **Discard**. A card with no changes still closes at once, and Cancel still cancels.
+- **Your styles** (🎨 Board style → Style): **Add to your styles** keeps the colors, fonts and background by name, to put
+  back in one tap later (up to 20, for the whole board). **Copy style code** gives a short code to paste into another
+  family's board (**Use it**); a photo background stays on your board.
+- **"Hard to read on this background"** in 🎨 Board style: a color that's too faint on the background picked (yellow
+  numbers on light paper, say) says so, with the lighter or darker one the board shows instead.
+- **Colorblind-safe colors:** a **Colorblind-safe** board style (🎨 Board style → Style), with colors told apart with
+  every common kind of color blindness and today marked with a box, not only a color; and the same colors in every
+  color picker, for events and writing too.
+- **Screen readers:** every screen is checked with axe (the standard accessibility checker) on every change: every
+  button and field has a name to read out, and the ☰ menu and Settings are easy to read in each look. The reward
+  jars now say whose jar it is and how full it is, and colors are read out by name ("Sky blue"), not as codes.
+- **Two quick taps on ‹ or ›** on a family screen no longer turn on the photo frame (they were taken for a double
+  tap on the calendar).
+
 ## 1.1.2 — A background for each month
 - **Backgrounds are back in sight:** 🎨 Board style → Style shows the backgrounds whichever is picked above (they only
   showed after tapping Every month, so they seemed to have gone).

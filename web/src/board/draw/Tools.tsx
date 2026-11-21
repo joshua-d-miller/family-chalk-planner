@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Tools.tsx
 ===============================================================================
- Version:   0.17.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-14
+ Updated:   2026-11-21
 
  Purpose:
      The drawing tools on the strip, and the cards they open: writing,
@@ -31,6 +31,9 @@
 
  0.17.0    2026-11-14   joshua    ★ Stamps is "Pictures", with its word.
                         claude
+
+ 1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
+                        claude    with changes.
 ===============================================================================
 */
 
@@ -40,7 +43,7 @@ import { fontCss } from '../Art.tsx';
 import { FontPicker } from '../../ui/FontPicker.tsx';
 import { Btn, Segs } from '../../ui/bits.tsx';
 import { CHALK, Colors, customColors, POSCA } from '../../ui/Colors.tsx';
-import { Sheet } from '../../ui/Sheet.tsx';
+import { Sheet, useChanged } from '../../ui/Sheet.tsx';
 import { post } from '../../lib/api.ts';
 import { Thumb } from './Library.tsx';
 import { isPosca, SIZES, TEXT_SIZES } from './Draw.tsx';
@@ -227,8 +230,9 @@ export function TextSheet({
   const [f, setF] = useState(item?.f ?? 3);
   const [z, setZ] = useState(item?.z || 40);
   const [c, setC] = useState(item?.c || color);
+  const changed = useChanged({ s, f, z, c }); // (✕ with changes: "Discard your changes?")
   return (
-    <Sheet title={item ? 'Change this writing' : 'Write on the board'} onClose={onClose} id="textSheet">
+    <Sheet title={item ? 'Change this writing' : 'Write on the board'} onClose={onClose} dirty={changed} id="textSheet">
       <textarea
         id="tText"
         className="ttext"
@@ -315,8 +319,9 @@ export function SaveStampSheet({
   const [name, setName] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const changed = useChanged(name); // (✕ with changes: "Discard your changes?")
   return (
-    <Sheet title="Save as stamp" onClose={() => onClose()} id="stampSheet">
+    <Sheet title="Save as stamp" onClose={() => onClose()} dirty={changed} id="stampSheet">
       <Thumb items={items} bg={bg} />
       <label className="field">
         <span>Name</span>

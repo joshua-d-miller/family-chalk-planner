@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | app-pages.spec.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      The new screens (React): the meal plan, reminders, timers, the
@@ -62,10 +62,16 @@
                                   the second picture (on a slow machine the
                                   tap could land before the Pictures card had
                                   closed).
+
+ 1.2.0    2026-11-21   joshua    Settings: finds the Calendar card by its
+                        claude    heading (other cards mention the calendar).
+                                  Swiping the slideshow. ⚙️ Settings as a card
+                                  over the board. Pinning: a long press on a
+                                  tile. A family screen's Settings.
 ===============================================================================
 */
 
-import { test, expect, thisMonth } from './fixtures.ts';
+import { test, expect, thisMonth, longPress } from './fixtures.ts';
 
 const noSideScroll = page => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
 
@@ -201,10 +207,11 @@ test('More (a phone): every page; 📌 pins one to the tab bar; signed out, a ph
   await expect(phone.locator('#menuBtn')).toHaveCount(0); // the pages are in the tab bar
   await phone.locator('#moreBtn').click();
   const menu = phone.locator('#menuPanel');
-  await expect(menu.getByRole('link', { name: 'Timers' })).toHaveAttribute('aria-current', 'page');
-  await menu.getByRole('button', { name: 'Pin Meal plan' }).click();
-  await expect(menu.getByRole('button', { name: 'Unpin Meal plan' })).toBeVisible();
-  await menu.getByRole('link', { name: 'Pantry' }).click();
+  await expect(menu.locator('#tile-timers')).toHaveAttribute('aria-current', 'page');
+  await longPress(phone, '#tile-meals'); // press and hold: pinned
+  await expect(menu.locator('#tile-meals .pinned')).toBeVisible();
+  await expect(menu.locator('.mnote')).toContainText('Meal plan is pinned');
+  await menu.locator('#tile-pantry').click();
   await expect(phone).toHaveURL(/\/pantry$/);
   await expect(menu).toHaveCount(0);
   // the pinned page is a tab now; going there doesn't load a new page
@@ -280,9 +287,83 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
   expect(page.errors).toEqual([]);
 });
 
+test('⚙️ Settings on a computer: a card over the board, its parts down the side; ✕ goes back', async ({
+  as,
+  board
+}) => {
+  const LINUX = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
+  const page = await as('admin', { context: { viewport: { width: 1920, height: 1080 }, userAgent: LINUX } });
+  await page.locator('#menuBtn').click();
+  await page.locator('#menuPanel a[href="settings"]').click();
+  const card = page.locator('#settingsCard');
+  await expect(card).toBeVisible();
+  await expect(page).toHaveURL(/\/edit$/); // still on the board, under the card
+  // the admin's parts, the first one open
+  await expect(card.getByRole('tab')).toHaveText([
+    '📅 Calendar',
+    '🎉 Holidays',
+    '🎂 Birthdays',
+    '📷 Photos',
+    '🗑️ Trash',
+    '🗒️ Notes column',
+    '🗓️ Week',
+    '🖥️ This screen'
+  ]);
+  await expect(card.getByRole('tabpanel')).toContainText('Showing “Family”');
+  // a switch and a slider save
+  await card.locator('#setTab-photos').click();
+  const night = card.getByRole('tabpanel').getByRole('checkbox', { name: /overnight/ });
+  await night.click();
+  await expect(night).toBeChecked();
+  const every = card.getByRole('slider', { name: 'Next photo every' });
+  await every.fill('45');
+  await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.every).toBe(45);
+  await board.admin.post('/api/photos/settings', { night: false, every: 20 });
+  // the week starts on today, from its own part
+  await card.locator('#setTab-week').click();
+  await card.getByRole('radio', { name: /Today/ }).click();
+  await expect.poll(async () => (await (await board.admin.api('/api/weekfrom')).json()).from).toBe('today');
+  await board.admin.post('/api/weekfrom', { from: 'board' });
+  await card.locator('.closex').first().click();
+  await expect(card).toHaveCount(0);
+  await expect(page.locator('#grid')).toBeVisible();
+  expect(page.errors).toEqual([]);
+});
+
+test('a family screen: everything but the calendar and trash day (Month title and Settings too)', async ({
+  as,
+  board
+}) => {
+  const LINUX = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
+  const fam = await as('family', { context: { viewport: { width: 1920, height: 1080 }, userAgent: LINUX } });
+  await fam.locator('#editBtn').click();
+  await expect(fam.locator('#titleBtn')).toBeVisible();
+  await fam.locator('#doneBtn').click();
+  await fam.locator('#menuBtn').click();
+  await fam.locator('#tile-settings').click();
+  const card = fam.locator('#settingsCard');
+  await expect(card.getByRole('tab')).toHaveText([
+    '🎉 Holidays',
+    '🎂 Birthdays',
+    '📷 Photos',
+    '🗒️ Notes column',
+    '🗓️ Week',
+    '🖥️ This screen'
+  ]);
+  await card.locator('#setTab-birthdays').click();
+  const cake = card.getByRole('tabpanel').getByRole('checkbox').first();
+  const was = await cake.isChecked();
+  await cake.click();
+  await expect.poll(async () => (await (await board.admin.api('/api/birthdays')).json()).cake).toBe(!was);
+  await board.admin.post('/api/birthdays', { cake: was });
+  expect(fam.errors).toEqual([]);
+});
+
 test('settings for an admin: the calendar and trash day', async ({ as, board }) => {
   const page = await as('admin', { path: '/settings' });
-  await expect(page.locator('section', { hasText: 'Calendar' })).toContainText('Showing “Family”');
+  // (the Calendar card itself: other cards mention the calendar too)
+  const cal = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Calendar', exact: true }) });
+  await expect(cal).toContainText('Showing “Family”');
   await page.getByLabel('Trash pickup').selectOption('4');
   await expect.poll(async () => (await (await board.admin.api('/api/extras')).json()).bins.day).toBe(4);
   await page.getByLabel('Trash pickup').selectOption('2');
@@ -409,6 +490,35 @@ test('the board (new screen, wall): a tap shows the day, the photo frame, the sl
   for (const t of tm.items) await board.admin.post('/api/timers/item/delete', { id: t.id });
 });
 
+test('the slideshow: a swipe goes on to the next photos, and back to the last ones; it stays on', async ({ as }) => {
+  const wall = await as('wall', { path: '/?slides' });
+  await expect(wall.locator('#slides')).toHaveClass(/on/);
+  const shown = () =>
+    wall
+      .locator('#slides .sl.on .tile')
+      .evaluateAll(ts =>
+        ts.map(t => (t as HTMLElement).style.cssText + (t.querySelector('img.fg')?.getAttribute('src') || '')).join('|')
+      );
+  await expect.poll(shown).not.toBe('');
+  await expect(wall.locator('#slides .sl.on .tile img.fg').first()).toBeVisible();
+  const first = await shown();
+  const swipe = async (from: number, to: number) => {
+    await wall.mouse.move(from, 400);
+    await wall.mouse.down();
+    await wall.mouse.move((from + to) / 2, 405);
+    await wall.mouse.move(to, 410);
+    await wall.mouse.up();
+  };
+  await swipe(900, 300); // right to left: the next photos
+  await expect.poll(async () => (await wall.locator('#slides .sl').count()) === 2 && (await shown()) !== '').toBe(true);
+  await expect(wall.locator('#slides')).toHaveClass(/on/); // a swipe isn't a tap
+  await wall.waitForTimeout(600);
+  await swipe(300, 900); // left to right: back to the first
+  await expect.poll(shown).toBe(first);
+  await expect(wall.locator('#slides')).toHaveClass(/on/);
+  expect(wall.errors).toEqual([]);
+});
+
 test('the board (new screen, wall): the slideshow with today’s extras, in the side panel', async ({ as, board }) => {
   await board.admin.post('/api/photos/settings', { showTemp: true, showEvents: true, sidePanel: true });
   const wall = await as('wall', { path: '/?slides' });
@@ -428,7 +538,7 @@ test('the board (new screen, tablet): add an event, change it, delete it', async
   await t.locator('#evDate').fill(date);
   await t.locator('#evAllDay').check();
   await t.locator('#evSize').getByRole('radio', { name: 'Large', exact: true }).click();
-  await t.locator('#evSheet').getByRole('radio', { name: '#F6B3CB' }).click();
+  await t.locator('#evSheet').getByRole('radio', { name: 'Pink', exact: true }).click();
   await t.locator('#evSave').click();
   const ev = t.locator(`#grid [data-date="${date}"] .ev`, { hasText: 'Field trip' });
   await expect(ev).toHaveClass(/sz-l/);
@@ -637,18 +747,16 @@ test('the board (new screen, tablet): zoom in to draw, back to fit; the Notes op
   expect(t.errors).toEqual([]);
 });
 
-test('a family screen sent to Settings can get back (it needs a parent signed in)', async ({ as }) => {
-  const page = await as('family');
+test('a family screen: the Photos card sends it to ⚙️ Settings → Photos, over the board', async ({ as }) => {
+  const LINUX = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
+  const page = await as('family', { context: { userAgent: LINUX } });
   await page.locator('#editBtn').click();
   await page.locator('#photosBtn').click();
-  await expect(page.locator('#photosSheet')).toContainText('on a parent’s phone or tablet');
-  await expect(page.locator('#photosSheet a[href="settings"]')).toHaveCount(0);
-  await page.keyboard.press('Escape');
-  await page.goto(page.url().replace(/edit$/, 'settings'));
-  await expect(page.locator('#signpad')).toBeVisible();
-  await expect(page.locator('.cork')).toBeVisible(); // its bar stays
-  await page.locator('#signBack').click();
-  await expect(page).toHaveURL(/\/edit$/);
+  await page.locator('#photosSheet a[href="settings"]').click();
+  await expect(page.locator('#photosSheet')).toHaveCount(0);
+  await expect(page.locator('#settingsCard #setTab-photos')).toHaveAttribute('aria-selected', 'true');
+  await expect(page).toHaveURL(/\/edit$/); // the board is still there, under it
+  await page.locator('#settingsCard .shead .closex').click();
   await expect(page.locator('#grid')).toBeVisible();
 });
 
@@ -665,7 +773,7 @@ test('board style: a style and colors just for this month', async ({ as, board }
   await t.locator('#styleSheet').getByRole('tab', { name: 'Lines' }).click(); // (on its own tab)
   const lines = t.locator('#styleSheet .threl', { hasText: 'Calendar lines' }).locator('.colors button');
   await lines.nth(2).click();
-  const picked = await lines.nth(2).getAttribute('aria-label');
+  const picked = await lines.nth(2).getAttribute('data-color');
   await t.locator('#styleSheet').getByRole('button', { name: 'Save' }).click();
   await expect
     .poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).look)

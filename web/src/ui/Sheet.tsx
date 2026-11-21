@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Sheet.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      A card over the page, for adding or changing one thing. The ✕ at its
@@ -33,10 +33,14 @@
                                   A card can pin more under its title (tabs),
                                   and keep its full height so switching tabs
                                   doesn't make it jump.
+
+ 1.2.0    2026-11-21   joshua    "Discard your changes?" when a card with
+                        claude    changes is closed with ✕, Escape or a tap
+                                  outside (`dirty`, useChanged).
 ===============================================================================
 */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -50,7 +54,8 @@ export function Sheet({
   id,
   focus = true,
   head,
-  tall = false
+  tall = false,
+  dirty = false
 }: {
   title: string;
   onClose: () => void;
@@ -59,11 +64,15 @@ export function Sheet({
   focus?: boolean; // focus the first field when it opens (not where that brings up a keyboard for nothing)
   head?: ReactNode; // pinned under the title with the ✕ (tabs, say), so it stays while the card scrolls
   tall?: boolean; // as tall as the screen allows, so switching tabs doesn't make it jump
+  dirty?: boolean; // changes not saved yet: ✕, Escape or a tap outside first asks "Discard your changes?"
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const down = useRef(false);
-  const close = useRef(onClose);
-  close.current = onClose;
+  // closing without saving: with changes, ask first (in the card: a kiosk can block the browser's own pop-ups)
+  const [asking, setAsking] = useState(false);
+  const leave = () => (dirty ? setAsking(true) : onClose());
+  const close = useRef(leave);
+  close.current = leave;
   // the first field is ready to type in when it opens (only then: focusing again each time the card
   // redraws scrolled it back to the top while you were picking further down)
   useEffect(() => {
@@ -82,7 +91,7 @@ export function Sheet({
       className="scrim"
       onPointerDown={e => (down.current = e.target === e.currentTarget)}
       onClick={e => {
-        if (down.current && e.target === e.currentTarget) onClose();
+        if (down.current && e.target === e.currentTarget) leave();
         down.current = false;
       }}
     >
@@ -97,9 +106,20 @@ export function Sheet({
         {/* the title and the ✕ (and any tabs): stay at the top while a long card scrolls */}
         <div className="shead">
           <h3>{title}</h3>
-          <CloseX onClose={onClose} />
+          <CloseX onClose={leave} />
           {head && <div className="sheadx">{head}</div>}
         </div>
+        {asking && (
+          <div className="discard" role="alertdialog" aria-label="Discard your changes?">
+            <span>Discard your changes?</span>
+            <button type="button" className="btn" id="keepEditing" autoFocus onClick={() => setAsking(false)}>
+              Keep editing
+            </button>
+            <button type="button" className="btn del" id="discardBtn" onClick={onClose}>
+              Discard
+            </button>
+          </div>
+        )}
         {children}
       </div>
     </div>
@@ -121,3 +141,16 @@ export function CloseX({ onClose, label = 'Close' }: { onClose: () => void; labe
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------ //
+// | Has anything been changed? | //
+// ------------------------------ //
+// A card's fields compared with how they were when it opened (for the     //
+// Sheet's `dirty`).                                                        //
+export function useChanged(now: unknown) {
+  const first = useRef<string | null>(null);
+  const s = JSON.stringify(now);
+  if (first.current === null) first.current = s;
+  return s !== first.current;
+}

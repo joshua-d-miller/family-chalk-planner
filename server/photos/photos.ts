@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Photos | photos.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      Photos: a shared album feeds the photos beside the month name and the
@@ -57,6 +57,10 @@
                                   The next countdown on the slideshow
                                   (showCountdown, on unless turned off).
                                   Check connections: the album read now.
+
+ 1.2.0    2026-11-21   joshua    The slideshow's timing (5 to 120 seconds)
+                        claude    and brightness (10 to 100%) take any value
+                                  the sliders in ⚙️ Settings give.
 ===============================================================================
 */
 
@@ -481,8 +485,9 @@ export function setup({
       night: b.night === undefined ? cur.night : !!b.night,
       from: hm(b.from) || cur.from,
       to: hm(b.to) || cur.to,
-      every: [10, 20, 30, 60].includes(+b.every) ? +b.every : cur.every,
-      dim: [30, 50, 70, 100].includes(+b.dim) ? +b.dim : cur.dim, // slideshow brightness, %
+      // (⚙️ Settings has sliders: 5 to 120 seconds, in 5s; 10 to 100%, in 10s)
+      every: Number.isInteger(+b.every) && +b.every >= 5 && +b.every <= 120 ? +b.every : cur.every,
+      dim: Number.isInteger(+b.dim) && +b.dim >= 10 && +b.dim <= 100 ? +b.dim : cur.dim, // slideshow brightness, %
       showEvents: b.showEvents === undefined ? cur.showEvents : !!b.showEvents,
       showTemp: b.showTemp === undefined ? cur.showTemp : !!b.showTemp,
       showReminders: b.showReminders === undefined ? cur.showReminders : !!b.showReminders,

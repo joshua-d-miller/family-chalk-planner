@@ -4,10 +4,10 @@
 ===============================================================================
  Family Chalk Planner | Deploy | node-version.sh
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-17
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      Which Node.js this machine should run, and installing it from
@@ -22,8 +22,10 @@
          life on 2027-04-30; after that a 32-bit board keeps the last board
          version that runs on 22, and the 64-bit Raspberry Pi OS is the way
          forward. See docs/install.md → Node.js.
-     The board's code keeps running on Node.js 22.18 or newer (package.json
-     "engines") for as long as 32-bit boards are supported.
+     From 1.2 a new install on a 64-bit machine needs Node.js 26
+     (node_needed); the board's code keeps running on Node.js 22.18 or
+     newer (package.json "engines") for as long as 32-bit boards are
+     supported, so an update never stops a board that runs.
 
  Known limitations:
      Only NodeSource installs are moved to a newer Node.js; a Node.js
@@ -36,6 +38,9 @@
  -------   ----------   -------   --------------------------------------------
  1.1.0    2026-11-17   joshua    New file: Node.js 26 on 64-bit machines,
                         claude    22 on 32-bit ARM.
+
+ 1.2.0    2026-11-21   joshua    node_needed / node_new_enough: Node.js 26
+                        claude    is required for a new 64-bit install.
 ===============================================================================
 HEADER
 
@@ -59,6 +64,12 @@ node_is_32bit() {
 }
 node_target() { if node_is_32bit; then echo "$NODE_32BIT"; else echo "$NODE_RECOMMENDED"; fi; }
 node_major() { node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }
+# what a new install needs: 26 on a 64-bit machine (from 1.2), 22.18 on 32-bit ARM
+node_needed() { if node_is_32bit; then echo "22.18"; else echo "$NODE_RECOMMENDED.0"; fi; }
+node_new_enough() {
+  command -v node >/dev/null &&
+    node -e 'const [a,b]=process.versions.node.split(".").map(Number),[x,y]=process.argv[1].split(".").map(Number);process.exit(a>x||(a===x&&b>=y)?0:1)' "$(node_needed)"
+}
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #
 ### ------------------------------ ###

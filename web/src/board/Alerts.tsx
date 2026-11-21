@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Alerts.tsx
 ===============================================================================
- Version:   0.16.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-21
 
  Purpose:
      What pops up on the board: a reminder whose time has come (from Colby
@@ -32,10 +32,16 @@
 
  0.16.0    2026-11-11   joshua    A cake on birthdays only when ⚙️ Settings
                         claude    says so.
+
+ 1.2.0    2026-11-21   joshua    A holiday in the day list opens ⚙️ Settings
+                        claude    → Holidays (as a card on a wall or family
+                                  screen).
+                                  Dates in the screen's language; the family's
+                                  events, reminders and timers stay in their
+                                  own words.
 ===============================================================================
 */
 
-import { navigate } from '../lib/nav.ts';
 import { useEffect, useRef, useState } from 'react';
 import type { Reminder, RemindersView } from '../../../shared/lists.ts';
 import { post } from '../lib/api.ts';
@@ -43,6 +49,8 @@ import { useLive } from '../lib/live.ts';
 import { useTimers } from '../lib/timers.ts';
 import { fmtTime } from '../lib/today.ts';
 import { isDone } from '../pages/Reminders.tsx';
+import { showSettings } from '../pages/Settings.tsx';
+import { locale } from '../../../shared/i18n.ts';
 import { Btn } from '../ui/bits.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
 import { readable } from './color.ts';
@@ -99,7 +107,9 @@ export function ReminderAlert({ time24 }: { time24: boolean }) {
             }
           >
             <span className="chbox" aria-hidden="true" />
-            <span className="ct">{r.title}</span>
+            <span className="ct" translate="no">
+              {r.title}
+            </span>
             <span className="rtag">{fmtTime(r.time, time24)}</span>
           </button>
         ))}
@@ -136,7 +146,7 @@ export function TimerDone() {
     <div className="timerdone" role="alert">
       {done.map(t => (
         <button type="button" key={t.id} onClick={() => setGone(g => [...g, t.id + ':' + t.doneAt])}>
-          ⏰ <b>{t.name}</b> is done!
+          ⏰ <b translate="no">{t.name}</b> is done!
         </button>
       ))}
     </div>
@@ -175,7 +185,7 @@ export function DayView({
   const list = events.filter(e => e.start <= date && e.end >= date);
   return (
     <Sheet
-      title={new Date(p[0], p[1] - 1, p[2]).toLocaleDateString('en-US', {
+      title={new Date(p[0], p[1] - 1, p[2]).toLocaleDateString(locale() || 'en-US', {
         weekday: 'long',
         month: 'long',
         day: 'numeric'
@@ -196,13 +206,13 @@ export function DayView({
                 !onEvent
                   ? undefined
                   : e.holiday
-                    ? () => navigate('settings#holidays') // hide it every year
+                    ? () => showSettings('holidays') // hide it every year
                     : !e.readOnly
                       ? () => onEvent(e)
                       : undefined
               }
             >
-              {evText(e, cake)}
+              <span translate={e.holiday ? undefined : 'no'}>{evText(e, cake)}</span>
               {e.cal ? ' · ' + e.cal : ''}
             </button>
           );

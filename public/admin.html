@@ -32,6 +32,8 @@ button:disabled{opacity:.5;cursor:default}
 .ok{color:var(--green)}
 .dim{color:var(--dim)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}
+.wiz{border-color:var(--yellow)}
+.wiz h2{margin-top:4px}
 .tabs button.on{background:rgba(242,212,121,.18);border-color:var(--yellow);color:var(--yellow)}
 .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
@@ -150,6 +152,18 @@ button:disabled{opacity:.5;cursor:default}
 
   <!-- the console -->
   <section id="vConsole" hidden>
+    <!-- the setup guide: one step at a time, right after the admin account is made (🧭 Setup guide runs it again) -->
+    <div class="card wiz" id="wizBar" hidden>
+      <div class="dim" id="wizStep"></div>
+      <h2 id="wizTitle"></h2>
+      <p class="dim" id="wizText"></p>
+      <div class="actions">
+        <button id="wizBack">← Back</button>
+        <button id="wizSkip">Skip this step</button>
+        <button class="go" id="wizNext">Next →</button>
+      </div>
+      <div class="err" id="wizErr"></div>
+    </div>
     <div class="top">
       <div class="tabs" id="tabs">
         <button data-t="screens" class="on">📺 Screens</button>
@@ -159,6 +173,7 @@ button:disabled{opacity:.5;cursor:default}
         <button data-t="account">👤 My account</button>
       </div>
       <div class="actions" style="margin:0">
+        <button class="sm" id="wizAgain">🧭 Setup guide</button>
         <a href="edit#settings"><button class="sm">🗓 Open the board</button></a>
         <button class="sm" id="logout">Sign out</button>
       </div>
@@ -260,6 +275,9 @@ button:disabled{opacity:.5;cursor:default}
           <div><label for="bfWeek">Weeks start on</label><select id="bfWeek" data-k="WEEK_START"><option value="">(default: Sunday)</option><option value="sunday">Sunday</option><option value="monday">Monday</option></select></div>
           <div><label for="bfTime">Times</label><select id="bfTime" data-k="TIME_FORMAT"><option value="">(default: 4:30pm)</option><option value="12h">4:30pm</option><option value="24h">16:30</option></select></div>
         </div>
+        <label for="bfLang">Language</label>
+        <select id="bfLang" data-k="LANGUAGE" translate="no"><option value="">(default: English)</option><option value="en">English</option><option value="es">Español</option></select>
+        <p class="dim" style="margin-top:4px">Each screen can pick its own too (⚙️ Settings → This screen, or 📺 Screens here).</p>
       </div>
       <div class="card">
         <h2>Weather</h2>
@@ -483,7 +501,7 @@ button:disabled{opacity:.5;cursor:default}
   $('suGo').addEventListener('click', function () {
     if ($('suPw').value !== $('suPw2').value) { $('suErr').textContent = 'The two passwords don’t match'; return; }
     busy($('suGo'), api('api/account/setup', { code: $('suCode').value, username: $('suUser').value, name: $('suName').value, password: $('suPw').value }))
-      .then(function (r) { showEnroll(r, function () { refresh().then(function () { offerPasskey(openConsole); }); }); })
+      .then(function (r) { showEnroll(r, function () { refresh().then(function () { offerPasskey(function () { wiz = 0; openConsole(); }); }); }); })
       .catch(function (e) { $('suErr').textContent = e.message; });
   });
 
@@ -674,6 +692,7 @@ button:disabled{opacity:.5;cursor:default}
       if (ima && !Array.prototype.some.call(ims.options, function (o) { return o.value === ima; })) ims.appendChild(new Option('Album: ' + ima, ima));
       Array.prototype.forEach.call(document.querySelectorAll('#tBoard [data-k]'), function (inp) {
         var f = F[inp.dataset.k]; if (!f) return;
+        delete inp.dataset.typed;   // (what was typed is saved now: a password manager's fill later isn't typing)
         if (f.type === 'secret') {
           inp.value = '';
           inp.placeholder = f.set ? '•••• saved (type to replace)' : (d.lost.indexOf(inp.dataset.k) >= 0 ? '⚠ enter it again' : '');
@@ -848,7 +867,10 @@ button:disabled{opacity:.5;cursor:default}
     inp.setAttribute('data-1p-ignore', ''); inp.setAttribute('data-lpignore', 'true'); inp.setAttribute('data-bwignore', ''); inp.setAttribute('data-form-type', 'other');
     ['keydown', 'paste', 'drop', 'cut'].forEach(function (ev) { inp.addEventListener(ev, function () { inp.dataset.typed = '1'; }); });
   });
-  $('bfSave').addEventListener('click', function () {
+  $('bfSave').addEventListener('click', function () { saveBoard().catch(function () {}); });
+  // save ⚙️ Board's fields; resolves once the board is running with them (or nothing changed)
+  function saveBoard() {
+    return new Promise(function (done, failed) {
     var values = {};
     Array.prototype.forEach.call(document.querySelectorAll('#tBoard [data-k]'), function (inp) {
       var f = bf.data && bf.data.fields[inp.dataset.k]; if (!f) return;
@@ -859,12 +881,12 @@ button:disabled{opacity:.5;cursor:default}
     if (bf.prov !== bfDefaultProv()) values.CALENDAR_PROVIDER = bf.prov;
     $('bfErr').textContent = '';
     busy($('bfSave'), api('api/board-settings', { values: values })).then(function (r) {
-      if (!r.restarting) { $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', 'Nothing changed.')); return; }
+      if (!r.restarting) { $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', 'Nothing changed.')); done(); return; }
       $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', 'Saved. Restarting the board…'));
       var tries = 0, wait = function () {
         setTimeout(function () {
-          fetch('api/whoami').then(function (x) { if (!x.ok) throw 0; $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', '✓ Saved and running with the new settings.')); loadBoard(); })
-            .catch(function () { if (++tries < 40) wait(); else $('bfErr').textContent = 'The board hasn’t come back yet. Check the server (journalctl -u family-chalk-planner).'; });
+          fetch('api/whoami').then(function (x) { if (!x.ok) throw 0; $('bfErr').innerHTML = ''; $('bfErr').appendChild(el('span', 'ok', '✓ Saved and running with the new settings.')); loadBoard(); done(); })
+            .catch(function () { if (++tries < 40) wait(); else { $('bfErr').textContent = 'The board hasn’t come back yet. Check the server (journalctl -u family-chalk-planner).'; failed(new Error($('bfErr').textContent)); } });
         }, 1500);
       };
       wait();
@@ -872,8 +894,64 @@ button:disabled{opacity:.5;cursor:default}
       var errs = e.body && e.body.errors, msg = e.message;
       if (errs) msg += ': ' + Object.keys(errs).map(function (k) { return k + ' — ' + errs[k]; }).join('; ');
       $('bfErr').textContent = msg;
+      failed(new Error(msg));
     });
+    });
+  }
+
+  // ---- the setup guide ----
+  // One step at a time, showing just that part of the console (its own fields: nothing here is a copy). The board's
+  // settings are saved together after Photos (that restarts the board), then the first screen is paired. Every step
+  // can be skipped; where it got to is kept for this tab, so a reload carries on.
+  var WIZ = [
+    { tab: 'board', cards: ['Board'], title: 'Your board', text: 'Its name, your time zone, and when the week starts.' },
+    { tab: 'board', cards: ['Weather'], title: 'The weather', text: 'Search your town to show the weather in the Notes column (or skip it to leave it off).' },
+    { tab: 'board', cards: ['Calendar', 'Calendar links'], title: 'Your calendar', text: 'iCloud, Google or another calendar: pick it and tap Find my calendars. School or team calendars can be added as links.' },
+    { tab: 'board', cards: ['Photos'], title: 'Your photos', text: 'A shared album for the photos by the month name and the overnight slideshow. Next saves everything so far (the board restarts for a few seconds).', save: true },
+    { tab: 'screens', cards: ['Pair a screen', 'Paired screens'], title: 'Your first screen', text: 'Open the board on the wall screen: it shows a code. Type it here, name the screen and pick what it may do. The wall screens guide (docs/kiosk.md) has the kiosk settings.' }
+  ];
+  var wiz = -1;
+  try { wiz = +(sessionStorage.getItem('chalkWizard') || -1); } catch (e) {}
+  function wizShow() {
+    var on = wiz >= 0 && wiz < WIZ.length;
+    $('wizBar').hidden = !on;
+    $('tabs').hidden = on;
+    try { if (on) sessionStorage.setItem('chalkWizard', String(wiz)); else sessionStorage.removeItem('chalkWizard'); } catch (e) {}
+    Array.prototype.forEach.call(document.querySelectorAll('#tBoard > .card, #tScreens > .card'), function (c) { c.hidden = false; });
+    if (!on) return;
+    var st = WIZ[wiz];
+    // (only when it's another tab: opening ⚙️ Board again would load its fields afresh, losing what was typed)
+    if ($(st.tab === 'board' ? 'tBoard' : 'tScreens').hidden) tab(st.tab);
+    var box = st.tab === 'board' ? '#tBoard' : '#tScreens';
+    Array.prototype.forEach.call(document.querySelectorAll(box + ' > .card'), function (c) {
+      var h = c.querySelector('h2');
+      c.hidden = !(h && st.cards.indexOf(h.textContent.trim()) >= 0);
+    });
+    $('wizStep').textContent = 'Getting started · step ' + (wiz + 1) + ' of ' + WIZ.length;
+    $('wizTitle').textContent = st.title;
+    $('wizText').textContent = st.text;
+    $('wizBack').hidden = wiz === 0;
+    $('wizNext').textContent = st.save ? 'Save and go on →' : wiz === WIZ.length - 1 ? 'Done ✓' : 'Next →';
+    $('wizSkip').textContent = wiz === WIZ.length - 1 ? 'Skip: open the console' : 'Skip this step';
+    $('wizErr').textContent = '';
+    window.scrollTo(0, 0);
+  }
+  function wizGo(n) { wiz = n; wizShow(); }
+  $('wizBack').addEventListener('click', function () { wizGo(Math.max(0, wiz - 1)); });
+  $('wizSkip').addEventListener('click', function () {
+    // skipping the photos still saves what the earlier steps filled in
+    if (WIZ[wiz].save) return wizSave();
+    wizGo(wiz + 1 < WIZ.length ? wiz + 1 : -1);
   });
+  function wizSave() {
+    $('wizErr').textContent = 'Saving… the board restarts for a few seconds';
+    busy($('wizNext'), saveBoard()).then(function () { wizGo(wiz + 1); }).catch(function (e) { $('wizErr').textContent = e.message; });
+  }
+  $('wizNext').addEventListener('click', function () {
+    if (WIZ[wiz].save) return wizSave();
+    wizGo(wiz + 1 < WIZ.length ? wiz + 1 : -1);
+  });
+  $('wizAgain').addEventListener('click', function () { wizGo(0); });
 
   // ---- console ----
   function tab(t) {
@@ -895,6 +973,7 @@ button:disabled{opacity:.5;cursor:default}
     var t = location.hash.slice(1);
     tab(['screens', 'people', 'security', 'board'].concat(who.ha ? [] : ['account']).indexOf(t) >= 0 ? t : 'screens');
     loadBadge();
+    if (wiz >= 0) wizShow();
   }
   function segs(id, help, texts) {
     var state = { v: document.querySelector('#' + id + ' button.on').dataset.r };
@@ -981,9 +1060,89 @@ button:disabled{opacity:.5;cursor:default}
     box.appendChild(sel);
     return box;
   }
+  // where its 🗓️ Week starts: the board's first day of the week, or today (today and the next 6 days)
+  function weekFromLine(x, cur) {
+    var box = el('div', 'nbot');
+    box.appendChild(el('span', 'dim', '🗓️ Week starts:'));
+    var sel = el('select'); sel.setAttribute('aria-label', 'Where the week starts on ' + x.name);
+    [['board', 'On the board’s first day'], ['today', 'Today (and the next 6 days)']].forEach(function (o) {
+      var op = el('option', null, o[1]); op.value = o[0]; sel.appendChild(op);
+    });
+    sel.value = cur === 'today' ? 'today' : 'board';
+    sel.addEventListener('change', function () {
+      api('api/devices/weekfrom', { id: x.id, from: sel.value }).catch(function (e) { $('dvErr').textContent = e.message; });
+    });
+    box.appendChild(sel);
+    return box;
+  }
+  // 🗓️ Week: the whole height, or Split View and what goes under the week (left, then right)
+  var SPACES = [['photos', '📷 Photos'], ['draw', '✏️ Room to draw'], ['meals', '🍽️ Meal plan'], ['pantry', '🥫 Pantry'], ['jars', '🫙 Reward jars'], ['chores', '🧹 Chores'], ['reminders', '🔔 Reminders'], ['upnext', '📅 Up next']];
+  function weekViewLine(x, cur) {
+    cur = cur || { split: false, a: 'photos', b: 'draw' };
+    var box = el('div', 'nbot');
+    box.appendChild(el('span', 'dim', '🗓️ Week shows:'));
+    var pick = function (label, opts, val, key) {
+      var sel = el('select'); sel.setAttribute('aria-label', label + ' on ' + x.name);
+      opts.forEach(function (o) { var op = el('option', null, o[1]); op.value = o[0]; sel.appendChild(op); });
+      sel.value = val;
+      sel.addEventListener('change', function () {
+        var body = { id: x.id }; body[key] = key === 'split' ? sel.value === 'split' : sel.value;
+        api('api/devices/weekview', body).then(loadScreens).catch(function (e) { $('dvErr').textContent = e.message; });
+      });
+      box.appendChild(sel);
+    };
+    pick('What the week shows', [['week', 'The week, full height'], ['split', 'Split View']], cur.split ? 'split' : 'week', 'split');
+    if (cur.split) {
+      pick('Under the week, on the left', SPACES, cur.a, 'a');
+      pick('Under the week, on the right', [['none', 'Nothing']].concat(SPACES.filter(function (o) { return o[0] !== cur.a; })), cur.b, 'b');
+    }
+    return box;
+  }
+  // filling the screen (a taller calendar instead of bands), and the wooden frame
+  function fitLine(x, cur) {
+    cur = cur || { fill: false, noFrame: false, low: false };
+    var box = el('div', 'nbot');
+    box.appendChild(el('span', 'dim', '↕️ The board:'));
+    var sel = el('select'); sel.setAttribute('aria-label', 'How the board fits ' + x.name);
+    [['', 'As it is (bands on a 16:9 or 16:10 screen)'], ['fill', 'Fill the screen (taller days)']].forEach(function (o) {
+      var op = el('option', null, o[1]); op.value = o[0]; sel.appendChild(op);
+    });
+    sel.value = cur.fill ? 'fill' : '';
+    sel.addEventListener('change', function () {
+      api('api/devices/boardfit', { id: x.id, fill: sel.value === 'fill' }).catch(function (e) { $('dvErr').textContent = e.message; });
+    });
+    box.appendChild(sel);
+    // a low-power screen: no moving weather, GIFs or fades, and plainer chalk (a slow wall screen)
+    var low = el('select'); low.setAttribute('aria-label', 'Low-power screen for ' + x.name);
+    [['', 'Every effect'], ['low', 'Low-power (nothing moves)']].forEach(function (o) {
+      var op = el('option', null, o[1]); op.value = o[0]; low.appendChild(op);
+    });
+    low.value = cur.low ? 'low' : '';
+    low.addEventListener('change', function () {
+      api('api/devices/boardfit', { id: x.id, low: low.value === 'low' }).catch(function (e) { $('dvErr').textContent = e.message; });
+    });
+    box.appendChild(low);
+    return box;
+  }
+  // its language: the board's, or its own
+  var screenLangs = {}, boardLang = 'en';
+  function langLine(x) {
+    var box = el('div', 'nbot');
+    box.appendChild(el('span', 'dim', '🌐 Language:'));
+    var sel = el('select'); sel.setAttribute('aria-label', 'Language on ' + x.name); sel.setAttribute('translate', 'no');
+    [['', 'The board’s (' + (boardLang === 'es' ? 'Español' : 'English') + ')'], ['en', 'English'], ['es', 'Español']].forEach(function (o) {
+      var op = el('option', null, o[1]); op.value = o[0]; sel.appendChild(op);
+    });
+    sel.value = screenLangs[x.id] || '';
+    sel.addEventListener('change', function () {
+      api('api/devices/lang', { id: x.id, lang: sel.value || null }).catch(function (e) { $('dvErr').textContent = e.message; });
+    });
+    box.appendChild(sel);
+    return box;
+  }
   function loadScreens() {
-    var bottoms = {}, sleeps = {};
-    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
+    var bottoms = {}, sleeps = {}, weekfrom = {}, weekview = {}, boardfit = {};
+    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices/weekfrom').then(function (b) { weekfrom = b.weekfrom || {}; }, function () {}); }).then(function () { return api('api/devices/weekview').then(function (b) { weekview = b.weekview || {}; }, function () {}); }).then(function () { return api('api/devices/boardfit').then(function (b) { boardfit = b.boardfit || {}; }, function () {}); }).then(function () { return api('api/devices/lang').then(function (b) { screenLangs = b.lang || {}; boardLang = b.board || 'en'; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
       var w = $('dvWaiting'); w.innerHTML = '';
       d.waiting.forEach(function (p) { w.appendChild(el('p', 'dim', '⏳ ' + p.agent + ' is showing a code (' + ago(p.created) + ') - type it above.')); });
       var list = $('dvList'); list.innerHTML = '';
@@ -1005,6 +1164,10 @@ button:disabled{opacity:.5;cursor:default}
         it.appendChild(el('div', 'meta', x.agent + ' · paired ' + new Date(x.created).toLocaleDateString() + ' · last seen ' + ago(x.last_seen)));
         if (!/^kid:/.test(x.role)) it.appendChild(bottomLine(x, bottoms[x.id] || null));
         it.appendChild(sleepsLine(x, x.id in sleeps ? sleeps[x.id] : null));
+        if (!/^kid:/.test(x.role)) it.appendChild(weekFromLine(x, weekfrom[x.id] || null));
+        if (!/^kid:/.test(x.role)) it.appendChild(weekViewLine(x, weekview[x.id] || null));
+        if (!/^kid:/.test(x.role)) it.appendChild(fitLine(x, boardfit[x.id] || null));
+        it.appendChild(langLine(x));
         list.appendChild(it);
       });
     }).catch(function (e) { if (!(e.body && e.body.admin)) $('dvErr').textContent = e.message; });
@@ -1266,6 +1429,14 @@ button:disabled{opacity:.5;cursor:default}
     showLogin(w.user ? 'The admin console asks for a fresh sign-in.' : 'Sign in with an admin account.');
   }).catch(function () { $('subtitle').textContent = 'Can’t reach the board server'; });
 })();
+</script>
+<!-- the console in the board's language (or this person's): the same translator and dictionary as the screens -->
+<script type="module">
+  import { startTranslating } from './i18n.js';
+  fetch('api/lang', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (!d || d.lang !== 'es') return;
+    return import('./i18n-es.js').then(function (m) { startTranslating(m.ES, 'es'); });
+  }).catch(function () {});
 </script>
 </body>
 </html>

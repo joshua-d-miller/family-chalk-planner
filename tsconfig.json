@@ -18,5 +18,7 @@
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
-  "include": ["server/**/*.ts", "shared/**/*.ts"]
+  "include": ["server/**/*.ts", "shared/**/*.ts"],
+  // (the translator is browser code: the screens' check covers it, and the server only serves it)
+  "exclude": ["shared/i18n.ts", "shared/i18n-es.ts"]
 }

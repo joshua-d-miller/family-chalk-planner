@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | ChoresEditor.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-21
 
  Purpose:
      Changing the chores (signed-in people): the people, and each chore's
@@ -23,6 +23,9 @@
  0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
                         colby     plan, reminders, timers, pantry, jars and
                         claude    chores.
+
+ 1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
+                        claude    with changes.
 ===============================================================================
 */
 
@@ -30,7 +33,7 @@ import { useState } from 'react';
 import type { Chore, ChoreList, ChoresView, Every, Person } from '../../../shared/chores.ts';
 import { post } from '../lib/api.ts';
 import { Btn, Segs } from '../ui/bits.tsx';
-import { Sheet } from '../ui/Sheet.tsx';
+import { Sheet, useChanged } from '../ui/Sheet.tsx';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------- //
@@ -73,6 +76,7 @@ export function ChoresEditor({
   const [focus, setFocus] = useState<string | null>(null);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const changed = useChanged({ people, chores }); // (✕ with changes: "Discard your changes?")
   const change = (id: string, f: Partial<Chore>) => setChores(cs => cs.map(c => (c.id === id ? { ...c, ...f } : c)));
 
   async function save() {
@@ -116,7 +120,7 @@ export function ChoresEditor({
   }
 
   return (
-    <Sheet title="Change the chores" onClose={onClose} id="chedmodal">
+    <Sheet title="Change the chores" onClose={onClose} dirty={changed} id="chedmodal">
       <section>
         <div className="dim small">The family</div>
         <div id="chedPeople" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

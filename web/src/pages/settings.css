@@ -53,3 +53,143 @@
 .about a {
   color: var(--yellow);
 }
+.scard h4 {
+  margin: 14px 0 4px;
+  font-family: var(--hand);
+  font-weight: 400;
+  font-size: 1.05em;
+  color: var(--dim);
+}
+
+/* -------------------------------------------------------------------------
+   Switches: a checkbox in Settings is an on/off switch (the whole line is
+   still the thing to tap)
+   ------------------------------------------------------------------------- */
+.scard label.check {
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: row-reverse;
+}
+.scard label.check input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+  width: 54px;
+  height: 30px;
+  margin: 0;
+  border-radius: 15px;
+  background: rgba(237, 234, 224, 0.18);
+  border: 2px solid rgba(237, 234, 224, 0.35);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.scard label.check input[type='checkbox']::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--chalk);
+  transition: transform 0.15s;
+}
+.scard label.check input[type='checkbox']:checked {
+  background: var(--pink);
+  border-color: var(--pink);
+}
+.scard label.check input[type='checkbox']:checked::after {
+  transform: translateX(24px);
+  background: #1b1b1a;
+}
+.scard label.check input[type='checkbox']:focus-visible {
+  outline: 3px solid var(--yellow);
+  outline-offset: 2px;
+}
+.scard label.check .t {
+  flex: 1;
+}
+/* a slider: its name and value on one line, the slider under them */
+.scard .slide {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  align-items: center;
+  padding: 6px 4px;
+}
+.scard .slide b {
+  color: var(--yellow);
+  font-weight: 400;
+}
+.scard .slide input[type='range'] {
+  grid-column: 1 / -1;
+  width: 100%;
+  accent-color: var(--pink);
+  height: 36px;
+}
+
+/* -------------------------------------------------------------------------
+   Settings as a card over the board: the parts down the side, the one
+   picked on the right
+   ------------------------------------------------------------------------- */
+.sheet.setpop {
+  width: min(1100px, 100%);
+  height: min(780px, calc(100dvh - 32px));
+  overflow: hidden;
+  padding-bottom: 10px;
+}
+.setpop .setbody {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 26%) 1fr;
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+.setpop .setrail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 10px 10px 0;
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+}
+.setpop .setrail button {
+  text-align: left;
+  min-height: 52px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: var(--chalk);
+  font: inherit;
+  font-size: 1.05em;
+  cursor: pointer;
+}
+.setpop .setrail button.on {
+  background: rgba(246, 179, 203, 0.16);
+  color: var(--pink);
+}
+.setpop .setrail .ic {
+  font-family: var(--emoji), sans-serif;
+  margin-right: 6px;
+}
+.setpop .setpane {
+  overflow-y: auto;
+  padding: 4px 6px 12px 22px;
+}
+.setpop .setpane .scard {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+.setpop .about {
+  margin: 6px 0 0;
+}
+/* the slideshow's two sliders, side by side under the times */
+.scard .slides2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 4px 24px;
+}

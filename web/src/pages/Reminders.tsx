@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Reminders.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-21
 
  Purpose:
      Reminders (from Colby Way's board): "always" ones stay until ticked
@@ -25,6 +25,11 @@
  0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
                         colby     plan, reminders, timers, pantry, jars and
                         claude    chores.
+
+ 1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
+                        claude    with changes.
+                                  The reminders stay in the family's words in
+                                  another language.
 ===============================================================================
 */
 
@@ -37,7 +42,7 @@ import { RANK } from '../lib/who.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn, Field, Segs } from '../ui/bits.tsx';
 import { Page } from '../ui/Page.tsx';
-import { Sheet } from '../ui/Sheet.tsx';
+import { Sheet, useChanged } from '../ui/Sheet.tsx';
 import './lists.css';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -110,7 +115,7 @@ export function Reminders({ who }: { who: Who | null }) {
                       </span>
                       <span className="t">
                         {r.important && <span aria-label="important">❗ </span>}
-                        {r.title}
+                        <span translate="no">{r.title}</span>
                         {r.mode === 'time' && (
                           <span className="meta">
                             {fmtTime(r.time, time24)} · {r.repeat === 'daily' ? 'every day' : 'once'}
@@ -163,8 +168,9 @@ function ReminderSheet({
   onDelete?: () => void;
 }) {
   const [r, setR] = useState(start);
+  const changed = useChanged(r); // (✕ with changes: "Discard your changes?")
   return (
-    <Sheet title={start.id ? 'Change the reminder' : 'A new reminder'} onClose={onClose}>
+    <Sheet title={start.id ? 'Change the reminder' : 'A new reminder'} onClose={onClose} dirty={changed}>
       <form
         onSubmit={e => {
           e.preventDefault();

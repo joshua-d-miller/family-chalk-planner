@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | TitleEditor.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-21
 
  Purpose:
      ✎ Month title: typed (font, color, outline, size; for this month or
@@ -25,6 +25,9 @@
 
  0.14.0    2026-11-07   joshua    The grouped font picker, with every font.
                         claude
+
+ 1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
+                        claude    with changes.
 ===============================================================================
 */
 
@@ -33,7 +36,7 @@ import { useEffect, useState } from 'react';
 import { post } from '../../lib/api.ts';
 import { Btn, Segs } from '../../ui/bits.tsx';
 import { Colors } from '../../ui/Colors.tsx';
-import { Sheet } from '../../ui/Sheet.tsx';
+import { Sheet, useChanged } from '../../ui/Sheet.tsx';
 import type { MonthMeta } from '../Board.tsx';
 import { DEFAULT_TITLE } from '../Title.tsx';
 import type { TitleStyle } from '../Title.tsx';
@@ -72,6 +75,7 @@ export function TitleEditor({
   const [t, setT] = useState<TitleStyle>(meta?.title || meta?.defaultTitle || DEFAULT_TITLE);
   const [every, setEvery] = useState(false);
   const [err, setErr] = useState('');
+  const changed = useChanged({ hand, t, every }); // (✕ with changes: "Discard your changes?")
   useEffect(() => onPreview({ hand, style: t }), [hand, t, onPreview]);
   const close = () => {
     onPreview(null);
@@ -86,7 +90,7 @@ export function TitleEditor({
     }
   }
   return (
-    <Sheet title={`Title for ${monthName}`} onClose={close} id="titleSheet">
+    <Sheet title={`Title for ${monthName}`} onClose={close} dirty={changed} id="titleSheet">
       <Segs
         value={hand ? 'hand' : 'typed'}
         onChange={v => setHand(v === 'hand')}

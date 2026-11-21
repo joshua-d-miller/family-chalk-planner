@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Server | favorites.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      Favorites: the few things each person (and each family screen) uses
@@ -18,11 +18,12 @@
      console):
        kv 'notesbottom'  { 'p:...' | 's:...': { def: 'upnext', can:
            ['upnext', 'today', 'photos'] } }
-     And how it gets to its pages and tools: the cork (nothing saved), or
-     the ☰ button in the bottom right or left corner, with or without a ✏️
-     Draw button beside it:
-       kv 'menustyle'  { 'p:...' | 's:...': { style: 'right' | 'left',
-           draw: true | false } }
+     And how it gets to its pages and tools: the cork (nothing saved), the
+     ☰ button in the bottom right or left corner, with or without a ✏️
+     Draw button beside it, or the ☰ and up to 3 buttons it picks in the
+     Notes column's last row (from Colby Way's board):
+       kv 'menustyle'  { 'p:...' | 's:...': { style: 'right' | 'left' |
+           'notes', draw: true | false, dock?: ['add', 'slides', ...] } }
      And the look of its cards and ☰ menu (chalk unless changed), an
      accent color, and their text size:
        kv 'uilook'  { 'p:...' | 's:...': { look: 'light' | 'dark' |
@@ -31,6 +32,27 @@
      And whether its countdowns count in sleeps ("3 sleeps!") or days
      (a kid's tablet counts sleeps unless told otherwise):
        kv 'sleeps'  { 'p:...' | 's:...': true | false }
+     And where its 🗓️ Week starts: on the board's first day of the week
+     (nothing saved), or on today, showing today and the next 6 days:
+       kv 'weekfrom'  { 'p:...' | 's:...': 'today' }
+     And whether its 🗓️ Week is Split View (the week as a band, and one or
+     two spaces under it: photos, room to draw, the meal plan, the pantry,
+     the jars, chores, reminders or up next):
+       kv 'weekview'  { 'p:...' | 's:...': { split: true, a: 'photos',
+           b: 'draw' | 'none' } }
+     And whether its board fills the screen (a taller calendar on a 16:9
+     or 16:10 screen, instead of bands above and below), and whether it
+     hides the wooden frame (a screen in a frame of its own):
+     and whether it's a low-power screen (no moving weather, GIFs or fades,
+     and plainer chalk, for a slow wall screen):
+       kv 'boardfit'  { 'p:...' | 's:...': { fill: true, noFrame: true,
+           low: true } }
+     And its language, when it isn't the board's (English or Spanish):
+       kv 'lang'  { 'p:...' | 's:...': 'en' | 'es' }
+     And whether it hides the − / + / Fit zoom buttons (shown unless set;
+     only a screen someone is signed in on has them; from Colby Way's
+     board):
+       kv 'nozoom'  { 'p:...' | 's:...': true }
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -58,6 +80,21 @@
                                   Countdowns in sleeps or days, per screen (or
                                   person); the admin console sets any
                                   screen's.
+
+ 1.2.0    2026-11-21   joshua    🗓️ Week from today (today and the next 6
+                        colby     days) or from the board's first day, and
+                        claude    🗓️ Week's Split View and what goes under
+                                  the week (Colby Way's idea), per screen; the
+                                  admin console sets any screen's.
+                                  Hide the − / + / Fit buttons, per person
+                                  (from Colby Way's board).
+                                  The menu in the Notes column: the ☰ and up
+                                  to 3 buttons the screen picks (Colby Way's
+                                  dock).
+                                  Fill the screen and no wooden frame, per
+                                  screen (Colby Way's frame and padding
+                                  settings, reworked); a low-power screen.
+                                  Its language, when it isn't the board's.
 ===============================================================================
 */
 
@@ -90,12 +127,14 @@ export function setup({
   app,
   kv,
   whose,
-  broadcast
+  broadcast,
+  boardLanguage = 'en'
 }: {
   app: Express;
   kv: Kv;
   whose: (req: Request) => string | null; // 'p:<id>' or 's:<id>', null for nobody
   broadcast: (event: string, data: unknown) => void;
+  boardLanguage?: 'en' | 'es'; // ⚙️ Board → the board's language
 }) {
   const all = () => kv.get<Record<string, string[]>>('favorites') || {};
   app.get('/api/favorites', (req, res) => {
@@ -163,11 +202,19 @@ export function setup({
   // screen changes at once when it's saved. A change can send just one of   //
   // the two.                                                                //
   interface MenuPref {
-    style: 'right' | 'left';
+    style: 'right' | 'left' | 'notes';
     draw: boolean;
+    dock?: string[]; // 'notes': the buttons beside the ☰ in the Notes column (up to 3)
   }
+  // what can go beside the ☰ in the Notes column (from Colby Way's board)
+  const DOCK = ['add', 'slides', 'week', 'draw', 'chores', 'meals', 'reminders', 'timers', 'pantry', 'jars', 'reload'];
+  const DOCK_DEFAULT = ['add', 'slides', 'week'];
   const prefs = () => kv.get<Record<string, MenuPref>>('menustyle') || {};
-  const view = (p: MenuPref | undefined) => ({ style: p?.style || 'cork', draw: !!p?.draw });
+  const view = (p: MenuPref | undefined) => ({
+    style: p?.style || 'cork',
+    draw: !!p?.draw,
+    dock: p?.style === 'notes' ? p.dock || DOCK_DEFAULT : DOCK_DEFAULT
+  });
   app.get('/api/menustyle', (req, res) => {
     const k = whose(req);
     res.json({ ...view(k ? prefs()[k] : undefined), saved: !!k });
@@ -180,11 +227,14 @@ export function setup({
     const now = view(map[k]);
     const style = body.style ?? now.style;
     const draw = body.draw ?? now.draw;
-    if (!['cork', 'right', 'left'].includes(style) || typeof draw !== 'boolean')
+    const dock = body.dock ?? now.dock;
+    if (!['cork', 'right', 'left', 'notes'].includes(style) || typeof draw !== 'boolean')
       return res.status(400).json({ error: 'Pick where the menu goes' });
+    if (!Array.isArray(dock) || dock.length > 3 || dock.some((d: unknown) => !DOCK.includes(d as string)))
+      return res.status(400).json({ error: 'Pick up to 3 buttons' });
     if (style === 'cork')
       delete map[k]; // (the cork has no ✏️ button of its own)
-    else map[k] = { style, draw };
+    else map[k] = { style, draw, ...(style === 'notes' ? { dock: [...new Set(dock as string[])] } : {}) };
     kv.set('menustyle', map);
     broadcast('menustyle', {});
     res.json({ ...view(map[k]), saved: true });
@@ -275,6 +325,225 @@ export function setup({
     if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
     if (!(v === null || typeof v === 'boolean')) return res.status(400).json({ error: 'Sleeps or days' });
     res.json({ sleeps: setSleeps('s:' + id, v) });
+  });
+
+  // ------------------------- //
+  // | Where the week starts | //
+  // ------------------------- //
+  // 🗓️ Week from the board's first day of the week (nothing saved), or     //
+  // from today: today and the next 6 days. Per screen (or person), like     //
+  // sleeps; the admin console sets any screen's, the wall's too.            //
+  const WEEK_FROM = ['board', 'today'];
+  const weekFroms = () => kv.get<Record<string, 'today'>>('weekfrom') || {};
+  const setWeekFrom = (k: string, v: string) => {
+    const map = weekFroms();
+    if (v === 'today') map[k] = 'today';
+    else delete map[k];
+    kv.set('weekfrom', map);
+    broadcast('weekfrom', {});
+    return map[k] || 'board';
+  };
+  app.get('/api/weekfrom', (req, res) => {
+    const k = whose(req);
+    res.json({ from: (k && weekFroms()[k]) || 'board' });
+  });
+  app.post('/api/weekfrom', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const v = (req.body || {}).from;
+    if (!WEEK_FROM.includes(v)) return res.status(400).json({ error: 'Pick where the week starts' });
+    res.json({ from: setWeekFrom(k, v) });
+  });
+  app.get('/api/devices/weekfrom', (_req, res) => {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(weekFroms())) if (k.startsWith('s:')) out[k.slice(2)] = v;
+    res.json({ weekfrom: out });
+  });
+  app.post('/api/devices/weekfrom', (req, res) => {
+    const id = String(req.body?.id || '');
+    const v = req.body?.from;
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    if (!WEEK_FROM.includes(v)) return res.status(400).json({ error: 'Pick where the week starts' });
+    res.json({ from: setWeekFrom('s:' + id, v) });
+  });
+
+  // ------------------------------------- //
+  // | 🗓️ Week: Split View, and its spaces | //
+  // ------------------------------------- //
+  // The week as a band across the top and one or two spaces under it, or   //
+  // the week in the whole height (nothing saved). Per screen (or person);  //
+  // the admin console sets any screen's, the wall's too.                    //
+  const SPACES = ['photos', 'draw', 'meals', 'pantry', 'jars', 'chores', 'reminders', 'upnext'];
+  interface WeekView {
+    split: boolean;
+    a: string;
+    b: string;
+  }
+  const weekViews = () => kv.get<Record<string, WeekView>>('weekview') || {};
+  const viewOf = (v: Partial<WeekView> | undefined): WeekView => ({
+    split: !!v?.split,
+    a: v?.a && SPACES.includes(v.a) ? v.a : 'photos',
+    b: v?.b === 'none' || (v?.b && SPACES.includes(v.b)) ? v.b : 'draw'
+  });
+  const checkView = (b: Record<string, unknown>, now: WeekView): WeekView | null => {
+    const next = { ...now, ...b } as WeekView;
+    if (typeof next.split !== 'boolean' || !SPACES.includes(next.a)) return null;
+    if (next.b !== 'none' && !SPACES.includes(next.b)) return null;
+    return { split: next.split, a: next.a, b: next.b === next.a ? 'none' : next.b }; // (not the same thing twice)
+  };
+  const setWeekView = (k: string, v: WeekView) => {
+    const map = weekViews();
+    if (v.split || v.a !== 'photos' || v.b !== 'draw') map[k] = v;
+    else delete map[k];
+    kv.set('weekview', map);
+    broadcast('weekview', {});
+    return viewOf(map[k]);
+  };
+  app.get('/api/weekview', (req, res) => {
+    const k = whose(req);
+    res.json(viewOf(k ? weekViews()[k] : undefined));
+  });
+  app.post('/api/weekview', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const v = checkView(req.body || {}, viewOf(weekViews()[k]));
+    if (!v) return res.status(400).json({ error: 'Pick what the week shows' });
+    res.json(setWeekView(k, v));
+  });
+  app.get('/api/devices/weekview', (_req, res) => {
+    const out: Record<string, WeekView> = {};
+    for (const [k, v] of Object.entries(weekViews())) if (k.startsWith('s:')) out[k.slice(2)] = viewOf(v);
+    res.json({ weekview: out });
+  });
+  app.post('/api/devices/weekview', (req, res) => {
+    const id = String(req.body?.id || '');
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    const { id: _id, ...rest } = req.body || {};
+    const v = checkView(rest, viewOf(weekViews()['s:' + id]));
+    if (!v) return res.status(400).json({ error: 'Pick what the week shows' });
+    res.json(setWeekView('s:' + id, v));
+  });
+
+  // ------------------------------------- //
+  // | Filling the screen, and the frame | //
+  // ------------------------------------- //
+  // A taller calendar on a screen that isn't as wide as the board (16:9,   //
+  // 16:10), and the wooden frame (on a signed-in screen) left off. Per     //
+  // screen (or person); the admin console sets any screen's.               //
+  interface BoardFit {
+    fill: boolean;
+    noFrame: boolean;
+    low: boolean; // a low-power screen: no moving weather, GIFs or fades, and plainer chalk
+  }
+  const fits = () => kv.get<Record<string, BoardFit>>('boardfit') || {};
+  const fitOf = (v: Partial<BoardFit> | undefined): BoardFit => ({
+    fill: !!v?.fill,
+    noFrame: !!v?.noFrame,
+    low: !!v?.low
+  });
+  const setFit = (k: string, b: Record<string, unknown>): BoardFit | null => {
+    const now = fitOf(fits()[k]);
+    const fill = b.fill ?? now.fill;
+    const noFrame = b.noFrame ?? now.noFrame;
+    const low = b.low ?? now.low;
+    if (typeof fill !== 'boolean' || typeof noFrame !== 'boolean' || typeof low !== 'boolean') return null;
+    const map = fits();
+    if (fill || noFrame || low) map[k] = { fill, noFrame, low };
+    else delete map[k];
+    kv.set('boardfit', map);
+    broadcast('boardfit', {});
+    return fitOf(map[k]);
+  };
+  app.get('/api/boardfit', (req, res) => {
+    const k = whose(req);
+    res.json(fitOf(k ? fits()[k] : undefined));
+  });
+  app.post('/api/boardfit', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const v = setFit(k, req.body || {});
+    if (!v) return res.status(400).json({ error: 'On or off' });
+    res.json(v);
+  });
+  app.get('/api/devices/boardfit', (_req, res) => {
+    const out: Record<string, BoardFit> = {};
+    for (const [k, v] of Object.entries(fits())) if (k.startsWith('s:')) out[k.slice(2)] = fitOf(v);
+    res.json({ boardfit: out });
+  });
+  app.post('/api/devices/boardfit', (req, res) => {
+    const id = String(req.body?.id || '');
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    const v = setFit('s:' + id, { fill: req.body?.fill, noFrame: req.body?.noFrame, low: req.body?.low });
+    if (!v) return res.status(400).json({ error: 'On or off' });
+    res.json(v);
+  });
+
+  // ---------------------- //
+  // | Its language | //
+  // ---------------------- //
+  // The board's (⚙️ Board), unless this screen (or person) picked its own. //
+  // Asked before a screen is paired too (its pairing code in the board's   //
+  // language). The admin console sets any screen's.                        //
+  const LANGS = ['en', 'es'];
+  const langs = () => kv.get<Record<string, string>>('lang') || {};
+  const setLang = (k: string, v: unknown) => {
+    const map = langs();
+    if (v === null) delete map[k];
+    else map[k] = v as string;
+    kv.set('lang', map);
+    broadcast('lang', {});
+    return map[k] || null;
+  };
+  app.get('/api/lang', (req, res) => {
+    const k = whose(req);
+    const mine = (k && langs()[k]) || null;
+    res.json({ lang: mine || boardLanguage, mine, board: boardLanguage });
+  });
+  app.post('/api/lang', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const v = (req.body || {}).lang;
+    if (!(v === null || LANGS.includes(v))) return res.status(400).json({ error: 'Pick a language' });
+    res.json({ mine: setLang(k, v) });
+  });
+  app.get('/api/devices/lang', (_req, res) => {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(langs())) if (k.startsWith('s:')) out[k.slice(2)] = v;
+    res.json({ lang: out, board: boardLanguage });
+  });
+  app.post('/api/devices/lang', (req, res) => {
+    const id = String(req.body?.id || '');
+    const v = req.body?.lang;
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    if (!(v === null || LANGS.includes(v))) return res.status(400).json({ error: 'Pick a language' });
+    res.json({ mine: setLang('s:' + id, v) });
+  });
+
+  // ------------------------------ //
+  // | The − / + / Fit buttons | //
+  // ------------------------------ //
+  // Shown unless hidden (a touch screen that never zooms). Only a screen    //
+  // someone is signed in on has them, so it's kept per person (or screen).  //
+  // From Colby Way's board.                                                 //
+  const noZooms = () => kv.get<Record<string, true>>('nozoom') || {};
+  const setNoZoom = (k: string, hide: boolean) => {
+    const map = noZooms();
+    if (hide) map[k] = true;
+    else delete map[k];
+    kv.set('nozoom', map);
+    broadcast('nozoom', {});
+    return !!map[k];
+  };
+  app.get('/api/nozoom', (req, res) => {
+    const k = whose(req);
+    res.json({ hide: !!(k && noZooms()[k]) });
+  });
+  app.post('/api/nozoom', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const v = (req.body || {}).hide;
+    if (typeof v !== 'boolean') return res.status(400).json({ error: 'Show or hide them' });
+    res.json({ hide: setNoZoom(k, v) });
   });
 }
 

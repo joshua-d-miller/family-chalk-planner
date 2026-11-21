@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | style-title.spec.ts
 ===============================================================================
- Version:   1.1.2
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-20
+ Updated:   2026-11-21
 
  Purpose:
      Board style (background, presets) and the month title card.
@@ -35,6 +35,10 @@
 
  1.1.2    2026-11-20   joshua    The backgrounds show on Just this month too,
                         claude    and are saved for every month.
+
+ 1.2.0    2026-11-21   joshua    On this screen: the wooden frame and filling
+                        claude    the screen. The hard-to-read warning;
+                                  Colorblind-safe; your styles.
 ===============================================================================
 */
 
@@ -42,6 +46,85 @@ import { test, expect, thisMonth } from './fixtures.ts';
 
 const surfaceOf = (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.querySelector<HTMLElement>('.slate')!.dataset.surface);
+
+test('🎨 Board style → Your styles: save one by name, put it back, and share it as a code', async ({ as, board }) => {
+  await board.admin.post('/api/styles', { styles: [] });
+  const page = await as('tablet');
+  await page.locator('#styleBtn').click();
+  const sheet = page.locator('#styleSheet');
+  await sheet.getByRole('radio', { name: /Every month/ }).click();
+  await sheet.locator('.presets button', { hasText: 'Bold' }).click();
+  await sheet.locator('#saveStyleBtn').click();
+  await sheet.locator('#styleName').fill('Our kitchen');
+  await sheet.locator('#styleNameSave').click();
+  await expect
+    .poll(async () => (await (await board.admin.api('/api/styles')).json()).map(x => x.name))
+    .toEqual(['Our kitchen']);
+  // something else, then the saved one back
+  await sheet.locator('.presets button', { hasText: 'Pastel' }).click();
+  await expect(sheet.locator('.presets button.on')).toHaveText(/Pastel/);
+  await sheet.locator('.savedstyle button', { hasText: 'Our kitchen' }).click();
+  await expect(sheet.locator('.presets button.on')).toHaveText(/Bold/);
+  // as a code, and back from one
+  await sheet.locator('#copyStyleBtn').click();
+  const code = await sheet.locator('#styleCode').inputValue();
+  expect(code).toMatch(/^chalk-style:/);
+  await sheet.locator('.presets button', { hasText: 'Classic' }).click();
+  await sheet.locator('#pasteStyle').fill(code);
+  await sheet.locator('#useStyleCode').click();
+  await expect(sheet.locator('.presets button.on')).toHaveText(/Bold/);
+  await sheet.getByRole('button', { name: 'Cancel' }).click();
+  await board.admin.post('/api/styles', { styles: [] });
+  expect(page.errors).toEqual([]);
+});
+
+test('🎨 Board style: a Colorblind-safe style, and colors a screen reader can name', async ({ as }) => {
+  const page = await as('tablet');
+  await page.locator('#styleBtn').click();
+  const sheet = page.locator('#styleSheet');
+  await expect(sheet.locator('.presets button', { hasText: 'Colorblind-safe' })).toBeVisible();
+  await sheet.getByRole('tab', { name: 'Days' }).click();
+  await expect(sheet.getByRole('radio', { name: 'Sky blue (colorblind-safe)' }).first()).toBeAttached();
+  await sheet.getByRole('button', { name: 'Cancel' }).click();
+  // an event can take a colorblind-safe color too
+  await page.locator('#addBtn').click();
+  await expect(
+    page.locator('#evSheet').getByRole('radio', { name: 'Blue (colorblind-safe)', exact: true })
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+  expect(page.errors).toEqual([]);
+});
+
+test('🎨 Board style warns when a color is hard to read on the background picked', async ({ as }) => {
+  const page = await as('tablet');
+  await page.locator('#styleBtn').click();
+  const sheet = page.locator('#styleSheet');
+  await sheet.getByRole('radio', { name: /Every month/ }).click();
+  await sheet.getByRole('tab', { name: 'Days' }).click();
+  await expect(sheet.locator('.hardread')).toHaveCount(0); // chalk yellow on the black slate: fine
+  await sheet.getByRole('tab', { name: 'Style' }).click();
+  await sheet.locator('#surface-linen').click(); // light paper
+  await sheet.getByRole('tab', { name: 'Days' }).click();
+  await expect(sheet.locator('.hardread').first()).toContainText('Hard to read on this background');
+  await sheet.getByRole('button', { name: 'Cancel' }).click(); // (Cancel discards: no question)
+  await expect(sheet).toHaveCount(0);
+  expect(page.errors).toEqual([]);
+});
+
+test('🎨 Style → On this screen: the wooden frame can come off, and the board can fill the screen', async ({ as }) => {
+  const page = await as('tablet');
+  const pad = () => page.locator('#board').evaluate(el => getComputedStyle(el).paddingTop);
+  expect(await pad()).not.toBe('0px'); // a tablet's board has its frame
+  await page.locator('#styleBtn').click();
+  await page.locator('#frameBox').click(); // off
+  await expect(page.locator('#frameBox')).not.toBeChecked();
+  await expect.poll(pad).toBe('0px');
+  await page.locator('#frameBox').click(); // and back
+  await expect(page.locator('#frameBox')).toBeChecked();
+  await expect.poll(pad).not.toBe('0px');
+  await expect(page.locator('#fillBox')).not.toBeChecked();
+  expect(page.errors).toEqual([]);
+});
 
 test('board style: a different background and preset, saved and sent to the wall', async ({ as, board }) => {
   await board.admin.post('/api/theme', { p: 'classic', o: {} });

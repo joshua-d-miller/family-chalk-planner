@@ -96,3 +96,17 @@ button {
   overflow: hidden;
   clip: rect(0 0 0 0);
 }
+
+/* a screen on the wall (paired, nobody signed in): a pinch or a double tap doesn't zoom the page */
+html.nozoom,
+html.nozoom body {
+  touch-action: pan-x pan-y;
+}
+
+/* a low-power screen (⚙️ Settings → This screen): nothing moves, so a slow wall screen keeps up */
+html.lowpower *,
+html.lowpower *::before,
+html.lowpower *::after {
+  animation: none !important;
+  transition: none !important;
+}

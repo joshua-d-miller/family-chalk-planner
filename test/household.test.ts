@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | household.test.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-12
+ Updated:   2026-11-21
 
  Purpose:
      Reminders, timers, the pantry and the right-hand column's pages (from
@@ -31,6 +31,9 @@
  0.17.0    2026-11-12   joshua    Each screen's menu (the cork or the ☰
                         colby     button) is kept on the board.
                         claude
+
+ 1.2.0    2026-11-21   joshua    The menu setting also says which buttons go
+                        claude    in the Notes column.
 ===============================================================================
 */
 
@@ -208,14 +211,24 @@ test('the bottom of Notes: each screen its own, the wall’s from the admin cons
 });
 
 test('each screen keeps its own menu on the board (the cork, or the ☰ button on either side)', async () => {
-  assert.deepEqual(await (await fam.api('/api/menustyle')).json(), { style: 'cork', draw: false, saved: true });
+  assert.deepEqual(await (await fam.api('/api/menustyle')).json(), {
+    style: 'cork',
+    draw: false,
+    dock: ['add', 'slides', 'week'],
+    saved: true
+  });
   let r = await fam.post('/api/menustyle', { style: 'right' });
-  assert.deepEqual(await r.json(), { style: 'right', draw: false, saved: true });
+  assert.deepEqual(await r.json(), { style: 'right', draw: false, dock: ['add', 'slides', 'week'], saved: true });
   // the ✏️ Draw button beside it, sent on its own
   r = await fam.post('/api/menustyle', { draw: true });
-  assert.deepEqual(await r.json(), { style: 'right', draw: true, saved: true });
+  assert.deepEqual(await r.json(), { style: 'right', draw: true, dock: ['add', 'slides', 'week'], saved: true });
   // the same screen asking again (a cleared browser has nothing but its pairing) gets it back
-  assert.deepEqual(await (await fam.api('/api/menustyle')).json(), { style: 'right', draw: true, saved: true });
+  assert.deepEqual(await (await fam.api('/api/menustyle')).json(), {
+    style: 'right',
+    draw: true,
+    dock: ['add', 'slides', 'week'],
+    saved: true
+  });
   // another screen (or person) has its own
   assert.equal((await (await ed.api('/api/menustyle')).json()).style, 'cork');
   assert.equal((await fam.post('/api/menustyle', { style: 'top' })).status, 400);
@@ -223,5 +236,10 @@ test('each screen keeps its own menu on the board (the cork, or the ☰ button o
   assert.equal((await wall.post('/api/menustyle', { style: 'left' })).status, 403, 'the wall has no menu to change');
   // back to the cork: nothing kept
   await fam.post('/api/menustyle', { style: 'cork' });
-  assert.deepEqual(await (await fam.api('/api/menustyle')).json(), { style: 'cork', draw: false, saved: true });
+  assert.deepEqual(await (await fam.api('/api/menustyle')).json(), {
+    style: 'cork',
+    draw: false,
+    dock: ['add', 'slides', 'week'],
+    saved: true
+  });
 });

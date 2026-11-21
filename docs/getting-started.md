@@ -14,7 +14,7 @@ it; and an admin console where you add screens and people.
 - **A computer that's always on** to run the board. It needs very little: a Raspberry Pi 4 or 5, a NAS,
   an old PC, a mini PC, a Proxmox container, or the machine that already runs Home Assistant. No
   computer at home? A small cloud server works too ([cloud.md](cloud.md)).
-- **A screen for the wall** with a web browser: an Android tablet or display (Fully Kiosk Browser is
+- **A screen for the wall** with a web browser: an Android tablet or display (FreeKiosk or Fully Kiosk Browser is
   the easiest), a Raspberry Pi with a monitor, or a smart TV's browser.
 - **Your calendar's sign-in** (every option: [calendars.md](calendars.md)):
   - **iCloud:** your Apple ID email and an *app-specific password* (step 3 shows where to get one).
@@ -116,6 +116,10 @@ On a computer or tablet, open `http://<the board's address>:3002/admin`.
 You're in the **admin console**. The setup code is used up; from now on you sign in with your
 username, password and the authenticator code.
 
+The console opens with a **setup guide**: one step at a time for the board's name and time zone, the weather, your
+calendar, your photos and your first wall screen (steps 3 and 4 below). Any step can be skipped, and **🧭 Setup
+guide** at the top of the console runs it again.
+
 ## Step 3: Connect your calendar
 
 In the console, tap **⚙️ Board**.
@@ -163,12 +167,9 @@ Tap **Save and restart** at the bottom. The board restarts in a few seconds with
 
    ![Pairing the wall screen in the admin console](images/start-5-pair.jpg)
 
-**Keeping the wall screen on the board:**
-
-- **Android:** install [Fully Kiosk Browser](https://www.fully-kiosk.com/). Set the **Start URL** to the
-  board's address, and turn on **Keep screen on** and **Start on boot**.
-- **Raspberry Pi or a PC:** open the board full screen, e.g. `chromium --kiosk http://<address>:3002/`,
-  and start it with the computer.
+**Keeping the wall screen on the board:** full screen, awake and starting by itself after a power cut. The
+[wall screens guide](kiosk.md) has the steps for Android (FreeKiosk or Fully Kiosk), Linux and Raspberry Pi
+(Chromium in kiosk mode), Windows (Edge kiosk) and Mac.
 
 A paired screen stays paired, even after a restart or an update.
 

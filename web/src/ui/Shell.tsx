@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Shell.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      The bar that stays at the bottom while the pages change. A family
@@ -58,6 +58,13 @@
                         claude    Settings (light, dark, high contrast, an
                                   accent color, larger text), and the card
                                   that changes it.
+
+ 1.2.0    2026-11-21   joshua    ⚙️ Settings as a card over the board
+                        claude    (<SettingsHost />), where the look of cards
+                                  and menus is set now. The menu in the Notes
+                        colby     column (Colby Way's dock): `dock`.
+                                  A screen on the wall doesn't zoom and stays
+                                  awake (useWallScreen).
 ===============================================================================
 */
 
@@ -65,8 +72,10 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import type { ReactNode } from 'react';
 import { useFavorites } from '../lib/favorites.ts';
 import { useMenuPref } from '../lib/menuStyle.ts';
+import { useWallScreen } from '../lib/wallScreen.ts';
+import type { DockBtn } from '../lib/menuStyle.ts';
 import { applyUiLook, useUiLook } from '../lib/uiLook.ts';
-import { LookHost } from './LookCard.tsx';
+import { SettingsHost } from '../pages/Settings.tsx';
 import type { Who } from '../lib/who.ts';
 import { PAGES, homeHref, isHome } from '../routes.ts';
 import { Menu } from './Menu.tsx';
@@ -110,6 +119,7 @@ interface ShellState {
   kind: ShellKind;
   side: 'left' | 'right' | null; // the ☰ button and its drawer instead of the cork: which side (else null)
   drawBtn: boolean; // and a ✏️ Draw button beside it
+  dock: DockBtn[] | null; // or the ☰ (on the right) and these buttons in the Notes column's last row
   who: Who | null;
   here: string;
   slot: HTMLElement | null;
@@ -123,6 +133,7 @@ const Ctx = createContext<ShellState>({
   kind: 'none',
   side: null,
   drawBtn: false,
+  dock: null,
   who: null,
   here: 'board',
   slot: null,
@@ -136,14 +147,18 @@ export const useShell = () => useContext(Ctx);
 
 export function Shell({ who, here, children }: { who: Who | null; here: string; children: ReactNode }) {
   const kind = shellKind(who);
+  // a screen on the wall (paired, nobody signed in): no zooming the page, and it stays awake
+  useWallScreen(!who?.user && !!who?.device);
   // only a screen that would get the cork can swap it for the button (phones and tablets keep their tab bar)
   const pref = useMenuPref();
   // this screen's look for its cards, ☰ menu and Settings (🎨 Look of cards and menus)
   const look = useUiLook();
   const { look: lk, accent, size } = look;
   useEffect(() => applyUiLook({ look: lk, accent, size }), [lk, accent, size]);
-  const side = kind === 'cork' && pref.style !== 'cork' ? pref.style : null;
+  // (the Notes column is on the right: its buttons' ☰ opens the drawer from there, and elsewhere floats there)
+  const side = kind === 'cork' && pref.style !== 'cork' ? (pref.style === 'notes' ? 'right' : pref.style) : null;
   const drawBtn = !!side && pref.draw; // a ✏️ Draw button beside the ☰ (on the calendar)
+  const dock = kind === 'cork' && pref.style === 'notes' ? pref.dock : null;
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [navH, setNavH] = useState(0);
   const [busyBoard, setBusyBoard] = useState(false);
@@ -193,6 +208,7 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
         kind,
         side,
         drawBtn,
+        dock,
         who,
         here,
         slot: kind === 'cork' && !side && !onBoard ? slot : null,
@@ -207,7 +223,7 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
       {kind === 'cork' && !side && !onBoard && <CorkBar onSlot={setSlot} />}
       {side && !onBoard && <PagesFab side={side} />}
       {kind === 'tabs' && <TabBar onHeight={setNavH} mini={busyBoard && onBoard} />}
-      <LookHost />
+      <SettingsHost who={who} />
     </Ctx.Provider>
   );
 }

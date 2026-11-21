@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | settings.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      Board settings: all kept in the database and changed in the admin
@@ -50,6 +50,9 @@
                         claude    random each day, and whether the board keeps
                                   a copy of every photo or only the last few
                                   shown.
+
+ 1.2.0    2026-11-21   joshua    LANGUAGE: the board's language (English or
+                        claude    Spanish).
 ===============================================================================
 */
 
@@ -98,6 +101,7 @@ export const FIELDS: Record<string, Field> = {
   HOLIDAYS: { type: 'enum', values: ['us', 'ca', 'gb', 'none'] },
   WEEK_START: { type: 'enum', values: ['sunday', 'monday'] },
   TIME_FORMAT: { type: 'enum', values: ['12h', '24h'] },
+  LANGUAGE: { type: 'enum', values: ['en', 'es'] }, // the board's language (each screen can pick its own)
   // weather
   LATITUDE: { type: 'num', min: -90, max: 90 },
   LONGITUDE: { type: 'num', min: -180, max: 180 },

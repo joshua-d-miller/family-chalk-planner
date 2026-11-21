@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | StyleEditor.tsx
 ===============================================================================
- Version:   1.1.2
- Author:    Joshua D. Miller, Claude
+ Version:   1.2.0
+ Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-20
+ Updated:   2026-11-21
 
  Purpose:
      🎨 Board style: the background, a preset, and her own tweaks to it
@@ -46,18 +46,237 @@
                                   month).
                                   A background just for this month (Just ...),
                                   or for every month.
+
+ 1.2.0    2026-11-21   joshua    On this screen (Style tab): the wooden frame
+                        colby     and filling the screen (Colby Way's frame
+                        claude    and padding settings, per screen).
+                                  A warning when a color is hard to read on
+                                  the background picked. Your styles: saved
+                                  by name, and shared as a code.
+                                  "Discard your changes?" when it's closed
+                                  with changes.
+                                  Your styles' names stay as they were typed
+                                  in another language.
 ===============================================================================
 */
 
 import { FontPicker } from '../../ui/FontPicker.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { post, upload, url as apiUrl } from '../../lib/api.ts';
-import { SURFACES } from '../../lib/surface.ts';
+import { useLive } from '../../lib/live.ts';
+import { SURFACES, surfaceOf } from '../../lib/surface.ts';
 import { Btn, Segs, Tabs } from '../../ui/bits.tsx';
 import { Colors } from '../../ui/Colors.tsx';
-import { Sheet } from '../../ui/Sheet.tsx';
-import { PRESETS, TFONTS, monthVals, themeVals } from '../theme.ts';
+import { Sheet, useChanged } from '../../ui/Sheet.tsx';
+import { NEED, PRESETS, TFONTS, monthVals, themeVals } from '../theme.ts';
+import { lum, readable } from '../color.ts';
 import type { Theme } from '../theme.ts';
+import { setBoardFit, useBoardFit } from '../../lib/boardFit.ts';
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | Hard to read? | //
+// ------------------- //
+// A color too faint for the background picked: the board already shows it //
+// lighter (or darker) so it can be read; this says so, with what it shows. //
+function HardToRead({ color, need, bg }: { color: string; need?: number; bg: number }) {
+  if (!need || !/^#[0-9a-fA-F]{6}$/.test(color || '')) return null;
+  const shown = readable(color, bg, need);
+  if (shown.toLowerCase() === color.toLowerCase()) return null;
+  const lighter = lum(shown) > lum(color);
+  return (
+    <span className="hardread" role="note">
+      ⚠️ Hard to read on this background: the board shows it a little {lighter ? 'lighter' : 'darker'}{' '}
+      <span className="sw" style={{ background: shown }} aria-hidden="true" />
+    </span>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------- //
+// | Your styles | //
+// ---------------- //
+// Styles the family saved by name, to put back in one tap (into the card: //
+// Save keeps it, Cancel doesn't); and a style as a code, to share with    //
+// another board (its background photo stays here: it's this board's own). //
+interface Saved {
+  name: string;
+  theme: Theme;
+}
+const CODE = 'chalk-style:';
+export const styleCode = (t: Theme) => {
+  const { img: _img, ...rest } = t;
+  if (rest.s === 'photo') delete rest.s;
+  return CODE + btoa(unescape(encodeURIComponent(JSON.stringify(rest))));
+};
+export function fromCode(code: string): Theme | null {
+  const c = code.trim();
+  if (!c.startsWith(CODE)) return null;
+  try {
+    const t = JSON.parse(decodeURIComponent(escape(atob(c.slice(CODE.length))))) as Theme;
+    return t && typeof t.p === 'string' && typeof t.o === 'object'
+      ? { p: t.p, o: t.o || {}, ...(t.s ? { s: t.s } : {}) }
+      : null;
+  } catch {
+    return null;
+  }
+}
+function YourStyles({ current, onUse }: { current: Theme; onUse: (t: Theme) => void }) {
+  const saved = useLive<Saved[]>('api/styles', ['styles']);
+  const list = saved.data || [];
+  const [naming, setNaming] = useState<string | null>(null);
+  const [paste, setPaste] = useState('');
+  const [code, setCode] = useState('');
+  const [msg, setMsg] = useState('');
+  const keep = (next: Saved[]) => {
+    saved.set(next);
+    post<Saved[]>('api/styles', { styles: next })
+      .then(saved.set)
+      .catch(e => setMsg((e as Error).message));
+  };
+  return (
+    <div className="yourstyles">
+      <div className="sublbl">Your styles</div>
+      <div className="segs">
+        {list.map(x => (
+          <span key={x.name} className="savedstyle" translate="no">
+            <button type="button" className="seg" onClick={() => onUse(x.theme)} title={`Use “${x.name}”`}>
+              {x.name}
+            </button>
+            <button
+              type="button"
+              className="seg rm"
+              aria-label={`Remove “${x.name}”`}
+              onClick={() => keep(list.filter(y => y.name !== x.name))}
+            >
+              ✕
+            </button>
+          </span>
+        ))}
+        {naming === null ? (
+          <button
+            type="button"
+            className="seg"
+            id="saveStyleBtn"
+            onClick={() => setNaming('')}
+            disabled={list.length >= 20}
+          >
+            ＋ Add to your styles…
+          </button>
+        ) : (
+          <form
+            className="namestyle"
+            onSubmit={e => {
+              e.preventDefault();
+              const name = naming.trim();
+              if (!name) return;
+              keep([...list.filter(y => y.name !== name), { name, theme: current }]);
+              setNaming(null);
+              setMsg(`“${name}” is in your styles`);
+            }}
+          >
+            <input
+              id="styleName"
+              aria-label="A name for this style"
+              placeholder="A name for it"
+              maxLength={30}
+              autoFocus
+              value={naming}
+              onChange={e => setNaming(e.target.value)}
+            />
+            <button type="submit" className="seg on" id="styleNameSave">
+              Add
+            </button>
+          </form>
+        )}
+      </div>
+      <div className="segs sharestyle">
+        <button
+          type="button"
+          className="seg"
+          id="copyStyleBtn"
+          onClick={() => {
+            const c = styleCode(current);
+            setCode(c);
+            navigator.clipboard
+              ?.writeText(c)
+              .then(() => setMsg('Copied: paste it into another board’s Board style'))
+              .catch(() => setMsg('Select the code below and copy it'));
+          }}
+        >
+          📋 Copy style code
+        </button>
+        <input
+          id="pasteStyle"
+          aria-label="Paste a style code"
+          placeholder="Paste a style code"
+          value={paste}
+          onChange={e => setPaste(e.target.value)}
+        />
+        <button
+          type="button"
+          className="seg"
+          id="useStyleCode"
+          disabled={!paste.trim()}
+          onClick={() => {
+            const t = fromCode(paste);
+            if (!t) return setMsg('That isn’t a style code (it starts with chalk-style:)');
+            onUse(t);
+            setPaste('');
+            setMsg('The style is in the card: Save keeps it');
+          }}
+        >
+          Use it
+        </button>
+      </div>
+      {code && (
+        <input
+          className="stylecode"
+          id="styleCode"
+          readOnly
+          value={code}
+          aria-label="This style's code"
+          onFocus={e => e.target.select()}
+        />
+      )}
+      {msg && <div className="dim small">{msg}</div>}
+    </div>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | On this screen | //
+// ------------------ //
+// Just for this screen, and saved as it's tapped (not with the board's    //
+// style): the wooden frame (a screen in a frame of its own leaves it off), //
+// and filling the screen (a taller calendar instead of bands).             //
+export function ScreenFit() {
+  const fit = useBoardFit();
+  return (
+    <div className="screenfit">
+      <div className="sublbl">On this screen</div>
+      <label className="tick">
+        <input
+          type="checkbox"
+          id="frameBox"
+          checked={!fit.noFrame}
+          onChange={e => void setBoardFit({ noFrame: !e.target.checked })}
+        />{' '}
+        🪵 The wooden frame around the board
+      </label>
+      <label className="tick">
+        <input
+          type="checkbox"
+          id="fillBox"
+          checked={fit.fill}
+          onChange={e => void setBoardFit({ fill: e.target.checked })}
+        />{' '}
+        ↕️ Fill the screen (taller days, no bands above and below)
+      </label>
+    </div>
+  );
+}
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------------- //
@@ -221,6 +440,7 @@ export function StyleEditor({
     }
   }
   const [lk, setLk] = useState<Record<string, string>>(() => ({ ...(look || {}) }));
+  const changed = useChanged({ d, lk }); // (✕ with changes: "Discard your changes?")
   // ------------------ //
   // | The background | //
   // ------------------ //
@@ -256,6 +476,22 @@ export function StyleEditor({
     onPreview(null);
     onPreviewLook(null);
     onClose();
+  };
+  // ------------------------------------- //
+  // | The style shown now, to save | //
+  // ------------------------------------- //
+  // Its preset, what differs from that preset, and its background.          //
+  const presetVals = themeVals({ p: style, o: {} });
+  const current: Theme = {
+    p: style,
+    o: Object.fromEntries(Object.entries(v).filter(([k, x]) => presetVals[k] !== x)),
+    ...(bgNow.s && bgNow.s !== 'slate' ? { s: bgNow.s } : {}),
+    ...(bgNow.s === 'photo' && bgNow.img ? { img: bgNow.img } : {})
+  };
+  // a saved (or pasted) style, put in the card: every month's, or this month's own
+  const use = (t: Theme) => {
+    if (scope === 'all') return setD({ ...t, o: { ...t.o } });
+    setLk({ p: t.p, ...t.o, ...(t.s ? { s: t.s } : {}), ...(t.img ? { img: t.img } : {}) });
   };
   // a tweak just for this month: picking what its style has takes it away
   const setMonth = (k: string, val: string) => {
@@ -302,6 +538,7 @@ export function StyleEditor({
     <Sheet
       title="Board style"
       onClose={close}
+      dirty={changed}
       id="styleSheet"
       tall
       head={
@@ -427,6 +664,8 @@ export function StyleEditor({
           );
         })}
       </div>
+      {tab === 'style' && <YourStyles current={current} onUse={use} />}
+      {tab === 'style' && <ScreenFit />}
       {ROWS.filter(r => TAB_OF[r.label] === tab).map(r => (
         <div className="threl" key={r.label}>
           <b>{r.label}</b>
@@ -442,7 +681,10 @@ export function StyleEditor({
                 label={r.label}
               />
             ) : kind === 'color' ? (
-              <Colors key={k} value={v[k]} onChange={c => c && tweak(k, c)} label={r.label} />
+              <span key={k} className="colorpart">
+                <Colors value={v[k]} onChange={c => c && tweak(k, c)} label={r.label} />
+                <HardToRead color={v[k]} need={NEED[k]} bg={surfaceOf(bgNow.s).lum} />
+              </span>
             ) : (
               <Segs key={k} value={v[k]} onChange={val => tweak(k, val)} options={kind} label={r.label} />
             )

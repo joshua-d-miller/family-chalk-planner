@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | smoke.test.ts
 ===============================================================================
- Version:   1.1.2
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-20
+ Updated:   2026-11-21
 
  Purpose:
      End-to-end smoke test: real server + mock CalDAV + mock photo album,
@@ -78,6 +78,11 @@
 
  1.1.2    2026-11-20   joshua    A month's own background.
                         claude
+
+ 1.2.0    2026-11-21   joshua    Where each screen's 🗓️ Week starts; hiding
+                        claude    the − / + / Fit buttons; Split View; the
+                                  menu in the Notes column; filling the
+                                  screen, and the wooden frame.
 ===============================================================================
 */
 
@@ -572,6 +577,105 @@ test('countdowns in sleeps or days: nothing saved until a screen picks, and the 
   assert.deepEqual(await (await post('/api/devices/sleeps', { id: 'wall1', sleeps: true })).json(), { sleeps: true });
   assert.deepEqual((await (await api('/api/devices/sleeps')).json()).sleeps, { wall1: true });
   await post('/api/devices/sleeps', { id: 'wall1', sleeps: null });
+});
+
+test('🗓️ Week from today or the board’s first day: per screen, and the console sets any screen’s', async () => {
+  assert.deepEqual(await (await api('/api/weekfrom')).json(), { from: 'board' });
+  assert.deepEqual(await (await post('/api/weekfrom', { from: 'today' })).json(), { from: 'today' });
+  assert.deepEqual(await (await api('/api/weekfrom')).json(), { from: 'today' });
+  assert.equal((await post('/api/weekfrom', { from: 'monday' })).status, 400);
+  assert.deepEqual(await (await post('/api/weekfrom', { from: 'board' })).json(), { from: 'board' });
+  assert.deepEqual(await (await post('/api/devices/weekfrom', { id: 'wall1', from: 'today' })).json(), {
+    from: 'today'
+  });
+  assert.deepEqual((await (await api('/api/devices/weekfrom')).json()).weekfrom, { wall1: 'today' });
+  await post('/api/devices/weekfrom', { id: 'wall1', from: 'board' });
+  assert.deepEqual((await (await api('/api/devices/weekfrom')).json()).weekfrom, {});
+});
+
+test('🗓️ Split View: per screen, what goes under the week, and the console sets any screen’s', async () => {
+  assert.deepEqual(await (await api('/api/weekview')).json(), { split: false, a: 'photos', b: 'draw' });
+  assert.deepEqual(await (await post('/api/weekview', { split: true, b: 'meals' })).json(), {
+    split: true,
+    a: 'photos',
+    b: 'meals'
+  });
+  assert.equal((await post('/api/weekview', { a: 'everything' })).status, 400);
+  // not the same thing twice: the right one is then nothing
+  assert.equal((await (await post('/api/weekview', { a: 'meals' })).json()).b, 'none');
+  await post('/api/weekview', { split: false, a: 'photos', b: 'draw' });
+  assert.deepEqual(await (await post('/api/devices/weekview', { id: 'wall1', split: true })).json(), {
+    split: true,
+    a: 'photos',
+    b: 'draw'
+  });
+  assert.deepEqual((await (await api('/api/devices/weekview')).json()).weekview, {
+    wall1: { split: true, a: 'photos', b: 'draw' }
+  });
+  await post('/api/devices/weekview', { id: 'wall1', split: false });
+  assert.deepEqual((await (await api('/api/devices/weekview')).json()).weekview, {});
+});
+
+test('the menu in the Notes column: up to 3 buttons, from the list', async () => {
+  const now = await (await post('/api/menustyle', { style: 'notes' })).json();
+  assert.deepEqual([now.style, now.dock], ['notes', ['add', 'slides', 'week']]);
+  assert.deepEqual((await (await post('/api/menustyle', { dock: ['chores', 'reload'] })).json()).dock, [
+    'chores',
+    'reload'
+  ]);
+  assert.equal((await post('/api/menustyle', { dock: ['add', 'slides', 'week', 'draw'] })).status, 400);
+  assert.equal((await post('/api/menustyle', { dock: ['rocket'] })).status, 400);
+  await post('/api/menustyle', { style: 'cork' });
+  assert.equal((await (await api('/api/menustyle')).json()).style, 'cork');
+});
+
+test('filling the screen and the wooden frame: per screen, and the console sets any screen’s', async () => {
+  assert.deepEqual(await (await api('/api/boardfit')).json(), { fill: false, noFrame: false, low: false });
+  assert.deepEqual(await (await post('/api/boardfit', { fill: true })).json(), {
+    fill: true,
+    noFrame: false,
+    low: false
+  });
+  assert.deepEqual(await (await post('/api/boardfit', { noFrame: true })).json(), {
+    fill: true,
+    noFrame: true,
+    low: false
+  });
+  assert.equal((await post('/api/boardfit', { fill: 'yes' })).status, 400);
+  await post('/api/boardfit', { fill: false, noFrame: false, low: false });
+  assert.deepEqual(await (await post('/api/devices/boardfit', { id: 'wall1', fill: true })).json(), {
+    fill: true,
+    noFrame: false,
+    low: false
+  });
+  assert.deepEqual((await (await api('/api/devices/boardfit')).json()).boardfit, {
+    wall1: { fill: true, noFrame: false, low: false }
+  });
+  await post('/api/devices/boardfit', { id: 'wall1', fill: false });
+  assert.deepEqual((await (await api('/api/devices/boardfit')).json()).boardfit, {});
+});
+
+test('saved styles: by name, each checked like the board style, up to 20', async () => {
+  const out = await (
+    await post('/api/styles', {
+      styles: [
+        { name: '  Our kitchen ', theme: { p: 'pastel', o: { numC: '#112233', bogus: 'x' }, s: 'linen' } },
+        { name: '', theme: { p: 'classic', o: {} } }
+      ]
+    })
+  ).json();
+  assert.deepEqual(out, [{ name: 'Our kitchen', theme: { p: 'pastel', o: { numC: '#112233' }, s: 'linen' } }]);
+  assert.deepEqual(await (await api('/api/styles')).json(), out);
+  assert.equal((await post('/api/styles', { styles: 'nope' })).status, 400);
+  await post('/api/styles', { styles: [] });
+});
+
+test('the − / + / Fit buttons: shown until a screen hides them', async () => {
+  assert.deepEqual(await (await api('/api/nozoom')).json(), { hide: false });
+  assert.deepEqual(await (await post('/api/nozoom', { hide: true })).json(), { hide: true });
+  assert.deepEqual(await (await api('/api/nozoom')).json(), { hide: true });
+  assert.equal((await post('/api/nozoom', { hide: 'yes' })).status, 400);
+  assert.deepEqual(await (await post('/api/nozoom', { hide: false })).json(), { hide: false });
 });
 
 test('Check connections: the calendar and the photos now, and a real round trip only when asked', async () => {

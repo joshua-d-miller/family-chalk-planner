@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | pages.ts
 ===============================================================================
- Version:   0.15.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-08
+ Updated:   2026-11-21
 
  Purpose:
      The pages themselves: the board page (wall, tablet and phone chores),
@@ -59,13 +59,17 @@
 
  0.15.0    2026-11-08   joshua    /week, and its app.
                         claude
+
+ 1.2.0    2026-11-21   joshua    /i18n.js and /i18n-es.js: the translator and
+                        claude    the Spanish dictionary, for the admin
+                                  console.
 ===============================================================================
 */
 
 import { baseFor } from './access/ingress.ts';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
+import { createRequire, stripTypeScriptTypes } from 'node:module';
 import express from 'express';
 import type { Express, RequestHandler } from 'express';
 import { ICONS } from './icons.ts';
@@ -395,6 +399,23 @@ export function setup({
     app.get('/classic/chores', sendBoard('chores'));
     // the admin console (sign-in, screens, people, my account) and invite links
     // (its addresses are relative to <base>: inside Home Assistant that's the ingress path)
+    // the board in another language, for the admin console (the screens build it in): the translator and the
+    // Spanish dictionary, the same files the screens use (shared/), as plain JavaScript
+    const SHARED = path.join(import.meta.dirname, '..', 'shared');
+    const asJs = new Map<string, string>();
+    for (const [route, file] of [
+      ['/i18n.js', 'i18n.ts'],
+      ['/i18n-es.js', 'i18n-es.ts']
+    ] as const)
+      app.get(route, (_req, res, next) => {
+        try {
+          if (!asJs.has(file))
+            asJs.set(file, stripTypeScriptTypes(fs.readFileSync(path.join(SHARED, file), 'utf8'), { mode: 'strip' }));
+          res.set('Cache-Control', 'no-cache').type('text/javascript').send(asJs.get(file));
+        } catch (e) {
+          next(e);
+        }
+      });
     for (const p of ['/admin', '/join'])
       app.get(p, (req, res, next) =>
         fs.readFile(path.join(publicDir, 'admin.html'), 'utf8', (err, html) => {

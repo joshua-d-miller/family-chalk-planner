@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   1.1.2
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-20
+ Updated:   2026-11-21
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -99,12 +99,35 @@
 
  1.1.2    2026-11-20   joshua    This month's own background, if it has one.
                         claude
+
+ 1.2.0    2026-11-21   joshua    🗓️ Week from today (today and the next 6
+                        colby     days) on a screen that picks it, with the
+                        claude    events of both months a week can span
+                                  (Colby Way built it too, on his board).
+                                  🗓️ Week's Split View (Colby Way's idea), and
+                                  ⚙️ Week in its tools.
+                                  From Colby Way's board: a tap on a reward
+                                  jar opens it big; the − / + / Fit buttons
+                                  can be hidden; a tap on the month's name
+                                  reloads a screen that edits; the menu in the
+                                  Notes column (his dock), and ▶ Slideshow
+                                  from it on a tablet too.
+                                  Two quick taps on a family screen's ‹ or ›
+                                  no longer start the photo frame.
+                                  A family screen sets the month's title too.
+                                  A low-power screen: no moving weather, GIFs
+                                  or fades, and the chalk drawn at 1x.
 ===============================================================================
 */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent } from 'react';
 import { useLive, useOnline } from '../lib/live.ts';
+import { useWeekFrom, useWeekView } from '../lib/weekFrom.ts';
+import { showSettings } from '../pages/Settings.tsx';
+import { Split } from './Split.tsx';
+import { useHideZoom } from '../lib/zoomControls.ts';
+import { useBoardFit } from '../lib/boardFit.ts';
 import { paintSurface, photoBackground, seasonOf, surfaceOf } from '../lib/surface.ts';
 import type { Who } from '../lib/who.ts';
 import { Art } from './Art.tsx';
@@ -130,6 +153,7 @@ import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
 import { FAB_BAND, Strip } from './Strip.tsx';
 import { navigate } from '../lib/nav.ts';
+import { homeHref } from '../routes.ts';
 import { useBarZoom, useShell, visibleHeight } from '../ui/Shell.tsx';
 import { DrawLayer, firstPen, isPosca, recolor, touches } from './draw/Draw.tsx';
 import type { Pen } from './draw/Draw.tsx';
@@ -139,7 +163,7 @@ import { RecolorSheet, SaveStampSheet, TextSheet, Tools } from './draw/Tools.tsx
 import { useArt } from './draw/useArt.ts';
 import { coveredBy, writingOn } from './cover.ts';
 import type { Writing } from './cover.ts';
-import { BORDER_PAD, relayout, unionBox, xform } from './geom.ts';
+import { BORDER_PAD, SLATE_H, relayout, stretchY, unionBox, xform } from './geom.ts';
 import { post, url as apiUrl } from '../lib/api.ts';
 import { CLIENT } from './draw/useArt.ts';
 import { RANK } from '../lib/who.ts';
@@ -150,7 +174,6 @@ import './board.css';
 import './edit.css';
 
 const W = 1252;
-const H = 642;
 const CORK = 50; // the strip under the board on a tablet
 const EDIT_FRAME = 14; // a tablet's board has a wooden frame unless the family set one
 
@@ -194,6 +217,27 @@ function useFit(pad: number, h: number, below = 0) {
     };
   }, [pad, h, below]);
   return fit;
+}
+
+// how tall the slate is drawn on this screen: 642, or (filling the screen) as tall as its shape allows
+function useSlateH(fill: boolean, pad: number, below: number, bar: number) {
+  const calc = () => {
+    if (!fill) return SLATE_H;
+    const tall = ((visibleHeight() - bar) / innerWidth) * (W + 2 * pad) - 2 * pad - below;
+    return Math.round(Math.max(SLATE_H, Math.min(SLATE_H * 1.5, tall)));
+  };
+  const [h, setH] = useState(calc);
+  useEffect(() => {
+    const on = () => setH(calc());
+    on();
+    addEventListener('resize', on);
+    window.visualViewport?.addEventListener('resize', on);
+    return () => {
+      removeEventListener('resize', on);
+      window.visualViewport?.removeEventListener('resize', on);
+    };
+  }, [fill, pad, below, bar]);
+  return h;
 }
 
 const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -242,6 +286,7 @@ export function Board({
   // adds events, frameless, with the wall's photo frame and slideshow; the  //
   // month's title and the board's look are set from a tablet                //
   const family = edit && !who?.user && who?.device?.role === 'family';
+  const hideZoom = useHideZoom(); // ⚙️ Settings → This screen: no − / + / Fit buttons
   const today = useLive<{ today: string; ym: string; weekStart?: number; time24: boolean }>('api/today', [
     'calendar'
   ]).data;
@@ -252,11 +297,26 @@ export function Board({
   // 📅 Calendar shows the month; 🗓️ Week (its own page) one week: its      //
   // first day in wk (null is this week). A week belongs to the month of its //
   // middle day.                                                             //
+  // A screen can start its week on today instead (today and the next 6     //
+  // days); its arrows then go 7 days at a time from there.                  //
   const [wk, setWk] = useState<string | null>(null);
-  const thisWeek = today?.today ? weekOf(today.today, today.weekStart || 0) : null;
+  const weekFrom = useWeekFrom();
+  useEffect(() => setWk(null), [weekFrom]); // (a week picked before would start on the other day)
+  const thisWeek = today?.today
+    ? weekFrom === 'today'
+      ? today.today
+      : weekOf(today.today, today.weekStart || 0)
+    : null;
   const week = weekly ? wk || thisWeek : null;
+  // Split View (⚙️ Settings → Week): the week as a band, and one or two spaces under it
+  const weekView = useWeekView();
+  const split = !!week && weekView.split;
   const shown = week ? addDays(week, 3).slice(0, 7) : ym || today?.ym || null;
   const month = useLive<MonthData>(shown ? `api/month?ym=${shown}` : 'api/today', ['calendar']);
+  // a week from today can reach past the days its month's grid has (Sun 28 Feb, when March starts on a
+  // Sunday): the other month's events too
+  const otherYm = week ? [week.slice(0, 7), addDays(week, 6).slice(0, 7)].find(x => x !== shown) || null : null;
+  const other = useLive<MonthData>(otherYm ? `api/month?ym=${otherYm}` : 'api/today', ['calendar']);
   // the art: the month's, or in the week view the week's own (kept under its first day)
   const artKey = week || shown;
   const art = useLive<ArtItem[]>(artKey ? `api/art?ym=${artKey}` : 'api/today', [
@@ -271,8 +331,16 @@ export function Board({
   const metaLive = useLive<MonthMeta>(shown ? `api/meta?ym=${shown}` : 'api/today', ['meta']);
   const meta = metaLive.data;
   const photos = useLive<Photos>('api/photos', ['photos']).data;
-  const pad =
-    meta && 'artPad' in meta ? (meta.boardPad ?? (edit && !family ? EDIT_FRAME : 0)) : edit && !family ? EDIT_FRAME : 0;
+  // the wooden frame: a tablet's, unless this screen leaves it off (🎨 Board style → Style: a screen in a
+  // frame of its own); and whether the board fills the screen (⚙️ Settings → This screen)
+  const boardFit = useBoardFit();
+  const pad = boardFit.noFrame
+    ? 0
+    : meta && 'artPad' in meta
+      ? (meta.boardPad ?? (edit && !family ? EDIT_FRAME : 0))
+      : edit && !family
+        ? EDIT_FRAME
+        : 0;
   const shell = useShell();
   // ------------------------------- //
   // | The cork, or the ☰ button | //
@@ -281,13 +349,24 @@ export function Board({
   // board grows into its room, and never moves for the button or tools.    //
   const [drawing, setDrawing] = useState(false);
   const side = edit && shell.kind === 'cork' ? shell.side : null;
-  const bh = H + (edit && !side ? CORK : 0);
+  const corkH = edit && !side ? CORK : 0;
+  // ---------------------- //
+  // | Filling the screen | //
+  // ---------------------- //
+  // The board is 1252 wide and 642 tall: on a screen that isn't as wide as  //
+  // that (16:9, 16:10) it leaves bands above and below. Filling the screen  //
+  // draws it taller instead (never shorter, at most half as tall again):    //
+  // the days get taller, and art on them moves down with them.              //
+  const slateH = useSlateH(boardFit.fill, pad, corkH, shell.navH);
+  const bh = slateH + corkH;
   const barZ = useBarZoom();
   // the ☰ button floats over the board's bottom corner (the board keeps its size); on the right it's
   // over the bottom of the Notes column, whose list stops above it
   const fit = useFit(pad, bh, shell.navH);
+  // the menu in the Notes column: the row its buttons go in (then nothing floats over the board)
+  const [dockEl, setDockEl] = useState<HTMLElement | null>(null);
   const fabClear = (() => {
-    if (side !== 'right' || drawing) return 0;
+    if (side !== 'right' || drawing || shell.dock) return 0;
     const areaH = visibleHeight() - shell.navH;
     const boardBottom = (areaH + (bh + 2 * pad) * fit.scale) / 2; // the board is centred on the screen
     const overlap = boardBottom - (innerHeight - FAB_BAND * barZ);
@@ -328,7 +407,10 @@ export function Board({
     const t = setTimeout(() => setSettled(zoom.z), 300);
     return () => clearTimeout(t);
   }, [zoom.z]);
-  const res = Math.max(1, Math.min(4, Math.round(fit.scale * settled * (devicePixelRatio || 1) * 2) / 2));
+  // (a low-power screen: the chalk drawn at 1x, however sharp the screen)
+  const res = boardFit.low
+    ? 1
+    : Math.max(1, Math.min(4, Math.round(fit.scale * settled * (devicePixelRatio || 1) * 2) / 2));
   const zoomTo = (z: number, at?: [number, number]) =>
     setZoom(cur => {
       const z1 = Math.max(1, Math.min(4, z));
@@ -445,7 +527,16 @@ export function Board({
   const monthLook = lookDraft || (meta && 'artPad' in meta ? meta.look : undefined);
   const tv = useMemo(() => monthVals(theme, monthLook), [theme, monthLook]);
   const css = useMemo(() => themeCss(tv, sf.lum), [tv, sf.lum]);
-  const m = month.data && 'grid' in month.data ? month.data : null;
+  const m = useMemo(() => {
+    const d = month.data && 'grid' in month.data ? month.data : null;
+    const o = otherYm && other.data && 'grid' in other.data ? other.data : null;
+    if (!d || !o) return d;
+    // both months' grids have the days between them: each event once
+    const key = (e: BoardEvent) =>
+      [e.ref?.href || '', e.ref?.rid || '', e.title, e.start, e.end, e.time || ''].join('|');
+    const seen = new Set(d.events.map(key));
+    return { ...d, events: [...d.events, ...o.events.filter(e => !seen.has(key(e)))] };
+  }, [month.data, other.data, otherYm]);
   const slides = useSlides(photos, !edit || family);
   const [day, setDay] = useState<string | null>(null);
   const closeDay = useCallback(() => setDay(null), []);
@@ -479,7 +570,9 @@ export function Board({
     if (family) {
       // double tap = the photo frame, like the wall; a single tap still edits (after a short wait).
       // Only taps on the board itself: not the strip, the zoom or a card.
-      if (!(e.target as Element).closest?.('.slate')) return void (lastTap.current = 0);
+      // (nor the month or week arrows: › › skips ahead, it doesn't start the photo frame)
+      if (!(e.target as Element).closest?.('.slate') || (e.target as Element).closest?.('button.nav'))
+        return void (lastTap.current = 0);
       if (drawing || slides.on || slides.justChanged()) return void (lastTap.current = 0);
       if (e.timeStamp - lastTap.current < 450) {
         lastTap.current = 0;
@@ -534,6 +627,10 @@ export function Board({
   useEffect(() => {
     document.body.classList.toggle('drawing', drawing);
   }, [drawing]);
+  // a low-power screen: no animations or fades anywhere on it
+  useEffect(() => {
+    document.documentElement.classList.toggle('lowpower', boardFit.low);
+  }, [boardFit.low]);
   useEffect(() => {
     const b = document.body.classList;
     b.toggle('display', !edit);
@@ -586,9 +683,28 @@ export function Board({
         art.reload();
       });
   }, [week, edit, shown, mm, borderDraft, placed, realPad, who, art, ed.items, metaLive]);
-  const base = week || placed === shownPad ? ed.items : laidOut;
+  // a taller board (filling the screen): the art shown on its taller days, and anything drawn, moved or
+  // changed here put back on the board's own layout before it's kept (every screen sees it on the same days)
+  const tallItems = useMemo(() => stretchY(ed.items, SLATE_H, slateH), [ed.items, slateH]);
+  const back = (list: ArtItem[]) => stretchY(list, slateH, SLATE_H);
+  const view: typeof ed =
+    slateH === SLATE_H
+      ? ed
+      : {
+          ...ed,
+          items: tallItems,
+          add: (it: ArtItem) => ed.add(back([it])[0]),
+          addMany: (list: ArtItem[]) => ed.addMany(back(list)),
+          remove: (list: ArtItem[]) => ed.remove(back(list)),
+          update: (before: ArtItem[], after: ArtItem[]) => ed.update(back(before), back(after)),
+          preview: (list: ArtItem[]) => ed.preview(back(list))
+        };
+  const base = useMemo(
+    () => (week || placed === shownPad ? tallItems : stretchY(laidOut, SLATE_H, slateH)),
+    [week, placed, shownPad, tallItems, laidOut, slateH]
+  );
   const items = hidden.length ? base.filter(x => !hidden.includes(x.id)) : base;
-  const selItems = ed.items.filter(x => selection.includes(x.id));
+  const selItems = view.items.filter(x => selection.includes(x.id));
   const place = async (at: [number, number]) => {
     if (!placing) return;
     const b = unionBox(placing.st.items) || { x1: 0, y1: 0, x2: 0, y2: 0 };
@@ -600,7 +716,7 @@ export function Board({
       return o;
     });
     setPlacing(null);
-    const ids = await ed.addMany(list);
+    const ids = await view.addMany(list);
     setPen(p => ({ ...p, tool: 'select' }));
     setSelection(ids);
   };
@@ -637,11 +753,12 @@ export function Board({
     (dates: string[]) => {
       setEditing(null);
       justSaved.current = dates;
-      const other = dates.find(d => d && d.slice(0, 7) !== shown);
-      if (other && !dates.some(d => d?.slice(0, 7) === shown) && !week) setYm(other.slice(0, 7));
+      const elsewhere = dates.find(d => d && d.slice(0, 7) !== shown);
+      if (elsewhere && !dates.some(d => d?.slice(0, 7) === shown) && !week) setYm(elsewhere.slice(0, 7));
       month.reload();
+      if (otherYm) other.reload();
     },
-    [shown, month]
+    [shown, month, other, otherYm]
   );
   // ------------------------ //
   // | Art over the writing | //
@@ -664,11 +781,13 @@ export function Board({
       const hide = new Set<Writing>([
         ...coveredBy(
           items.filter(x => x.cv === 'hide'),
-          all.filter(w => !w.other)
+          all.filter(w => !w.other),
+          slateH
         ),
         ...coveredBy(
           items.filter(x => !x.e),
-          all.filter(w => w.other)
+          all.filter(w => w.other),
+          slateH
         )
       ]);
       for (const w of hide) w.el.classList.add('underart');
@@ -694,9 +813,9 @@ export function Board({
     }
   }, [drawing]);
   const setCover = (ids: number[], cv: 'hide' | 'under') => {
-    const before = ed.items.filter(x => ids.includes(x.id));
+    const before = view.items.filter(x => ids.includes(x.id));
     if (before.length)
-      ed.update(
+      view.update(
         before,
         before.map(x => ({ ...x, cv }))
       );
@@ -708,12 +827,12 @@ export function Board({
     const t = setTimeout(() => {
       const writing = writingOn(slate!).filter(w => !w.other);
       const groups = new Map<string, ArtItem[]>();
-      for (const x of ed.items)
+      for (const x of view.items)
         if (x.id >= 0 && !x.cv && !x.e) groups.set(x.g || 'i' + x.id, [...(groups.get(x.g || 'i' + x.id) || []), x]);
       const ids: number[] = [];
       const hit = new Set<Writing>();
       for (const list of groups.values()) {
-        const c = coveredBy(list, writing);
+        const c = coveredBy(list, writing, slateH);
         if (!c.length) continue;
         ids.push(...list.map(x => x.id));
         for (const w of c) hit.add(w);
@@ -738,7 +857,7 @@ export function Board({
       setAsk({ ids, what });
     }, 700);
     return () => clearTimeout(t);
-  }, [edit, drawing, m, ed.items, ask, placing, hidden]);
+  }, [edit, drawing, m, view.items, ask, placing, hidden]);
   const answer = (cv: 'hide' | 'under') => {
     if (ask) setCover(ask.ids, cv);
     answered.current = cv;
@@ -782,12 +901,16 @@ export function Board({
           id="slate"
           ref={slateRef}
           data-surface={sf.id}
-          style={pad ? { backgroundImage: bg } : undefined}
+          style={{
+            ...(pad ? { backgroundImage: bg } : {}),
+            ...(slateH !== SLATE_H ? { height: slateH, ['--slateH' as string]: slateH + 'px' } : {})
+          }}
         >
           <style>{css}</style>
           {m && (
             <Month
               data={m}
+              height={slateH}
               bins={extras?.bins || null}
               bg={sf.lum}
               today={{ shape: tv.todayS, color: tv.todayC }}
@@ -795,7 +918,10 @@ export function Board({
               onDay={onDay}
               onEvent={onEvent}
               nav={edit ? { prev: () => go(-1), next: () => go(1) } : undefined}
+              // a tap on the month's name reloads, on a screen that edits (not the wall; not while drawing)
+              onTitle={edit && !drawing ? () => location.reload() : undefined}
               week={week}
+              under={split ? <Split view={weekView} edit={edit} drawing={drawing} time24={!!today?.time24} /> : null}
               title={
                 <Title
                   text={monthName}
@@ -815,13 +941,20 @@ export function Board({
               layoutKey={`${monthName}|${JSON.stringify(titleStyle)}|${border?.size || ''}`}
             />
           )}
-          <Notes time24={!!today?.time24} edit={edit} />
-          <WeatherMotion wall={!edit} />
-          {behind.length > 0 && <Art items={behind} bg={sf.lum} res={res} gifsPlay under />}
-          <Art items={front} bg={sf.lum} res={res} gifsPlay />
+          <Notes
+            time24={!!today?.time24}
+            edit={edit}
+            drawing={drawing}
+            only={split ? ['info'] : undefined}
+            dockRef={edit && shell.dock ? setDockEl : undefined}
+          />
+          {!boardFit.low && <WeatherMotion wall={!edit} />}
+          {behind.length > 0 && <Art items={behind} bg={sf.lum} res={res} gifsPlay={!boardFit.low} under h={slateH} />}
+          <Art items={front} bg={sf.lum} res={res} gifsPlay={!boardFit.low} h={slateH} />
           {edit && drawing && (
             <DrawLayer
-              art={ed}
+              art={view}
+              h={slateH}
               pen={pen}
               bg={sf.lum}
               res={res}
@@ -884,6 +1017,16 @@ export function Board({
             drawing={drawing}
             onDraw={toggleDraw}
             drawLabel={family ? 'Decorate' : 'Draw'}
+            dock={edit && shell.dock ? dockEl : null}
+            actions={{
+              add: m
+                ? () =>
+                    setEditing({ k: 'event', ev: null, date: m.ym === m.today.slice(0, 7) ? m.today : m.ym + '-01' })
+                : undefined,
+              slides: photos?.photos.length ? slides.doubleTap : undefined,
+              week: () => navigate(weekly ? homeHref(who) : 'week'),
+              weekly
+            }}
             add={
               m && !drawing ? (
                 <button
@@ -910,12 +1053,12 @@ export function Board({
                   canRedo={ed.canRedo}
                   onStamps={() => setEditing({ k: 'library' })}
                   onClear={() => {
-                    const all = ed.items.filter(x => x.id >= 0 && !x.e);
+                    const all = view.items.filter(x => x.id >= 0 && !x.e);
                     if (
                       all.length &&
                       confirm(`Wipe all the art for ${week ? 'this week' : monthName}? (Undo can bring it back.)`)
                     )
-                      ed.remove(all);
+                      view.remove(all);
                   }}
                 />
               ) : undefined
@@ -946,14 +1089,13 @@ export function Board({
             )}
             {m && !drawing && (
               <>
-                {!family && (
-                  <button type="button" className="pill" id="titleBtn" onClick={() => setEditing({ k: 'title' })}>
-                    <span className="ic" aria-hidden="true">
-                      🔤
-                    </span>{' '}
-                    Month title
-                  </button>
-                )}
+                {/* (a family screen too: everything but drawing is a family screen's) */}
+                <button type="button" className="pill" id="titleBtn" onClick={() => setEditing({ k: 'title' })}>
+                  <span className="ic" aria-hidden="true">
+                    🔤
+                  </span>{' '}
+                  Month title
+                </button>
                 <button type="button" className="pill" id="borderBtn" onClick={() => setEditing({ k: 'border' })}>
                   <span className="ic" aria-hidden="true">
                     🖼️
@@ -980,18 +1122,27 @@ export function Board({
                   </span>{' '}
                   Style
                 </button>
+                {week && (
+                  // 🗓️ Week's own settings: where it starts, and Split View (⚙️ Settings → Week)
+                  <button type="button" className="pill" id="weekSetBtn" onClick={() => showSettings('week')}>
+                    <span className="ic" aria-hidden="true">
+                      ⚙️
+                    </span>{' '}
+                    Week
+                  </button>
+                )}
               </>
             )}
           </Strip>
         )}
       </div>
-      {(!edit || family) && photos && (
+      {(!edit || family || slides.on) && photos && (
         <Slideshow photos={photos} on={slides.on} time24={!!today?.time24} onTap={slides.tapSlides} />
       )}
       <ReminderAlert time24={!!today?.time24} />
       <TimerDone />
       <Offline />
-      {edit && !family && (
+      {edit && !family && !hideZoom && (
         <div className="zoom" aria-label="Zoom">
           <button type="button" aria-label="Zoom out" onClick={() => zoomTo(zoom.z / 1.25)} disabled={zoom.z <= 1}>
             −
@@ -1049,7 +1200,7 @@ export function Board({
           color={pen.color[pen.medium]}
           onClose={closeEditor}
           onDelete={() => {
-            if (editing.item) ed.remove([editing.item]);
+            if (editing.item) view.remove([editing.item]);
             closeEditor();
           }}
           onSave={t => {
@@ -1058,8 +1209,8 @@ export function Board({
               const after: Item = { ...editing.item, ...t };
               if (posca) after.m = true;
               else delete after.m;
-              ed.update([editing.item], [after]);
-            } else ed.add({ id: 0, k: 't', x: editing.at[0], y: editing.at[1], ...t, ...(posca ? { m: true } : {}) });
+              view.update([editing.item], [after]);
+            } else view.add({ id: 0, k: 't', x: editing.at[0], y: editing.at[1], ...t, ...(posca ? { m: true } : {}) });
             closeEditor();
           }}
         />
@@ -1068,7 +1219,7 @@ export function Board({
         <RecolorSheet
           onClose={closeEditor}
           onSave={(line, fill) => {
-            ed.update(selItems, recolor(selItems, line, fill));
+            view.update(selItems, recolor(selItems, line, fill));
             closeEditor();
           }}
         />
@@ -1096,14 +1247,7 @@ export function Board({
       )}
       {editing?.k === 'notes' && <NotesEditor onClose={closeEditor} />}
       {editing?.k === 'photos' && shown && (
-        <PhotosEditor
-          ym={shown}
-          monthName={monthName}
-          meta={mm}
-          photos={photos}
-          family={family}
-          onClose={closeEditor}
-        />
+        <PhotosEditor ym={shown} monthName={monthName} meta={mm} photos={photos} onClose={closeEditor} />
       )}
       {editing?.k === 'style' && shown && (
         <StyleEditor

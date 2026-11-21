@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Slideshow.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      The overnight slideshow on the wall: a photo, or a collage of 2-3,
@@ -33,10 +33,17 @@
  1.1.0    2026-11-17   joshua    A small 'Photos are offline' note when a big
                         claude    album can't be reached.
                                   The next countdown in a corner.
+
+ 1.2.0    2026-11-21   colby     A swipe goes to the next photos, or back to
+                        joshua    the last ones (from Colby Way's board).
+                        claude    Dates in the screen's language; the family's
+                                  events and reminders stay in their own
+                                  words.
 ===============================================================================
 */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { PointerEvent } from 'react';
 import type { RemindersView } from '../../../shared/lists.ts';
 import { useLive } from '../lib/live.ts';
 import { fmtTime } from '../lib/today.ts';
@@ -44,6 +51,7 @@ import { isDone } from '../pages/Reminders.tsx';
 import { frameFor, photoSrc } from './photos.ts';
 import { CountdownCard } from './Countdown.tsx';
 import { useCountdowns, useSleeps } from '../lib/countdowns.ts';
+import { locale } from '../../../shared/i18n.ts';
 import type { Photo, PhotoCfg, Photos } from './photos.ts';
 import './slides.css';
 
@@ -312,7 +320,7 @@ function useClock(time24: boolean) {
   return {
     time: `${h}:${String(n.getMinutes()).padStart(2, '0')}`,
     ampm: time24 ? '' : n.getHours() < 12 ? 'AM' : 'PM',
-    date: n.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+    date: n.toLocaleDateString(locale(), { weekday: 'long', month: 'long', day: 'numeric' })
   };
 }
 
@@ -347,27 +355,65 @@ export function Slideshow({
   const loading = useRef<{ key: number; left: number } | null>(null);
   const seq = useRef(0);
 
+  // the slides shown so far (the last 50), so a swipe can go back through them
+  const hist = useRef<Tile[][]>([]);
+  const pos = useRef(-1);
   // the next slide goes on the hidden layer; it's shown once its photos have loaded
+  const show = useCallback(
+    (tiles: Tile[]) => {
+      const W = innerWidth - (side ? SIDE_W : 0);
+      const H = innerHeight;
+      const corner = clockCorner(tiles, W, H);
+      const left = corner[1] === 'l';
+      const top = corner[0] === 't';
+      const s: Slide = {
+        key: ++seq.current,
+        tiles,
+        corner,
+        dx: Math.round(Math.random() * 36) * (left ? 1 : -1), // drift so nothing sits still all night
+        dy: Math.round(Math.random() * 20) * (top ? 1 : -1)
+      };
+      loading.current = { key: s.key, left: tiles.length };
+      const hidden = 1 - curRef.current;
+      setSlides(sl => (hidden === 1 ? [sl[0], s] : [s, sl[1]]));
+      setTimeout(() => reveal(s.key), 8000); // don't wait forever on a slow photo
+    },
+    [side]
+  );
+  // forward: the one after (after going back), else a new slide
   const next = useCallback(() => {
-    const W = innerWidth - (side ? SIDE_W : 0);
-    const H = innerHeight;
-    const tiles = plan.current(photos.photos, W, H);
+    if (pos.current < hist.current.length - 1) return show(hist.current[++pos.current]);
+    const tiles = plan.current(photos.photos, innerWidth - (side ? SIDE_W : 0), innerHeight);
     if (!tiles) return;
-    const corner = clockCorner(tiles, W, H);
-    const left = corner[1] === 'l';
-    const top = corner[0] === 't';
-    const s: Slide = {
-      key: ++seq.current,
-      tiles,
-      corner,
-      dx: Math.round(Math.random() * 36) * (left ? 1 : -1), // drift so nothing sits still all night
-      dy: Math.round(Math.random() * 20) * (top ? 1 : -1)
-    };
-    loading.current = { key: s.key, left: tiles.length };
-    const hidden = 1 - curRef.current;
-    setSlides(sl => (hidden === 1 ? [sl[0], s] : [s, sl[1]]));
-    setTimeout(() => reveal(s.key), 8000); // don't wait forever on a slow photo
-  }, [photos, side]);
+    hist.current.push(tiles);
+    if (hist.current.length > 50) hist.current.shift();
+    pos.current = hist.current.length - 1;
+    show(tiles);
+  }, [photos, side, show]);
+  const back = useCallback(() => {
+    if (pos.current > 0) show(hist.current[--pos.current]);
+  }, [show]);
+  // ------------------------ //
+  // | A swipe across it | //
+  // ------------------------ //
+  // Right to left: the next photos; left to right: back to the last ones    //
+  // (handy in a big album). A swipe isn't a tap, so the slideshow stays,    //
+  // and its clock starts again from the swipe. From Colby Way's board.      //
+  const [kick, setKick] = useState(0);
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+  const swiped = useRef(0);
+  const onDown = (e: PointerEvent) => (swipe.current = e.isPrimary ? { x: e.clientX, y: e.clientY } : null);
+  const onUp = (e: PointerEvent) => {
+    const s0 = swipe.current;
+    swipe.current = null;
+    if (!s0) return;
+    const dx = e.clientX - s0.x;
+    if (Math.abs(dx) < 80 || Math.abs(e.clientY - s0.y) > Math.abs(dx) / 2) return;
+    swiped.current = Date.now();
+    if (dx < 0) next();
+    else back();
+    setKick(k => k + 1);
+  };
   const reveal = (key: number) => {
     if (loading.current?.key !== key) return;
     loading.current = null;
@@ -379,10 +425,13 @@ export function Slideshow({
   };
   useEffect(() => {
     if (!on) return;
-    next();
+    if (!kick) next(); // (after a swipe: its photos stay, and the clock starts again)
     const t = setInterval(next, (cfg.every || 20) * 1000);
     return () => clearInterval(t);
-  }, [on, next, cfg.every]);
+  }, [on, next, cfg.every, kick]);
+  useEffect(() => {
+    if (!on) setKick(0); // the next time it comes on, it starts with new photos
+  }, [on]);
 
   const shown = slides[cur];
   const clock = useClock(time24);
@@ -417,7 +466,9 @@ export function Slideshow({
       id="slides"
       className={(on ? 'on' : '') + (on && side ? ' sidepanel-on' : '')}
       aria-hidden="true"
-      onClick={onTap}
+      onPointerDown={onDown}
+      onPointerUp={onUp}
+      onClick={() => Date.now() - swiped.current > 500 && onTap()}
     >
       <div className="slarea" style={side ? { left: SIDE_W } : undefined}>
         {slides.map((s, i) => (
@@ -500,7 +551,7 @@ function SlideInfo({ cfg, time24, right }: { cfg: PhotoCfg; time24: boolean; rig
           {evs.slice(0, 5).map((e, i) => (
             <li key={i}>
               {e.time && <small>{e.time}</small>}
-              {e.title}
+              <span translate="no">{e.title}</span>
             </li>
           ))}
         </ul>
@@ -517,7 +568,7 @@ function SlideInfo({ cfg, time24, right }: { cfg: PhotoCfg; time24: boolean; rig
           {rs.slice(0, 4).map(it => (
             <li key={it.id}>
               {it.mode === 'time' && <small>{fmtTime(it.time, time24)}</small>}
-              {it.title}
+              <span translate="no">{it.title}</span>
             </li>
           ))}
         </ul>

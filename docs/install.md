@@ -75,8 +75,7 @@ On the server: `sudo /opt/family-chalk-planner/deploy/reset-admin.sh`. It remove
 **On the internet:** don't expose the board directly. Use Tailscale, Cloudflare Access, or a reverse proxy with its own login in front of it, keep `ALLOW_UNPAIRED_VIEW` off, and use HTTPS so every cookie is marked Secure. [cloud.md](cloud.md) walks through a Cloudflare Tunnel with Access, at home or on a small cloud server.
 
 ## 4. The wall display
-- **Android screen or tablet:** [Fully Kiosk Browser](https://www.fully-kiosk.com/). Set the Start URL to `http://<server>:3002/`, turn on "Keep screen on", and turn on start-on-boot.
-- **Raspberry Pi or PC:** any browser in full-screen/kiosk mode, e.g. `chromium --kiosk http://<server>:3002/` or `firefox --kiosk http://<server>:3002/`.
+- **Any wall screen:** the [wall screens guide](kiosk.md) has the steps: Android with [FreeKiosk](https://github.com/RushB-fr/freekiosk) or [Fully Kiosk Browser](https://www.fully-kiosk.com/), Linux and Raspberry Pi with Chromium in kiosk mode, Windows with Edge kiosk, and Mac.
 - The wall is read-only. During the night slideshow, one tap shows the calendar for 5 minutes and a double tap goes back to the slideshow.
 
 ## 5. HTTPS and a nice name (recommended)
@@ -109,19 +108,21 @@ The board runs on Node.js, which the installer sets up from NodeSource:
 
 | Your machine | Node.js | Supported until |
 | --- | --- | --- |
-| 64-bit (amd64, arm64: most PCs, Proxmox containers, a Raspberry Pi 3/4/5 on the 64-bit Raspberry Pi OS) | **26** (recommended) | April 2029 |
+| 64-bit (amd64, arm64: most PCs, Proxmox containers, a Raspberry Pi 3/4/5 on the 64-bit Raspberry Pi OS) | **26** (needed from 1.2) | April 2029 |
 | 32-bit ARM (a Raspberry Pi on the 32-bit Raspberry Pi OS) | **22**, the newest Node.js built for it | **April 30, 2027** |
 | Docker and the Home Assistant app | 26, inside the image | (comes with the image) |
 
-- **Moving up:** from 1.1, **Update now** moves a NodeSource install to the recommended Node.js by itself (the
-  overnight updates leave that to Update now, since a new Node.js is a bigger change). If it can't, the board carries
-  on with the Node.js it has.
+- **From 1.2, a 64-bit machine needs Node.js 26.** A new install sets it up (from NodeSource), and updates move a
+  NodeSource install up to it by themselves, overnight too. If an update can't, the board carries on with the
+  Node.js it has and the update says so: the board still runs on 22.18 or newer, so an update never stops a board
+  that works.
 - **32-bit Raspberry Pi OS:** Node.js stopped making builds for 32-bit ARM with version 24, so these boards stay on
   Node.js 22. The board keeps working on 22 until its end of life on April 30, 2027; after that, board updates need a
   newer Node.js, and a 32-bit board stays on the last version that runs on 22. To keep getting updates, move to the
   **64-bit Raspberry Pi OS** (any Raspberry Pi 3, 4 or 5 can run it): install the board there and restore your backup
   (see [Backups](#backups)).
-- Node.js installed some other way (not from NodeSource) is left as it is; the board needs 22.18 or newer.
+- Node.js installed some other way (not from NodeSource) is left as it is: on a 64-bit machine, install Node.js 26
+  yourself ([nodejs.org](https://nodejs.org/)) to keep getting updates; a new install stops and asks for it.
 
 ## Backups
 Every night the board writes a consistent copy of its database to `BACKUP_DIR` (default `data/backup`) and keeps 14 of them. Uploaded GIFs live in `BACKUP_DIR/media`. Back up that folder with your usual tools (it has everything, settings included). The photo cache and face finder can always be rebuilt, so they don't need backing up.

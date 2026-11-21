@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | fixtures.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      A real board for the browser tests: the server with a fake calendar,
@@ -27,6 +27,9 @@
  1.1.0    2026-11-17   joshua    Waits for the picture styles to unpack
                         claude    before the tests start (two Pictures tests
                                   failed when they ran before that).
+
+ 1.2.0    2026-11-21   joshua    menuStyle (this screen's menu, from ⚙️
+                        claude    Settings → This screen) and longPress.
 ===============================================================================
 */
 
@@ -277,4 +280,26 @@ function thisMonth() {
 }
 
 const expect = base.expect;
-export { test, expect, thisMonth };
+// ---------------------------------------------------------------- //
+// | This screen's menu (⚙️ Settings → This screen), and a long press | //
+// ---------------------------------------------------------------- //
+// The cork, the ☰ button on the right or left, or the ✏️ beside it: from   //
+// the ☰ menu's This screen… (opening the menu first if it isn't open).     //
+async function menuStyle(page: Page, v: 'cork' | 'right' | 'left' | 'draw') {
+  if (!(await page.locator('#menuPanel').count()))
+    await ((await page.locator('#menuFab').count()) ? page.locator('#menuFab') : page.locator('#menuBtn')).click();
+  await page.locator('#thisScreenBtn').click();
+  await page.locator('#menuStyle-' + v).click();
+  if (v === 'draw') await base.expect(page.locator('#menuStyle-draw')).toBeChecked();
+  await page.locator('#settingsCard .shead .closex').click();
+  await base.expect(page.locator('#settingsCard')).toHaveCount(0);
+}
+// press and hold (a tile in the ☰ menu pins it); hovering first waits for the menu to finish sliding in
+async function longPress(page: Page, selector: string) {
+  await page.locator(selector).hover();
+  await page.mouse.down();
+  await page.waitForTimeout(800);
+  await page.mouse.up();
+}
+
+export { test, expect, thisMonth, menuStyle, longPress };

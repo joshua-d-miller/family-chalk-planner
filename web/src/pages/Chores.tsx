@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Chores.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      Chores: today's, this week's and this month's, a column per person
@@ -42,6 +42,11 @@
 
  1.1.0    2026-11-17   joshua    A kid's tablet: the next countdown, big,
                         claude    with its paper chain.
+
+ 1.2.0    2026-11-21   joshua    The page's ✕ goes back to where a swipe
+                        claude    came from (the week or the calendar).
+                                  The chores stay in the family's words in
+                                  another language.
 ===============================================================================
 */
 
@@ -232,6 +237,7 @@ export function Chores({ who }: { who: Who | null }) {
       id="chores"
       title={title}
       who={who}
+      onClose={back ? goBack : undefined}
       tools={
         <>
           {editor && (
@@ -301,7 +307,7 @@ export function Chores({ who }: { who: Who | null }) {
                       {full ? '✓' : ''}
                     </span>
                     <span className="t ct">
-                      {c.title}
+                      <span translate="no">{c.title}</span>
                       {c.times > 1 && (
                         <span className="cn">
                           {' '}

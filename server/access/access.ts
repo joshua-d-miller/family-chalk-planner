@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | access.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      Who may do what.
@@ -97,6 +97,14 @@
                         claude    own cards and ☰ menu.
                                   Family screens may choose sleeps or days for
                                   their countdowns.
+
+ 1.2.0    2026-11-21   joshua    Family screens may start their 🗓️ Week on
+                        colby     today and pick Split View; a screen may
+                        claude    hide its − / + / Fit buttons (from Colby
+                                  Way's board). Fill the screen, and the
+                                  wooden frame, per screen. Birthdays for
+                                  family screens too. Its language (anyone
+                                  may ask which; a screen may pick its own).
 ===============================================================================
 */
 
@@ -637,8 +645,9 @@ export function setup(
   ];
   const SELF = [/^\/account\//, /^\/passkey\//]; // need a signed-in person; checked in the route
   // family screens: events, meals, jars, countdowns, event colors, placing/moving/erasing art (stamps,
-  // clipart, words), board style, month title and photos: everything but drawing.
-  // Not: wiping a month, changing the stamp/GIF libraries, uploads, settings.
+  // clipart, words), board style, month title, photos, holidays, birthdays and the Notes column:
+  // everything but drawing. Not: wiping a month, changing the stamp/GIF libraries, uploads, the
+  // calendar and trash day (the admin's).
   const FAMILY_POSTS = new Set([
     '/events',
     '/events/update',
@@ -653,6 +662,7 @@ export function setup(
     '/evsize',
     '/art/relayout',
     '/holidays',
+    '/birthdays', // (a cake on birthdays, and counting down to every one)
     '/art',
     '/art/update',
     '/art/bulk',
@@ -660,6 +670,7 @@ export function setup(
     '/art/delete',
     '/art/undo',
     '/theme',
+    '/styles', // the styles saved by name
     '/meta',
     '/photos/settings',
     '/photos/sync',
@@ -684,6 +695,11 @@ export function setup(
     '/menustyle', // the cork or the ☰ button (the wall has neither)
     '/uilook', // the look of its cards and ☰ menu
     '/sleeps', // its countdowns in sleeps or days
+    '/weekfrom', // its 🗓️ Week from today or from the board's first day
+    '/nozoom', // whether it shows the − / + / Fit buttons
+    '/weekview', // its 🗓️ Week: Split View, and what's under the week
+    '/boardfit', // fill the screen, and the wooden frame
+    '/lang', // its language
     '/clip/favorites', // ★ a picture into Favorites
     '/clip/web/keep' // a public-domain picture from the web, onto the board
   ]);
@@ -712,6 +728,8 @@ export function setup(
     if (haApp() && (/^\/(account|passkey)\//.test(req.path) || /^\/users\/(invite|reinvite)/.test(req.path)))
       return res.status(403).json({ error: 'Sign-in is Home Assistant’s: open the board from Home Assistant' });
     if (PUBLIC.some(r => r.test(req.path)) || SELF.some(r => r.test(req.path))) return next();
+    // which language (a screen not paired yet shows its pairing code in the board's language)
+    if (!write && req.path === '/lang') return next();
     const need = ADMIN.some(r => r.test(req.path))
       ? RANK.admin
       : !write

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Draw.tsx
 ===============================================================================
- Version:   0.16.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-21
 
  Purpose:
      Drawing on the board (a tablet): chalk or Posca lines (Apple Pencil
@@ -33,6 +33,9 @@
 
  0.16.0    2026-11-11   joshua    Turning what's selected: a handle above it,
                         claude    and buttons.
+
+ 1.2.0    2026-11-21   joshua    As tall as the slate on a screen that fills
+                        claude    itself.
 ===============================================================================
 */
 
@@ -111,7 +114,8 @@ export function DrawLayer({
   onSaveStamp,
   placing,
   onPlace,
-  onHide
+  onHide,
+  h = H
 }: {
   art: ArtEditor;
   pen: Pen;
@@ -125,6 +129,7 @@ export function DrawLayer({
   placing: boolean; // a stamp is waiting for a tap
   onPlace: (at: [number, number]) => void;
   onHide: (ids: number[]) => void; // what the eraser is rubbing out, hidden until it's saved
+  h?: number; // the slate's height on this screen (taller where it fills the screen)
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<Drag>(null);
@@ -137,7 +142,7 @@ export function DrawLayer({
   };
   const toBoard = (e: { clientX: number; clientY: number }): [number, number] => {
     const r = ref.current!.getBoundingClientRect();
-    return [((e.clientX - r.left) * W) / r.width, ((e.clientY - r.top) * H) / r.height];
+    return [((e.clientX - r.left) * W) / r.width, ((e.clientY - r.top) * h) / r.height];
   };
   const items = art.items;
   const sel = items.filter(x => selection.includes(x.id));
@@ -327,7 +332,7 @@ export function DrawLayer({
       }}
     >
       {drag?.k === 'line' && <Art items={[{ ...drag.item, id: -1 }]} bg={bg} res={res} gifsPlay={false} />}
-      <svg className="drawUi" width={W} height={H} viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
+      <svg className="drawUi" width={W} height={h} viewBox={`0 0 ${W} ${h}`} aria-hidden="true">
         {drag?.k === 'erase' && <circle cx={drag.at[0]} cy={drag.at[1]} r={ERASE_R} className="ring" />}
         {drag?.k === 'band' && (
           <rect
@@ -353,7 +358,7 @@ export function DrawLayer({
           <div
             className="selGrip"
             aria-label="Drag to resize"
-            style={{ left: Math.min(W - 16, selBox.x2 + 6), top: Math.min(H - 16, selBox.y2 + 6) }}
+            style={{ left: Math.min(W - 16, selBox.x2 + 6), top: Math.min(h - 16, selBox.y2 + 6) }}
             onPointerDown={e => {
               e.stopPropagation();
               e.preventDefault();
@@ -377,7 +382,7 @@ export function DrawLayer({
             onPointerDown={e => e.stopPropagation()}
             style={{
               left: Math.max(6, Math.min(W - barW - 6, (selBox.x1 + selBox.x2) / 2 - barW / 2)),
-              top: selBox.y1 - 62 > 4 ? selBox.y1 - 62 : Math.min(H - 54, selBox.y2 + 14)
+              top: selBox.y1 - 62 > 4 ? selBox.y1 - 62 : Math.min(h - 54, selBox.y2 + 14)
             }}
           >
             {onSaveStamp && (

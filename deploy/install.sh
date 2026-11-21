@@ -3,10 +3,10 @@
 ===============================================================================
  Family Chalk Planner | Deploy | install.sh
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-10-11
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      Installs Family Chalk Planner on a Debian or Ubuntu machine (a
@@ -91,6 +91,9 @@
 
  1.1.0    2026-11-17   joshua    Node.js 26 on a 64-bit machine, 22 on 32-bit
                         claude    ARM (deploy/node-version.sh).
+
+ 1.2.0    2026-11-21   joshua    Node.js 26 is required on a 64-bit machine
+                        claude    (installed from NodeSource if older).
 ===============================================================================
 HEADER
 
@@ -210,8 +213,9 @@ if [ "$UNIT_ONLY" = yes ]; then write_unit; say "Service updated to run from $AP
 ### ------------------------ ###
 ### | Packages and Node.js | ###
 ### ------------------------ ###
-### The board needs Node.js 22.18 or newer: it runs TypeScript directly.    ###
-### Installed from NodeSource if it's missing or too old. Then the board's  ###
+### The board needs Node.js 26 on a 64-bit machine (22.18 on 32-bit ARM):  ###
+### it runs TypeScript directly. Installed from NodeSource if it's missing  ###
+### or too old (SKIP_PACKAGES: checked, not installed). Then the board's    ###
 ### packages (npm ci, without the developer tools) and its screens (from    ###
 ### the release, or built here when following a branch). The service user   ###
 ### can read the code but never change it.                                  ###
@@ -224,7 +228,8 @@ if [ "${SKIP_PACKAGES:-}" != 1 ]; then
   # Node.js 26 on a 64-bit machine; 22 on 32-bit ARM, the newest built for it (deploy/node-version.sh)
   # shellcheck source=deploy/node-version.sh
   . "$APP_DIR/deploy/node-version.sh"
-  if ! node_ok; then
+  # (from 1.2 a 64-bit machine needs Node.js 26: an older one is moved up to it)
+  if ! node_ok || ! node_new_enough; then
     say "Installing Node.js $(node_target) (NodeSource)"
     node_install "$(node_target)" || die "Couldn't install Node.js $(node_target) from NodeSource"
   fi
@@ -233,6 +238,11 @@ if [ "${SKIP_PACKAGES:-}" != 1 ]; then
   fi
 fi
 node_ok || die "Node.js 22.18 or newer is required (found: $(node -v 2>/dev/null || echo none))"
+if [ -f "$APP_DIR/deploy/node-version.sh" ]; then
+  # shellcheck source=deploy/node-version.sh
+  . "$APP_DIR/deploy/node-version.sh"
+  node_new_enough || die "Node.js $(node_needed | cut -d. -f1) is required on a 64-bit machine (found: $(node -v)). Install it (https://nodejs.org or NodeSource), then run this again."
+fi
 
 say "Installing dependencies"
 OWNER="$(stat -c %U "$APP_DIR")"

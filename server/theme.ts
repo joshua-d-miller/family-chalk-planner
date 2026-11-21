@@ -2,15 +2,17 @@
 ===============================================================================
  Family Chalk Planner | Server | theme.ts
 ===============================================================================
- Version:   1.1.2
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-20
+ Updated:   2026-11-21
 
  Purpose:
      Board style ("theme"): a preset name plus the family's tweaks to it,
      the background, and whether it changes with the season. The presets
      themselves live in the page; the server only checks the shape.
        kv 'theme'  { p: preset, o: { key: value }, s?: background, z?: 1 }
+     And the styles the family saved by name, to pick again (or share):
+       kv 'savedStyles'  [{ name, theme }]  (up to 20)
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -37,6 +39,9 @@
 
  1.1.2    2026-11-20   joshua    The backgrounds and the photo check, shared
                         claude    with month.ts.
+
+ 1.2.0    2026-11-21   joshua    Saved styles, by name (up to 20).
+                        claude
 ===============================================================================
 */
 
@@ -148,6 +153,33 @@ export function setup({
     broadcast('theme', t);
     res.json(t);
   });
+
+  // ------------------- //
+  // | Saved styles | //
+  // ------------------- //
+  // Styles the family saved by name (up to 20), to pick again later; each   //
+  // one checked like the board style itself.                                //
+  app.get('/api/styles', (_req, res) => res.json(kv.get<SavedStyle[]>('savedStyles') || []));
+  app.post('/api/styles', (req, res) => {
+    const list = (req.body || {}).styles;
+    if (!Array.isArray(list)) return res.status(400).json({ error: 'bad styles' });
+    const out: SavedStyle[] = list
+      .slice(0, 20)
+      .map((x: { name?: unknown; theme?: unknown }) => ({
+        name: String(x?.name || '')
+          .trim()
+          .slice(0, 30),
+        theme: cleanTheme(x?.theme)
+      }))
+      .filter(x => x.name);
+    kv.set('savedStyles', out);
+    broadcast('styles', {});
+    res.json(out);
+  });
+}
+interface SavedStyle {
+  name: string;
+  theme: Theme;
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | first-run.spec.ts
 ===============================================================================
- Version:   0.17.2
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-14
- Updated:   2026-11-14
+ Updated:   2026-11-21
 
  Purpose:
      docs/getting-started.md, done by a browser on a brand-new board, the
@@ -26,6 +26,9 @@
  0.17.2    2026-11-14   joshua    A password manager filling the admin's
                         claude    sign-in into the calendar's fields doesn't
                                   end up saved as the calendar's.
+
+ 1.2.0    2026-11-21   joshua    Through the setup guide, one step at a
+                        claude    time; the 🧭 Setup guide runs again.
 ===============================================================================
 */
 
@@ -99,47 +102,73 @@ test('a new family: setup code → admin → calendar → wall', async ({ browse
   if (await skip.isVisible()) await skip.click(); // (offered a passkey: not now)
   await expect(p.locator('#vConsole')).toBeVisible();
 
-  // A password manager filling the admin's own sign-in into the calendar's fields (no typing): saving
-  // the board's name must not make that sign-in the calendar's
-  await p.locator('[data-t="board"]').click();
-  await p.locator('#bfUser').fill('alex');
-  await p.locator('#bfPass').fill('correct horse battery');
+  // The setup guide, one step at a time
+  const step = p.locator('#wizStep');
+  await expect(step).toHaveText(/step 1 of 5/);
+  await expect(p.locator('#tabs')).toBeHidden();
+  // 1. the board's name
   await p.locator('[data-k="BOARD_TITLE"]').pressSequentially('The Test Family');
-  await p.locator('#bfSave').click();
-  await expect.poll(() => log.split('starting again with the new settings').length - 1, { timeout: 30_000 }).toBe(1);
-  await expect.poll(async () => (await fetch(base + '/api/whoami').catch(() => null))?.ok ?? false).toBe(true);
-  await p.reload();
-  await p.locator('[data-t="board"]').click();
-  await expect(p.locator('[data-k="BOARD_TITLE"]')).toHaveValue('The Test Family');
-  await expect(p.locator('#bfUser')).toHaveValue('');
-
-  // Step 3: the calendar, typed in, found and saved; the board starts again by itself
+  await p.locator('#wizNext').click();
+  // 2. the weather: skipped
+  await expect(step).toHaveText(/step 2 of 5/);
+  await p.locator('#wizSkip').click();
+  // 3. the calendar, typed in and found
+  await expect(step).toHaveText(/step 3 of 5/);
+  await expect(p.locator('#bfUrl')).toBeVisible();
+  await expect(p.locator('[data-k="BOARD_TITLE"]')).toBeHidden(); // (just this step's part)
   await p.locator('#bfUrl').fill(`http://127.0.0.1:${DAV}/`);
   await p.locator('#bfUser').pressSequentially('u');
   await p.locator('#bfPass').pressSequentially('p');
   await p.locator('#bfFind').click();
   await expect(p.locator('#bfFindErr')).toContainText('Signed in');
   await p.locator('#bfCal').fill('Family');
-  await p.locator('#bfSave').click();
-  await expect.poll(() => log.split('starting again with the new settings').length - 1, { timeout: 30_000 }).toBe(2);
-  await expect
-    .poll(async () => (await fetch(base + '/api/whoami').catch(() => null))?.ok ?? false, { timeout: 30_000 })
-    .toBe(true);
+  await p.locator('#wizNext').click();
+  // 4. photos: skipped, but what the steps before filled in is saved (the board starts again by itself)
+  await expect(step).toHaveText(/step 4 of 5/);
+  await p.locator('#wizSkip').click();
+  await expect.poll(() => log.split('starting again with the new settings').length - 1, { timeout: 30_000 }).toBe(1);
+  await expect(step).toHaveText(/step 5 of 5/, { timeout: 30_000 });
 
-  // Step 4: a wall screen shows a code; pairing it shows the family's calendar
+  // 5. a wall screen shows a code; pairing it shows the family's calendar
   const wall = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
   wall.on('pageerror', e => errors.push(e.message));
   await wall.goto(base + '/');
   await expect(wall.locator('body')).toContainText(/[A-Z0-9]{4}-[A-Z0-9]{4}/, { timeout: 20_000 });
   const wallCode = /[A-Z0-9]{4}-[A-Z0-9]{4}/.exec(await wall.locator('body').innerText())![0];
-  await p.reload();
-  if (await p.locator('#vLogin').isVisible()) throw new Error('the console asked to sign in again after the restart');
-  await p.locator('[data-t="screens"]').click();
   await p.locator('#dvCode').fill(wallCode);
   await p.locator('#dvName').fill('Kitchen wall');
   await p.locator('#dvGo').click();
   await expect(p.locator('#dvList')).toContainText('paired');
   // the mock calendar's weekly Soccer (every Saturday), on the wall
   await expect(wall.locator('#grid')).toContainText('Soccer', { timeout: 20_000 });
+  await p.locator('#wizNext').click(); // Done
+  await expect(p.locator('#wizBar')).toBeHidden();
+  await expect(p.locator('#tabs')).toBeVisible();
+
+  // A password manager filling the admin's own sign-in into the calendar's fields (no typing): saving
+  // the board's name must not make that sign-in the calendar's
+  await p.locator('[data-t="board"]').click();
+  await expect(p.locator('[data-k="BOARD_TITLE"]')).toHaveValue('The Test Family');
+  await p.locator('#bfUser').fill('alex');
+  await p.locator('#bfPass').fill('correct horse battery');
+  await p.locator('[data-k="BOARD_TITLE"]').press('End');
+  await p.locator('[data-k="BOARD_TITLE"]').pressSequentially('!');
+  await p.locator('#bfSave').click();
+  await expect.poll(() => log.split('starting again with the new settings').length - 1, { timeout: 30_000 }).toBe(2);
+  await expect
+    .poll(async () => (await fetch(base + '/api/whoami').catch(() => null))?.ok ?? false, { timeout: 30_000 })
+    .toBe(true);
+  await p.reload();
+  if (await p.locator('#vLogin').isVisible()) throw new Error('the console asked to sign in again after the restart');
+  await p.locator('[data-t="board"]').click();
+  await expect(p.locator('[data-k="BOARD_TITLE"]')).toHaveValue('The Test Family!');
+  await expect(p.locator('#bfUser')).toHaveValue('u'); // the calendar's own, not the admin's
+  // the 🧭 Setup guide runs again
+  await p.locator('#wizAgain').click();
+  await expect(step).toHaveText(/step 1 of 5/);
+  await p.locator('#wizSkip').click();
+  await p.locator('#wizSkip').click();
+  await p.locator('#wizSkip').click();
+  await expect(step).toHaveText(/step 4 of 5/);
   expect(errors).toEqual([]);
 });

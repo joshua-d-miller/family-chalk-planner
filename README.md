@@ -39,7 +39,7 @@ Every way prints a one-time **setup code**. Open `http://<server>:3002/admin`, e
 
 ## Use
 
-- **Wall display:** open `http://<server>:3002/` in a kiosk browser (Fully Kiosk Browser on Android works well).
+- **Wall display:** open `http://<server>:3002/` in a kiosk browser; the [wall screens guide](docs/kiosk.md) has the steps for Android (FreeKiosk, Fully Kiosk), Linux and Raspberry Pi, Windows and Mac.
 - **Admin console:** `http://<server>:3002/admin` — create the admin with the setup code, pair screens (view only, family, or a kid's tablet), invite people (editor or admin).
 - **Tablet:** open `http://<server>:3002/edit`, sign in (passkey, or password + authenticator code), and add it to the home screen.
 - **Chores on a phone:** `http://<server>:3002/chores`, sign in, and add it to the home screen.
