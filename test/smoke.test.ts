@@ -80,7 +80,8 @@
                         claude
 
  1.2.0    2026-11-21   joshua    Where each screen's 🗓️ Week starts; hiding
-                        claude    the − / + / Fit buttons; Split View.
+                        claude    the − / + / Fit buttons; Split View; the
+                                  menu in the Notes column.
 ===============================================================================
 */
 
@@ -612,6 +613,19 @@ test('🗓️ Split View: per screen, what goes under the week, and the console 
   });
   await post('/api/devices/weekview', { id: 'wall1', split: false });
   assert.deepEqual((await (await api('/api/devices/weekview')).json()).weekview, {});
+});
+
+test('the menu in the Notes column: up to 3 buttons, from the list', async () => {
+  const now = await (await post('/api/menustyle', { style: 'notes' })).json();
+  assert.deepEqual([now.style, now.dock], ['notes', ['add', 'slides', 'week']]);
+  assert.deepEqual((await (await post('/api/menustyle', { dock: ['chores', 'reload'] })).json()).dock, [
+    'chores',
+    'reload'
+  ]);
+  assert.equal((await post('/api/menustyle', { dock: ['add', 'slides', 'week', 'draw'] })).status, 400);
+  assert.equal((await post('/api/menustyle', { dock: ['rocket'] })).status, 400);
+  await post('/api/menustyle', { style: 'cork' });
+  assert.equal((await (await api('/api/menustyle')).json()).style, 'cork');
 });
 
 test('the − / + / Fit buttons: shown until a screen hides them', async () => {

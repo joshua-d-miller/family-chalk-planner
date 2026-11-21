@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Strip.tsx
 ===============================================================================
- Version:   0.17.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-12
+ Updated:   2026-11-21
 
  Purpose:
      The cork under the board when it's being changed: on a family
@@ -35,6 +35,10 @@
                         colby     tools popping over beside it, on the right or
                         claude    the left, for a screen that picked them
                                   instead of the cork.
+
+ 1.2.0    2026-11-21   colby     The menu in the Notes column (Colby Way's
+                        joshua    dock): the ☰ and the buttons this screen
+                        claude    picked, in the column's last row.
 ===============================================================================
 */
 
@@ -43,6 +47,18 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Menu } from '../ui/Menu.tsx';
 import { CorkNav, MenuFab, useBarZoom, useShell } from '../ui/Shell.tsx';
+import { DOCK_BTNS } from '../lib/menuStyle.ts';
+import type { DockBtn } from '../lib/menuStyle.ts';
+import { navigate } from '../lib/nav.ts';
+
+// what the Notes column's buttons do on the calendar (the pages' ones just go there)
+export interface DockActions {
+  add?: () => void; // + Add event
+  slides?: () => void; // ▶ the slideshow (when there are photos)
+  week?: () => void; // 🗓️ the week, or 📅 back to the month
+  weekly?: boolean; // (on the week now)
+}
+const PAGE_BTNS: DockBtn[] = ['chores', 'meals', 'reminders', 'timers', 'pantry', 'jars'];
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------- //
@@ -59,6 +75,8 @@ export function Strip({
   drawLabel = 'Draw',
   tools,
   add,
+  dock = null,
+  actions = {},
   children
 }: {
   drawing: boolean;
@@ -66,6 +84,8 @@ export function Strip({
   drawLabel?: string; // what ✏️ says on this screen (Draw, or Decorate on a family screen)
   tools?: ReactNode; // the drawing tools, while drawing
   add?: ReactNode; // + Add event
+  dock?: HTMLElement | null; // the menu in the Notes column: the row its buttons go in
+  actions?: DockActions; // and what they do
   children: ReactNode; // the board's own buttons
 }) {
   const { kind, side } = useShell();
@@ -75,7 +95,16 @@ export function Strip({
   }, [drawing]);
   if (kind === 'cork' && side)
     return (
-      <SideStrip side={side} drawing={drawing} onDraw={onDraw} drawLabel={drawLabel} tools={tools} add={add}>
+      <SideStrip
+        side={side}
+        drawing={drawing}
+        onDraw={onDraw}
+        drawLabel={drawLabel}
+        tools={tools}
+        add={add}
+        dock={dock}
+        actions={actions}
+      >
         {children}
       </SideStrip>
     );
@@ -141,6 +170,8 @@ function SideStrip({
   drawLabel,
   tools,
   add,
+  dock,
+  actions,
   children
 }: {
   side: 'left' | 'right';
@@ -149,9 +180,11 @@ function SideStrip({
   drawLabel: string;
   tools?: ReactNode;
   add?: ReactNode;
+  dock: HTMLElement | null;
+  actions: DockActions;
   children: ReactNode;
 }) {
-  const { who, here, drawBtn } = useShell();
+  const { who, here, drawBtn, dock: picked } = useShell();
   const [open, setOpen] = useState(false); // the drawer
   const [shown, setShown] = useState(true); // the drawing tools' pop-over
   const z = useBarZoom();
@@ -161,10 +194,55 @@ function SideStrip({
       setShown(true); // every time drawing starts, the tools are out
     }
   }, [drawing]);
-  // the buttons, the ☰ (or ✏️ Done) always in the corner
+  // ------------------------------- //
+  // | The menu in the Notes column | //
+  // ------------------------------- //
+  // (Colby Way's dock) The buttons this screen picked, then the ☰, in the   //
+  // Notes column's last row; drawing, ✏️ Done and 🎨 are in the corner.     //
+  const inDock = !!(dock && picked) && !drawing;
+  const dockRow = inDock && (
+    <div className="dockrow">
+      {picked!.map(b => {
+        const [, icon, label] = DOCK_BTNS.find(([x]) => x === b)!;
+        const page = PAGE_BTNS.includes(b);
+        const run =
+          b === 'add'
+            ? actions.add
+            : b === 'slides'
+              ? actions.slides
+              : b === 'week'
+                ? actions.week
+                : b === 'draw'
+                  ? onDraw
+                  : b === 'reload'
+                    ? () => location.reload()
+                    : page
+                      ? () => navigate(b)
+                      : undefined;
+        if (!run) return null; // (no photos yet: no ▶)
+        const week = b === 'week' && actions.weekly;
+        return (
+          <button
+            key={b}
+            type="button"
+            className="menufab inrow"
+            id={'dock-' + b}
+            aria-label={b === 'week' ? (week ? 'The month' : 'The week') : label}
+            title={b === 'week' ? (week ? 'The month' : 'The week') : label}
+            onClick={run}
+          >
+            <span aria-hidden="true">{b === 'week' && week ? '📅' : icon}</span>
+          </button>
+        );
+      })}
+      <MenuFab side={side} open={open} onClick={() => setOpen(true)} label="Menu and the calendar's tools" inRow />
+    </div>
+  );
+  // the buttons, the ☰ (or ✏️ Done) in the corner, or the ☰ and its buttons in the Notes column
   return createPortal(
     <>
-      <div className={'fabwrap ' + side} style={{ zoom: z }}>
+      {inDock && createPortal(dockRow, dock!)}
+      <div className={'fabwrap ' + side + (inDock ? ' docked' : '')} style={{ zoom: z }}>
         {drawing && shown && (
           <div className="cork drawpop" id="drawPop" aria-label="Drawing tools">
             {tools}
@@ -187,7 +265,7 @@ function SideStrip({
                 <span aria-hidden="true">✏️</span> Done
               </button>
             </>
-          ) : (
+          ) : inDock ? null : (
             <>
               {drawBtn && onDraw && (
                 <button type="button" className="menufab inrow" id="drawFab" aria-label={drawLabel} onClick={onDraw}>

@@ -109,7 +109,9 @@
                                   From Colby Way's board: a tap on a reward
                                   jar opens it big; the − / + / Fit buttons
                                   can be hidden; a tap on the month's name
-                                  reloads a screen that edits.
+                                  reloads a screen that edits; the menu in the
+                                  Notes column (his dock), and ▶ Slideshow
+                                  from it on a tablet too.
                                   Two quick taps on a family screen's ‹ or ›
                                   no longer start the photo frame.
 ===============================================================================
@@ -147,6 +149,7 @@ import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
 import { FAB_BAND, Strip } from './Strip.tsx';
 import { navigate } from '../lib/nav.ts';
+import { homeHref } from '../routes.ts';
 import { useBarZoom, useShell, visibleHeight } from '../ui/Shell.tsx';
 import { DrawLayer, firstPen, isPosca, recolor, touches } from './draw/Draw.tsx';
 import type { Pen } from './draw/Draw.tsx';
@@ -319,8 +322,10 @@ export function Board({
   // the ☰ button floats over the board's bottom corner (the board keeps its size); on the right it's
   // over the bottom of the Notes column, whose list stops above it
   const fit = useFit(pad, bh, shell.navH);
+  // the menu in the Notes column: the row its buttons go in (then nothing floats over the board)
+  const [dockEl, setDockEl] = useState<HTMLElement | null>(null);
   const fabClear = (() => {
-    if (side !== 'right' || drawing) return 0;
+    if (side !== 'right' || drawing || shell.dock) return 0;
     const areaH = visibleHeight() - shell.navH;
     const boardBottom = (areaH + (bh + 2 * pad) * fit.scale) / 2; // the board is centred on the screen
     const overlap = boardBottom - (innerHeight - FAB_BAND * barZ);
@@ -863,7 +868,13 @@ export function Board({
               layoutKey={`${monthName}|${JSON.stringify(titleStyle)}|${border?.size || ''}`}
             />
           )}
-          <Notes time24={!!today?.time24} edit={edit} drawing={drawing} only={split ? ['info'] : undefined} />
+          <Notes
+            time24={!!today?.time24}
+            edit={edit}
+            drawing={drawing}
+            only={split ? ['info'] : undefined}
+            dockRef={edit && shell.dock ? setDockEl : undefined}
+          />
           <WeatherMotion wall={!edit} />
           {behind.length > 0 && <Art items={behind} bg={sf.lum} res={res} gifsPlay under />}
           <Art items={front} bg={sf.lum} res={res} gifsPlay />
@@ -932,6 +943,16 @@ export function Board({
             drawing={drawing}
             onDraw={toggleDraw}
             drawLabel={family ? 'Decorate' : 'Draw'}
+            dock={edit && shell.dock ? dockEl : null}
+            actions={{
+              add: m
+                ? () =>
+                    setEditing({ k: 'event', ev: null, date: m.ym === m.today.slice(0, 7) ? m.today : m.ym + '-01' })
+                : undefined,
+              slides: photos?.photos.length ? slides.doubleTap : undefined,
+              week: () => navigate(weekly ? homeHref(who) : 'week'),
+              weekly
+            }}
             add={
               m && !drawing ? (
                 <button
@@ -1042,7 +1063,7 @@ export function Board({
           </Strip>
         )}
       </div>
-      {(!edit || family) && photos && (
+      {(!edit || family || slides.on) && photos && (
         <Slideshow photos={photos} on={slides.on} time24={!!today?.time24} onTap={slides.tapSlides} />
       )}
       <ReminderAlert time24={!!today?.time24} />

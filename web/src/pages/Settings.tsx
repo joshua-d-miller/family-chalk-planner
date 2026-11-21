@@ -70,7 +70,7 @@ import { Btn, Field, Pick, Segs } from '../ui/bits.tsx';
 import { LookFields } from '../ui/LookCard.tsx';
 import { CloseX } from '../ui/Sheet.tsx';
 import { useShell } from '../ui/Shell.tsx';
-import { MENU_STYLES, setMenuPref, useMenuPref } from '../lib/menuStyle.ts';
+import { DOCK_BTNS, DOCK_MAX, MENU_STYLES, setMenuPref, useMenuPref } from '../lib/menuStyle.ts';
 import { setSleeps, useSleeps } from '../lib/countdowns.ts';
 import { SPACES, setWeekFrom, setWeekView, useWeekFrom, useWeekView } from '../lib/weekFrom.ts';
 import type { WeekView } from '../lib/weekFrom.ts';
@@ -781,7 +781,37 @@ function ThisScreen() {
               </button>
             ))}
           </div>
-          {pref.style !== 'cork' && (
+          {pref.style === 'notes' && (
+            <>
+              <p className="dim small">
+                The ☰ and up to {DOCK_MAX} buttons, in the last row of the Notes column (on the calendar). Tap to add
+                or take one away; a fourth takes the place of the first.
+              </p>
+              <div className="segs" role="group" aria-label="The buttons beside the ☰">
+                {DOCK_BTNS.map(([b, icon, label]) => {
+                  const at = pref.dock.indexOf(b);
+                  return (
+                    <button
+                      key={b}
+                      type="button"
+                      id={'dockPick-' + b}
+                      className={'seg' + (at >= 0 ? ' on' : '')}
+                      aria-pressed={at >= 0}
+                      onClick={() =>
+                        void setMenuPref({
+                          dock: at >= 0 ? pref.dock.filter(x => x !== b) : [...pref.dock, b].slice(-DOCK_MAX)
+                        })
+                      }
+                    >
+                      {at >= 0 && <b>{at + 1}. </b>}
+                      <span className="emoji">{icon}</span> {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          {(pref.style === 'right' || pref.style === 'left') && (
             <label className="check">
               <input
                 id="menuStyle-draw"

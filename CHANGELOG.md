@@ -10,6 +10,10 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   of chips at the top of the drawer. At the bottom: **🖥️ This screen…** (the screen's menu, its look, sleeps or
   days and the rest, in ⚙️ Settings; a family screen too) and **↻ Reload**. Everything fits on a wall screen without
   scrolling.
+- **The menu in the Notes column** (Colby Way's dock): another choice for a family screen's menu, beside the cork and
+  the corner button. The ☰ and up to 3 buttons you pick sit in the last row of the Notes column, so nothing floats
+  over the board: + Add event, ▶ Slideshow, 🗓️ Week / 📅 month, Decorate, a page (chores, meals, reminders, timers,
+  pantry, jars) or Reload. Pick them in ⚙️ Settings → This screen.
 - **⚙️ Settings opens over the board** on a wall or family screen (and a computer), like every other card, with a
   ✕: the parts down the side and the one picked beside them, so closing it puts you back where you were. On a phone
   or tablet it's still a page. Checkboxes are on/off switches, and the slideshow's timing (5 to 120 seconds) and
