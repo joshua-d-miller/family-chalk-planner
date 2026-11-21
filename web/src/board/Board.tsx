@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   1.1.2
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-20
+ Updated:   2026-11-21
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -99,12 +99,17 @@
 
  1.1.2    2026-11-20   joshua    This month's own background, if it has one.
                         claude
+
+ 1.2.0    2026-11-21   joshua    🗓️ Week from today (today and the next 6
+                        claude    days) on a screen that picks it, with the
+                                  events of both months a week can span.
 ===============================================================================
 */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent } from 'react';
 import { useLive, useOnline } from '../lib/live.ts';
+import { setWeekFrom, useWeekFrom } from '../lib/weekFrom.ts';
 import { paintSurface, photoBackground, seasonOf, surfaceOf } from '../lib/surface.ts';
 import type { Who } from '../lib/who.ts';
 import { Art } from './Art.tsx';
@@ -222,6 +227,8 @@ type Editing =
   | { k: 'notes' }
   | null;
 
+const FIRST_DAY = ['Sunday', 'Monday']; // the board's first day of the week (⚙️ WEEK_START)
+
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------- //
 // | The board | //
@@ -252,11 +259,23 @@ export function Board({
   // 📅 Calendar shows the month; 🗓️ Week (its own page) one week: its      //
   // first day in wk (null is this week). A week belongs to the month of its //
   // middle day.                                                             //
+  // A screen can start its week on today instead (today and the next 6     //
+  // days); its arrows then go 7 days at a time from there.                  //
   const [wk, setWk] = useState<string | null>(null);
-  const thisWeek = today?.today ? weekOf(today.today, today.weekStart || 0) : null;
+  const weekFrom = useWeekFrom();
+  useEffect(() => setWk(null), [weekFrom]); // (a week picked before would start on the other day)
+  const thisWeek = today?.today
+    ? weekFrom === 'today'
+      ? today.today
+      : weekOf(today.today, today.weekStart || 0)
+    : null;
   const week = weekly ? wk || thisWeek : null;
   const shown = week ? addDays(week, 3).slice(0, 7) : ym || today?.ym || null;
   const month = useLive<MonthData>(shown ? `api/month?ym=${shown}` : 'api/today', ['calendar']);
+  // a week from today can reach past the days its month's grid has (Sun 28 Feb, when March starts on a
+  // Sunday): the other month's events too
+  const otherYm = week ? [week.slice(0, 7), addDays(week, 6).slice(0, 7)].find(x => x !== shown) || null : null;
+  const other = useLive<MonthData>(otherYm ? `api/month?ym=${otherYm}` : 'api/today', ['calendar']);
   // the art: the month's, or in the week view the week's own (kept under its first day)
   const artKey = week || shown;
   const art = useLive<ArtItem[]>(artKey ? `api/art?ym=${artKey}` : 'api/today', [
@@ -445,7 +464,16 @@ export function Board({
   const monthLook = lookDraft || (meta && 'artPad' in meta ? meta.look : undefined);
   const tv = useMemo(() => monthVals(theme, monthLook), [theme, monthLook]);
   const css = useMemo(() => themeCss(tv, sf.lum), [tv, sf.lum]);
-  const m = month.data && 'grid' in month.data ? month.data : null;
+  const m = useMemo(() => {
+    const d = month.data && 'grid' in month.data ? month.data : null;
+    const o = otherYm && other.data && 'grid' in other.data ? other.data : null;
+    if (!d || !o) return d;
+    // both months' grids have the days between them: each event once
+    const key = (e: BoardEvent) =>
+      [e.ref?.href || '', e.ref?.rid || '', e.title, e.start, e.end, e.time || ''].join('|');
+    const seen = new Set(d.events.map(key));
+    return { ...d, events: [...d.events, ...o.events.filter(e => !seen.has(key(e)))] };
+  }, [month.data, other.data, otherYm]);
   const slides = useSlides(photos, !edit || family);
   const [day, setDay] = useState<string | null>(null);
   const closeDay = useCallback(() => setDay(null), []);
@@ -479,7 +507,9 @@ export function Board({
     if (family) {
       // double tap = the photo frame, like the wall; a single tap still edits (after a short wait).
       // Only taps on the board itself: not the strip, the zoom or a card.
-      if (!(e.target as Element).closest?.('.slate')) return void (lastTap.current = 0);
+      // (nor the month or week arrows: › › skips ahead, it doesn't start the photo frame)
+      if (!(e.target as Element).closest?.('.slate') || (e.target as Element).closest?.('button.nav'))
+        return void (lastTap.current = 0);
       if (drawing || slides.on || slides.justChanged()) return void (lastTap.current = 0);
       if (e.timeStamp - lastTap.current < 450) {
         lastTap.current = 0;
@@ -637,11 +667,12 @@ export function Board({
     (dates: string[]) => {
       setEditing(null);
       justSaved.current = dates;
-      const other = dates.find(d => d && d.slice(0, 7) !== shown);
-      if (other && !dates.some(d => d?.slice(0, 7) === shown) && !week) setYm(other.slice(0, 7));
+      const elsewhere = dates.find(d => d && d.slice(0, 7) !== shown);
+      if (elsewhere && !dates.some(d => d?.slice(0, 7) === shown) && !week) setYm(elsewhere.slice(0, 7));
       month.reload();
+      if (otherYm) other.reload();
     },
-    [shown, month]
+    [shown, month, other, otherYm]
   );
   // ------------------------ //
   // | Art over the writing | //
@@ -980,6 +1011,22 @@ export function Board({
                   </span>{' '}
                   Style
                 </button>
+                {week && (
+                  // 🗓️ Week: from today (today and the next 6 days), or from the board's first day of the week
+                  <button
+                    type="button"
+                    className="pill"
+                    id="weekFromBtn"
+                    aria-pressed={weekFrom === 'today'}
+                    title={`Tap to start the week on ${weekFrom === 'today' ? FIRST_DAY[today?.weekStart || 0] : 'today'}`}
+                    onClick={() => void setWeekFrom(weekFrom === 'today' ? 'board' : 'today')}
+                  >
+                    <span className="ic" aria-hidden="true">
+                      📆
+                    </span>{' '}
+                    {weekFrom === 'today' ? 'From today' : `From ${FIRST_DAY[today?.weekStart || 0]}`}
+                  </button>
+                )}
               </>
             )}
           </Strip>

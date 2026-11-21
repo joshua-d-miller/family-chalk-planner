@@ -981,9 +981,24 @@ button:disabled{opacity:.5;cursor:default}
     box.appendChild(sel);
     return box;
   }
+  // where its 🗓️ Week starts: the board's first day of the week, or today (today and the next 6 days)
+  function weekFromLine(x, cur) {
+    var box = el('div', 'nbot');
+    box.appendChild(el('span', 'dim', '🗓️ Week starts:'));
+    var sel = el('select'); sel.setAttribute('aria-label', 'Where the week starts on ' + x.name);
+    [['board', 'On the board’s first day'], ['today', 'Today (and the next 6 days)']].forEach(function (o) {
+      var op = el('option', null, o[1]); op.value = o[0]; sel.appendChild(op);
+    });
+    sel.value = cur === 'today' ? 'today' : 'board';
+    sel.addEventListener('change', function () {
+      api('api/devices/weekfrom', { id: x.id, from: sel.value }).catch(function (e) { $('dvErr').textContent = e.message; });
+    });
+    box.appendChild(sel);
+    return box;
+  }
   function loadScreens() {
-    var bottoms = {}, sleeps = {};
-    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
+    var bottoms = {}, sleeps = {}, weekfrom = {};
+    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices/weekfrom').then(function (b) { weekfrom = b.weekfrom || {}; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
       var w = $('dvWaiting'); w.innerHTML = '';
       d.waiting.forEach(function (p) { w.appendChild(el('p', 'dim', '⏳ ' + p.agent + ' is showing a code (' + ago(p.created) + ') - type it above.')); });
       var list = $('dvList'); list.innerHTML = '';
@@ -1005,6 +1020,7 @@ button:disabled{opacity:.5;cursor:default}
         it.appendChild(el('div', 'meta', x.agent + ' · paired ' + new Date(x.created).toLocaleDateString() + ' · last seen ' + ago(x.last_seen)));
         if (!/^kid:/.test(x.role)) it.appendChild(bottomLine(x, bottoms[x.id] || null));
         it.appendChild(sleepsLine(x, x.id in sleeps ? sleeps[x.id] : null));
+        if (!/^kid:/.test(x.role)) it.appendChild(weekFromLine(x, weekfrom[x.id] || null));
         list.appendChild(it);
       });
     }).catch(function (e) { if (!(e.body && e.body.admin)) $('dvErr').textContent = e.message; });

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | access.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      Who may do what.
@@ -97,6 +97,9 @@
                         claude    own cards and ☰ menu.
                                   Family screens may choose sleeps or days for
                                   their countdowns.
+
+ 1.2.0    2026-11-21   joshua    Family screens may start their 🗓️ Week on
+                        claude    today.
 ===============================================================================
 */
 
@@ -684,6 +687,7 @@ export function setup(
     '/menustyle', // the cork or the ☰ button (the wall has neither)
     '/uilook', // the look of its cards and ☰ menu
     '/sleeps', // its countdowns in sleeps or days
+    '/weekfrom', // its 🗓️ Week from today or from the board's first day
     '/clip/favorites', // ★ a picture into Favorites
     '/clip/web/keep' // a public-domain picture from the web, onto the board
   ]);

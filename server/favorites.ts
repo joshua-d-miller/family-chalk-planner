@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Server | favorites.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      Favorites: the few things each person (and each family screen) uses
@@ -31,6 +31,9 @@
      And whether its countdowns count in sleeps ("3 sleeps!") or days
      (a kid's tablet counts sleeps unless told otherwise):
        kv 'sleeps'  { 'p:...' | 's:...': true | false }
+     And where its 🗓️ Week starts: on the board's first day of the week
+     (nothing saved), or on today, showing today and the next 6 days:
+       kv 'weekfrom'  { 'p:...' | 's:...': 'today' }
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -57,6 +60,11 @@
                                   the board.
                                   Countdowns in sleeps or days, per screen (or
                                   person); the admin console sets any
+                                  screen's.
+
+ 1.2.0    2026-11-21   joshua    🗓️ Week from today (today and the next 6
+                        claude    days) or from the board's first day, per
+                                  screen; the admin console sets any
                                   screen's.
 ===============================================================================
 */
@@ -275,6 +283,46 @@ export function setup({
     if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
     if (!(v === null || typeof v === 'boolean')) return res.status(400).json({ error: 'Sleeps or days' });
     res.json({ sleeps: setSleeps('s:' + id, v) });
+  });
+
+  // ------------------------- //
+  // | Where the week starts | //
+  // ------------------------- //
+  // 🗓️ Week from the board's first day of the week (nothing saved), or     //
+  // from today: today and the next 6 days. Per screen (or person), like     //
+  // sleeps; the admin console sets any screen's, the wall's too.            //
+  const WEEK_FROM = ['board', 'today'];
+  const weekFroms = () => kv.get<Record<string, 'today'>>('weekfrom') || {};
+  const setWeekFrom = (k: string, v: string) => {
+    const map = weekFroms();
+    if (v === 'today') map[k] = 'today';
+    else delete map[k];
+    kv.set('weekfrom', map);
+    broadcast('weekfrom', {});
+    return map[k] || 'board';
+  };
+  app.get('/api/weekfrom', (req, res) => {
+    const k = whose(req);
+    res.json({ from: (k && weekFroms()[k]) || 'board' });
+  });
+  app.post('/api/weekfrom', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const v = (req.body || {}).from;
+    if (!WEEK_FROM.includes(v)) return res.status(400).json({ error: 'Pick where the week starts' });
+    res.json({ from: setWeekFrom(k, v) });
+  });
+  app.get('/api/devices/weekfrom', (_req, res) => {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(weekFroms())) if (k.startsWith('s:')) out[k.slice(2)] = v;
+    res.json({ weekfrom: out });
+  });
+  app.post('/api/devices/weekfrom', (req, res) => {
+    const id = String(req.body?.id || '');
+    const v = req.body?.from;
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    if (!WEEK_FROM.includes(v)) return res.status(400).json({ error: 'Pick where the week starts' });
+    res.json({ from: setWeekFrom('s:' + id, v) });
   });
 }
 

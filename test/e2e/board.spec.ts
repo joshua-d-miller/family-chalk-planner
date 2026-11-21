@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   1.1.1
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-18
+ Updated:   2026-11-21
 
  Purpose:
      The board itself: this month on the tablet, moving between months,
@@ -37,6 +37,9 @@
 
  1.1.1    2026-11-18   joshua    A swipe down never reloads a wall screen.
                         claude
+
+ 1.2.0    2026-11-21   joshua    🗓️ Week from today, and every week after it
+                        claude    has all its events (across two months too).
 ===============================================================================
 */
 
@@ -160,6 +163,44 @@ test('the bottom of Notes on this screen: what it shows and what the switch can 
   await page.locator('#notesBtn').click();
   await page.locator('#notesSheet').getByRole('button', { name: 'Like the rest of the board' }).click();
   await expect(page.locator('.notes .bslide')).toBeVisible();
+});
+
+test('🗓️ Week from today: today and the next 6 days, a week at a time, with every event', async ({ as }) => {
+  const page = await as('family', { path: '/week', context: { viewport: { width: 1280, height: 800 } } });
+  const today = await page.evaluate(async () => (await (await fetch('api/today')).json()).today as string);
+  const plus = (ds: string, n: number) =>
+    new Date(Date.parse(ds + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+  const firstDay = () => page.locator('#grid .day').first().getAttribute('data-date');
+  await expect.poll(firstDay).not.toBe(null);
+  const sunday = await firstDay();
+  // the board's own week first (Sunday), then from today
+  await page.locator('#editBtn').click();
+  await expect(page.locator('#weekFromBtn')).toContainText('From Sunday');
+  await page.locator('#weekFromBtn').click();
+  await expect(page.locator('#weekFromBtn')).toContainText('From today');
+  await expect(page.locator('#weekFromBtn')).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(firstDay).toBe(today);
+  const names = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  await expect(page.locator('.weekdays div').first()).toHaveText(names[new Date(today + 'T12:00:00Z').getUTCDay()]);
+  // every week from here has its Saturday soccer and Tuesday piano, even one that starts in the month before
+  // (from a Saturday, the week of Sat 28 Nov goes past the start of December's own grid)
+  for (let w = 0; w < 8; w++) {
+    const start = plus(today, 7 * w);
+    await expect.poll(firstDay).toBe(start);
+    for (let d = 0; d < 7; d++) {
+      const ds = plus(start, d);
+      const dow = new Date(ds + 'T12:00:00Z').getUTCDay();
+      if (dow !== 6 && dow !== 2) continue;
+      await expect(page.locator(`#grid .day[data-date="${ds}"]`)).toContainText(dow === 6 ? 'Soccer' : 'Piano');
+    }
+    await page.locator('.titlerow button').last().click(); // (quick taps: no photo frame)
+  }
+  await expect(page.locator('#slides.on')).toHaveCount(0);
+  // back to the board's week (and the wall's can be set from the admin console)
+  if (!(await page.locator('#weekFromBtn').isVisible())) await page.locator('#editBtn').click();
+  await page.locator('#weekFromBtn').click();
+  await expect.poll(firstDay).toBe(sunday);
+  expect(page.errors).toEqual([]);
 });
 
 test('week view: decorating a week keeps it to that week', async ({ as }) => {
