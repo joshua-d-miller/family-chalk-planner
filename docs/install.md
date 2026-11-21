@@ -75,8 +75,7 @@ On the server: `sudo /opt/family-chalk-planner/deploy/reset-admin.sh`. It remove
 **On the internet:** don't expose the board directly. Use Tailscale, Cloudflare Access, or a reverse proxy with its own login in front of it, keep `ALLOW_UNPAIRED_VIEW` off, and use HTTPS so every cookie is marked Secure. [cloud.md](cloud.md) walks through a Cloudflare Tunnel with Access, at home or on a small cloud server.
 
 ## 4. The wall display
-- **Android screen or tablet:** [Fully Kiosk Browser](https://www.fully-kiosk.com/). Set the Start URL to `http://<server>:3002/`, turn on "Keep screen on", and turn on start-on-boot.
-- **Raspberry Pi or PC:** any browser in full-screen/kiosk mode, e.g. `chromium --kiosk http://<server>:3002/` or `firefox --kiosk http://<server>:3002/`.
+- **Any wall screen:** the [wall screens guide](kiosk.md) has the steps: Android with [FreeKiosk](https://github.com/RushB-fr/freekiosk) or [Fully Kiosk Browser](https://www.fully-kiosk.com/), Linux and Raspberry Pi with Chromium in kiosk mode, Windows with Edge kiosk, and Mac.
 - The wall is read-only. During the night slideshow, one tap shows the calendar for 5 minutes and a double tap goes back to the slideshow.
 
 ## 5. HTTPS and a nice name (recommended)

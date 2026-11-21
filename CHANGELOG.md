@@ -43,6 +43,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **Screens on the wall don't zoom, and stay awake:** on the wall, a family screen or a kid's tablet, a pinch or a
   double tap no longer zooms the page by accident, and the screen asks the browser to stay on while the board shows
   (and again when it wakes). Tablets signed in to draw still pinch to zoom in.
+- **A guide for every wall screen** ([docs/kiosk.md](docs/kiosk.md)): Android with FreeKiosk (and its Home Assistant
+  controls) or Fully Kiosk, Linux and Raspberry Pi with Chromium in kiosk mode, Windows with Edge kiosk, and Mac:
+  full screen, awake, starting by itself, and what to do when a screen is slow.
 - **Low-power screen** (⚙️ Settings → This screen, or the admin console for the wall): for a slow wall screen, nothing
   moves (no weather motion, GIFs or fades) and the chalk is drawn plainer, so taps and moving pictures keep up.
 - **The big jar** (from Colby Way's board): on a screen that edits, tap a reward jar in the Notes column and it opens
