@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | close-button.spec.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-17
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      Every card and the ☰ menu has a ✕ at its top right. It stays in reach
@@ -18,6 +18,9 @@
  -------   ----------   -------   --------------------------------------------
  1.1.0    2026-11-17   joshua    New file.
                         claude
+
+ 1.2.0    2026-11-21   joshua    A card with changes asks "Discard your
+                        claude    changes?" first; one without closes at once.
 ===============================================================================
 */
 
@@ -55,6 +58,13 @@ test('a card closes with the ✕ at its top right, even scrolled down', async ({
   // ---------------------------------- //
   await tab.locator('#evTitle').fill('Should not be saved');
   await x.click();
+  // something was typed: it asks first ("Keep editing" leaves it as it was)
+  await expect(card.locator('.discard')).toContainText('Discard your changes?');
+  await card.locator('#keepEditing').click();
+  await expect(card.locator('.discard')).toHaveCount(0);
+  await expect(tab.locator('#evTitle')).toHaveValue('Should not be saved');
+  await tab.keyboard.press('Escape'); // (Escape asks too)
+  await card.locator('#discardBtn').click();
   await expect(card).toHaveCount(0);
   await expect(tab.getByText('Should not be saved')).toHaveCount(0);
 });

@@ -63,6 +63,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   their full time after it.
 - **A ✕ on every page**, at the top right like every card: back to the calendar (Colby Way's back button on
   Settings, for every page).
+- **"Discard your changes?"** A card with changes not saved yet (an event, a meal, a reminder, a jar, the chores,
+  the board style, a month's title or border, writing on the board) asks before the ✕, Escape or a tap outside closes
+  it: **Keep editing** or **Discard**. A card with no changes still closes at once, and Cancel still cancels.
 - **Two quick taps on ‹ or ›** on a family screen no longer turn on the photo frame (they were taken for a double
   tap on the calendar).
 

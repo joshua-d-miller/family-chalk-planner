@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Timers.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-21
 
  Purpose:
      Timers (from Colby Way's board): several at once, shared by every
@@ -22,6 +22,9 @@
  0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
                         colby     plan, reminders, timers, pantry, jars and
                         claude    chores.
+
+ 1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
+                        claude    with changes.
 ===============================================================================
 */
 
@@ -32,7 +35,7 @@ import { RANK } from '../lib/who.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn, Field } from '../ui/bits.tsx';
 import { Page } from '../ui/Page.tsx';
-import { Sheet } from '../ui/Sheet.tsx';
+import { Sheet, useChanged } from '../ui/Sheet.tsx';
 import './lists.css';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -133,8 +136,9 @@ export function Timers({ who }: { who: Who | null }) {
 function NewTimer({ onClose, onStart }: { onClose: () => void; onStart: (name: string, minutes: number) => void }) {
   const [name, setName] = useState('');
   const [min, setMin] = useState(10);
+  const changed = useChanged({ name, min }); // (✕ with changes: "Discard your changes?")
   return (
-    <Sheet title="A new timer" onClose={onClose}>
+    <Sheet title="A new timer" onClose={onClose} dirty={changed}>
       <form
         onSubmit={e => {
           e.preventDefault();

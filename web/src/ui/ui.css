@@ -445,3 +445,18 @@
   color: var(--yellow);
   text-align: center;
 }
+/* "Discard your changes?": in the card, under its title (closing a card that has changes) */
+.sheet .discard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--yellow);
+  background: rgba(242, 212, 121, 0.1);
+}
+.sheet .discard span {
+  flex: 1 1 auto;
+  font-weight: 700;
+}

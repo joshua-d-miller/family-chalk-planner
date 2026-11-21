@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | BorderEditor.tsx
 ===============================================================================
- Version:   0.16.1
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-21
 
  Purpose:
      🖼 Border: a ready-made holiday set, or up to 8 pictures of her own,
@@ -31,6 +31,9 @@
  0.16.1    2026-11-11   joshua    The Twinkling lights and Holly & bows borders
                         claude    show up (their pictures are in the garland
                                   set).
+
+ 1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
+                        claude    with changes.
 ===============================================================================
 */
 
@@ -38,7 +41,7 @@ import { useEffect, useState } from 'react';
 import { get, post } from '../../lib/api.ts';
 import { Btn, Segs } from '../../ui/bits.tsx';
 import { Colors, CHALK } from '../../ui/Colors.tsx';
-import { Sheet } from '../../ui/Sheet.tsx';
+import { Sheet, useChanged } from '../../ui/Sheet.tsx';
 import type { MonthMeta } from '../Board.tsx';
 import { clipLabel, clipSrc, searchClip } from '../clip.ts';
 import type { Border } from '../Month.tsx';
@@ -92,6 +95,7 @@ export function BorderEditor({
   const [names, setNames] = useState<string[] | null>(null);
   const [q, setQ] = useState('');
   const [err, setErr] = useState('');
+  const changed = useChanged({ b, yearly }); // (✕ with changes: "Discard your changes?")
   useEffect(() => {
     // the everyday pictures, plus the other styles the ready-made borders
     // use (the garland set: lights, holly, bows), which aren't in that list
@@ -124,7 +128,7 @@ export function BorderEditor({
   }
   const found = names ? searchClip(names, q) : [];
   return (
-    <Sheet title={`Border for ${monthName}`} onClose={close} id="borderSheet">
+    <Sheet title={`Border for ${monthName}`} onClose={close} dirty={changed} id="borderSheet">
       <div className="sublbl">Ready-made - then add or take out pictures</div>
       <div className="segs">
         {PRESETS.map(([label, list, color]) => {

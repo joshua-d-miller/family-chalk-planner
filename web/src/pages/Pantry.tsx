@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Pantry.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-21
 
  Purpose:
      The pantry (from Colby Way's board): what food is in the house and
@@ -22,6 +22,9 @@
  0.13.0    2026-11-07   joshua    The new screens (React + TypeScript): meal
                         colby     plan, reminders, timers, pantry, jars and
                         claude    chores.
+
+ 1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
+                        claude    with changes.
 ===============================================================================
 */
 
@@ -34,7 +37,7 @@ import { RANK } from '../lib/who.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn, Field, Pick } from '../ui/bits.tsx';
 import { Page } from '../ui/Page.tsx';
-import { Sheet } from '../ui/Sheet.tsx';
+import { Sheet, useChanged } from '../ui/Sheet.tsx';
 import './lists.css';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -156,8 +159,9 @@ function ItemSheet({
   onDelete?: () => void;
 }) {
   const [i, setI] = useState(item);
+  const changed = useChanged(i); // (✕ with changes: "Discard your changes?")
   return (
-    <Sheet title={item.id ? 'Change it' : 'Add to the pantry'} onClose={onClose}>
+    <Sheet title={item.id ? 'Change it' : 'Add to the pantry'} onClose={onClose} dirty={changed}>
       <form
         onSubmit={e => {
           e.preventDefault();

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | NotesEditor.tsx
 ===============================================================================
- Version:   0.15.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-08
- Updated:   2026-11-08
+ Updated:   2026-11-21
 
  Purpose:
      🗒️ The bottom of the Notes column on this screen: what it shows
@@ -22,6 +22,9 @@
  -------   ----------   -------   --------------------------------------------
  0.15.0    2026-11-08   joshua    New file.
                         claude
+
+ 1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
+                        claude    with changes.
 ===============================================================================
 */
 
@@ -29,7 +32,7 @@ import { useState } from 'react';
 import { post } from '../../lib/api.ts';
 import { useLive } from '../../lib/live.ts';
 import { Btn, Segs } from '../../ui/bits.tsx';
-import { Sheet } from '../../ui/Sheet.tsx';
+import { Sheet, useChanged } from '../../ui/Sheet.tsx';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------------- //
@@ -52,6 +55,7 @@ function Card({ cur, set, onClose }: { cur: Saved['bottom']; set: (v: Saved) => 
   const [def, setDef] = useState<Mode>(cur?.def || 'upnext');
   const [can, setCan] = useState<Mode[]>(cur?.can || BOTTOM_MODES.map(([m]) => m));
   const [err, setErr] = useState('');
+  const changed = useChanged({ def, can }); // (✕ with changes: "Discard your changes?")
   const save = async (bottom: { def: Mode; can: Mode[] } | null) => {
     try {
       set(await post<Saved>('api/notesbottom', { bottom }));
@@ -61,7 +65,7 @@ function Card({ cur, set, onClose }: { cur: Saved['bottom']; set: (v: Saved) => 
     }
   };
   return (
-    <Sheet title="Bottom of Notes" onClose={onClose} id="notesSheet">
+    <Sheet title="Bottom of Notes" onClose={onClose} dirty={changed} id="notesSheet">
       <div className="sublbl">Shows on this screen</div>
       <Segs value={def} onChange={v => setDef(v)} options={BOTTOM_MODES} label="Shows" />
       <div className="sublbl">The little switch can flip to</div>

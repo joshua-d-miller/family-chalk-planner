@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Jars.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-21
 
  Purpose:
      Reward jars: a kid earns a piece, someone drops it in; the jar fills
@@ -30,6 +30,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
+                        claude    with changes.
 ===============================================================================
 */
 
@@ -42,7 +45,7 @@ import type { Who } from '../lib/who.ts';
 import { Btn } from '../ui/bits.tsx';
 import { JarArt } from '../ui/JarArt.tsx';
 import { Page } from '../ui/Page.tsx';
-import { Sheet } from '../ui/Sheet.tsx';
+import { Sheet, useChanged } from '../ui/Sheet.tsx';
 import './lists.css';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -180,13 +183,14 @@ function JarEditor({
   onReward?: () => void;
 }) {
   const [j, setJ] = useState(jar);
+  const changed = useChanged(j); // (✕ with changes: "Discard your changes?")
   const toggle = (p: JarPiece) => {
     const has = j.pieces.includes(p);
     if (has && j.pieces.length === 1) return;
     setJ({ ...j, pieces: has ? j.pieces.filter(x => x !== p) : [...j.pieces, p] });
   };
   return (
-    <Sheet title={jar.id ? jar.name : 'A new jar'} onClose={onClose} id="jarSheet">
+    <Sheet title={jar.id ? jar.name : 'A new jar'} onClose={onClose} dirty={changed} id="jarSheet">
       <label className="field">
         <span>Name</span>
         <input id="jName" maxLength={14} value={j.name} onChange={e => setJ({ ...j, name: e.target.value })} />

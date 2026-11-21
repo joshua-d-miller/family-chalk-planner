@@ -50,6 +50,8 @@
  1.2.0    2026-11-21   joshua    On this screen (Style tab): the wooden frame
                         colby     and filling the screen (Colby Way's frame
                         claude    and padding settings, per screen).
+                                  "Discard your changes?" when it's closed
+                                  with changes.
 ===============================================================================
 */
 
@@ -59,7 +61,7 @@ import { post, upload, url as apiUrl } from '../../lib/api.ts';
 import { SURFACES } from '../../lib/surface.ts';
 import { Btn, Segs, Tabs } from '../../ui/bits.tsx';
 import { Colors } from '../../ui/Colors.tsx';
-import { Sheet } from '../../ui/Sheet.tsx';
+import { Sheet, useChanged } from '../../ui/Sheet.tsx';
 import { PRESETS, TFONTS, monthVals, themeVals } from '../theme.ts';
 import type { Theme } from '../theme.ts';
 import { setBoardFit, useBoardFit } from '../../lib/boardFit.ts';
@@ -260,6 +262,7 @@ export function StyleEditor({
     }
   }
   const [lk, setLk] = useState<Record<string, string>>(() => ({ ...(look || {}) }));
+  const changed = useChanged({ d, lk }); // (✕ with changes: "Discard your changes?")
   // ------------------ //
   // | The background | //
   // ------------------ //
@@ -341,6 +344,7 @@ export function StyleEditor({
     <Sheet
       title="Board style"
       onClose={close}
+      dirty={changed}
       id="styleSheet"
       tall
       head={

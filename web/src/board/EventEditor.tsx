@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | EventEditor.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      Adding or changing an event: what, when, how long (or all day,
@@ -26,6 +26,9 @@
 
  1.1.0    2026-11-17   joshua    A picture for a countdown.
                         claude
+
+ 1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
+                        claude    with changes.
 ===============================================================================
 */
 
@@ -34,7 +37,7 @@ import type { FormEvent } from 'react';
 import { ApiError, post } from '../lib/api.ts';
 import { Btn, Segs } from '../ui/bits.tsx';
 import { Colors } from '../ui/Colors.tsx';
-import { Sheet } from '../ui/Sheet.tsx';
+import { Sheet, useChanged } from '../ui/Sheet.tsx';
 import { CD_ICONS } from '../lib/countdowns.ts';
 import type { BoardEvent, WritableCal } from './Month.tsx';
 
@@ -82,6 +85,7 @@ export function EventEditor({
   const [cal, setCal] = useState(calendars.find(c => c.main)?.id || calendars[0]?.id || '');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const changed = useChanged({ title, day, allDay, time, len, thru, count, cdIcon, color, size, cal }); // (✕ with changes: "Discard your changes?")
   const lens = LENGTHS.some(([m]) => m === len) ? LENGTHS : [...LENGTHS, [len, `${len} minutes`] as [number, string]];
   const sc = ev?.recurring ? scope : 'all';
 
@@ -144,7 +148,7 @@ export function EventEditor({
   }
 
   return (
-    <Sheet title={ev ? 'Change this event' : 'Add to the calendar'} onClose={onClose} id="evSheet">
+    <Sheet title={ev ? 'Change this event' : 'Add to the calendar'} onClose={onClose} dirty={changed} id="evSheet">
       <form className="evform" onSubmit={save}>
         <label className="field">
           <span>What</span>
