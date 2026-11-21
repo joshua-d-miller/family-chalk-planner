@@ -64,7 +64,7 @@ test('a screen picks the look of its cards and menu, and keeps it', async ({ as 
   // | An accent, and larger text | //
   // ------------------------------ //
   await card.getByRole('radio', { name: 'Light', exact: true }).click();
-  await card.getByRole('radio', { name: '#2F8F83' }).click();
+  await card.getByRole('radio', { name: 'Teal' }).click();
   await expect
     .poll(() => card.locator('.shead h3').evaluate(el => getComputedStyle(el).color))
     .toBe('rgb(47, 143, 131)');

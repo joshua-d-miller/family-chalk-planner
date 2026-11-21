@@ -46,6 +46,23 @@ import { test, expect, thisMonth } from './fixtures.ts';
 const surfaceOf = (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.querySelector<HTMLElement>('.slate')!.dataset.surface);
 
+test('🎨 Board style: a Colorblind-safe style, and colors a screen reader can name', async ({ as }) => {
+  const page = await as('tablet');
+  await page.locator('#styleBtn').click();
+  const sheet = page.locator('#styleSheet');
+  await expect(sheet.locator('.presets button', { hasText: 'Colorblind-safe' })).toBeVisible();
+  await sheet.getByRole('tab', { name: 'Days' }).click();
+  await expect(sheet.getByRole('radio', { name: 'Sky blue (colorblind-safe)' }).first()).toBeAttached();
+  await sheet.getByRole('button', { name: 'Cancel' }).click();
+  // an event can take a colorblind-safe color too
+  await page.locator('#addBtn').click();
+  await expect(
+    page.locator('#evSheet').getByRole('radio', { name: 'Blue (colorblind-safe)', exact: true })
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+  expect(page.errors).toEqual([]);
+});
+
 test('🎨 Board style warns when a color is hard to read on the background picked', async ({ as }) => {
   const page = await as('tablet');
   await page.locator('#styleBtn').click();

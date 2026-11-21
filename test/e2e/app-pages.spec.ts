@@ -538,7 +538,7 @@ test('the board (new screen, tablet): add an event, change it, delete it', async
   await t.locator('#evDate').fill(date);
   await t.locator('#evAllDay').check();
   await t.locator('#evSize').getByRole('radio', { name: 'Large', exact: true }).click();
-  await t.locator('#evSheet').getByRole('radio', { name: '#F6B3CB' }).click();
+  await t.locator('#evSheet').getByRole('radio', { name: 'Pink', exact: true }).click();
   await t.locator('#evSave').click();
   const ev = t.locator(`#grid [data-date="${date}"] .ev`, { hasText: 'Field trip' });
   await expect(ev).toHaveClass(/sz-l/);
@@ -773,7 +773,7 @@ test('board style: a style and colors just for this month', async ({ as, board }
   await t.locator('#styleSheet').getByRole('tab', { name: 'Lines' }).click(); // (on its own tab)
   const lines = t.locator('#styleSheet .threl', { hasText: 'Calendar lines' }).locator('.colors button');
   await lines.nth(2).click();
-  const picked = await lines.nth(2).getAttribute('aria-label');
+  const picked = await lines.nth(2).getAttribute('data-color');
   await t.locator('#styleSheet').getByRole('button', { name: 'Save' }).click();
   await expect
     .poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).look)

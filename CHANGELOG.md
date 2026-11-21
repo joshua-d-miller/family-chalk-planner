@@ -68,9 +68,12 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   it: **Keep editing** or **Discard**. A card with no changes still closes at once, and Cancel still cancels.
 - **"Hard to read on this background"** in 🎨 Board style: a color that's too faint on the background picked (yellow
   numbers on light paper, say) says so, with the lighter or darker one the board shows instead.
+- **Colorblind-safe colors:** a **Colorblind-safe** board style (🎨 Board style → Style), with colors told apart with
+  every common kind of color blindness and today marked with a box, not only a color; and the same colors in every
+  color picker, for events and writing too.
 - **Screen readers:** every screen is checked with axe (the standard accessibility checker) on every change: every
   button and field has a name to read out, and the ☰ menu and Settings are easy to read in each look. The reward
-  jars now say whose jar it is and how full it is.
+  jars now say whose jar it is and how full it is, and colors are read out by name ("Sky blue"), not as codes.
 - **Two quick taps on ‹ or ›** on a family screen no longer turn on the photo frame (they were taken for a double
   tap on the calendar).
 

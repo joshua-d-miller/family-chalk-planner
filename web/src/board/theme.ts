@@ -38,7 +38,8 @@
                         claude
 
  1.2.0    2026-11-21   joshua    NEED is shared, for 🎨 Board style's
-                        claude    contrast warning.
+                        claude    contrast warning. A Colorblind-safe style
+                                  (the Okabe–Ito colors).
 ===============================================================================
 */
 
@@ -91,6 +92,25 @@ const BASE: ThemeVals = {
 // ----------- //
 export const PRESETS: { id: string; name: string; v: ThemeVals }[] = [
   { id: 'classic', name: 'Classic', v: {} },
+  // the Okabe–Ito colors: told apart with every common kind of color blindness; today is a box, not only a color
+  {
+    id: 'cbsafe',
+    name: 'Colorblind-safe',
+    v: {
+      numC: '#F0E442',
+      todayC: '#56B4E9',
+      todayS: 'box',
+      wkC: '#FFFFFF',
+      evC: '#FFFFFF',
+      alldayC: '#E69F00',
+      holC: '#56B4E9',
+      notesC: '#FFFFFF',
+      mealsC: '#E69F00',
+      textC: '#FFFFFF',
+      lineC: '#BBBBBB',
+      lineW: 'bold'
+    }
+  },
   {
     id: 'pastel',
     name: 'Pastel',

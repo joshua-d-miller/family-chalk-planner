@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Colors.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-21
 
  Purpose:
      A row of color dots: the chalk colors, the Posca colors, and the
@@ -29,6 +29,9 @@
  0.13.0    2026-11-07   joshua    The new board on a tablet (next/edit):
                         claude    events, the month's title and border, the
                                   board style.
+
+ 1.2.0    2026-11-21   joshua    Colorblind-safe colors (Okabe–Ito), and a
+                        claude    name for each color a screen reader says.
 ===============================================================================
 */
 
@@ -52,6 +55,38 @@ export const POSCA = [
   '#9BE15D',
   '#8B4FD8'
 ];
+// the Okabe–Ito colors: told apart with every common kind of color blindness (for events, and a style of its own)
+export const COLORBLIND = ['#E69F00', '#56B4E9', '#009E73', '#F0E442', '#0072B2', '#D55E00', '#CC79A7'];
+// what a screen reader says for each color (not its #code)
+const NAMES: Record<string, string> = {
+  '#EDEAE0': 'Chalk white',
+  '#F6B3CB': 'Pink',
+  '#F2D479': 'Yellow',
+  '#9CC9E6': 'Light blue',
+  '#A9D8A0': 'Light green',
+  '#E8A35C': 'Orange',
+  '#B49CE0': 'Lavender',
+  '#FFFFFF': 'White',
+  '#FFE500': 'Bright yellow',
+  '#FF8C1A': 'Bright orange',
+  '#E8262B': 'Red',
+  '#FF4FA3': 'Hot pink',
+  '#3EC6F2': 'Sky blue',
+  '#2C64D6': 'Blue',
+  '#1FB04C': 'Green',
+  '#9BE15D': 'Lime',
+  '#8B4FD8': 'Purple',
+  '#E69F00': 'Orange (colorblind-safe)',
+  '#56B4E9': 'Sky blue (colorblind-safe)',
+  '#009E73': 'Green (colorblind-safe)',
+  '#F0E442': 'Yellow (colorblind-safe)',
+  '#0072B2': 'Blue (colorblind-safe)',
+  '#D55E00': 'Red-orange (colorblind-safe)',
+  '#CC79A7': 'Pink (colorblind-safe)',
+  '#2F8F83': 'Teal',
+  '#E05A7A': 'Rose'
+};
+export const colorName = (c: string) => NAMES[c.toUpperCase()] || 'Your color ' + c.toUpperCase();
 const KEY = 'chalkCustomColors'; // the same list the current board keeps
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -85,7 +120,7 @@ function addCustom(c: string) {
 export function Colors({
   value,
   onChange,
-  set = [...CHALK, ...POSCA],
+  set = [...CHALK, ...POSCA, ...COLORBLIND],
   none,
   label = 'Color'
 }: {
@@ -118,7 +153,9 @@ export function Colors({
           key={c}
           role="radio"
           aria-checked={value?.toUpperCase() === c}
-          aria-label={c}
+          aria-label={colorName(c)}
+          title={colorName(c)}
+          data-color={c}
           className={'dot' + (value?.toUpperCase() === c ? ' on' : '')}
           onClick={() => onChange(c)}
         >
