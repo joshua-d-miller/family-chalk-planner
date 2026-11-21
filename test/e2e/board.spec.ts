@@ -46,7 +46,7 @@
 ===============================================================================
 */
 
-import { test, expect, thisMonth } from './fixtures.ts';
+import { test, expect, thisMonth, longPress } from './fixtures.ts';
 
 test('the tablet opens on this month, with weather, countdowns and no errors', async ({ as }) => {
   const page = await as('tablet');
@@ -109,8 +109,9 @@ test('🗓️ Week: its own page in the menu, pinnable; the wall shows it at /we
   const { day } = thisMonth();
   const page = await as('family', { context: { viewport: { width: 1280, height: 800 } } });
   await page.locator('#menuBtn').click();
-  await page.locator('#menuPanel').getByRole('button', { name: 'Pin Week' }).click();
-  await page.locator('#menuPanel').getByRole('link', { name: 'Calendar' }).click(); // closes the menu
+  await longPress(page, '#tile-week'); // press and hold: pinned
+  await expect(page.locator('#tile-week .pinned')).toBeVisible();
+  await page.locator('#tile-calendar').click(); // closes the menu
   const cork = page.locator('.cork .corknav');
   await cork.locator('a.pill', { hasText: 'Week' }).click();
   await expect(page).toHaveURL(/\/week$/);

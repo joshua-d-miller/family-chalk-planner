@@ -5,6 +5,11 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 (while below 1.0, a new minor version can change how things work).
 
 ## 1.2.0 — (in progress)
+- **A new ☰ menu:** only for getting places. The pages are big tiles, easy to hit from across the kitchen;
+  **press and hold** a tile to pin it to the bar (a small 📌 marks the pinned ones). The calendar's tools are a row
+  of chips at the top of the drawer. At the bottom: **🖥️ This screen…** (the screen's menu, its look, sleeps or
+  days and the rest, in ⚙️ Settings; a family screen too) and **↻ Reload**. Everything fits on a wall screen without
+  scrolling.
 - **⚙️ Settings opens over the board** on a wall or family screen (and a computer), like every other card, with a
   ✕: the parts down the side and the one picked beside them, so closing it puts you back where you were. On a phone
   or tablet it's still a page. Checkboxes are on/off switches, and the slideshow's timing (5 to 120 seconds) and

@@ -2,17 +2,18 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Menu.tsx
 ===============================================================================
- Version:   1.1.1
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-18
+ Updated:   2026-11-21
 
  Purpose:
-     The ☰ menu: every page, what this screen may open; 📌 keeps one on
-     the strip (up to 3). As the drawer of the ☰ button it comes from that
-     side and carries the calendar's tools too. At the bottom, a family
-     screen or computer picks its own menu: the cork, or the button on the
-     right or the left.
+     The ☰ menu, only for getting places: every page this screen may open
+     as a big tile (a long press pins one to the bar, up to 3). As the
+     drawer of the ☰ button it comes from that side, with the calendar's
+     tools as a row of chips at the top. At the bottom, 🖥️ This screen…
+     (its menu, look and the rest, in ⚙️ Settings), ↻ Reload, and who's
+     signed in.
 
  Used by:
      web/src/board/Strip.tsx
@@ -42,17 +43,23 @@
 
  1.1.1    2026-11-18   joshua    Reload the board, now that there's no pull-
                         claude    to-refresh.
+
+ 1.2.0    2026-11-21   joshua    Tiles: the pages as big tiles (a long press
+                        colby     pins one), the calendar's tools as chips,
+                        claude    and 🖥️ This screen… and ↻ Reload at the
+                                  bottom. This screen's menu and its look
+                                  moved to ⚙️ Settings → This screen.
 ===============================================================================
 */
 
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { PointerEvent, ReactNode } from 'react';
 import { post } from '../lib/api.ts';
 import { MAX_FAVORITES, useFavorites } from '../lib/favorites.ts';
-import { MENU_STYLES, setMenuPref, useMenuPref } from '../lib/menuStyle.ts';
+import { RANK } from '../lib/who.ts';
 import type { Who } from '../lib/who.ts';
 import { CloseX } from './Sheet.tsx';
-import { openLookCard } from './LookCard.tsx';
-import { openSettings } from '../pages/Settings.tsx';
+import { openSettings, showSettings } from '../pages/Settings.tsx';
 import { PAGES, homeHref, isHome } from '../routes.ts';
 import { useShell } from './Shell.tsx';
 
@@ -60,15 +67,13 @@ import { useShell } from './Shell.tsx';
 // -------------- //
 // | The ☰ menu | //
 // -------------- //
-// Every page this screen may open, in groups; pins up to 3 to the bar.      //
-// Signed in: who, and Sign out. `up`: a sheet from the bottom (More, on a   //
-// phone or tablet) instead of a panel from the left. `side`: the ☰         //
-// button's drawer, from that side; `tools` (the calendar's) go at the top,  //
-// and tapping one closes the drawer so its card or the board can be seen.   //
-const GROUPS: [string, string][] = [
-  ['pages', 'Pages'],
-  ['account', 'Account']
-];
+// Only for getting places. At the top, the calendar's tools as a row of    //
+// chips (`tools`: the ☰ button's drawer, on the calendar); then every page //
+// this screen may open as a big tile; at the bottom 🖥️ This screen… (its   //
+// menu, its look and the rest: ⚙️ Settings → This screen), ↻ Reload, and  //
+// who's signed in. `up`: a sheet from the bottom (More, on a phone or      //
+// tablet) instead of a panel from the side.                                //
+const LONG_PRESS = 550; // ms: a long press on a tile pins it (or takes it off)
 
 export function Menu({
   who,
@@ -88,8 +93,6 @@ export function Menu({
   onClose: () => void;
 }) {
   const shell = useShell();
-  const pref = useMenuPref();
-  const style = pref.style;
   const fav = useFavorites();
   const rank = who?.rank || 0;
   const admin = who?.user?.role === 'admin';
@@ -97,14 +100,67 @@ export function Menu({
   const onBoard = isHome(here, who);
   // pinned for whom: this screen when nobody is signed in on it, else the person
   const forScreen = !who?.user;
+  // the tiles: 📅 Calendar first, then the pages, then Settings and the admin console
+  const tiles = [
+    { id: 'calendar', title: 'Calendar', icon: '📅', href: homeHref(who), here: onBoard, pin: false },
+    ...PAGES.filter(p => p.group !== 'board' && mayOpen(p.need, p.id)).map(p => ({
+      id: p.id,
+      title: p.title,
+      icon: p.icon,
+      href: p.href,
+      here: p.id === here,
+      pin: fav.canSave && p.group === 'pages'
+    }))
+  ];
+  // ------------------------- //
+  // | A long press: 📌 pin | //
+  // ------------------------- //
+  // (a press that moves is a scroll, not a press; the tap after a long press doesn't open the page)
+  const press = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
+  const pinned = useRef(false);
+  const [note, setNote] = useState('');
+  const pinNote = (id: string, title: string) => {
+    const on = !fav.items.includes(id);
+    const bumped = on && fav.items.length >= MAX_FAVORITES;
+    fav.toggle(id);
+    setNote(
+      on
+        ? `📌 ${title} is pinned ${forScreen ? 'to this screen' : 'for you'}${bumped ? ' (the oldest came off)' : ''}`
+        : `${title} is no longer pinned`
+    );
+  };
+  const startPress = (id: string, title: string) => (e: PointerEvent) => {
+    pinned.current = false;
+    const x = e.clientX;
+    const y = e.clientY;
+    press.current = {
+      x,
+      y,
+      t: setTimeout(() => {
+        pinned.current = true;
+        press.current = null;
+        pinNote(id, title);
+      }, LONG_PRESS)
+    };
+  };
+  const endPress = () => {
+    if (press.current) clearTimeout(press.current.t);
+    press.current = null;
+  };
+  const movePress = (e: PointerEvent) => {
+    const p0 = press.current;
+    if (p0 && Math.hypot(e.clientX - p0.x, e.clientY - p0.y) > 12) endPress();
+  };
+  useEffect(() => endPress, []);
   return (
     <>
       <div className="menuScrim" onClick={onClose} />
       <nav
-        className={'menu' + (up ? ' up' : side === 'right' ? ' right' : '')}
+        className={'menu tiled' + (up ? ' up' : side === 'right' ? ' right' : '')}
         aria-label="Menu"
         id="menuPanel"
-        onClick={e => (e.target as Element).closest('a') && onClose()}
+        // (a press in the menu is the menu's: the board under it doesn't see it, nor take the pointer away)
+        onPointerDown={e => e.stopPropagation()}
       >
         <CloseX onClose={onClose} label="Close the menu" />
         {tools && (
@@ -114,160 +170,109 @@ export function Menu({
             onClick={e => (e.target as Element).closest('button') && onClose()}
           >
             {toolsTitle && <h4>{toolsTitle}</h4>}
-            {tools}
+            <div className="chips">{tools}</div>
           </section>
         )}
-        {/* the Calendar: the board this screen uses (to change it if it may, else to look at it) */}
-        <a
-          className={'item board' + (onBoard ? ' here' : '')}
-          href={homeHref(who)}
-          aria-current={onBoard ? 'page' : undefined}
-        >
-          <span className="ic" aria-hidden="true">
-            📅
-          </span>
-          <span className="lbl">Calendar</span>
-        </a>
-        {GROUPS.map(([g, title]) => {
-          const items = PAGES.filter(p => p.group === g && mayOpen(p.need, p.id));
-          if (!items.length) return null;
-          return (
-            <section key={g}>
-              <h4>{title}</h4>
-              {items.map(p => {
-                const on = fav.items.includes(p.id);
-                return (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center' }}>
-                    <a
-                      className={'item' + (p.id === here ? ' here' : '')}
-                      href={p.href}
-                      aria-current={p.id === here ? 'page' : undefined}
-                      onClick={
-                        // ⚙️ Settings: a card over the board on a wall or family screen and a computer
-                        p.id === 'settings' && shell.kind === 'cork'
-                          ? e => {
-                              e.preventDefault();
-                              onClose();
-                              openSettings();
-                            }
-                          : undefined
-                      }
-                    >
-                      <span className="ic" aria-hidden="true">
-                        {p.icon}
-                      </span>
-                      <span className="lbl">{p.title}</span>
-                    </a>
-                    {fav.canSave && p.group === 'pages' && (
-                      <button
-                        type="button"
-                        className={'pin' + (on ? ' on' : '')}
-                        aria-pressed={on}
-                        aria-label={on ? `Unpin ${p.title}` : `Pin ${p.title}`}
-                        title={
-                          on
-                            ? forScreen
-                              ? 'Pinned to this screen'
-                              : 'Pinned for you'
-                            : fav.items.length >= MAX_FAVORITES
-                              ? `Pin (up to ${MAX_FAVORITES}: the oldest comes off)`
-                              : forScreen
-                                ? 'Pin to this screen'
-                                : 'Pin for you'
-                        }
-                        onClick={() => fav.toggle(p.id)}
-                      >
-                        📌
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </section>
-          );
-        })}
-        {/* a family screen or computer: the cork, or the ☰ button on either side (phones and tablets keep their tab bar) */}
-        {shell.kind === 'cork' && !up && (
-          <section className="mstyle" aria-label="This screen's menu">
-            <h4>This screen’s menu</h4>
-            {MENU_STYLES.map(([v, label]) => (
-              <button
-                key={v}
-                type="button"
-                className={'item' + (style === v ? ' here' : '')}
-                id={'menuStyle-' + v}
-                aria-pressed={style === v}
-                onClick={() => {
-                  void setMenuPref({ style: v });
-                  onClose();
-                }}
-              >
-                <span className="ic" aria-hidden="true">
-                  {v === 'cork' ? '▁' : v === 'right' ? '▐' : '▌'}
-                </span>
-                <span className="lbl">{label}</span>
-              </button>
-            ))}
-            {/* with the button: a ✏️ Draw button beside it too, if this screen wants one */}
-            {style !== 'cork' && (
-              <button
-                type="button"
-                className={'item' + (pref.draw ? ' here' : '')}
-                id="menuStyle-draw"
-                aria-pressed={pref.draw}
-                onClick={() => void setMenuPref({ draw: !pref.draw })}
-              >
-                <span className="ic" aria-hidden="true">
-                  ✏️
-                </span>
-                <span className="lbl">Draw button beside ☰</span>
-                <span className="tick" aria-hidden="true">
-                  {pref.draw ? '✓' : ''}
-                </span>
-              </button>
-            )}
-          </section>
-        )}
-        {/* every screen with a menu: the look of its cards, this menu and Settings */}
-        <button
-          type="button"
-          className="item"
-          id="lookBtn"
-          onClick={() => {
-            onClose();
-            openLookCard();
-          }}
-        >
-          <span className="ic" aria-hidden="true">
-            🎨
-          </span>
-          <span className="lbl">Look of cards and menus</span>
-        </button>
-        {/* reload the board: there's no pull-to-refresh any more (it reloaded wall screens by accident) */}
-        <button type="button" className="item" id="reloadBtn" onClick={() => location.reload()}>
-          <span className="ic" aria-hidden="true">
-            ↻
-          </span>
-          <span className="lbl">Reload the board</span>
-        </button>
-        <div className="who">
-          {who?.ha?.person ? (
-            <>Signed in to Home Assistant as {who.ha.person.name}.</>
-          ) : who?.user ? (
-            <>
-              Signed in as {who.user.name}.{' '}
+        <section aria-label="Go to">
+          <h4>Go to</h4>
+          <div className="tiles">
+            {tiles.map(t => {
+              const on = fav.items.includes(t.id);
+              return (
+                <a
+                  key={t.id}
+                  className={'tile' + (t.here ? ' here' : '') + (t.id === 'calendar' ? ' board' : '')}
+                  href={t.href}
+                  id={'tile-' + t.id}
+                  aria-current={t.here ? 'page' : undefined}
+                  title={t.pin ? `Press and hold to ${on ? 'unpin' : 'pin'} ${t.title}` : undefined}
+                  onPointerDown={t.pin ? startPress(t.id, t.title) : undefined}
+                  onPointerUp={t.pin ? endPress : undefined}
+                  onPointerCancel={t.pin ? endPress : undefined}
+                  onPointerMove={t.pin ? movePress : undefined}
+                  onContextMenu={t.pin ? e => e.preventDefault() : undefined}
+                  onClick={e => {
+                    if (pinned.current) {
+                      e.preventDefault(); // (that was a long press: it pinned)
+                      pinned.current = false;
+                      return;
+                    }
+                    // ⚙️ Settings: a card over the board on a wall or family screen and a computer
+                    if (t.id === 'settings' && shell.kind === 'cork') {
+                      e.preventDefault();
+                      onClose();
+                      openSettings();
+                      return;
+                    }
+                    onClose();
+                  }}
+                >
+                  <span className="ic" aria-hidden="true">
+                    {t.icon}
+                  </span>
+                  <span className="lbl">{t.title}</span>
+                  {t.pin && on && (
+                    <span className="pinned" aria-label={forScreen ? 'Pinned to this screen' : 'Pinned for you'}>
+                      📌
+                    </span>
+                  )}
+                </a>
+              );
+            })}
+          </div>
+          {fav.canSave && (
+            <p className="mnote" aria-live="polite">
+              {note ||
+                `Press and hold a page to pin it to ${shell.kind === 'tabs' ? 'the tab bar' : 'the bar'} (up to ${MAX_FAVORITES}).`}
+            </p>
+          )}
+        </section>
+        <div className="mfoot">
+          <div className="mrow">
+            {/* this screen's menu, look and the rest: ⚙️ Settings → This screen (a family screen too) */}
+            {rank >= RANK.family && (
               <button
                 type="button"
                 className="item"
-                style={{ display: 'inline', width: 'auto', minHeight: 0, padding: 0, color: 'var(--pink)' }}
-                onClick={() => post('api/account/logout').then(() => location.reload())}
+                id="thisScreenBtn"
+                onClick={() => {
+                  onClose();
+                  showSettings('screen');
+                }}
               >
-                Sign out
+                <span className="ic" aria-hidden="true">
+                  🖥️
+                </span>
+                <span className="lbl">This screen…</span>
               </button>
-            </>
-          ) : who?.device ? (
-            <>This screen: {who.device.name}</>
-          ) : null}
+            )}
+            {/* reload the board: there's no pull-to-refresh any more (it reloaded wall screens by accident) */}
+            <button type="button" className="item reload" id="reloadBtn" onClick={() => location.reload()}>
+              <span className="ic" aria-hidden="true">
+                ↻
+              </span>
+              <span className="lbl">Reload</span>
+            </button>
+          </div>
+          <div className="who">
+            {who?.ha?.person ? (
+              <>Signed in to Home Assistant as {who.ha.person.name}.</>
+            ) : who?.user ? (
+              <>
+                Signed in as {who.user.name}.{' '}
+                <button
+                  type="button"
+                  className="item"
+                  style={{ display: 'inline', width: 'auto', minHeight: 0, padding: 0, color: 'var(--pink)' }}
+                  onClick={() => post('api/account/logout').then(() => location.reload())}
+                >
+                  Sign out
+                </button>
+              </>
+            ) : who?.device ? (
+              <>This screen: {who.device.name}</>
+            ) : null}
+          </div>
         </div>
       </nav>
     </>

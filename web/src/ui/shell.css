@@ -577,3 +577,126 @@ html.shell-drawer .menu:not(.up) {
 html.shell-drawer .menu:not(.up) :is(.item, .mtools .pill) {
   min-height: 44px;
 }
+
+/* -------------------------------------------------------------------------
+   The ☰ menu as tiles (1.2): the calendar's tools as a row of chips, the
+   pages as big tiles, This screen… and Reload at the bottom
+   ------------------------------------------------------------------------- */
+.menu.tiled .mtools .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 4px;
+}
+.menu.tiled .mtools .chips .pill {
+  width: auto;
+  min-height: 44px;
+  padding: 0 14px 0 10px;
+  gap: 6px;
+  border-radius: 22px;
+  border: 1.5px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.9em;
+}
+.menu.tiled .mtools .chips .pill .ic {
+  flex: 0 0 auto;
+}
+.menu.tiled .mtools .chips .pill.addev {
+  flex: 1 0 100%;
+  justify-content: center;
+  margin: 0 0 2px;
+}
+.menu.tiled .tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 2px 4px;
+}
+.menu.tiled .tile {
+  position: relative;
+  aspect-ratio: 1 / 0.9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 4px;
+  border-radius: 14px;
+  border: 1.5px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--chalk);
+  text-decoration: none;
+  font-family: var(--hand);
+  font-size: 0.9em;
+  line-height: 1.1;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.menu.tiled .tile .ic {
+  font-family: var(--emoji), sans-serif;
+  font-size: 1.9em;
+  line-height: 1;
+}
+.menu.tiled .tile.here {
+  border-color: var(--pink);
+  background: rgba(246, 179, 203, 0.12);
+  color: var(--pink);
+}
+.menu.tiled .tile:active {
+  transform: scale(0.97);
+}
+.menu.tiled .tile .pinned {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 0.75em;
+  font-family: var(--emoji), sans-serif;
+}
+.menu.tiled .mnote {
+  margin: 6px 8px 0;
+  font-size: 0.72em;
+  color: var(--dim);
+  min-height: 1.3em;
+}
+.menu.tiled .mfoot {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.menu.tiled .mfoot .mrow {
+  display: flex;
+  gap: 6px;
+}
+.menu.tiled .mfoot .mrow .item {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  min-height: 48px;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  justify-content: center;
+  white-space: nowrap;
+}
+.menu.tiled .mfoot .mrow .item .lbl {
+  flex: 0 1 auto;
+}
+.menu.tiled .mfoot .mrow .item .ic {
+  flex: 0 0 auto;
+}
+.menu.tiled .mfoot .mrow .item.reload {
+  flex: 0 0 auto;
+}
+/* the drawer and the panel from the cork are a little wider, for three tiles across */
+.menu.tiled:not(.up) {
+  width: min(400px, 92vw);
+}
+html.shell-drawer .menu.tiled:not(.up) {
+  width: clamp(280px, 28vw, 420px);
+}
+/* a phone's More sheet: four across */
+.menu.tiled.up .tiles {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}

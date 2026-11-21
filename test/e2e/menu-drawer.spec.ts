@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | menu-drawer.spec.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-12
- Updated:   2026-11-12
+ Updated:   2026-11-21
 
  Purpose:
      A family screen that swaps the cork for the ☰ button: on the right,
@@ -20,10 +20,13 @@
  0.17.0    2026-11-12   joshua    New file. On a 16:9 screen (the kitchen's)
                         colby     the board keeps its size on either side and
                         claude    the Notes list stops above the button.
+
+ 1.2.0    2026-11-21   joshua    The screen's menu is picked in ⚙️ Settings
+                        claude    → This screen.
 ===============================================================================
 */
 
-import { expect, test } from './fixtures.ts';
+import { expect, menuStyle, test } from './fixtures.ts';
 
 test('a family screen can swap the cork for the ☰ button on either side', async ({ as }) => {
   const fam = await as('family');
@@ -31,8 +34,7 @@ test('a family screen can swap the cork for the ☰ button on either side', asyn
   // | The cork, then the button right | //
   // ----------------------------------- //
   await expect(fam.locator('#editBtn')).toBeVisible();
-  await fam.locator('#menuBtn').click();
-  await fam.locator('#menuStyle-right').click();
+  await menuStyle(fam, 'right'); // (⚙️ Settings → This screen, from the ☰ menu)
   await expect(fam.locator('#editBtn')).toHaveCount(0); // no cork
   await expect(fam.locator('#menuFab')).toHaveClass(/right/);
   // the board takes the cork's room (a family screen has no frame)
@@ -79,14 +81,7 @@ test('a family screen can swap the cork for the ☰ button on either side', asyn
   // | ✏️ beside the ☰, if it's wanted | //
   // ---------------------------------- //
   await expect(fam.locator('#drawFab')).toHaveCount(0); // off unless the screen asks for it
-  await fam.locator('#menuFab').click();
-  await fam.locator('#menuStyle-draw').click();
-  await expect(fam.locator('#menuStyle-draw')).toHaveAttribute('aria-pressed', 'true');
-  await fam.keyboard.press('Escape');
-  await fam
-    .locator('.menuScrim')
-    .click({ force: true })
-    .catch(() => {});
+  await menuStyle(fam, 'draw');
   await expect(fam.locator('#drawFab')).toBeVisible();
   await fam.locator('#drawFab').click();
   await expect(pop).toBeVisible();
@@ -105,8 +100,7 @@ test('a family screen can swap the cork for the ☰ button on either side', asyn
   // ------------------------------ //
   // | The left, then the cork again | //
   // ------------------------------ //
-  await fam.locator('#menuFab').click();
-  await fam.locator('#menuStyle-left').click();
+  await menuStyle(fam, 'left');
   await expect(fam.locator('#menuFab')).toHaveClass(/left/);
   await fam.locator('#menuFab').click();
   await expect(fam.locator('#menuPanel')).not.toHaveClass(/right/);
@@ -114,7 +108,7 @@ test('a family screen can swap the cork for the ☰ button on either side', asyn
     await fam.waitForTimeout(400); // the drawer has slid in
     await fam.screenshot({ path: 'test-results/menu-left-page.png' });
   }
-  await fam.locator('#menuStyle-cork').click();
+  await menuStyle(fam, 'cork');
   await expect(fam.locator('#menuFab')).toHaveCount(0);
   await expect(fam.locator('.corkbar')).toBeVisible();
   expect(fam.errors).toEqual([]);
@@ -141,8 +135,7 @@ test('on a 16:9 screen the button floats: the board keeps its size, the Notes li
     [1920, 1080]
   ] as const) {
     const fam = await as('family', { context: { viewport: { width: w, height: h } } });
-    await fam.locator('#menuBtn').click();
-    await fam.locator('#menuStyle-right').click();
+    await menuStyle(fam, 'right');
     const fab = fam.locator('#menuFab');
     await expect(fab).toHaveClass(/right/);
     // on the right: over the bottom of the Notes column, whose list stops above it
@@ -153,16 +146,14 @@ test('on a 16:9 screen the button floats: the board keeps its size, the Notes li
     const right = (await fam.locator('#board').boundingBox())!;
     if (process.env.SHOTS) await fam.screenshot({ path: `test-results/k-right-${w}x${h}.png` });
     // on the left: the same size board (it doesn't shrink for the button)
-    await fab.click();
-    await fam.locator('#menuStyle-left').click();
+    await menuStyle(fam, 'left');
     await expect(fab).toHaveClass(/left/);
     await fam.waitForTimeout(300);
     const left = (await fam.locator('#board').boundingBox())!;
     expect(Math.round(left.width), `${w}x${h}: same size`).toBe(Math.round(right.width));
     expect(Math.round(left.height), `${w}x${h}: same size`).toBe(Math.round(right.height));
     if (process.env.SHOTS) await fam.screenshot({ path: `test-results/k-left-${w}x${h}.png` });
-    await fab.click();
-    await fam.locator('#menuStyle-cork').click();
+    await menuStyle(fam, 'cork');
     await expect(fam.locator('#editBtn')).toBeVisible();
     expect(fam.errors).toEqual([]);
   }
