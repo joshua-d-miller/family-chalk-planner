@@ -99,8 +99,9 @@
                                   their countdowns.
 
  1.2.0    2026-11-21   joshua    Family screens may start their 🗓️ Week on
-                        claude    today, pick Split View, and hide their −
-                                  / + / Fit buttons.
+                        colby     today and pick Split View; a screen may
+                        claude    hide its − / + / Fit buttons (from Colby
+                                  Way's board).
 ===============================================================================
 */
 

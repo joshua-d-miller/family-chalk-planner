@@ -45,8 +45,8 @@
                         claude    to-refresh.
 
  1.2.0    2026-11-21   joshua    Tiles: the pages as big tiles (a long press
-                        colby     pins one), the calendar's tools as chips,
-                        claude    and 🖥️ This screen… and ↻ Reload at the
+                        claude    pins one), the calendar's tools as chips,
+                                  and 🖥️ This screen… and ↻ Reload at the
                                   bottom. This screen's menu and its look
                                   moved to ⚙️ Settings → This screen.
 ===============================================================================
