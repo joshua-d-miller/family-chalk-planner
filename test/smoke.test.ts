@@ -655,6 +655,21 @@ test('filling the screen and the wooden frame: per screen, and the console sets 
   assert.deepEqual((await (await api('/api/devices/boardfit')).json()).boardfit, {});
 });
 
+test('saved styles: by name, each checked like the board style, up to 20', async () => {
+  const out = await (
+    await post('/api/styles', {
+      styles: [
+        { name: '  Our kitchen ', theme: { p: 'pastel', o: { numC: '#112233', bogus: 'x' }, s: 'linen' } },
+        { name: '', theme: { p: 'classic', o: {} } }
+      ]
+    })
+  ).json();
+  assert.deepEqual(out, [{ name: 'Our kitchen', theme: { p: 'pastel', o: { numC: '#112233' }, s: 'linen' } }]);
+  assert.deepEqual(await (await api('/api/styles')).json(), out);
+  assert.equal((await post('/api/styles', { styles: 'nope' })).status, 400);
+  await post('/api/styles', { styles: [] });
+});
+
 test('the − / + / Fit buttons: shown until a screen hides them', async () => {
   assert.deepEqual(await (await api('/api/nozoom')).json(), { hide: false });
   assert.deepEqual(await (await post('/api/nozoom', { hide: true })).json(), { hide: true });

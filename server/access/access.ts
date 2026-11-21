@@ -669,6 +669,7 @@ export function setup(
     '/art/delete',
     '/art/undo',
     '/theme',
+    '/styles', // the styles saved by name
     '/meta',
     '/photos/settings',
     '/photos/sync',

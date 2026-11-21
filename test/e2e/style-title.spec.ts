@@ -37,7 +37,8 @@
                         claude    and are saved for every month.
 
  1.2.0    2026-11-21   joshua    On this screen: the wooden frame and filling
-                        claude    the screen. The hard-to-read warning.
+                        claude    the screen. The hard-to-read warning;
+                                  Colorblind-safe; your styles.
 ===============================================================================
 */
 
@@ -45,6 +46,37 @@ import { test, expect, thisMonth } from './fixtures.ts';
 
 const surfaceOf = (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.querySelector<HTMLElement>('.slate')!.dataset.surface);
+
+test('🎨 Board style → Your styles: save one by name, put it back, and share it as a code', async ({ as, board }) => {
+  await board.admin.post('/api/styles', { styles: [] });
+  const page = await as('tablet');
+  await page.locator('#styleBtn').click();
+  const sheet = page.locator('#styleSheet');
+  await sheet.getByRole('radio', { name: /Every month/ }).click();
+  await sheet.locator('.presets button', { hasText: 'Bold' }).click();
+  await sheet.locator('#saveStyleBtn').click();
+  await sheet.locator('#styleName').fill('Our kitchen');
+  await sheet.locator('#styleNameSave').click();
+  await expect
+    .poll(async () => (await (await board.admin.api('/api/styles')).json()).map(x => x.name))
+    .toEqual(['Our kitchen']);
+  // something else, then the saved one back
+  await sheet.locator('.presets button', { hasText: 'Pastel' }).click();
+  await expect(sheet.locator('.presets button.on')).toHaveText(/Pastel/);
+  await sheet.locator('.savedstyle button', { hasText: 'Our kitchen' }).click();
+  await expect(sheet.locator('.presets button.on')).toHaveText(/Bold/);
+  // as a code, and back from one
+  await sheet.locator('#copyStyleBtn').click();
+  const code = await sheet.locator('#styleCode').inputValue();
+  expect(code).toMatch(/^chalk-style:/);
+  await sheet.locator('.presets button', { hasText: 'Classic' }).click();
+  await sheet.locator('#pasteStyle').fill(code);
+  await sheet.locator('#useStyleCode').click();
+  await expect(sheet.locator('.presets button.on')).toHaveText(/Bold/);
+  await sheet.getByRole('button', { name: 'Cancel' }).click();
+  await board.admin.post('/api/styles', { styles: [] });
+  expect(page.errors).toEqual([]);
+});
 
 test('🎨 Board style: a Colorblind-safe style, and colors a screen reader can name', async ({ as }) => {
   const page = await as('tablet');

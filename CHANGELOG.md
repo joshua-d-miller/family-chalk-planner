@@ -66,6 +66,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **"Discard your changes?"** A card with changes not saved yet (an event, a meal, a reminder, a jar, the chores,
   the board style, a month's title or border, writing on the board) asks before the ✕, Escape or a tap outside closes
   it: **Keep editing** or **Discard**. A card with no changes still closes at once, and Cancel still cancels.
+- **Your styles** (🎨 Board style → Style): **Save this style** keeps the colors, fonts and background by name, to put
+  back in one tap later (up to 20, for the whole board). **Copy style code** gives a short code to paste into another
+  family's board (**Use it**); a photo background stays on your board.
 - **"Hard to read on this background"** in 🎨 Board style: a color that's too faint on the background picked (yellow
   numbers on light paper, say) says so, with the lighter or darker one the board shows instead.
 - **Colorblind-safe colors:** a **Colorblind-safe** board style (🎨 Board style → Style), with colors told apart with
