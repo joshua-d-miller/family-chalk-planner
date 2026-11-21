@@ -36,7 +36,9 @@
 
  1.2.0    2026-11-21   colby     A swipe goes to the next photos, or back to
                         joshua    the last ones (from Colby Way's board).
-                        claude
+                        claude    Dates in the screen's language; the family's
+                                  events and reminders stay in their own
+                                  words.
 ===============================================================================
 */
 
@@ -49,6 +51,7 @@ import { isDone } from '../pages/Reminders.tsx';
 import { frameFor, photoSrc } from './photos.ts';
 import { CountdownCard } from './Countdown.tsx';
 import { useCountdowns, useSleeps } from '../lib/countdowns.ts';
+import { locale } from '../../../shared/i18n.ts';
 import type { Photo, PhotoCfg, Photos } from './photos.ts';
 import './slides.css';
 
@@ -317,7 +320,7 @@ function useClock(time24: boolean) {
   return {
     time: `${h}:${String(n.getMinutes()).padStart(2, '0')}`,
     ampm: time24 ? '' : n.getHours() < 12 ? 'AM' : 'PM',
-    date: n.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+    date: n.toLocaleDateString(locale(), { weekday: 'long', month: 'long', day: 'numeric' })
   };
 }
 
@@ -548,7 +551,7 @@ function SlideInfo({ cfg, time24, right }: { cfg: PhotoCfg; time24: boolean; rig
           {evs.slice(0, 5).map((e, i) => (
             <li key={i}>
               {e.time && <small>{e.time}</small>}
-              {e.title}
+              <span translate="no">{e.title}</span>
             </li>
           ))}
         </ul>
@@ -565,7 +568,7 @@ function SlideInfo({ cfg, time24, right }: { cfg: PhotoCfg; time24: boolean; rig
           {rs.slice(0, 4).map(it => (
             <li key={it.id}>
               {it.mode === 'time' && <small>{fmtTime(it.time, time24)}</small>}
-              {it.title}
+              <span translate="no">{it.title}</span>
             </li>
           ))}
         </ul>

@@ -47,6 +47,8 @@
      and plainer chalk, for a slow wall screen):
        kv 'boardfit'  { 'p:...' | 's:...': { fill: true, noFrame: true,
            low: true } }
+     And its language, when it isn't the board's (English or Spanish):
+       kv 'lang'  { 'p:...' | 's:...': 'en' | 'es' }
      And whether it hides the − / + / Fit zoom buttons (shown unless set;
      only a screen someone is signed in on has them; from Colby Way's
      board):
@@ -92,6 +94,7 @@
                                   Fill the screen and no wooden frame, per
                                   screen (Colby Way's frame and padding
                                   settings, reworked); a low-power screen.
+                                  Its language, when it isn't the board's.
 ===============================================================================
 */
 
@@ -124,12 +127,14 @@ export function setup({
   app,
   kv,
   whose,
-  broadcast
+  broadcast,
+  boardLanguage = 'en'
 }: {
   app: Express;
   kv: Kv;
   whose: (req: Request) => string | null; // 'p:<id>' or 's:<id>', null for nobody
   broadcast: (event: string, data: unknown) => void;
+  boardLanguage?: 'en' | 'es'; // ⚙️ Board → the board's language
 }) {
   const all = () => kv.get<Record<string, string[]>>('favorites') || {};
   app.get('/api/favorites', (req, res) => {
@@ -471,6 +476,47 @@ export function setup({
     const v = setFit('s:' + id, { fill: req.body?.fill, noFrame: req.body?.noFrame, low: req.body?.low });
     if (!v) return res.status(400).json({ error: 'On or off' });
     res.json(v);
+  });
+
+  // ---------------------- //
+  // | Its language | //
+  // ---------------------- //
+  // The board's (⚙️ Board), unless this screen (or person) picked its own. //
+  // Asked before a screen is paired too (its pairing code in the board's   //
+  // language). The admin console sets any screen's.                        //
+  const LANGS = ['en', 'es'];
+  const langs = () => kv.get<Record<string, string>>('lang') || {};
+  const setLang = (k: string, v: unknown) => {
+    const map = langs();
+    if (v === null) delete map[k];
+    else map[k] = v as string;
+    kv.set('lang', map);
+    broadcast('lang', {});
+    return map[k] || null;
+  };
+  app.get('/api/lang', (req, res) => {
+    const k = whose(req);
+    const mine = (k && langs()[k]) || null;
+    res.json({ lang: mine || boardLanguage, mine, board: boardLanguage });
+  });
+  app.post('/api/lang', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const v = (req.body || {}).lang;
+    if (!(v === null || LANGS.includes(v))) return res.status(400).json({ error: 'Pick a language' });
+    res.json({ mine: setLang(k, v) });
+  });
+  app.get('/api/devices/lang', (_req, res) => {
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(langs())) if (k.startsWith('s:')) out[k.slice(2)] = v;
+    res.json({ lang: out, board: boardLanguage });
+  });
+  app.post('/api/devices/lang', (req, res) => {
+    const id = String(req.body?.id || '');
+    const v = req.body?.lang;
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    if (!(v === null || LANGS.includes(v))) return res.status(400).json({ error: 'Pick a language' });
+    res.json({ mine: setLang('s:' + id, v) });
   });
 
   // ------------------------------ //

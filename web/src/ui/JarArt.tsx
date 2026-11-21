@@ -29,6 +29,8 @@
  1.2.0    2026-11-21   colby     Confetti when a jar fills; the pieces and
                         joshua    the burst for the big jar (JarZoom.tsx); a
                         claude    tap on a jar can open it.
+                                  The jar's name stays as typed in another
+                                  language.
 ===============================================================================
 */
 
@@ -226,7 +228,9 @@ export function JarRow({ jars, onJarClick }: { jars: Jar[]; onJarClick?: (jar: J
           onClick={e => onJarClick?.(j, e.currentTarget)}
         >
           <JarArt jar={j} />
-          <div className="jn chalk">{j.name}</div>
+          <div className="jn chalk" translate="no">
+            {j.name}
+          </div>
           <div className="jc">{j.count >= j.goal ? `★ Full! ${j.count}/${j.goal}` : `${j.count} / ${j.goal}`}</div>
         </div>
       ))}

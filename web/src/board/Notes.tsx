@@ -50,6 +50,9 @@
                                   weather and countdowns there. Its last row
                                   can hold the menu's buttons (Colby Way's
                                   dock).
+                                  The family's events, pantry, reminders and
+                                  timers stay in their own words in another
+                                  language.
 ===============================================================================
 */
 
@@ -285,7 +288,7 @@ export function UpNext({ todayOnly = false }: { todayOnly?: boolean }) {
         text: (
           <>
             {e.time && <span className="t">{e.time}</span>}
-            {e.title}
+            <span translate="no">{e.title}</span>
           </>
         ),
         color: c ? readable(c, 0.0069) : undefined
@@ -374,7 +377,7 @@ export function PantryPage() {
         {items.map(it => (
           <li key={it.id} className="chalk">
             {it.qty && <span className="t">{it.qty}</span>}
-            {it.name}
+            <span translate="no">{it.name}</span>
           </li>
         ))}
         {!items.length && <li className="none">Nothing in the pantry list</li>}
@@ -395,7 +398,7 @@ export function RemindersPage({ time24 }: { time24: boolean }) {
           .map(x => (
             <li key={x.id}>
               {x.important && '❗ '}
-              {x.title}
+              <span translate="no">{x.title}</span>
               {x.mode === 'time' && <span className="dim"> {fmtTime(x.time, time24)}</span>}
             </li>
           ))}
@@ -411,7 +414,7 @@ function TimersPage() {
       <ul className="nlist">
         {timers.map(t => (
           <li key={t.id}>
-            {t.name} <b>{t.state === 'done' ? 'Done!' : fmtLeft(left(t, now))}</b>
+            <span translate="no">{t.name}</span> <b>{t.state === 'done' ? 'Done!' : fmtLeft(left(t, now))}</b>
           </li>
         ))}
       </ul>

@@ -55,6 +55,8 @@
                                   by name, and shared as a code.
                                   "Discard your changes?" when it's closed
                                   with changes.
+                                  Your styles' names stay as they were typed
+                                  in another language.
 ===============================================================================
 */
 
@@ -137,7 +139,7 @@ function YourStyles({ current, onUse }: { current: Theme; onUse: (t: Theme) => v
       <div className="sublbl">Your styles</div>
       <div className="segs">
         {list.map(x => (
-          <span key={x.name} className="savedstyle">
+          <span key={x.name} className="savedstyle" translate="no">
             <button type="button" className="seg" onClick={() => onUse(x.theme)} title={`Use “${x.name}”`}>
               {x.name}
             </button>

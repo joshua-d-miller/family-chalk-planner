@@ -25,6 +25,8 @@
 
  1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
                         claude    with changes.
+                                  The timers' names stay as typed in another
+                                  language.
 ===============================================================================
 */
 
@@ -81,7 +83,7 @@ export function Timers({ who }: { who: Who | null }) {
           const ms = left(t, now);
           return (
             <section className={'section timer ' + t.state} key={t.id}>
-              <h3>{t.name}</h3>
+              <h3 translate="no">{t.name}</h3>
               <div className="tleft chalk" aria-live={t.state === 'done' ? 'assertive' : 'off'}>
                 {t.state === 'done' ? 'Done!' : fmtLeft(ms)}
               </div>

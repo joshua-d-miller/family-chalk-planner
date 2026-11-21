@@ -36,6 +36,9 @@
  1.2.0    2026-11-21   joshua    A holiday in the day list opens ⚙️ Settings
                         claude    → Holidays (as a card on a wall or family
                                   screen).
+                                  Dates in the screen's language; the family's
+                                  events, reminders and timers stay in their
+                                  own words.
 ===============================================================================
 */
 
@@ -47,6 +50,7 @@ import { useTimers } from '../lib/timers.ts';
 import { fmtTime } from '../lib/today.ts';
 import { isDone } from '../pages/Reminders.tsx';
 import { showSettings } from '../pages/Settings.tsx';
+import { locale } from '../../../shared/i18n.ts';
 import { Btn } from '../ui/bits.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
 import { readable } from './color.ts';
@@ -103,7 +107,9 @@ export function ReminderAlert({ time24 }: { time24: boolean }) {
             }
           >
             <span className="chbox" aria-hidden="true" />
-            <span className="ct">{r.title}</span>
+            <span className="ct" translate="no">
+              {r.title}
+            </span>
             <span className="rtag">{fmtTime(r.time, time24)}</span>
           </button>
         ))}
@@ -140,7 +146,7 @@ export function TimerDone() {
     <div className="timerdone" role="alert">
       {done.map(t => (
         <button type="button" key={t.id} onClick={() => setGone(g => [...g, t.id + ':' + t.doneAt])}>
-          ⏰ <b>{t.name}</b> is done!
+          ⏰ <b translate="no">{t.name}</b> is done!
         </button>
       ))}
     </div>
@@ -179,7 +185,7 @@ export function DayView({
   const list = events.filter(e => e.start <= date && e.end >= date);
   return (
     <Sheet
-      title={new Date(p[0], p[1] - 1, p[2]).toLocaleDateString('en-US', {
+      title={new Date(p[0], p[1] - 1, p[2]).toLocaleDateString(locale() || 'en-US', {
         weekday: 'long',
         month: 'long',
         day: 'numeric'
@@ -206,7 +212,7 @@ export function DayView({
                       : undefined
               }
             >
-              {evText(e, cake)}
+              <span translate={e.holiday ? undefined : 'no'}>{evText(e, cake)}</span>
               {e.cal ? ' · ' + e.cal : ''}
             </button>
           );

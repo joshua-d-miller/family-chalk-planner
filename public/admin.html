@@ -275,6 +275,9 @@ button:disabled{opacity:.5;cursor:default}
           <div><label for="bfWeek">Weeks start on</label><select id="bfWeek" data-k="WEEK_START"><option value="">(default: Sunday)</option><option value="sunday">Sunday</option><option value="monday">Monday</option></select></div>
           <div><label for="bfTime">Times</label><select id="bfTime" data-k="TIME_FORMAT"><option value="">(default: 4:30pm)</option><option value="12h">4:30pm</option><option value="24h">16:30</option></select></div>
         </div>
+        <label for="bfLang">Language</label>
+        <select id="bfLang" data-k="LANGUAGE" translate="no"><option value="">(default: English)</option><option value="en">English</option><option value="es">Español</option></select>
+        <p class="dim" style="margin-top:4px">Each screen can pick its own too (⚙️ Settings → This screen, or 📺 Screens here).</p>
       </div>
       <div class="card">
         <h2>Weather</h2>
@@ -1121,9 +1124,25 @@ button:disabled{opacity:.5;cursor:default}
     box.appendChild(low);
     return box;
   }
+  // its language: the board's, or its own
+  var screenLangs = {}, boardLang = 'en';
+  function langLine(x) {
+    var box = el('div', 'nbot');
+    box.appendChild(el('span', 'dim', '🌐 Language:'));
+    var sel = el('select'); sel.setAttribute('aria-label', 'Language on ' + x.name); sel.setAttribute('translate', 'no');
+    [['', 'The board’s (' + (boardLang === 'es' ? 'Español' : 'English') + ')'], ['en', 'English'], ['es', 'Español']].forEach(function (o) {
+      var op = el('option', null, o[1]); op.value = o[0]; sel.appendChild(op);
+    });
+    sel.value = screenLangs[x.id] || '';
+    sel.addEventListener('change', function () {
+      api('api/devices/lang', { id: x.id, lang: sel.value || null }).catch(function (e) { $('dvErr').textContent = e.message; });
+    });
+    box.appendChild(sel);
+    return box;
+  }
   function loadScreens() {
     var bottoms = {}, sleeps = {}, weekfrom = {}, weekview = {}, boardfit = {};
-    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices/weekfrom').then(function (b) { weekfrom = b.weekfrom || {}; }, function () {}); }).then(function () { return api('api/devices/weekview').then(function (b) { weekview = b.weekview || {}; }, function () {}); }).then(function () { return api('api/devices/boardfit').then(function (b) { boardfit = b.boardfit || {}; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
+    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices/weekfrom').then(function (b) { weekfrom = b.weekfrom || {}; }, function () {}); }).then(function () { return api('api/devices/weekview').then(function (b) { weekview = b.weekview || {}; }, function () {}); }).then(function () { return api('api/devices/boardfit').then(function (b) { boardfit = b.boardfit || {}; }, function () {}); }).then(function () { return api('api/devices/lang').then(function (b) { screenLangs = b.lang || {}; boardLang = b.board || 'en'; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
       var w = $('dvWaiting'); w.innerHTML = '';
       d.waiting.forEach(function (p) { w.appendChild(el('p', 'dim', '⏳ ' + p.agent + ' is showing a code (' + ago(p.created) + ') - type it above.')); });
       var list = $('dvList'); list.innerHTML = '';
@@ -1148,6 +1167,7 @@ button:disabled{opacity:.5;cursor:default}
         if (!/^kid:/.test(x.role)) it.appendChild(weekFromLine(x, weekfrom[x.id] || null));
         if (!/^kid:/.test(x.role)) it.appendChild(weekViewLine(x, weekview[x.id] || null));
         if (!/^kid:/.test(x.role)) it.appendChild(fitLine(x, boardfit[x.id] || null));
+        it.appendChild(langLine(x));
         list.appendChild(it);
       });
     }).catch(function (e) { if (!(e.body && e.body.admin)) $('dvErr').textContent = e.message; });
@@ -1409,6 +1429,14 @@ button:disabled{opacity:.5;cursor:default}
     showLogin(w.user ? 'The admin console asks for a fresh sign-in.' : 'Sign in with an admin account.');
   }).catch(function () { $('subtitle').textContent = 'Can’t reach the board server'; });
 })();
+</script>
+<!-- the console in the board's language (or this person's): the same translator and dictionary as the screens -->
+<script type="module">
+  import { startTranslating } from './i18n.js';
+  fetch('api/lang', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (!d || d.lang !== 'es') return;
+    return import('./i18n-es.js').then(function (m) { startTranslating(m.ES, 'es'); });
+  }).catch(function () {});
 </script>
 </body>
 </html>

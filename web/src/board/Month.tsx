@@ -69,6 +69,9 @@
                                   Split View: the week as a band, and what
                                   the screen picked under it. Taller days on
                                   a screen that fills itself.
+                                  The family's events stay in their own words
+                                  in another language (holidays are
+                                  translated).
 ===============================================================================
 */
 
@@ -285,7 +288,7 @@ export function Month({
           style={{ gridColumn: `${c1} / ${c2 + 1}`, marginTop: 31 + lane * 24, borderColor: c }}
           onClick={onEvent && (() => onEvent(e))}
         >
-          <span className="chalk" style={{ color: c }}>
+          <span className="chalk" style={{ color: c }} translate={e.holiday ? undefined : 'no'}>
             {e.title}
           </span>
         </div>
@@ -365,6 +368,7 @@ export function Month({
                   (ev.size ? ' sz-' + ev.size : '')
                 }
                 title={full}
+                translate={ev.holiday ? undefined : 'no'}
                 style={{
                   color: color(ev),
                   fontSize: ev.size ? 13 * big * EV_SIZE[ev.size] : week ? 13 * big : undefined

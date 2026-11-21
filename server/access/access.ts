@@ -103,7 +103,8 @@
                         claude    hide its − / + / Fit buttons (from Colby
                                   Way's board). Fill the screen, and the
                                   wooden frame, per screen. Birthdays for
-                                  family screens too.
+                                  family screens too. Its language (anyone
+                                  may ask which; a screen may pick its own).
 ===============================================================================
 */
 
@@ -698,6 +699,7 @@ export function setup(
     '/nozoom', // whether it shows the − / + / Fit buttons
     '/weekview', // its 🗓️ Week: Split View, and what's under the week
     '/boardfit', // fill the screen, and the wooden frame
+    '/lang', // its language
     '/clip/favorites', // ★ a picture into Favorites
     '/clip/web/keep' // a public-domain picture from the web, onto the board
   ]);
@@ -726,6 +728,8 @@ export function setup(
     if (haApp() && (/^\/(account|passkey)\//.test(req.path) || /^\/users\/(invite|reinvite)/.test(req.path)))
       return res.status(403).json({ error: 'Sign-in is Home Assistant’s: open the board from Home Assistant' });
     if (PUBLIC.some(r => r.test(req.path)) || SELF.some(r => r.test(req.path))) return next();
+    // which language (a screen not paired yet shows its pairing code in the board's language)
+    if (!write && req.path === '/lang') return next();
     const need = ADMIN.some(r => r.test(req.path))
       ? RANK.admin
       : !write

@@ -28,6 +28,8 @@
 
  1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
                         claude    with changes.
+                                  The reminders stay in the family's words in
+                                  another language.
 ===============================================================================
 */
 
@@ -113,7 +115,7 @@ export function Reminders({ who }: { who: Who | null }) {
                       </span>
                       <span className="t">
                         {r.important && <span aria-label="important">❗ </span>}
-                        {r.title}
+                        <span translate="no">{r.title}</span>
                         {r.mode === 'time' && (
                           <span className="meta">
                             {fmtTime(r.time, time24)} · {r.repeat === 'daily' ? 'every day' : 'once'}

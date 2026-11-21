@@ -5,6 +5,12 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 (while below 1.0, a new minor version can change how things work).
 
 ## 1.2.0 — (in progress)
+- **En español:** the board in Spanish, everywhere: the board itself, ⚙️ Settings, the app pages, the menus and
+  cards, the messages, the setup guide and the admin console. Pick the board's language in the admin console →
+  ⚙️ Board, and any screen can pick its own (⚙️ Settings → This screen, or 📺 Screens in the admin console), so the
+  kitchen can be in Spanish and a tablet in English. What the family wrote (events, meals, chores, names, the
+  writing on the board) stays in their own words; holidays and the month and day names are translated. The guides
+  in `docs/` are still in English.
 - **A setup guide for a new board:** right after the admin account is made, the console walks through the board's
   name and time zone, the weather, the calendar, the photos and pairing the first wall screen, one step at a time.
   Any step can be skipped, and **🧭 Setup guide** runs it again later.

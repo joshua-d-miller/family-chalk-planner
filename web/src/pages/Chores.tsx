@@ -45,6 +45,8 @@
 
  1.2.0    2026-11-21   joshua    The page's ✕ goes back to where a swipe
                         claude    came from (the week or the calendar).
+                                  The chores stay in the family's words in
+                                  another language.
 ===============================================================================
 */
 
@@ -305,7 +307,7 @@ export function Chores({ who }: { who: Who | null }) {
                       {full ? '✓' : ''}
                     </span>
                     <span className="t ct">
-                      {c.title}
+                      <span translate="no">{c.title}</span>
                       {c.times > 1 && (
                         <span className="cn">
                           {' '}

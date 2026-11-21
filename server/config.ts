@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | config.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      The board's settings, read once at start-up: the environment (.env),
@@ -29,6 +29,9 @@
  1.1.0    2026-11-17   joshua    Which photos, and how many copies the board
                         claude    keeps (PHOTO_PICK, PHOTO_RANDOM_COUNT,
                                   PHOTO_KEEP, PHOTO_KEEP_COUNT).
+
+ 1.2.0    2026-11-21   joshua    language: the board's (LANGUAGE).
+                        claude    
 ===============================================================================
 */
 
@@ -87,6 +90,7 @@ export function readConfig(env: NodeJS.ProcessEnv, appDir: string, dataDir: stri
     holidays: (['us', 'ca', 'gb', 'none'].includes(holidays) ? holidays : 'us') as Country,
     weekStart: ((env.WEEK_START || '').toLowerCase() === 'monday' ? 1 : 0) as 0 | 1, // 0 = weeks start on Sunday
     time24: /^24/.test(env.TIME_FORMAT || ''),
+    language: (env.LANGUAGE === 'es' ? 'es' : 'en') as 'en' | 'es', // the board's; each screen can pick its own
     title: String(env.BOARD_TITLE || 'Family Chalk Planner').slice(0, 60),
     // AGPL: people using the board can get its source. Point this at your fork if you change the code.
     sourceUrl: /^https?:\/\/[^\s"<>]+$/.test(env.SOURCE_URL || '')

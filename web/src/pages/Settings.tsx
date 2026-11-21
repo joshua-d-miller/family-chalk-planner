@@ -55,7 +55,7 @@
                                   sliders for the slideshow's timing and
                                   brightness. This screen: fill the screen,
                                   and the wooden frame; a low-power screen.
-                                  A family screen gets
+                                  Its language. A family screen gets
                                   the board's parts too.
 ===============================================================================
 */
@@ -79,6 +79,8 @@ import { SPACES, setWeekFrom, setWeekView, useWeekFrom, useWeekView } from '../l
 import type { WeekView } from '../lib/weekFrom.ts';
 import { setHideZoom, useHideZoom } from '../lib/zoomControls.ts';
 import { setBoardFit, useBoardFit } from '../lib/boardFit.ts';
+import { LANGUAGES, setLanguage, useLanguage } from '../lib/lang.ts';
+import type { Lang } from '../lib/lang.ts';
 import { Page } from '../ui/Page.tsx';
 import './settings.css';
 
@@ -767,6 +769,7 @@ function ThisScreen() {
   const hideZoom = useHideZoom();
   const signedIn = !!shell.who?.user;
   const fit = useBoardFit();
+  const lang = useLanguage();
   return (
     <Card title="This screen" id="thisScreen">
       {shell.kind === 'cork' && (
@@ -829,6 +832,15 @@ function ThisScreen() {
             </label>
           )}
         </>
+      )}
+      <h4>Language</h4>
+      {lang && (
+        <Segs
+          label="Language"
+          value={lang.mine || 'board'}
+          options={[['board', `The board’s (${lang.board === 'es' ? 'Español' : 'English'})`], ...LANGUAGES]}
+          onChange={v => void setLanguage(v === 'board' ? null : (v as Lang))}
+        />
       )}
       <h4>The board on this screen</h4>
       <label className="check">
