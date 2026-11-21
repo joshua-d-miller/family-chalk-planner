@@ -66,11 +66,12 @@
  1.2.0    2026-11-21   joshua    Settings: finds the Calendar card by its
                         claude    heading (other cards mention the calendar).
                                   Swiping the slideshow. ⚙️ Settings as a card
-                                  over the board.
+                                  over the board. Pinning: a long press on a
+                                  tile.
 ===============================================================================
 */
 
-import { test, expect, thisMonth } from './fixtures.ts';
+import { test, expect, thisMonth, longPress } from './fixtures.ts';
 
 const noSideScroll = page => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
 
@@ -206,10 +207,11 @@ test('More (a phone): every page; 📌 pins one to the tab bar; signed out, a ph
   await expect(phone.locator('#menuBtn')).toHaveCount(0); // the pages are in the tab bar
   await phone.locator('#moreBtn').click();
   const menu = phone.locator('#menuPanel');
-  await expect(menu.getByRole('link', { name: 'Timers' })).toHaveAttribute('aria-current', 'page');
-  await menu.getByRole('button', { name: 'Pin Meal plan' }).click();
-  await expect(menu.getByRole('button', { name: 'Unpin Meal plan' })).toBeVisible();
-  await menu.getByRole('link', { name: 'Pantry' }).click();
+  await expect(menu.locator('#tile-timers')).toHaveAttribute('aria-current', 'page');
+  await longPress(phone, '#tile-meals'); // press and hold: pinned
+  await expect(menu.locator('#tile-meals .pinned')).toBeVisible();
+  await expect(menu.locator('.mnote')).toContainText('Meal plan is pinned');
+  await menu.locator('#tile-pantry').click();
   await expect(phone).toHaveURL(/\/pantry$/);
   await expect(menu).toHaveCount(0);
   // the pinned page is a tab now; going there doesn't load a new page

@@ -22,6 +22,9 @@
 
  1.2.0    2026-11-21   joshua    The look's settings are in Settings → This
                         claude    screen itself.
+
+ 1.2.0    2026-11-21   joshua    The look is set in ⚙️ Settings → This
+                        claude    screen, from the ☰ menu's This screen….
 ===============================================================================
 */
 
@@ -32,15 +35,15 @@ test('a screen picks the look of its cards and menu, and keeps it', async ({ as 
   const bg = (sel: string) => fam.locator(sel).evaluate(el => getComputedStyle(el).backgroundColor);
   const boardBefore = await bg('#board');
 
-  // ----------------------------- //
-  // | From the ☰ menu: the card | //
-  // ----------------------------- //
+  // ------------------------------------------------------ //
+  // | From the ☰ menu: This screen…, in ⚙️ Settings | //
+  // ------------------------------------------------------ //
   await fam.locator('#menuBtn').click();
-  await fam.locator('#lookBtn').click();
+  await fam.locator('#thisScreenBtn').click();
   await expect(fam.locator('#menuPanel')).toHaveCount(0);
-  const card = fam.locator('#lookCard');
+  const card = fam.locator('#settingsCard');
   await expect(card).toBeVisible();
-  expect(await bg('#lookCard')).toBe('rgb(22, 23, 22)'); // chalk: the slate
+  expect(await bg('#settingsCard')).toBe('rgb(22, 23, 22)'); // chalk: the slate
 
   // -------------------------------------- //
   // | Each look changes the card at once | //
@@ -52,7 +55,7 @@ test('a screen picks the look of its cards and menu, and keeps it', async ({ as 
   ];
   for (const [name, color] of shots) {
     await card.getByRole('radio', { name, exact: true }).click();
-    await expect.poll(() => bg('#lookCard')).toBe(color);
+    await expect.poll(() => bg('#settingsCard')).toBe(color);
     if (process.env.SHOTS)
       await fam.screenshot({ path: `test-results/look-${name.toLowerCase().replace(/ /g, '-')}.png` });
   }
@@ -62,14 +65,16 @@ test('a screen picks the look of its cards and menu, and keeps it', async ({ as 
   // ------------------------------ //
   await card.getByRole('radio', { name: 'Light', exact: true }).click();
   await card.getByRole('radio', { name: '#2F8F83' }).click();
-  await expect.poll(() => card.locator('h3').evaluate(el => getComputedStyle(el).color)).toBe('rgb(47, 143, 131)');
-  const before = await card.locator('h3').evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+  await expect
+    .poll(() => card.locator('.shead h3').evaluate(el => getComputedStyle(el).color))
+    .toBe('rgb(47, 143, 131)');
+  const before = await card.locator('.shead h3').evaluate(el => parseFloat(getComputedStyle(el).fontSize));
   await card.getByRole('radio', { name: 'Larger', exact: true }).click();
   await expect
-    .poll(() => card.locator('h3').evaluate(el => parseFloat(getComputedStyle(el).fontSize)))
+    .poll(() => card.locator('.shead h3').evaluate(el => parseFloat(getComputedStyle(el).fontSize)))
     .toBeGreaterThan(before * 1.2);
   if (process.env.SHOTS) await fam.screenshot({ path: 'test-results/look-light-accent-larger.png' });
-  await card.locator('.closex').click();
+  await card.locator('.shead .closex').click();
 
   // --------------------------------------------- //
   // | The calendar keeps its style; a reload too | //
@@ -88,11 +93,11 @@ test('a screen picks the look of its cards and menu, and keeps it', async ({ as 
 
   // back to chalk, for the other tests on this board
   await fam.locator('#menuBtn').click();
-  await fam.locator('#lookBtn').click();
+  await fam.locator('#thisScreenBtn').click();
   await card.getByRole('radio', { name: 'Chalk', exact: true }).click();
   await card.getByRole('radio', { name: 'The look’s own' }).click();
   await card.getByRole('radio', { name: 'Normal', exact: true }).click();
-  await expect.poll(() => bg('#lookCard')).toBe('rgb(22, 23, 22)');
+  await expect.poll(() => bg('#settingsCard')).toBe('rgb(22, 23, 22)');
 });
 
 test('Settings → This screen has the same look settings, and its parts take the look', async ({ as }) => {

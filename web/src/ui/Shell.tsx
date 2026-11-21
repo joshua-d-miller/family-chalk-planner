@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Shell.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      The bar that stays at the bottom while the pages change. A family
@@ -58,6 +58,10 @@
                         claude    Settings (light, dark, high contrast, an
                                   accent color, larger text), and the card
                                   that changes it.
+
+ 1.2.0    2026-11-21   joshua    ⚙️ Settings as a card over the board
+                        claude    (<SettingsHost />), where the look of cards
+                                  and menus is set now.
 ===============================================================================
 */
 
@@ -66,7 +70,6 @@ import type { ReactNode } from 'react';
 import { useFavorites } from '../lib/favorites.ts';
 import { useMenuPref } from '../lib/menuStyle.ts';
 import { applyUiLook, useUiLook } from '../lib/uiLook.ts';
-import { LookHost } from './LookCard.tsx';
 import { SettingsHost } from '../pages/Settings.tsx';
 import type { Who } from '../lib/who.ts';
 import { PAGES, homeHref, isHome } from '../routes.ts';
@@ -208,7 +211,6 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
       {kind === 'cork' && !side && !onBoard && <CorkBar onSlot={setSlot} />}
       {side && !onBoard && <PagesFab side={side} />}
       {kind === 'tabs' && <TabBar onHeight={setNavH} mini={busyBoard && onBoard} />}
-      <LookHost />
       <SettingsHost who={who} />
     </Ctx.Provider>
   );
