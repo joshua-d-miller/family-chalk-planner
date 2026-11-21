@@ -9,6 +9,16 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   Tap **📆 From Sunday** in the Week page's tools to switch (and **📆 From today** to switch back). It's kept for each
   screen: also in ⚙️ Settings → This screen, and for any screen (the wall too) in the admin console → 📺 Screens.
   The arrows go a week at a time from there, and a week that starts at the end of one month shows all its events.
+  (Colby Way built this too, on his own board.)
+- **The big jar** (from Colby Way's board): on a screen that edits, tap a reward jar in the Notes column and it opens
+  big. Drop in a heart, rainbow, star, lightning bolt or critter, take one out, and when it's full, **★ Reward!**
+  celebrates and empties it. A jar that fills up bursts into confetti.
+- **Hide the − / + / Fit buttons** (from Colby Way's board): ⚙️ Settings → This screen, for a touch screen that never
+  zooms. It's kept on the board, so a cleared browser keeps it.
+- **A tap on the month's name reloads the board** (from Colby Way's board), on family screens and tablets. Not on
+  the wall, and not while drawing.
+- **A ✕ on every page**, at the top right like every card: back to the calendar (Colby Way's back button on
+  Settings, for every page).
 - **Two quick taps on ‹ or ›** on a family screen no longer turn on the photo frame (they were taken for a double
   tap on the calendar).
 

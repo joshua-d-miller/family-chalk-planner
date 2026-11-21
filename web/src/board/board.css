@@ -706,3 +706,8 @@ body.boardpage {
   height: 44px;
   flex: none;
 }
+
+/* a screen that edits: a tap on the month's name reloads the board (from Colby Way's board) */
+.titlerow.tapname #monthName {
+  cursor: pointer;
+}

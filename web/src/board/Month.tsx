@@ -64,6 +64,8 @@
 
  1.2.0    2026-11-21   joshua    A week starts on its own first day (today,
                         claude    on a screen whose week starts today).
+                        colby     A tap on the month's name can reload the
+                                  board (from Colby Way's board).
 ===============================================================================
 */
 
@@ -219,6 +221,7 @@ export function Month({
   today = { shape: 'ring', color: '#F6B3CB' },
   border = null,
   nav,
+  onTitle,
   week = null
 }: {
   data: MonthData;
@@ -227,6 +230,7 @@ export function Month({
   today?: { shape: string; color: string };
   border?: Border | null;
   nav?: { prev: () => void; next: () => void };
+  onTitle?: () => void; // a tap on the month's name (a screen that edits: reload the board)
   week?: string | null; // just this week (its first day), in the whole height
   onDay?: (date: string) => void;
   onEvent?: (ev: BoardEvent) => void;
@@ -381,7 +385,10 @@ export function Month({
   }
   return (
     <div className="cal">
-      <div className="titlerow">
+      <div
+        className={'titlerow' + (onTitle ? ' tapname' : '')}
+        onClick={onTitle && (e => (e.target as Element).closest?.('#monthName') && onTitle())}
+      >
         {/* the arrows only where they work (not on a wall) */}
         {nav ? <NavBtn dir="prev" onClick={nav.prev} /> : <span className="navgap" aria-hidden="true" />}
         {title ?? (

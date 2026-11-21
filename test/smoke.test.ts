@@ -79,8 +79,8 @@
  1.1.2    2026-11-20   joshua    A month's own background.
                         claude
 
- 1.2.0    2026-11-21   joshua    Where each screen's 🗓️ Week starts.
-                        claude
+ 1.2.0    2026-11-21   joshua    Where each screen's 🗓️ Week starts; hiding
+                        claude    the − / + / Fit buttons.
 ===============================================================================
 */
 
@@ -589,6 +589,14 @@ test('🗓️ Week from today or the board’s first day: per screen, and the co
   assert.deepEqual((await (await api('/api/devices/weekfrom')).json()).weekfrom, { wall1: 'today' });
   await post('/api/devices/weekfrom', { id: 'wall1', from: 'board' });
   assert.deepEqual((await (await api('/api/devices/weekfrom')).json()).weekfrom, {});
+});
+
+test('the − / + / Fit buttons: shown until a screen hides them', async () => {
+  assert.deepEqual(await (await api('/api/nozoom')).json(), { hide: false });
+  assert.deepEqual(await (await post('/api/nozoom', { hide: true })).json(), { hide: true });
+  assert.deepEqual(await (await api('/api/nozoom')).json(), { hide: true });
+  assert.equal((await post('/api/nozoom', { hide: 'yes' })).status, 400);
+  assert.deepEqual(await (await post('/api/nozoom', { hide: false })).json(), { hide: false });
 });
 
 test('Check connections: the calendar and the photos now, and a real round trip only when asked', async () => {

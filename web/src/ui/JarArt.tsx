@@ -2,19 +2,21 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | JarArt.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-21
 
  Purpose:
      A reward jar, drawn: the pieces stacked from the bottom in offset
      rows, a dashed line at the goal, and the jar glowing once it's full.
-     New pieces drop in. The same drawing as the current board.
+     New pieces drop in, and a jar that fills bursts into confetti. The
+     same drawing as the current board.
 
  Used by:
      web/src/board/Notes.tsx
      web/src/pages/Jars.tsx
+     web/src/ui/JarZoom.tsx
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -23,6 +25,10 @@
  0.13.0    2026-11-07   joshua    The new board: the family's style, each
                         colby     month's title and holiday border, polaroids,
                         claude    drawn jars.
+
+ 1.2.0    2026-11-21   colby     Confetti when a jar fills; the pieces and
+                        joshua    the burst for the big jar (JarZoom.tsx); a
+                        claude    tap on a jar can open it.
 ===============================================================================
 */
 
@@ -38,7 +44,7 @@ import './jar.css';
 // -------------- //
 // Hearts, stars, lightning bolts, rainbows and a little round critter, each //
 // in a few colors.                                                          //
-const COLORS: Record<JarPiece, string[]> = {
+export const COLORS: Record<JarPiece, string[]> = {
   heart: ['#FF4FA3', '#F6B3CB', '#E8262B', '#FF8FC7'],
   star: ['#FFE500', '#F2D479', '#FFFFFF', '#FF8C1A'],
   bolt: ['#FFE500', '#FF8C1A'],
@@ -46,7 +52,23 @@ const COLORS: Record<JarPiece, string[]> = {
   rainbow: ['#E8262B']
 };
 
-function Piece({ type, c }: { type: JarPiece; c: string }): ReactNode {
+export const PIECE_NAMES: Record<JarPiece, string> = {
+  heart: 'Hearts',
+  rainbow: 'Rainbows',
+  star: 'Stars',
+  bolt: 'Lightning',
+  critter: 'Critters'
+};
+
+export const PIECE_ONE: Record<JarPiece, string> = {
+  heart: 'heart',
+  rainbow: 'rainbow',
+  star: 'star',
+  bolt: 'lightning bolt',
+  critter: 'critter'
+};
+
+export function Piece({ type, c }: { type: JarPiece; c: string }): ReactNode {
   if (type === 'heart') return <path d="M0 6C-9-1-5-9 0-4C5-9 9-1 0 6Z" fill={c} />;
   if (type === 'rainbow')
     return (
@@ -148,16 +170,61 @@ export function JarArt({ jar: j }: { jar: Jar }) {
   );
 }
 
+export function burstAt(node: HTMLElement) {
+  const cols = ['#FF4FA3', '#FFE500', '#3EC6F2', '#1FB04C', '#FF8C1A', '#FFFFFF', '#8B4FD8'];
+  const parent = node.parentElement || node;
+  for (let i = 0; i < 26; i++) {
+    const b = document.createElement('div');
+    b.className = 'burst';
+    b.style.left = node.offsetLeft + 48 + 'px';
+    b.style.top = node.offsetTop + 40 + 'px';
+    b.style.background = cols[i % cols.length];
+    const a = Math.random() * Math.PI * 2;
+    const d = 50 + Math.random() * 90;
+    b.style.setProperty('--dx', Math.round(Math.cos(a) * d) + 'px');
+    b.style.setProperty('--dy', Math.round(Math.sin(a) * d - 40) + 'px');
+    b.style.animationDelay = (Math.random() * 0.3).toFixed(2) + 's';
+    parent.appendChild(b);
+    setTimeout(() => b.remove(), 2800);
+  }
+}
+
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------------------- //
 // | The jars in a row | //
 // --------------------- //
 // The jars in a row, as on the board's Notes column                         //
-export function JarRow({ jars }: { jars: Jar[] }) {
+export function JarRow({ jars, onJarClick }: { jars: Jar[]; onJarClick?: (jar: Jar, el: HTMLElement) => void }) {
+  const seenRef = useRef<Record<string, number>>({});
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  // a jar that just filled up bursts into confetti (once: then it's remembered as full)
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (const j of jars) {
+      const prev = seenRef.current[j.id];
+      if (prev != null && prev < j.goal && j.count >= j.goal)
+        timers.push(
+          setTimeout(() => {
+            const live = rowRef.current?.querySelector<HTMLElement>(`.jar[data-id="${j.id}"]`);
+            if (live) burstAt(live);
+          }, 900) // once the last piece has dropped in
+        );
+      seenRef.current[j.id] = j.count;
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [jars]);
+
   return (
-    <div className={'jars n' + jars.length}>
+    <div className={'jars n' + jars.length} ref={rowRef}>
       {jars.map(j => (
-        <div key={j.id} className={'jar' + (j.count >= j.goal ? ' full' : '')} data-id={j.id}>
+        <div
+          key={j.id}
+          className={'jar' + (j.count >= j.goal ? ' full' : '')}
+          data-id={j.id}
+          style={onJarClick ? { cursor: 'pointer' } : undefined}
+          onClick={e => onJarClick?.(j, e.currentTarget)}
+        >
           <JarArt jar={j} />
           <div className="jn chalk">{j.name}</div>
           <div className="jc">{j.count >= j.goal ? `★ Full! ${j.count}/${j.goal}` : `${j.count} / ${j.goal}`}</div>

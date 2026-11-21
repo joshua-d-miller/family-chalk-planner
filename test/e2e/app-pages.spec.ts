@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | app-pages.spec.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      The new screens (React): the meal plan, reminders, timers, the
@@ -62,6 +62,9 @@
                                   the second picture (on a slow machine the
                                   tap could land before the Pictures card had
                                   closed).
+
+ 1.2.0    2026-11-21   joshua    Settings: finds the Calendar card by its
+                        claude    heading (other cards mention the calendar).
 ===============================================================================
 */
 
@@ -282,7 +285,9 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
 
 test('settings for an admin: the calendar and trash day', async ({ as, board }) => {
   const page = await as('admin', { path: '/settings' });
-  await expect(page.locator('section', { hasText: 'Calendar' })).toContainText('Showing “Family”');
+  // (the Calendar card itself: other cards mention the calendar too)
+  const cal = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Calendar', exact: true }) });
+  await expect(cal).toContainText('Showing “Family”');
   await page.getByLabel('Trash pickup').selectOption('4');
   await expect.poll(async () => (await (await board.admin.api('/api/extras')).json()).bins.day).toBe(4);
   await page.getByLabel('Trash pickup').selectOption('2');

@@ -40,6 +40,9 @@
 
  1.2.0    2026-11-21   joshua    🗓️ Week from today, and every week after it
                         claude    has all its events (across two months too).
+                                  Hiding the − / + / Fit buttons; a tap on the
+                                  month's name reloads (not on the wall); a ✕
+                                  on every page.
 ===============================================================================
 */
 
@@ -200,6 +203,45 @@ test('🗓️ Week from today: today and the next 6 days, a week at a time, with
   if (!(await page.locator('#weekFromBtn').isVisible())) await page.locator('#editBtn').click();
   await page.locator('#weekFromBtn').click();
   await expect.poll(firstDay).toBe(sunday);
+  expect(page.errors).toEqual([]);
+});
+
+test('⚙️ Settings → This screen hides the − / + / Fit buttons, and brings them back', async ({ as }) => {
+  const page = await as('tablet');
+  await expect(page.locator('.zoom')).toBeVisible();
+  await page.goto(page.url().replace(/edit$/, 'settings'));
+  await page.locator('#hideZoomBox').click(); // (ticked once the board has it)
+  await expect(page.locator('#hideZoomBox')).toBeChecked();
+  await page.goto(page.url().replace(/settings$/, 'edit'));
+  await expect(page.locator('#grid')).toBeVisible();
+  await expect(page.locator('.zoom')).toHaveCount(0);
+  await page.goto(page.url().replace(/edit$/, 'settings'));
+  await page.locator('#hideZoomBox').click();
+  await expect(page.locator('#hideZoomBox')).not.toBeChecked();
+  await page.goto(page.url().replace(/settings$/, 'edit'));
+  await expect(page.locator('.zoom')).toBeVisible();
+  expect(page.errors).toEqual([]);
+});
+
+test('a tap on the month’s name reloads a screen that edits, but not the wall', async ({ as }) => {
+  const fam = await as('family');
+  await fam.evaluate(() => ((window as unknown as { stay: number }).stay = 1));
+  await Promise.all([fam.waitForEvent('load'), fam.locator('#monthName').click()]);
+  expect(await fam.evaluate(() => (window as unknown as { stay?: number }).stay)).toBeUndefined();
+  const wall = await as('wall');
+  await wall.evaluate(() => ((window as unknown as { stay: number }).stay = 1));
+  await wall.locator('#monthName').click();
+  await wall.waitForTimeout(600);
+  expect(await wall.evaluate(() => (window as unknown as { stay?: number }).stay)).toBe(1);
+});
+
+test('every page has a ✕ back to the calendar, like the cards; a kid’s own Chores doesn’t', async ({ as, board }) => {
+  const page = await as('tablet', { path: '/settings' });
+  await page.getByRole('button', { name: 'Back to the calendar' }).click();
+  await expect(page).toHaveURL(/\/edit$/);
+  await page.goto(board.url + '/meals');
+  await page.getByRole('button', { name: 'Back to the calendar' }).click();
+  await expect(page).toHaveURL(/\/edit$/);
   expect(page.errors).toEqual([]);
 });
 

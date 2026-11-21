@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Page.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-21
 
  Purpose:
      The frame of every page: the ☰ menu, the page's title and its buttons
@@ -19,6 +19,10 @@
 
  0.14.0    2026-11-07   joshua    No ☰ at the top: its tools go on the cork,
                         claude    or stay at the top on a phone.
+
+ 1.2.0    2026-11-21   joshua    A ✕ at the top right, like every card, back
+                        colby     to the calendar (Colby Way's back button
+                        claude    on Settings, for every page).
 ===============================================================================
 */
 
@@ -27,6 +31,9 @@ import type { ReactNode } from 'react';
 import type { Who } from '../lib/who.ts';
 import { createPortal } from 'react-dom';
 import { Menu } from './Menu.tsx';
+import { CloseX } from './Sheet.tsx';
+import { navigate } from '../lib/nav.ts';
+import { homeHref, isHome } from '../routes.ts';
 import { useShell } from './Shell.tsx';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -39,12 +46,14 @@ export function Page({
   title,
   who,
   tools,
+  onClose,
   children
 }: {
   id: string;
   title: string;
   who: Who | null;
   tools?: ReactNode;
+  onClose?: () => void; // where its ✕ goes (else back to the calendar)
   children: ReactNode;
 }) {
   const [menu, setMenu] = useState(false);
@@ -69,6 +78,10 @@ export function Page({
         )}
         <h2 className="chalk">{title}</h2>
         {tools && !onCork && <div className="tools">{tools}</div>}
+        {/* a ✕ at the top right, like every card: back to the calendar (not on a kid's own Chores) */}
+        {!isHome(id, who) && (
+          <CloseX onClose={onClose || (() => navigate(homeHref(who)))} label="Back to the calendar" />
+        )}
       </header>
       {tools && onCork && createPortal(tools, shell.slot!)}
       {children}
