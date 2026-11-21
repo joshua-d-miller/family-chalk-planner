@@ -67,6 +67,7 @@ import { useFavorites } from '../lib/favorites.ts';
 import { useMenuPref } from '../lib/menuStyle.ts';
 import { applyUiLook, useUiLook } from '../lib/uiLook.ts';
 import { LookHost } from './LookCard.tsx';
+import { SettingsHost } from '../pages/Settings.tsx';
 import type { Who } from '../lib/who.ts';
 import { PAGES, homeHref, isHome } from '../routes.ts';
 import { Menu } from './Menu.tsx';
@@ -208,6 +209,7 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
       {side && !onBoard && <PagesFab side={side} />}
       {kind === 'tabs' && <TabBar onHeight={setNavH} mini={busyBoard && onBoard} />}
       <LookHost />
+      <SettingsHost who={who} />
     </Ctx.Provider>
   );
 }

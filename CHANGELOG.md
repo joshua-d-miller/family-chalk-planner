@@ -5,6 +5,11 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 (while below 1.0, a new minor version can change how things work).
 
 ## 1.2.0 — (in progress)
+- **⚙️ Settings opens over the board** on a wall or family screen (and a computer), like every other card, with a
+  ✕: the parts down the side and the one picked beside them, so closing it puts you back where you were. On a phone
+  or tablet it's still a page. Checkboxes are on/off switches, and the slideshow's timing (5 to 120 seconds) and
+  brightness are sliders. **🗓️ Week** has its own part (where the week starts), and **🖥️ This screen** now holds the
+  screen's menu and its look of cards and menus too.
 - **🗓️ Week from today:** a screen's Week can start on today and show the next 6 days, instead of starting on Sunday.
   Tap **📆 From Sunday** in the Week page's tools to switch (and **📆 From today** to switch back). It's kept for each
   screen: also in ⚙️ Settings → This screen, and for any screen (the wall too) in the admin console → 📺 Screens.
