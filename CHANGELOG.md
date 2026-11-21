@@ -66,6 +66,8 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **"Discard your changes?"** A card with changes not saved yet (an event, a meal, a reminder, a jar, the chores,
   the board style, a month's title or border, writing on the board) asks before the ✕, Escape or a tap outside closes
   it: **Keep editing** or **Discard**. A card with no changes still closes at once, and Cancel still cancels.
+- **"Hard to read on this background"** in 🎨 Board style: a color that's too faint on the background picked (yellow
+  numbers on light paper, say) says so, with the lighter or darker one the board shows instead.
 - **Screen readers:** every screen is checked with axe (the standard accessibility checker) on every change: every
   button and field has a name to read out, and the ☰ menu and Settings are easy to read in each look. The reward
   jars now say whose jar it is and how full it is.

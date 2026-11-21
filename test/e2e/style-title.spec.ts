@@ -37,7 +37,7 @@
                         claude    and are saved for every month.
 
  1.2.0    2026-11-21   joshua    On this screen: the wooden frame and filling
-                        claude    the screen.
+                        claude    the screen. The hard-to-read warning.
 ===============================================================================
 */
 
@@ -45,6 +45,22 @@ import { test, expect, thisMonth } from './fixtures.ts';
 
 const surfaceOf = (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.querySelector<HTMLElement>('.slate')!.dataset.surface);
+
+test('🎨 Board style warns when a color is hard to read on the background picked', async ({ as }) => {
+  const page = await as('tablet');
+  await page.locator('#styleBtn').click();
+  const sheet = page.locator('#styleSheet');
+  await sheet.getByRole('radio', { name: /Every month/ }).click();
+  await sheet.getByRole('tab', { name: 'Days' }).click();
+  await expect(sheet.locator('.hardread')).toHaveCount(0); // chalk yellow on the black slate: fine
+  await sheet.getByRole('tab', { name: 'Style' }).click();
+  await sheet.locator('#surface-linen').click(); // light paper
+  await sheet.getByRole('tab', { name: 'Days' }).click();
+  await expect(sheet.locator('.hardread').first()).toContainText('Hard to read on this background');
+  await sheet.getByRole('button', { name: 'Cancel' }).click(); // (Cancel discards: no question)
+  await expect(sheet).toHaveCount(0);
+  expect(page.errors).toEqual([]);
+});
 
 test('🎨 Style → On this screen: the wooden frame can come off, and the board can fill the screen', async ({ as }) => {
   const page = await as('tablet');

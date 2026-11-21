@@ -50,6 +50,8 @@
  1.2.0    2026-11-21   joshua    On this screen (Style tab): the wooden frame
                         colby     and filling the screen (Colby Way's frame
                         claude    and padding settings, per screen).
+                                  A warning when a color is hard to read on
+                                  the background picked.
                                   "Discard your changes?" when it's closed
                                   with changes.
 ===============================================================================
@@ -58,13 +60,33 @@
 import { FontPicker } from '../../ui/FontPicker.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { post, upload, url as apiUrl } from '../../lib/api.ts';
-import { SURFACES } from '../../lib/surface.ts';
+import { SURFACES, surfaceOf } from '../../lib/surface.ts';
 import { Btn, Segs, Tabs } from '../../ui/bits.tsx';
 import { Colors } from '../../ui/Colors.tsx';
 import { Sheet, useChanged } from '../../ui/Sheet.tsx';
-import { PRESETS, TFONTS, monthVals, themeVals } from '../theme.ts';
+import { NEED, PRESETS, TFONTS, monthVals, themeVals } from '../theme.ts';
+import { lum, readable } from '../color.ts';
 import type { Theme } from '../theme.ts';
 import { setBoardFit, useBoardFit } from '../../lib/boardFit.ts';
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | Hard to read? | //
+// ------------------- //
+// A color too faint for the background picked: the board already shows it //
+// lighter (or darker) so it can be read; this says so, with what it shows. //
+function HardToRead({ color, need, bg }: { color: string; need?: number; bg: number }) {
+  if (!need || !/^#[0-9a-fA-F]{6}$/.test(color || '')) return null;
+  const shown = readable(color, bg, need);
+  if (shown.toLowerCase() === color.toLowerCase()) return null;
+  const lighter = lum(shown) > lum(color);
+  return (
+    <span className="hardread" role="note">
+      ⚠️ Hard to read on this background: the board shows it a little {lighter ? 'lighter' : 'darker'}{' '}
+      <span className="sw" style={{ background: shown }} aria-hidden="true" />
+    </span>
+  );
+}
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------ //
@@ -486,7 +508,10 @@ export function StyleEditor({
                 label={r.label}
               />
             ) : kind === 'color' ? (
-              <Colors key={k} value={v[k]} onChange={c => c && tweak(k, c)} label={r.label} />
+              <span key={k} className="colorpart">
+                <Colors value={v[k]} onChange={c => c && tweak(k, c)} label={r.label} />
+                <HardToRead color={v[k]} need={NEED[k]} bg={surfaceOf(bgNow.s).lum} />
+              </span>
             ) : (
               <Segs key={k} value={v[k]} onChange={val => tweak(k, val)} options={kind} label={r.label} />
             )

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | theme.ts
 ===============================================================================
- Version:   1.1.2
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-20
+ Updated:   2026-11-21
 
  Purpose:
      The board's style ("theme"): a preset plus the family's tweaks
@@ -36,6 +36,9 @@
 
  1.1.2    2026-11-20   joshua    A month's background isn't a style value.
                         claude
+
+ 1.2.0    2026-11-21   joshua    NEED is shared, for 🎨 Board style's
+                        claude    contrast warning.
 ===============================================================================
 */
 
@@ -239,7 +242,8 @@ const rgba = (hex: string, a: number) => {
 };
 
 // how much contrast each part needs: small text 4.5, big text 3, today's mark 2.2, lines 1.8
-const NEED: Record<string, number> = {
+// how much contrast each color needs on the board's background (it's shown lighter or darker until it has it)
+export const NEED: Record<string, number> = {
   evC: 4.5,
   alldayC: 4.5,
   holC: 4.5,

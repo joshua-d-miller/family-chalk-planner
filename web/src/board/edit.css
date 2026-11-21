@@ -291,3 +291,23 @@
   border-top: 0;
   padding-top: 0;
 }
+
+/* 🎨 Board style: a color that's hard to read on the background picked */
+.colorpart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hardread {
+  font-size: 0.8em;
+  color: var(--yellow);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hardread .sw {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
