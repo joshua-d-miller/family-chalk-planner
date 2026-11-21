@@ -581,6 +581,10 @@ function Photos() {
         <div className="row">
           <Field label="From" type="time" value={c.from} onChange={e => set({ from: e.target.value })} />
           <Field label="Until" type="time" value={c.to} onChange={e => set({ to: e.target.value })} />
+        </div>
+      )}
+      {c.night && (
+        <div className="slides2">
           <label className="slide">
             <span>Next photo every</span>
             <b>{c.every} seconds</b>
