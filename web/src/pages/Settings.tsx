@@ -72,7 +72,8 @@ import { CloseX } from '../ui/Sheet.tsx';
 import { useShell } from '../ui/Shell.tsx';
 import { MENU_STYLES, setMenuPref, useMenuPref } from '../lib/menuStyle.ts';
 import { setSleeps, useSleeps } from '../lib/countdowns.ts';
-import { setWeekFrom, useWeekFrom } from '../lib/weekFrom.ts';
+import { SPACES, setWeekFrom, setWeekView, useWeekFrom, useWeekView } from '../lib/weekFrom.ts';
+import type { WeekView } from '../lib/weekFrom.ts';
 import { setHideZoom, useHideZoom } from '../lib/zoomControls.ts';
 import { Page } from '../ui/Page.tsx';
 import './settings.css';
@@ -827,10 +828,17 @@ function ThisScreen() {
 // ------------ //
 // | The week | //
 // ------------ //
-// 🗓️ Week on this screen: from the board's first day, or from today.      //
+// 🗓️ Week on this screen: from the board's first day, or from today; the  //
+// whole height, or Split View and what goes under the week.                 //
 function WeekPart() {
   const weekFrom = useWeekFrom();
+  const view = useWeekView();
   const first = DAY_NAMES[useLive<{ weekStart?: number }>('api/today', ['calendar']).data?.weekStart || 0];
+  const [err, setErr] = useState('');
+  const change = (c: Partial<WeekView>) => {
+    setErr('');
+    setWeekView(c).catch(e => setErr((e as Error).message));
+  };
   return (
     <Card title="Week" id="weekPart">
       <h4>Starts on</h4>
@@ -843,6 +851,34 @@ function WeekPart() {
         ]}
         onChange={v => void setWeekFrom(v)}
       />
+      <h4>Shows</h4>
+      <Segs
+        label="The week shows"
+        value={view.split ? 'split' : 'week'}
+        options={[
+          ['week', 'The week, full height'],
+          ['split', 'Split View']
+        ]}
+        onChange={v => change({ split: v === 'split' })}
+      />
+      {view.split && (
+        <>
+          <p className="dim small">
+            The week across the top, and one or two things under it. The Notes column shows the weather, trash day and
+            countdowns.
+          </p>
+          <h4>Under the week, on the left</h4>
+          <Segs label="Under the week, on the left" value={view.a} options={SPACES} onChange={a => change({ a })} />
+          <h4>And on the right</h4>
+          <Segs
+            label="Under the week, on the right"
+            value={view.b}
+            options={[['none', 'Nothing (the left one is wider)'], ...SPACES.filter(([v]) => v !== view.a)]}
+            onChange={b => change({ b })}
+          />
+        </>
+      )}
+      <div className="err">{err}</div>
     </Card>
   );
 }

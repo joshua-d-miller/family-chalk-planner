@@ -66,6 +66,8 @@
                         claude    on a screen whose week starts today).
                         colby     A tap on the month's name can reload the
                                   board (from Colby Way's board).
+                                  Split View: the week as a band, and what
+                                  the screen picked under it.
 ===============================================================================
 */
 
@@ -138,6 +140,7 @@ export const MONTHS = [
 const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 const EV_SIZE = { l: 1.35, xl: 1.8 };
 const GRID_H = 642 - 8 - 10 - 70 - 28; // the slate, less its padding, the title and the weekdays
+export const SPLIT_BAND = 0.46; // Split View: how much of the calendar's height (under the title) the week takes
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------- //
@@ -222,7 +225,8 @@ export function Month({
   border = null,
   nav,
   onTitle,
-  week = null
+  week = null,
+  under = null
 }: {
   data: MonthData;
   bins: Bins | null;
@@ -232,6 +236,7 @@ export function Month({
   nav?: { prev: () => void; next: () => void };
   onTitle?: () => void; // a tap on the month's name (a screen that edits: reload the board)
   week?: string | null; // just this week (its first day), in the whole height
+  under?: ReactNode; // Split View: the week as a band across the top, and this under it
   onDay?: (date: string) => void;
   onEvent?: (ev: BoardEvent) => void;
   title?: ReactNode;
@@ -243,7 +248,9 @@ export function Month({
   const pad = border ? BORDER_SZ[border.size] + 6 : 0;
   // the weeks shown: the month's, or one of them
   const nWeeks = week ? 1 : g.weeks;
-  const cellH = (GRID_H - 2 * pad) / nWeeks;
+  // (Split View: the week's band is SPLIT_BAND of the height, the spaces under it the rest)
+  const gridH = under ? (GRID_H + 28) * SPLIT_BAND - 28 : GRID_H;
+  const cellH = (gridH - 2 * pad) / nWeeks;
   const big = week ? 1.35 : 1; // a week has the room for bigger writing
   const single = data.events.filter(e => e.start === e.end);
   const multi = data.events.filter(e => e.start !== e.end);
@@ -402,9 +409,11 @@ export function Month({
         {nav ? <NavBtn dir="next" onClick={nav.next} /> : <span className="navgap" aria-hidden="true" />}
       </div>
       <div
-        className={'calbody' + (border ? ' bordered' : '')}
+        className={'calbody' + (border ? ' bordered' : '') + (under ? ' band' : '')}
         id="calbody"
-        style={{ '--bpad': pad + 'px' } as CSSProperties}
+        style={
+          { '--bpad': pad + 'px', ...(under ? { flex: `0 0 ${(SPLIT_BAND * 100).toFixed(2)}%` } : {}) } as CSSProperties
+        }
       >
         <div className="weekdays">
           {Array.from({ length: 7 }, (_, i) => (
@@ -420,6 +429,7 @@ export function Month({
         </div>
         {border && <BorderLayer border={border} />}
       </div>
+      {under && <div className="under">{under}</div>}
     </div>
   );
 }

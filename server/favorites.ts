@@ -34,6 +34,11 @@
      And where its 🗓️ Week starts: on the board's first day of the week
      (nothing saved), or on today, showing today and the next 6 days:
        kv 'weekfrom'  { 'p:...' | 's:...': 'today' }
+     And whether its 🗓️ Week is Split View (the week as a band, and one or
+     two spaces under it: photos, room to draw, the meal plan, the pantry,
+     the jars, chores, reminders or up next):
+       kv 'weekview'  { 'p:...' | 's:...': { split: true, a: 'photos',
+           b: 'draw' | 'none' } }
      And whether it hides the − / + / Fit zoom buttons (shown unless set;
      only a screen someone is signed in on has them; from Colby Way's
      board):
@@ -327,6 +332,63 @@ export function setup({
     if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
     if (!WEEK_FROM.includes(v)) return res.status(400).json({ error: 'Pick where the week starts' });
     res.json({ from: setWeekFrom('s:' + id, v) });
+  });
+
+  // ------------------------------------- //
+  // | 🗓️ Week: Split View, and its spaces | //
+  // ------------------------------------- //
+  // The week as a band across the top and one or two spaces under it, or   //
+  // the week in the whole height (nothing saved). Per screen (or person);  //
+  // the admin console sets any screen's, the wall's too.                    //
+  const SPACES = ['photos', 'draw', 'meals', 'pantry', 'jars', 'chores', 'reminders', 'upnext'];
+  interface WeekView {
+    split: boolean;
+    a: string;
+    b: string;
+  }
+  const weekViews = () => kv.get<Record<string, WeekView>>('weekview') || {};
+  const viewOf = (v: Partial<WeekView> | undefined): WeekView => ({
+    split: !!v?.split,
+    a: v?.a && SPACES.includes(v.a) ? v.a : 'photos',
+    b: v?.b === 'none' || (v?.b && SPACES.includes(v.b)) ? v.b : 'draw'
+  });
+  const checkView = (b: Record<string, unknown>, now: WeekView): WeekView | null => {
+    const next = { ...now, ...b } as WeekView;
+    if (typeof next.split !== 'boolean' || !SPACES.includes(next.a)) return null;
+    if (next.b !== 'none' && !SPACES.includes(next.b)) return null;
+    return { split: next.split, a: next.a, b: next.b === next.a ? 'none' : next.b }; // (not the same thing twice)
+  };
+  const setWeekView = (k: string, v: WeekView) => {
+    const map = weekViews();
+    if (v.split || v.a !== 'photos' || v.b !== 'draw') map[k] = v;
+    else delete map[k];
+    kv.set('weekview', map);
+    broadcast('weekview', {});
+    return viewOf(map[k]);
+  };
+  app.get('/api/weekview', (req, res) => {
+    const k = whose(req);
+    res.json(viewOf(k ? weekViews()[k] : undefined));
+  });
+  app.post('/api/weekview', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const v = checkView(req.body || {}, viewOf(weekViews()[k]));
+    if (!v) return res.status(400).json({ error: 'Pick what the week shows' });
+    res.json(setWeekView(k, v));
+  });
+  app.get('/api/devices/weekview', (_req, res) => {
+    const out: Record<string, WeekView> = {};
+    for (const [k, v] of Object.entries(weekViews())) if (k.startsWith('s:')) out[k.slice(2)] = viewOf(v);
+    res.json({ weekview: out });
+  });
+  app.post('/api/devices/weekview', (req, res) => {
+    const id = String(req.body?.id || '');
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    const { id: _id, ...rest } = req.body || {};
+    const v = checkView(rest, viewOf(weekViews()['s:' + id]));
+    if (!v) return res.status(400).json({ error: 'Pick what the week shows' });
+    res.json(setWeekView('s:' + id, v));
   });
 
   // ------------------------------ //

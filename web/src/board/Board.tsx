@@ -109,7 +109,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent } from 'react';
 import { useLive, useOnline } from '../lib/live.ts';
-import { setWeekFrom, useWeekFrom } from '../lib/weekFrom.ts';
+import { useWeekFrom, useWeekView } from '../lib/weekFrom.ts';
+import { showSettings } from '../pages/Settings.tsx';
+import { Split } from './Split.tsx';
 import { useHideZoom } from '../lib/zoomControls.ts';
 import { paintSurface, photoBackground, seasonOf, surfaceOf } from '../lib/surface.ts';
 import type { Who } from '../lib/who.ts';
@@ -228,8 +230,6 @@ type Editing =
   | { k: 'notes' }
   | null;
 
-const FIRST_DAY = ['Sunday', 'Monday']; // the board's first day of the week (⚙️ WEEK_START)
-
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------- //
 // | The board | //
@@ -272,6 +272,9 @@ export function Board({
       : weekOf(today.today, today.weekStart || 0)
     : null;
   const week = weekly ? wk || thisWeek : null;
+  // Split View (⚙️ Settings → Week): the week as a band, and one or two spaces under it
+  const weekView = useWeekView();
+  const split = !!week && weekView.split;
   const shown = week ? addDays(week, 3).slice(0, 7) : ym || today?.ym || null;
   const month = useLive<MonthData>(shown ? `api/month?ym=${shown}` : 'api/today', ['calendar']);
   // a week from today can reach past the days its month's grid has (Sun 28 Feb, when March starts on a
@@ -831,6 +834,7 @@ export function Board({
               // a tap on the month's name reloads, on a screen that edits (not the wall; not while drawing)
               onTitle={edit && !drawing ? () => location.reload() : undefined}
               week={week}
+              under={split ? <Split view={weekView} edit={edit} time24={!!today?.time24} /> : null}
               title={
                 <Title
                   text={monthName}
@@ -850,7 +854,7 @@ export function Board({
               layoutKey={`${monthName}|${JSON.stringify(titleStyle)}|${border?.size || ''}`}
             />
           )}
-          <Notes time24={!!today?.time24} edit={edit} drawing={drawing} />
+          <Notes time24={!!today?.time24} edit={edit} drawing={drawing} only={split ? ['info'] : undefined} />
           <WeatherMotion wall={!edit} />
           {behind.length > 0 && <Art items={behind} bg={sf.lum} res={res} gifsPlay under />}
           <Art items={front} bg={sf.lum} res={res} gifsPlay />
@@ -1016,19 +1020,12 @@ export function Board({
                   Style
                 </button>
                 {week && (
-                  // 🗓️ Week: from today (today and the next 6 days), or from the board's first day of the week
-                  <button
-                    type="button"
-                    className="pill"
-                    id="weekFromBtn"
-                    aria-pressed={weekFrom === 'today'}
-                    title={`Tap to start the week on ${weekFrom === 'today' ? FIRST_DAY[today?.weekStart || 0] : 'today'}`}
-                    onClick={() => void setWeekFrom(weekFrom === 'today' ? 'board' : 'today')}
-                  >
+                  // 🗓️ Week's own settings: where it starts, and Split View (⚙️ Settings → Week)
+                  <button type="button" className="pill" id="weekSetBtn" onClick={() => showSettings('week')}>
                     <span className="ic" aria-hidden="true">
-                      📆
+                      ⚙️
                     </span>{' '}
-                    {weekFrom === 'today' ? 'From today' : `From ${FIRST_DAY[today?.weekStart || 0]}`}
+                    Week
                   </button>
                 )}
               </>

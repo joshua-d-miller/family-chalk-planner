@@ -42,7 +42,7 @@
                         claude    has all its events (across two months too).
                                   Hiding the − / + / Fit buttons; a tap on the
                                   month's name reloads (not on the wall); a ✕
-                                  on every page.
+                                  on every page. Split View; ⚙️ Week.
 ===============================================================================
 */
 
@@ -179,10 +179,12 @@ test('🗓️ Week from today: today and the next 6 days, a week at a time, with
   const sunday = await firstDay();
   // the board's own week first (Sunday), then from today
   await page.locator('#editBtn').click();
-  await expect(page.locator('#weekFromBtn')).toContainText('From Sunday');
-  await page.locator('#weekFromBtn').click();
-  await expect(page.locator('#weekFromBtn')).toContainText('From today');
-  await expect(page.locator('#weekFromBtn')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#weekSetBtn').click(); // ⚙️ Week: Settings → Week
+  const card = page.locator('#settingsCard');
+  await expect(card.getByRole('radio', { name: 'Sunday' })).toHaveAttribute('aria-checked', 'true');
+  await card.getByRole('radio', { name: /Today/ }).click();
+  await expect(card.getByRole('radio', { name: /Today/ })).toHaveAttribute('aria-checked', 'true');
+  await card.locator('.shead .closex').click();
   await expect.poll(firstDay).toBe(today);
   const names = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
   await expect(page.locator('.weekdays div').first()).toHaveText(names[new Date(today + 'T12:00:00Z').getUTCDay()]);
@@ -201,8 +203,10 @@ test('🗓️ Week from today: today and the next 6 days, a week at a time, with
   }
   await expect(page.locator('#slides.on')).toHaveCount(0);
   // back to the board's week (and the wall's can be set from the admin console)
-  if (!(await page.locator('#weekFromBtn').isVisible())) await page.locator('#editBtn').click();
-  await page.locator('#weekFromBtn').click();
+  if (!(await page.locator('#weekSetBtn').isVisible())) await page.locator('#editBtn').click();
+  await page.locator('#weekSetBtn').click();
+  await card.getByRole('radio', { name: 'Sunday' }).click();
+  await card.locator('.shead .closex').click();
   await expect.poll(firstDay).toBe(sunday);
   expect(page.errors).toEqual([]);
 });
@@ -243,6 +247,60 @@ test('every page has a ✕ back to the calendar, like the cards; a kid’s own C
   await page.goto(board.url + '/meals');
   await page.getByRole('button', { name: 'Back to the calendar' }).click();
   await expect(page).toHaveURL(/\/edit$/);
+  expect(page.errors).toEqual([]);
+});
+
+test('🗓️ Split View: the week as a band and what the screen picks under it; the Notes column has the weather', async ({
+  as,
+  board
+}) => {
+  await board.admin.post('/api/jars', { jars: [{ id: 'nora', name: 'Nora', pieces: ['star'], count: 3, goal: 10 }] });
+  const page = await as('family', { path: '/week', context: { viewport: { width: 1280, height: 800 } } });
+  await expect(page.locator('#grid .week')).toHaveCount(1);
+  const fullH = (await page.locator('#grid').boundingBox())!.height;
+  // ⚙️ Week, in the Week page's tools: Settings → Week
+  await page.locator('#editBtn').click();
+  await page.locator('#weekSetBtn').click();
+  const card = page.locator('#settingsCard');
+  await expect(card.locator('#setTab-week')).toHaveAttribute('aria-selected', 'true');
+  await card.getByRole('radio', { name: 'Split View' }).click();
+  await card
+    .getByRole('radiogroup', { name: 'Under the week, on the right' })
+    .getByRole('radio', { name: /Reward jars/ })
+    .click();
+  await card.locator('.shead .closex').click();
+  // the week is a band; under it the photos and the jars, side by side
+  await expect(page.locator('.slate .under .space')).toHaveCount(2);
+  await expect(page.locator('.space-photos .sphoto img')).toBeVisible();
+  await expect(page.locator('.space-jars .jar[data-id="nora"]')).toBeVisible();
+  expect((await page.locator('#grid').boundingBox())!.height).toBeLessThan(fullH * 0.6);
+  // the Notes column: the weather, trash day and countdowns, nothing to switch
+  await expect(page.locator('.slate .notes #wNow')).toBeVisible();
+  await expect(page.locator('.slate .notes .nslot')).toHaveCount(1);
+  // a photo alone: centered in the whole width, its own shape
+  await page.evaluate(() =>
+    fetch('api/weekview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+      body: JSON.stringify({ b: 'none' })
+    })
+  );
+  await expect(page.locator('.slate .under .space')).toHaveCount(1);
+  const sp = (await page.locator('.space-photos').boundingBox())!;
+  const im = (await page.locator('.space-photos img').boundingBox())!;
+  expect(Math.abs(im.x + im.width / 2 - (sp.x + sp.width / 2))).toBeLessThan(2); // centered
+  // the month is still the month
+  await page.goto(board.url + '/edit');
+  await expect.poll(() => page.locator('#grid .week').count()).toBeGreaterThan(3);
+  await expect(page.locator('.slate .under')).toHaveCount(0);
+  await page.evaluate(() =>
+    fetch('api/weekview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+      body: JSON.stringify({ split: false, a: 'photos', b: 'draw' })
+    })
+  );
+  await board.admin.post('/api/jars', { jars: [] });
   expect(page.errors).toEqual([]);
 });
 
