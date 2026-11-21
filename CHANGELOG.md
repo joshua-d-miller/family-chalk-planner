@@ -4,7 +4,7 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
-## 1.2.0 — (in progress)
+## 1.2.0 — Made for the wall screen, and en español
 - **En español:** the board in Spanish, everywhere: the board itself, ⚙️ Settings, the app pages, the menus and
   cards, the messages, the setup guide and the admin console. Pick the board's language in the admin console →
   ⚙️ Board, and any screen can pick its own (⚙️ Settings → This screen, or 📺 Screens in the admin console), so the
