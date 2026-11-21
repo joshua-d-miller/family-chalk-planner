@@ -43,6 +43,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **Screens on the wall don't zoom, and stay awake:** on the wall, a family screen or a kid's tablet, a pinch or a
   double tap no longer zooms the page by accident, and the screen asks the browser to stay on while the board shows
   (and again when it wakes). Tablets signed in to draw still pinch to zoom in.
+- **Node.js 26 on 64-bit machines:** a new install on a 64-bit machine needs Node.js 26 (the installer sets it up),
+  and updates now move a NodeSource install up to it overnight too, not only on Update now. A board that can't move
+  up keeps running and the update says why. 32-bit Raspberry Pi OS stays on Node.js 22 until April 30, 2027.
 - **A guide for every wall screen** ([docs/kiosk.md](docs/kiosk.md)): Android with FreeKiosk (and its Home Assistant
   controls) or Fully Kiosk, Linux and Raspberry Pi with Chromium in kiosk mode, Windows with Edge kiosk, and Mac:
   full screen, awake, starting by itself, and what to do when a screen is slow.
