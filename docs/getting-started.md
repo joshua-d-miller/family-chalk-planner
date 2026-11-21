@@ -116,6 +116,10 @@ On a computer or tablet, open `http://<the board's address>:3002/admin`.
 You're in the **admin console**. The setup code is used up; from now on you sign in with your
 username, password and the authenticator code.
 
+The console opens with a **setup guide**: one step at a time for the board's name and time zone, the weather, your
+calendar, your photos and your first wall screen (steps 3 and 4 below). Any step can be skipped, and **🧭 Setup
+guide** at the top of the console runs it again.
+
 ## Step 3: Connect your calendar
 
 In the console, tap **⚙️ Board**.

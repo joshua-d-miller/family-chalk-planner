@@ -159,7 +159,7 @@ function YourStyles({ current, onUse }: { current: Theme; onUse: (t: Theme) => v
             onClick={() => setNaming('')}
             disabled={list.length >= 20}
           >
-            ＋ Save this style…
+            ＋ Add to your styles…
           </button>
         ) : (
           <form
@@ -170,7 +170,7 @@ function YourStyles({ current, onUse }: { current: Theme; onUse: (t: Theme) => v
               if (!name) return;
               keep([...list.filter(y => y.name !== name), { name, theme: current }]);
               setNaming(null);
-              setMsg(`Saved “${name}”`);
+              setMsg(`“${name}” is in your styles`);
             }}
           >
             <input
@@ -183,7 +183,7 @@ function YourStyles({ current, onUse }: { current: Theme; onUse: (t: Theme) => v
               onChange={e => setNaming(e.target.value)}
             />
             <button type="submit" className="seg on" id="styleNameSave">
-              Save
+              Add
             </button>
           </form>
         )}

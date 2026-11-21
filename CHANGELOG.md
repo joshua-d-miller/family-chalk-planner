@@ -5,6 +5,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 (while below 1.0, a new minor version can change how things work).
 
 ## 1.2.0 — (in progress)
+- **A setup guide for a new board:** right after the admin account is made, the console walks through the board's
+  name and time zone, the weather, the calendar, the photos and pairing the first wall screen, one step at a time.
+  Any step can be skipped, and **🧭 Setup guide** runs it again later.
 - **A new ☰ menu:** only for getting places. The pages are big tiles, easy to hit from across the kitchen;
   **press and hold** a tile to pin it to the bar (a small 📌 marks the pinned ones). The calendar's tools are a row
   of chips at the top of the drawer. At the bottom: **🖥️ This screen…** (the screen's menu, its look, sleeps or
@@ -66,7 +69,7 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **"Discard your changes?"** A card with changes not saved yet (an event, a meal, a reminder, a jar, the chores,
   the board style, a month's title or border, writing on the board) asks before the ✕, Escape or a tap outside closes
   it: **Keep editing** or **Discard**. A card with no changes still closes at once, and Cancel still cancels.
-- **Your styles** (🎨 Board style → Style): **Save this style** keeps the colors, fonts and background by name, to put
+- **Your styles** (🎨 Board style → Style): **Add to your styles** keeps the colors, fonts and background by name, to put
   back in one tap later (up to 20, for the whole board). **Copy style code** gives a short code to paste into another
   family's board (**Use it**); a photo background stays on your board.
 - **"Hard to read on this background"** in 🎨 Board style: a color that's too faint on the background picked (yellow
