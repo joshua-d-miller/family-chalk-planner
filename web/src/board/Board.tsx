@@ -911,7 +911,7 @@ export function Board({
               // a tap on the month's name reloads, on a screen that edits (not the wall; not while drawing)
               onTitle={edit && !drawing ? () => location.reload() : undefined}
               week={week}
-              under={split ? <Split view={weekView} edit={edit} time24={!!today?.time24} /> : null}
+              under={split ? <Split view={weekView} edit={edit} drawing={drawing} time24={!!today?.time24} /> : null}
               title={
                 <Title
                   text={monthName}

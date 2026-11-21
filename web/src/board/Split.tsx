@@ -28,7 +28,7 @@
  -------   ----------   -------   --------------------------------------------
  1.2.0    2026-11-21   joshua    New file (Colby Way's week and photos side
                         colby     by side, with a choice of what's beside the
-                        claude    week).
+                        claude    week). A tap on a jar opens the big jar.
 ===============================================================================
 */
 
@@ -38,13 +38,26 @@ import { useLive } from '../lib/live.ts';
 import type { Space, WeekView } from '../lib/weekFrom.ts';
 import { ChoresPage, JarsPage, MealsPage, PantryPage, RemindersPage, UpNext } from './Notes.tsx';
 import { photoSrc, shuffleBag } from './photos.ts';
+import { useBigJar } from '../ui/JarZoom.tsx';
 import type { Photo, Photos } from './photos.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------ //
 // | Under the week | //
 // ------------------ //
-export function Split({ view, edit, time24 }: { view: WeekView; edit: boolean; time24: boolean }) {
+export function Split({
+  view,
+  edit,
+  drawing = false,
+  time24
+}: {
+  view: WeekView;
+  edit: boolean;
+  drawing?: boolean;
+  time24: boolean;
+}) {
+  // a tap on a jar here opens the big jar too (a screen that edits, not while drawing)
+  const { onJar, big } = useBigJar(edit && !drawing);
   const spaces = [view.a, view.b].filter((x): x is Space => x !== 'none');
   return (
     <div className={'spaces n' + spaces.length}>
@@ -54,12 +67,13 @@ export function Split({ view, edit, time24 }: { view: WeekView; edit: boolean; t
           {s === 'draw' && edit && <span className="drawhint">✏️ Room to draw</span>}
           {s === 'meals' && <MealsPage />}
           {s === 'pantry' && <PantryPage />}
-          {s === 'jars' && <JarsPage />}
+          {s === 'jars' && <JarsPage onJar={onJar} />}
           {s === 'chores' && <ChoresPage />}
           {s === 'reminders' && <RemindersPage time24={time24} />}
           {s === 'upnext' && <UpNext />}
         </div>
       ))}
+      {big}
     </div>
   );
 }

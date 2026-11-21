@@ -275,6 +275,11 @@ test('🗓️ Split View: the week as a band and what the screen picks under it;
   await expect(page.locator('.slate .under .space')).toHaveCount(2);
   await expect(page.locator('.space-photos .sphoto img')).toBeVisible();
   await expect(page.locator('.space-jars .jar[data-id="nora"]')).toBeVisible();
+  // a tap on a jar there opens the big jar, as in the Notes column
+  await page.locator('.space-jars .jar[data-id="nora"]').click();
+  await expect(page.locator('#jarZoom #jzTitle')).toHaveText('Nora’s Jar');
+  await page.locator('#jarZoom .jzx .closex').click();
+  await expect(page.locator('#jarZoom.open')).toHaveCount(0);
   expect((await page.locator('#grid').boundingBox())!.height).toBeLessThan(fullH * 0.6);
   // the Notes column: the weather, trash day and countdowns, nothing to switch
   await expect(page.locator('.slate .notes #wNow')).toBeVisible();

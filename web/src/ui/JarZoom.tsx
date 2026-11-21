@@ -14,6 +14,7 @@
 
  Used by:
      web/src/board/Notes.tsx
+     web/src/board/Split.tsx
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -28,6 +29,8 @@
                                   taps on the pieces no longer start a family
                                   screen's photo frame.
                                   A ✕ at the top right, like every card.
+                                  useBigJar: the same big jar from the Notes
+                                  column and 🗓️ Split View.
 ===============================================================================
 */
 
@@ -35,6 +38,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Jar, JarPiece } from '../../../shared/lists.ts';
 import { get, post } from '../lib/api.ts';
+import { useLive } from '../lib/live.ts';
 import { CloseX } from './Sheet.tsx';
 import { burstAt, COLORS, JarArt, Piece, PIECE_ONE } from './JarArt.tsx';
 import './jar.css';
@@ -229,4 +233,24 @@ export function JarZoom({ jar, originEl, onClose, onUpdate }: JarZoomProps) {
     </div>,
     document.body
   );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------ //
+// | A tap on a jar: the big jar | //
+// ------------------------------ //
+// For whatever shows the jars on the board (the Notes column, and 🗓️      //
+// Split View's space): what a tap on a jar does (nothing when `on` is      //
+// false: the wall, or while drawing), and the big jar itself to put on     //
+// the page.                                                                //
+export function useBigJar(on: boolean) {
+  const [open, setOpen] = useState<{ id: string; el: HTMLElement } | null>(null);
+  const jars = useLive<Jar[]>('api/jars', ['jars']);
+  const jar = open ? jars.data?.find(j => j.id === open.id) || null : null;
+  return {
+    onJar: on ? (j: Jar, el: HTMLElement) => setOpen({ id: j.id, el }) : undefined,
+    big: (
+      <JarZoom jar={jar} originEl={open?.el || null} onClose={() => setOpen(null)} onUpdate={list => jars.set(list)} />
+    )
+  };
 }

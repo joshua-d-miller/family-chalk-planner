@@ -60,7 +60,7 @@ import type { ChoresView } from '../../../shared/chores.ts';
 import type { Jar, Meals, PantryItem, RemindersView } from '../../../shared/lists.ts';
 import { entries } from '../pages/Chores.tsx';
 import { JarRow } from '../ui/JarArt.tsx';
-import { JarZoom } from '../ui/JarZoom.tsx';
+import { useBigJar } from '../ui/JarZoom.tsx';
 import { readable } from './color.ts';
 import { addDays } from './Month.tsx';
 import { frameFor, photoSrc, shuffleBag } from './photos.ts';
@@ -522,10 +522,7 @@ export function Notes({
   // ------------------- //
   // On a screen that edits, a tap on a jar opens it big: add a piece, take  //
   // one out, ★ Reward when it's full. From Colby Way's board.               //
-  const [zoomJar, setZoomJar] = useState<{ id: string; el: HTMLElement } | null>(null);
-  const jars = useLive<Jar[]>('api/jars', ['jars']);
-  const bigJar = zoomJar ? jars.data?.find(j => j.id === zoomJar.id) || null : null;
-  const onJar = edit && !drawing ? (jar: Jar, el: HTMLElement) => setZoomJar({ id: jar.id, el }) : undefined;
+  const { onJar, big } = useBigJar(edit && !drawing);
   return (
     <>
       <aside className="notes">
@@ -576,12 +573,7 @@ export function Notes({
         {/* the menu in the Notes column: the ☰ and this screen's buttons go in this row (Colby Way's dock) */}
         {dockRef && <div className="ndock" ref={dockRef} />}
       </aside>
-      <JarZoom
-        jar={bigJar}
-        originEl={zoomJar?.el || null}
-        onClose={() => setZoomJar(null)}
-        onUpdate={list => jars.set(list)}
-      />
+      {big}
     </>
   );
 }
