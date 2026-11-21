@@ -38,7 +38,8 @@
                                   What Apple or Google say about the calendar.
 
  1.2.0    2026-11-21   joshua    This screen: start 🗓️ Week on today.
-                        claude
+                        claude    Hide the − / + / Fit buttons (from Colby
+                        colby     Way's board).
 ===============================================================================
 */
 
@@ -52,6 +53,7 @@ import { Btn, Field, Pick } from '../ui/bits.tsx';
 import { openLookCard } from '../ui/LookCard.tsx';
 import { setSleeps, useSleeps } from '../lib/countdowns.ts';
 import { setWeekFrom, useWeekFrom } from '../lib/weekFrom.ts';
+import { setHideZoom, useHideZoom } from '../lib/zoomControls.ts';
 import { Page } from '../ui/Page.tsx';
 import './settings.css';
 
@@ -602,6 +604,7 @@ function ThisScreen() {
   const [speak, setSpeak] = useState(speaksHere());
   const sleeps = useSleeps();
   const weekFrom = useWeekFrom();
+  const hideZoom = useHideZoom();
   return (
     <Card title="This screen">
       <label className="check">
@@ -627,6 +630,10 @@ function ThisScreen() {
           onChange={e => void setWeekFrom(e.target.checked ? 'today' : 'board')}
         />
         <span className="t">Start 🗓️ Week on today (today and the next 6 days)</span>
+      </label>
+      <label className="check">
+        <input id="hideZoomBox" type="checkbox" checked={hideZoom} onChange={e => void setHideZoom(e.target.checked)} />
+        <span className="t">Hide the − / + / Fit buttons on the calendar</span>
       </label>
       <p style={{ marginTop: 12 }}>
         <Btn id="lookOpen" onClick={openLookCard}>

@@ -110,6 +110,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { PointerEvent } from 'react';
 import { useLive, useOnline } from '../lib/live.ts';
 import { setWeekFrom, useWeekFrom } from '../lib/weekFrom.ts';
+import { useHideZoom } from '../lib/zoomControls.ts';
 import { paintSurface, photoBackground, seasonOf, surfaceOf } from '../lib/surface.ts';
 import type { Who } from '../lib/who.ts';
 import { Art } from './Art.tsx';
@@ -249,6 +250,7 @@ export function Board({
   // adds events, frameless, with the wall's photo frame and slideshow; the  //
   // month's title and the board's look are set from a tablet                //
   const family = edit && !who?.user && who?.device?.role === 'family';
+  const hideZoom = useHideZoom(); // ⚙️ Settings → This screen: no − / + / Fit buttons
   const today = useLive<{ today: string; ym: string; weekStart?: number; time24: boolean }>('api/today', [
     'calendar'
   ]).data;
@@ -826,6 +828,8 @@ export function Board({
               onDay={onDay}
               onEvent={onEvent}
               nav={edit ? { prev: () => go(-1), next: () => go(1) } : undefined}
+              // a tap on the month's name reloads, on a screen that edits (not the wall; not while drawing)
+              onTitle={edit && !drawing ? () => location.reload() : undefined}
               week={week}
               title={
                 <Title
@@ -846,7 +850,7 @@ export function Board({
               layoutKey={`${monthName}|${JSON.stringify(titleStyle)}|${border?.size || ''}`}
             />
           )}
-          <Notes time24={!!today?.time24} edit={edit} />
+          <Notes time24={!!today?.time24} edit={edit} drawing={drawing} />
           <WeatherMotion wall={!edit} />
           {behind.length > 0 && <Art items={behind} bg={sf.lum} res={res} gifsPlay under />}
           <Art items={front} bg={sf.lum} res={res} gifsPlay />
@@ -1038,7 +1042,7 @@ export function Board({
       <ReminderAlert time24={!!today?.time24} />
       <TimerDone />
       <Offline />
-      {edit && !family && (
+      {edit && !family && !hideZoom && (
         <div className="zoom" aria-label="Zoom">
           <button type="button" aria-label="Zoom out" onClick={() => zoomTo(zoom.z / 1.25)} disabled={zoom.z <= 1}>
             −

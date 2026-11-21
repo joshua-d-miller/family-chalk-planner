@@ -34,6 +34,10 @@
      And where its 🗓️ Week starts: on the board's first day of the week
      (nothing saved), or on today, showing today and the next 6 days:
        kv 'weekfrom'  { 'p:...' | 's:...': 'today' }
+     And whether it hides the − / + / Fit zoom buttons (shown unless set;
+     only a screen someone is signed in on has them; from Colby Way's
+     board):
+       kv 'nozoom'  { 'p:...' | 's:...': true }
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -323,6 +327,33 @@ export function setup({
     if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
     if (!WEEK_FROM.includes(v)) return res.status(400).json({ error: 'Pick where the week starts' });
     res.json({ from: setWeekFrom('s:' + id, v) });
+  });
+
+  // ------------------------------ //
+  // | The − / + / Fit buttons | //
+  // ------------------------------ //
+  // Shown unless hidden (a touch screen that never zooms). Only a screen    //
+  // someone is signed in on has them, so it's kept per person (or screen).  //
+  // From Colby Way's board.                                                 //
+  const noZooms = () => kv.get<Record<string, true>>('nozoom') || {};
+  const setNoZoom = (k: string, hide: boolean) => {
+    const map = noZooms();
+    if (hide) map[k] = true;
+    else delete map[k];
+    kv.set('nozoom', map);
+    broadcast('nozoom', {});
+    return !!map[k];
+  };
+  app.get('/api/nozoom', (req, res) => {
+    const k = whose(req);
+    res.json({ hide: !!(k && noZooms()[k]) });
+  });
+  app.post('/api/nozoom', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const v = (req.body || {}).hide;
+    if (typeof v !== 'boolean') return res.status(400).json({ error: 'Show or hide them' });
+    res.json({ hide: setNoZoom(k, v) });
   });
 }
 

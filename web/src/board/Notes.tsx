@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Notes.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      The right-hand column: up to 3 pages, chosen in ⚙️ Settings (weather,
@@ -42,6 +42,10 @@
 
  1.1.0    2026-11-17   joshua    Countdowns in sleeps or days.
                         claude
+
+ 1.2.0    2026-11-21   colby     A tap on a reward jar opens it big: add a
+                        joshua    piece, take one out, ★ Reward.
+                        claude
 ===============================================================================
 */
 
@@ -52,6 +56,7 @@ import type { ChoresView } from '../../../shared/chores.ts';
 import type { Jar, Meals, PantryItem, RemindersView } from '../../../shared/lists.ts';
 import { entries } from '../pages/Chores.tsx';
 import { JarRow } from '../ui/JarArt.tsx';
+import { JarZoom } from '../ui/JarZoom.tsx';
 import { readable } from './color.ts';
 import { addDays } from './Month.tsx';
 import { frameFor, photoSrc, shuffleBag } from './photos.ts';
@@ -230,14 +235,14 @@ function MealsPage() {
     </div>
   );
 }
-function JarsPage() {
+function JarsPage({ onJar }: { onJar?: (jar: Jar, el: HTMLElement) => void }) {
   const j = useLive<Jar[]>('api/jars', ['jars']);
   if (!j.data) return null;
   if (!j.data.length) return <UpNext todayOnly />; // no jars: today's events, as the current board does
   return (
     <div className="npage">
       <h3 className="mh">Reward Jars</h3>
-      <JarRow jars={j.data} />
+      <JarRow jars={j.data} onJarClick={onJar} />
     </div>
   );
 }
@@ -483,7 +488,15 @@ function Switch({ sw }: { sw: ReturnType<typeof useSwitch> }) {
   );
 }
 
-export function Notes({ time24, edit = false }: { time24: boolean; edit?: boolean }) {
+export function Notes({
+  time24,
+  edit = false,
+  drawing = false
+}: {
+  time24: boolean;
+  edit?: boolean;
+  drawing?: boolean; // (a tap on a jar while drawing is drawing, not the big jar)
+}) {
   const x = useLive<Extras>('api/extras', ['extras']).data;
   const pages = x?.notes?.pages || ['info', 'meals', 'jars'];
   // this screen's own choice for the bottom (if it has one), else the board's
@@ -492,51 +505,70 @@ export function Notes({ time24, edit = false }: { time24: boolean; edit?: boolea
   const last = mine?.def || pages[pages.length - 1];
   const sw = useSwitch(SWITCH.some(([m]) => m === last) ? last : '', pages.slice(0, -1), mine?.can || null);
   const swipe = useRef<number | null>(null);
+  // ------------------- //
+  // | The big jar | //
+  // ------------------- //
+  // On a screen that edits, a tap on a jar opens it big: add a piece, take  //
+  // one out, ★ Reward when it's full. From Colby Way's board.               //
+  const [zoomJar, setZoomJar] = useState<{ id: string; el: HTMLElement } | null>(null);
+  const jars = useLive<Jar[]>('api/jars', ['jars']);
+  const bigJar = zoomJar ? jars.data?.find(j => j.id === zoomJar.id) || null : null;
+  const onJar = edit && !drawing ? (jar: Jar, el: HTMLElement) => setZoomJar({ id: jar.id, el }) : undefined;
   return (
-    <aside className="notes">
-      <h2 className="chalk">Notes</h2>
-      {x &&
-        pages.map((p0, i) => {
-          const switching = i === pages.length - 1 && sw.modes.length > 0;
-          const p = switching ? sw.cur : i === pages.length - 1 ? last : p0;
-          return (
-            <div
-              key={p0}
-              className={'nslot nslot-' + p + (edit && OPENS[p] ? ' opens' : '') + (switching ? ' hasswitch' : '')}
-              style={switching ? ({ '--swn': sw.modes.length } as React.CSSProperties) : undefined}
-              role={edit && OPENS[p] ? 'link' : undefined}
-              onClick={edit && OPENS[p] ? () => navigate(OPENS[p]) : undefined}
-              onPointerDown={switching ? e => (swipe.current = e.isPrimary ? e.clientX : null) : undefined}
-              onPointerUp={
-                switching
-                  ? e => {
-                      const s0 = swipe.current;
-                      swipe.current = null;
-                      if (s0 === null || Math.abs(e.clientX - s0) < 50) return;
-                      e.stopPropagation(); // the switch's swipe, not the board's
-                      const i = sw.modes.findIndex(([m]) => m === sw.cur);
-                      const n = sw.modes.length;
-                      sw.show(sw.modes[(i + (e.clientX < s0 ? 1 : n - 1)) % n][0]);
-                    }
-                  : undefined
-              }
-            >
-              {i > 0 && <div className="rule" />}
-              {switching && <Switch sw={sw} />}
-              {p === 'info' && <Info x={x} />}
-              {p === 'meals' && <MealsPage />}
-              {p === 'jars' && <JarsPage />}
-              {p === 'upnext' && <UpNext />}
-              {p === 'today' && <UpNext todayOnly />}
-              {p === 'photos' && <PhotoPage />}
-              {p === 'chores' && <ChoresPage />}
-              {p === 'pantry' && <PantryPage />}
-              {p === 'reminders' && <RemindersPage time24={time24} />}
-              {p === 'timers' && <TimersPage />}
-            </div>
-          );
-        })}
-    </aside>
+    <>
+      <aside className="notes">
+        <h2 className="chalk">Notes</h2>
+        {x &&
+          pages.map((p0, i) => {
+            const switching = i === pages.length - 1 && sw.modes.length > 0;
+            const p = switching ? sw.cur : i === pages.length - 1 ? last : p0;
+            // (on a screen that edits, a tap on a jar opens the big jar instead of the Jars page)
+            const opens = edit && !!OPENS[p] && p !== 'jars';
+            return (
+              <div
+                key={p0}
+                className={'nslot nslot-' + p + (opens ? ' opens' : '') + (switching ? ' hasswitch' : '')}
+                style={switching ? ({ '--swn': sw.modes.length } as React.CSSProperties) : undefined}
+                role={opens ? 'link' : undefined}
+                onClick={opens ? () => navigate(OPENS[p]) : undefined}
+                onPointerDown={switching ? e => (swipe.current = e.isPrimary ? e.clientX : null) : undefined}
+                onPointerUp={
+                  switching
+                    ? e => {
+                        const s0 = swipe.current;
+                        swipe.current = null;
+                        if (s0 === null || Math.abs(e.clientX - s0) < 50) return;
+                        e.stopPropagation(); // the switch's swipe, not the board's
+                        const i = sw.modes.findIndex(([m]) => m === sw.cur);
+                        const n = sw.modes.length;
+                        sw.show(sw.modes[(i + (e.clientX < s0 ? 1 : n - 1)) % n][0]);
+                      }
+                    : undefined
+                }
+              >
+                {i > 0 && <div className="rule" />}
+                {switching && <Switch sw={sw} />}
+                {p === 'info' && <Info x={x} />}
+                {p === 'meals' && <MealsPage />}
+                {p === 'jars' && <JarsPage onJar={onJar} />}
+                {p === 'upnext' && <UpNext />}
+                {p === 'today' && <UpNext todayOnly />}
+                {p === 'photos' && <PhotoPage />}
+                {p === 'chores' && <ChoresPage />}
+                {p === 'pantry' && <PantryPage />}
+                {p === 'reminders' && <RemindersPage time24={time24} />}
+                {p === 'timers' && <TimersPage />}
+              </div>
+            );
+          })}
+      </aside>
+      <JarZoom
+        jar={bigJar}
+        originEl={zoomJar?.el || null}
+        onClose={() => setZoomJar(null)}
+        onUpdate={list => jars.set(list)}
+      />
+    </>
   );
 }
 

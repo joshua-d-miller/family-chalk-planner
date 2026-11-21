@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | chores-jars-meals.spec.ts
 ===============================================================================
- Version:   0.14.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-07
+ Updated:   2026-11-21
 
  Purpose:
      Chores (tablet, phone, kid's tablet, wall), reward jars and the meal
@@ -26,6 +26,9 @@
 
  0.14.0    2026-11-07   joshua    Back to the calendar from the tab bar.
                         claude
+
+ 1.2.0    2026-11-21   joshua    The big jar from the Notes column: ★ Reward
+                        claude    empties only that jar.
 ===============================================================================
 */
 
@@ -153,6 +156,37 @@ test('reward jars: add a jar, add pieces, take one out', async ({ as, board }) =
   await expect
     .poll(async () => (await (await board.admin.api('/api/jars')).json())[0])
     .toMatchObject({ name: 'Nora', count: 1 });
+  await board.admin.post('/api/jars', { jars: [] });
+});
+
+test('the big jar: tap a jar in Notes, fill it, ★ Reward empties only that one', async ({ as, board }) => {
+  await board.admin.post('/api/jars', {
+    jars: [
+      { id: 'nora', name: 'Nora', pieces: ['star'], count: 2, goal: 3 },
+      { id: 'leo', name: 'Leo', pieces: ['heart'], count: 4, goal: 10 }
+    ]
+  });
+  const page = await as('family');
+  const jar = page.locator('.notes .jar[data-id="nora"]');
+  await expect(jar).toBeVisible();
+  await jar.click();
+  const big = page.locator('#jarZoom');
+  await expect(big.locator('#jzTitle')).toHaveText('Nora’s Jar');
+  await expect(page).toHaveURL(/\/edit$/); // it opened the jar, not the Jars page
+  await big.getByRole('button', { name: 'Add a heart' }).click();
+  await expect(big.locator('#jzCount')).toContainText('Full! 3 / 3');
+  await big.getByRole('button', { name: '★ Reward!' }).click(); // ("Are you sure?" -> yes)
+  await expect
+    .poll(async () =>
+      ((await (await board.admin.api('/api/jars')).json()) as { id: string; count: number }[]).map(j => [j.id, j.count])
+    )
+    .toEqual([
+      ['nora', 0],
+      ['leo', 4]
+    ]);
+  await page.mouse.click(10, 10); // outside the jar: it goes back
+  await expect(page.locator('#jarZoom.open')).toHaveCount(0);
+  expect(page.errors).toEqual([]);
   await board.admin.post('/api/jars', { jars: [] });
 });
 
