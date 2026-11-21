@@ -29,6 +29,13 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   never stretched; swipe for the next or the last), **room to draw**, the **meal plan**, the **pantry**, the **reward
   jars**, **chores**, **reminders** or **up next**. The Notes column then shows the weather, trash day and
   countdowns. The admin console sets the wall's.
+- **Fill the screen** (Colby Way's idea, for his 2K screen): the board is drawn about twice as wide as it is tall,
+  so 16:9 and 16:10 screens had bands above and below. Turn on **Fill the screen** (⚙️ Settings → This screen, or
+  🎨 Board style → Style → On this screen; the admin console sets the wall's) and the days get taller instead.
+  Drawings and pictures move down with their days and keep their size, and anything drawn on a taller screen shows
+  on the same day on every other screen.
+- **The wooden frame is optional**, for each screen (🎨 Board style → Style → On this screen): a screen that sits in a
+  frame of its own can leave it off.
 - **The big jar** (from Colby Way's board): on a screen that edits, tap a reward jar in the Notes column and it opens
   big. Drop in a heart, rainbow, star, lightning bolt or critter, take one out, and when it's full, **★ Reward!**
   celebrates and empties it. A jar that fills up bursts into confetti.

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | cover.ts
 ===============================================================================
- Version:   0.15.1
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-10
- Updated:   2026-11-10
+ Updated:   2026-11-21
 
  Purpose:
      Which writing on the calendar (events, trash day, "+2 more") a piece
@@ -24,6 +24,9 @@
  -------   ----------   -------   --------------------------------------------
  0.15.1    2026-11-10   joshua    New file.
                         claude
+
+ 1.2.0    2026-11-21   joshua    A taller slate (a screen that fills
+                        claude    itself).
 ===============================================================================
 */
 
@@ -42,10 +45,10 @@ export const COVERED = 0.3;
 
 // The art painted solid: strokes as drawn, words and pictures as most of   //
 // their box (pictures have see-through edges; words don't fill theirs)    //
-export function paintArt(items: ArtItem[]) {
+export function paintArt(items: ArtItem[], h = H) {
   const cv = document.createElement('canvas');
   cv.width = Math.round(W * K);
-  cv.height = Math.round(H * K);
+  cv.height = Math.round(h * K);
   const g = cv.getContext('2d', { willReadFrequently: true });
   if (!g) return null;
   g.scale(K, K);
@@ -123,9 +126,9 @@ export function coverOf(g: CanvasRenderingContext2D, w: Writing) {
 }
 
 // the writing these pieces of art cover
-export function coveredBy(items: ArtItem[], writing: Writing[]) {
+export function coveredBy(items: ArtItem[], writing: Writing[], h = H) {
   if (!items.length || !writing.length) return [];
-  const g = paintArt(items);
+  const g = paintArt(items, h); // (h: the slate's height on this screen)
   return g ? writing.filter(w => coverOf(g, w) >= COVERED) : [];
 }
 

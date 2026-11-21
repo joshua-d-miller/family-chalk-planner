@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | StyleEditor.tsx
 ===============================================================================
- Version:   1.1.2
- Author:    Joshua D. Miller, Claude
+ Version:   1.2.0
+ Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-20
+ Updated:   2026-11-21
 
  Purpose:
      🎨 Board style: the background, a preset, and her own tweaks to it
@@ -46,6 +46,10 @@
                                   month).
                                   A background just for this month (Just ...),
                                   or for every month.
+
+ 1.2.0    2026-11-21   joshua    On this screen (Style tab): the wooden frame
+                        colby     and filling the screen (Colby Way's frame
+                        claude    and padding settings, per screen).
 ===============================================================================
 */
 
@@ -58,6 +62,41 @@ import { Colors } from '../../ui/Colors.tsx';
 import { Sheet } from '../../ui/Sheet.tsx';
 import { PRESETS, TFONTS, monthVals, themeVals } from '../theme.ts';
 import type { Theme } from '../theme.ts';
+import { setBoardFit, useBoardFit } from '../../lib/boardFit.ts';
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | On this screen | //
+// ------------------ //
+// Just for this screen, and saved as it's tapped (not with the board's    //
+// style): the wooden frame (a screen in a frame of its own leaves it off), //
+// and filling the screen (a taller calendar instead of bands).             //
+export function ScreenFit() {
+  const fit = useBoardFit();
+  return (
+    <div className="screenfit">
+      <div className="sublbl">On this screen</div>
+      <label className="tick">
+        <input
+          type="checkbox"
+          id="frameBox"
+          checked={!fit.noFrame}
+          onChange={e => void setBoardFit({ noFrame: !e.target.checked })}
+        />{' '}
+        🪵 The wooden frame around the board
+      </label>
+      <label className="tick">
+        <input
+          type="checkbox"
+          id="fillBox"
+          checked={fit.fill}
+          onChange={e => void setBoardFit({ fill: e.target.checked })}
+        />{' '}
+        ↕️ Fill the screen (taller days, no bands above and below)
+      </label>
+    </div>
+  );
+}
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------------- //
@@ -427,6 +466,7 @@ export function StyleEditor({
           );
         })}
       </div>
+      {tab === 'style' && <ScreenFit />}
       {ROWS.filter(r => TAB_OF[r.label] === tab).map(r => (
         <div className="threl" key={r.label}>
           <b>{r.label}</b>

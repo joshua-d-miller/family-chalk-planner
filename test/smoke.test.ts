@@ -81,7 +81,8 @@
 
  1.2.0    2026-11-21   joshua    Where each screen's 🗓️ Week starts; hiding
                         claude    the − / + / Fit buttons; Split View; the
-                                  menu in the Notes column.
+                                  menu in the Notes column; filling the
+                                  screen, and the wooden frame.
 ===============================================================================
 */
 
@@ -626,6 +627,23 @@ test('the menu in the Notes column: up to 3 buttons, from the list', async () =>
   assert.equal((await post('/api/menustyle', { dock: ['rocket'] })).status, 400);
   await post('/api/menustyle', { style: 'cork' });
   assert.equal((await (await api('/api/menustyle')).json()).style, 'cork');
+});
+
+test('filling the screen and the wooden frame: per screen, and the console sets any screen’s', async () => {
+  assert.deepEqual(await (await api('/api/boardfit')).json(), { fill: false, noFrame: false });
+  assert.deepEqual(await (await post('/api/boardfit', { fill: true })).json(), { fill: true, noFrame: false });
+  assert.deepEqual(await (await post('/api/boardfit', { noFrame: true })).json(), { fill: true, noFrame: true });
+  assert.equal((await post('/api/boardfit', { fill: 'yes' })).status, 400);
+  await post('/api/boardfit', { fill: false, noFrame: false });
+  assert.deepEqual(await (await post('/api/devices/boardfit', { id: 'wall1', fill: true })).json(), {
+    fill: true,
+    noFrame: false
+  });
+  assert.deepEqual((await (await api('/api/devices/boardfit')).json()).boardfit, {
+    wall1: { fill: true, noFrame: false }
+  });
+  await post('/api/devices/boardfit', { id: 'wall1', fill: false });
+  assert.deepEqual((await (await api('/api/devices/boardfit')).json()).boardfit, {});
 });
 
 test('the − / + / Fit buttons: shown until a screen hides them', async () => {

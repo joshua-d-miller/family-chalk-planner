@@ -124,6 +124,7 @@ import { useWeekFrom, useWeekView } from '../lib/weekFrom.ts';
 import { showSettings } from '../pages/Settings.tsx';
 import { Split } from './Split.tsx';
 import { useHideZoom } from '../lib/zoomControls.ts';
+import { useBoardFit } from '../lib/boardFit.ts';
 import { paintSurface, photoBackground, seasonOf, surfaceOf } from '../lib/surface.ts';
 import type { Who } from '../lib/who.ts';
 import { Art } from './Art.tsx';
@@ -159,7 +160,7 @@ import { RecolorSheet, SaveStampSheet, TextSheet, Tools } from './draw/Tools.tsx
 import { useArt } from './draw/useArt.ts';
 import { coveredBy, writingOn } from './cover.ts';
 import type { Writing } from './cover.ts';
-import { BORDER_PAD, relayout, unionBox, xform } from './geom.ts';
+import { BORDER_PAD, SLATE_H, relayout, stretchY, unionBox, xform } from './geom.ts';
 import { post, url as apiUrl } from '../lib/api.ts';
 import { CLIENT } from './draw/useArt.ts';
 import { RANK } from '../lib/who.ts';
@@ -170,7 +171,6 @@ import './board.css';
 import './edit.css';
 
 const W = 1252;
-const H = 642;
 const CORK = 50; // the strip under the board on a tablet
 const EDIT_FRAME = 14; // a tablet's board has a wooden frame unless the family set one
 
@@ -214,6 +214,27 @@ function useFit(pad: number, h: number, below = 0) {
     };
   }, [pad, h, below]);
   return fit;
+}
+
+// how tall the slate is drawn on this screen: 642, or (filling the screen) as tall as its shape allows
+function useSlateH(fill: boolean, pad: number, below: number, bar: number) {
+  const calc = () => {
+    if (!fill) return SLATE_H;
+    const tall = ((visibleHeight() - bar) / innerWidth) * (W + 2 * pad) - 2 * pad - below;
+    return Math.round(Math.max(SLATE_H, Math.min(SLATE_H * 1.5, tall)));
+  };
+  const [h, setH] = useState(calc);
+  useEffect(() => {
+    const on = () => setH(calc());
+    on();
+    addEventListener('resize', on);
+    window.visualViewport?.addEventListener('resize', on);
+    return () => {
+      removeEventListener('resize', on);
+      window.visualViewport?.removeEventListener('resize', on);
+    };
+  }, [fill, pad, below, bar]);
+  return h;
 }
 
 const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -307,8 +328,16 @@ export function Board({
   const metaLive = useLive<MonthMeta>(shown ? `api/meta?ym=${shown}` : 'api/today', ['meta']);
   const meta = metaLive.data;
   const photos = useLive<Photos>('api/photos', ['photos']).data;
-  const pad =
-    meta && 'artPad' in meta ? (meta.boardPad ?? (edit && !family ? EDIT_FRAME : 0)) : edit && !family ? EDIT_FRAME : 0;
+  // the wooden frame: a tablet's, unless this screen leaves it off (🎨 Board style → Style: a screen in a
+  // frame of its own); and whether the board fills the screen (⚙️ Settings → This screen)
+  const boardFit = useBoardFit();
+  const pad = boardFit.noFrame
+    ? 0
+    : meta && 'artPad' in meta
+      ? (meta.boardPad ?? (edit && !family ? EDIT_FRAME : 0))
+      : edit && !family
+        ? EDIT_FRAME
+        : 0;
   const shell = useShell();
   // ------------------------------- //
   // | The cork, or the ☰ button | //
@@ -317,7 +346,16 @@ export function Board({
   // board grows into its room, and never moves for the button or tools.    //
   const [drawing, setDrawing] = useState(false);
   const side = edit && shell.kind === 'cork' ? shell.side : null;
-  const bh = H + (edit && !side ? CORK : 0);
+  const corkH = edit && !side ? CORK : 0;
+  // ---------------------- //
+  // | Filling the screen | //
+  // ---------------------- //
+  // The board is 1252 wide and 642 tall: on a screen that isn't as wide as  //
+  // that (16:9, 16:10) it leaves bands above and below. Filling the screen  //
+  // draws it taller instead (never shorter, at most half as tall again):    //
+  // the days get taller, and art on them moves down with them.              //
+  const slateH = useSlateH(boardFit.fill, pad, corkH, shell.navH);
+  const bh = slateH + corkH;
   const barZ = useBarZoom();
   // the ☰ button floats over the board's bottom corner (the board keeps its size); on the right it's
   // over the bottom of the Notes column, whose list stops above it
@@ -635,9 +673,28 @@ export function Board({
         art.reload();
       });
   }, [week, edit, shown, mm, borderDraft, placed, realPad, who, art, ed.items, metaLive]);
-  const base = week || placed === shownPad ? ed.items : laidOut;
+  // a taller board (filling the screen): the art shown on its taller days, and anything drawn, moved or
+  // changed here put back on the board's own layout before it's kept (every screen sees it on the same days)
+  const tallItems = useMemo(() => stretchY(ed.items, SLATE_H, slateH), [ed.items, slateH]);
+  const back = (list: ArtItem[]) => stretchY(list, slateH, SLATE_H);
+  const view: typeof ed =
+    slateH === SLATE_H
+      ? ed
+      : {
+          ...ed,
+          items: tallItems,
+          add: (it: ArtItem) => ed.add(back([it])[0]),
+          addMany: (list: ArtItem[]) => ed.addMany(back(list)),
+          remove: (list: ArtItem[]) => ed.remove(back(list)),
+          update: (before: ArtItem[], after: ArtItem[]) => ed.update(back(before), back(after)),
+          preview: (list: ArtItem[]) => ed.preview(back(list))
+        };
+  const base = useMemo(
+    () => (week || placed === shownPad ? tallItems : stretchY(laidOut, SLATE_H, slateH)),
+    [week, placed, shownPad, tallItems, laidOut, slateH]
+  );
   const items = hidden.length ? base.filter(x => !hidden.includes(x.id)) : base;
-  const selItems = ed.items.filter(x => selection.includes(x.id));
+  const selItems = view.items.filter(x => selection.includes(x.id));
   const place = async (at: [number, number]) => {
     if (!placing) return;
     const b = unionBox(placing.st.items) || { x1: 0, y1: 0, x2: 0, y2: 0 };
@@ -649,7 +706,7 @@ export function Board({
       return o;
     });
     setPlacing(null);
-    const ids = await ed.addMany(list);
+    const ids = await view.addMany(list);
     setPen(p => ({ ...p, tool: 'select' }));
     setSelection(ids);
   };
@@ -714,11 +771,13 @@ export function Board({
       const hide = new Set<Writing>([
         ...coveredBy(
           items.filter(x => x.cv === 'hide'),
-          all.filter(w => !w.other)
+          all.filter(w => !w.other),
+          slateH
         ),
         ...coveredBy(
           items.filter(x => !x.e),
-          all.filter(w => w.other)
+          all.filter(w => w.other),
+          slateH
         )
       ]);
       for (const w of hide) w.el.classList.add('underart');
@@ -744,9 +803,9 @@ export function Board({
     }
   }, [drawing]);
   const setCover = (ids: number[], cv: 'hide' | 'under') => {
-    const before = ed.items.filter(x => ids.includes(x.id));
+    const before = view.items.filter(x => ids.includes(x.id));
     if (before.length)
-      ed.update(
+      view.update(
         before,
         before.map(x => ({ ...x, cv }))
       );
@@ -758,12 +817,12 @@ export function Board({
     const t = setTimeout(() => {
       const writing = writingOn(slate!).filter(w => !w.other);
       const groups = new Map<string, ArtItem[]>();
-      for (const x of ed.items)
+      for (const x of view.items)
         if (x.id >= 0 && !x.cv && !x.e) groups.set(x.g || 'i' + x.id, [...(groups.get(x.g || 'i' + x.id) || []), x]);
       const ids: number[] = [];
       const hit = new Set<Writing>();
       for (const list of groups.values()) {
-        const c = coveredBy(list, writing);
+        const c = coveredBy(list, writing, slateH);
         if (!c.length) continue;
         ids.push(...list.map(x => x.id));
         for (const w of c) hit.add(w);
@@ -788,7 +847,7 @@ export function Board({
       setAsk({ ids, what });
     }, 700);
     return () => clearTimeout(t);
-  }, [edit, drawing, m, ed.items, ask, placing, hidden]);
+  }, [edit, drawing, m, view.items, ask, placing, hidden]);
   const answer = (cv: 'hide' | 'under') => {
     if (ask) setCover(ask.ids, cv);
     answered.current = cv;
@@ -832,12 +891,16 @@ export function Board({
           id="slate"
           ref={slateRef}
           data-surface={sf.id}
-          style={pad ? { backgroundImage: bg } : undefined}
+          style={{
+            ...(pad ? { backgroundImage: bg } : {}),
+            ...(slateH !== SLATE_H ? { height: slateH, ['--slateH' as string]: slateH + 'px' } : {})
+          }}
         >
           <style>{css}</style>
           {m && (
             <Month
               data={m}
+              height={slateH}
               bins={extras?.bins || null}
               bg={sf.lum}
               today={{ shape: tv.todayS, color: tv.todayC }}
@@ -876,11 +939,12 @@ export function Board({
             dockRef={edit && shell.dock ? setDockEl : undefined}
           />
           <WeatherMotion wall={!edit} />
-          {behind.length > 0 && <Art items={behind} bg={sf.lum} res={res} gifsPlay under />}
-          <Art items={front} bg={sf.lum} res={res} gifsPlay />
+          {behind.length > 0 && <Art items={behind} bg={sf.lum} res={res} gifsPlay under h={slateH} />}
+          <Art items={front} bg={sf.lum} res={res} gifsPlay h={slateH} />
           {edit && drawing && (
             <DrawLayer
-              art={ed}
+              art={view}
+              h={slateH}
               pen={pen}
               bg={sf.lum}
               res={res}
@@ -979,12 +1043,12 @@ export function Board({
                   canRedo={ed.canRedo}
                   onStamps={() => setEditing({ k: 'library' })}
                   onClear={() => {
-                    const all = ed.items.filter(x => x.id >= 0 && !x.e);
+                    const all = view.items.filter(x => x.id >= 0 && !x.e);
                     if (
                       all.length &&
                       confirm(`Wipe all the art for ${week ? 'this week' : monthName}? (Undo can bring it back.)`)
                     )
-                      ed.remove(all);
+                      view.remove(all);
                   }}
                 />
               ) : undefined
@@ -1127,7 +1191,7 @@ export function Board({
           color={pen.color[pen.medium]}
           onClose={closeEditor}
           onDelete={() => {
-            if (editing.item) ed.remove([editing.item]);
+            if (editing.item) view.remove([editing.item]);
             closeEditor();
           }}
           onSave={t => {
@@ -1136,8 +1200,8 @@ export function Board({
               const after: Item = { ...editing.item, ...t };
               if (posca) after.m = true;
               else delete after.m;
-              ed.update([editing.item], [after]);
-            } else ed.add({ id: 0, k: 't', x: editing.at[0], y: editing.at[1], ...t, ...(posca ? { m: true } : {}) });
+              view.update([editing.item], [after]);
+            } else view.add({ id: 0, k: 't', x: editing.at[0], y: editing.at[1], ...t, ...(posca ? { m: true } : {}) });
             closeEditor();
           }}
         />
@@ -1146,7 +1210,7 @@ export function Board({
         <RecolorSheet
           onClose={closeEditor}
           onSave={(line, fill) => {
-            ed.update(selItems, recolor(selItems, line, fill));
+            view.update(selItems, recolor(selItems, line, fill));
             closeEditor();
           }}
         />

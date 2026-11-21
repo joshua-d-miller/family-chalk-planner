@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | drawing-border.spec.ts
 ===============================================================================
- Version:   0.16.1
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-11
+ Updated:   2026-11-21
 
  Purpose:
      Drawing on the board, and a holiday border that moves the art onto
@@ -26,6 +26,9 @@
 
  0.16.1    2026-11-11   joshua    The lights and holly borders are there.
                         claude
+
+ 1.2.0    2026-11-21   joshua    Fill the screen: art drawn on the taller
+                        claude    board lands on the same day everywhere.
 ===============================================================================
 */
 
@@ -73,6 +76,55 @@ test('draw a chalk line, undo it, and draw again; it is saved for the month', as
   expect(stroke.p.length).toBeGreaterThan(6);
   await page.locator('#drawBtn').click(); // Done drawing
   await expect(page.locator('body')).not.toHaveClass(/drawing/);
+  expect(page.errors).toEqual([]);
+});
+
+test('Fill the screen: taller days, and what is drawn there lands on the same day for every screen', async ({
+  as,
+  board
+}) => {
+  const page = await as('tablet', { context: { viewport: { width: 1280, height: 1000 } } });
+  const ym = await shownYm(page);
+  await board.admin.post('/api/art/clear', { ym });
+  const fill = (on: boolean) =>
+    page.evaluate(
+      on =>
+        fetch('api/boardfit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify({ fill: on })
+        }),
+      on
+    );
+  const day = page.locator('#grid .day[data-date$="-21"]').first();
+  const before = (await day.boundingBox())!;
+  await fill(true);
+  await page.reload();
+  await page.waitForTimeout(1200);
+  const tall = (await day.boundingBox())!;
+  expect(tall.height).toBeGreaterThan(before.height * 1.2); // taller days
+  // a line across the middle of the 21st, on the taller board
+  await page.locator('#drawBtn').click();
+  const y = tall.y + tall.height * 0.6;
+  await page.mouse.move(tall.x + tall.width * 0.2, y);
+  await page.mouse.down();
+  await page.mouse.move(tall.x + tall.width * 0.5, y + 4, { steps: 6 });
+  await page.mouse.move(tall.x + tall.width * 0.8, y, { steps: 6 });
+  await page.mouse.up();
+  await expect.poll(async () => (await art(board, ym)).length).toBe(1);
+  await page.locator('#drawBtn').click();
+  // kept on the board's own layout: back on the 21st, where the board isn't filling the screen
+  await fill(false);
+  await page.reload();
+  await page.waitForTimeout(1200);
+  const d = (await day.boundingBox())!;
+  const line = (await page.locator('.artSvg path').first().boundingBox())!;
+  const cy = line.y + line.height / 2;
+  expect(cy).toBeGreaterThan(d.y);
+  expect(cy).toBeLessThan(d.y + d.height);
+  expect(line.x).toBeGreaterThan(d.x);
+  expect(line.x + line.width).toBeLessThan(d.x + d.width);
+  await board.admin.post('/api/art/clear', { ym });
   expect(page.errors).toEqual([]);
 });
 

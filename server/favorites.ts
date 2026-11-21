@@ -40,6 +40,10 @@
      the jars, chores, reminders or up next):
        kv 'weekview'  { 'p:...' | 's:...': { split: true, a: 'photos',
            b: 'draw' | 'none' } }
+     And whether its board fills the screen (a taller calendar on a 16:9
+     or 16:10 screen, instead of bands above and below), and whether it
+     hides the wooden frame (a screen in a frame of its own):
+       kv 'boardfit'  { 'p:...' | 's:...': { fill: true, noFrame: true } }
      And whether it hides the − / + / Fit zoom buttons (shown unless set;
      only a screen someone is signed in on has them; from Colby Way's
      board):
@@ -82,6 +86,9 @@
                                   The menu in the Notes column: the ☰ and up
                                   to 3 buttons the screen picks (Colby Way's
                                   dock).
+                                  Fill the screen and no wooden frame, per
+                                  screen (Colby Way's frame and padding
+                                  settings, reworked).
 ===============================================================================
 */
 
@@ -407,6 +414,54 @@ export function setup({
     const v = checkView(rest, viewOf(weekViews()['s:' + id]));
     if (!v) return res.status(400).json({ error: 'Pick what the week shows' });
     res.json(setWeekView('s:' + id, v));
+  });
+
+  // ------------------------------------- //
+  // | Filling the screen, and the frame | //
+  // ------------------------------------- //
+  // A taller calendar on a screen that isn't as wide as the board (16:9,   //
+  // 16:10), and the wooden frame (on a signed-in screen) left off. Per     //
+  // screen (or person); the admin console sets any screen's.               //
+  interface BoardFit {
+    fill: boolean;
+    noFrame: boolean;
+  }
+  const fits = () => kv.get<Record<string, BoardFit>>('boardfit') || {};
+  const fitOf = (v: Partial<BoardFit> | undefined): BoardFit => ({ fill: !!v?.fill, noFrame: !!v?.noFrame });
+  const setFit = (k: string, b: Record<string, unknown>): BoardFit | null => {
+    const now = fitOf(fits()[k]);
+    const fill = b.fill ?? now.fill;
+    const noFrame = b.noFrame ?? now.noFrame;
+    if (typeof fill !== 'boolean' || typeof noFrame !== 'boolean') return null;
+    const map = fits();
+    if (fill || noFrame) map[k] = { fill, noFrame };
+    else delete map[k];
+    kv.set('boardfit', map);
+    broadcast('boardfit', {});
+    return fitOf(map[k]);
+  };
+  app.get('/api/boardfit', (req, res) => {
+    const k = whose(req);
+    res.json(fitOf(k ? fits()[k] : undefined));
+  });
+  app.post('/api/boardfit', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const v = setFit(k, req.body || {});
+    if (!v) return res.status(400).json({ error: 'On or off' });
+    res.json(v);
+  });
+  app.get('/api/devices/boardfit', (_req, res) => {
+    const out: Record<string, BoardFit> = {};
+    for (const [k, v] of Object.entries(fits())) if (k.startsWith('s:')) out[k.slice(2)] = fitOf(v);
+    res.json({ boardfit: out });
+  });
+  app.post('/api/devices/boardfit', (req, res) => {
+    const id = String(req.body?.id || '');
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    const v = setFit('s:' + id, { fill: req.body?.fill, noFrame: req.body?.noFrame });
+    if (!v) return res.status(400).json({ error: 'On or off' });
+    res.json(v);
   });
 
   // ------------------------------ //

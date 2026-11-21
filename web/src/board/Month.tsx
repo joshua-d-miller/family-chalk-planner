@@ -67,7 +67,8 @@
                         colby     A tap on the month's name can reload the
                                   board (from Colby Way's board).
                                   Split View: the week as a band, and what
-                                  the screen picked under it.
+                                  the screen picked under it. Taller days on
+                                  a screen that fills itself.
 ===============================================================================
 */
 
@@ -226,7 +227,8 @@ export function Month({
   nav,
   onTitle,
   week = null,
-  under = null
+  under = null,
+  height = 642
 }: {
   data: MonthData;
   bins: Bins | null;
@@ -237,6 +239,7 @@ export function Month({
   onTitle?: () => void; // a tap on the month's name (a screen that edits: reload the board)
   week?: string | null; // just this week (its first day), in the whole height
   under?: ReactNode; // Split View: the week as a band across the top, and this under it
+  height?: number; // the slate's height on this screen (taller where it fills the screen)
   onDay?: (date: string) => void;
   onEvent?: (ev: BoardEvent) => void;
   title?: ReactNode;
@@ -249,7 +252,8 @@ export function Month({
   // the weeks shown: the month's, or one of them
   const nWeeks = week ? 1 : g.weeks;
   // (Split View: the week's band is SPLIT_BAND of the height, the spaces under it the rest)
-  const gridH = under ? (GRID_H + 28) * SPLIT_BAND - 28 : GRID_H;
+  const gridAll = GRID_H + (height - 642); // (a taller slate: taller days)
+  const gridH = under ? (gridAll + 28) * SPLIT_BAND - 28 : gridAll;
   const cellH = (gridH - 2 * pad) / nWeeks;
   const big = week ? 1.35 : 1; // a week has the room for bigger writing
   const single = data.events.filter(e => e.start === e.end);

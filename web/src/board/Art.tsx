@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Art.tsx
 ===============================================================================
- Version:   0.16.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-21
 
  Purpose:
      The art on a month: chalk and Posca lines, fills, words, clipart and
@@ -46,6 +46,9 @@
 
  0.16.0    2026-11-11   joshua    Pictures and words turned.
                         claude
+
+ 1.2.0    2026-11-21   joshua    As tall as the slate on a screen that fills
+                        claude    itself.
 ===============================================================================
 */
 
@@ -193,13 +196,15 @@ export function Art({
   bg,
   res,
   gifsPlay,
-  under = false
+  under = false,
+  h = 642
 }: {
   items: ArtItem[];
   bg: number;
   res: number;
   gifsPlay: boolean;
   under?: boolean; // the art she put behind the writing (drawn under the calendar's words)
+  h?: number; // the slate's height on this screen (taller where it fills the screen)
 }) {
   const colors = useMemo(() => {
     const set = new Set<string>();
@@ -217,8 +222,8 @@ export function Art({
       <svg
         className={'artSvg' + (under ? ' under' : '')}
         width="1252"
-        height="642"
-        viewBox="0 0 1252 642"
+        height={h}
+        viewBox={`0 0 1252 ${h}`}
         aria-hidden="true"
       >
         <defs>

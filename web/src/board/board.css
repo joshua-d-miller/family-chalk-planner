@@ -18,14 +18,14 @@ body.boardpage {
 #board {
   box-sizing: border-box;
   width: 1252px;
-  height: 642px;
+  height: var(--slateH, 642px);
   flex: none;
   transform-origin: center center;
 }
 .slate {
   position: relative;
   width: 1252px;
-  height: 642px;
+  height: var(--slateH, 642px);
   background: transparent;
   color: var(--chalk);
   padding: 8px 14px 10px 18px;
@@ -343,7 +343,7 @@ body.boardpage {
   left: 0;
   top: 0;
   width: 1252px;
-  height: 642px;
+  height: var(--slateH, 642px);
   pointer-events: none;
   z-index: 5;
   overflow: visible;
@@ -546,7 +546,7 @@ body.boardpage {
   left: 0;
   top: 0;
   width: 1252px;
-  height: 642px;
+  height: var(--slateH, 642px);
   pointer-events: none;
   z-index: 4;
   overflow: hidden;

@@ -53,7 +53,8 @@
                                   hide the − / + / Fit buttons (from Colby
                                   Way's board). Switches for the checkboxes,
                                   sliders for the slideshow's timing and
-                                  brightness.
+                                  brightness. This screen: fill the screen,
+                                  and the wooden frame.
 ===============================================================================
 */
 
@@ -75,6 +76,7 @@ import { setSleeps, useSleeps } from '../lib/countdowns.ts';
 import { SPACES, setWeekFrom, setWeekView, useWeekFrom, useWeekView } from '../lib/weekFrom.ts';
 import type { WeekView } from '../lib/weekFrom.ts';
 import { setHideZoom, useHideZoom } from '../lib/zoomControls.ts';
+import { setBoardFit, useBoardFit } from '../lib/boardFit.ts';
 import { Page } from '../ui/Page.tsx';
 import './settings.css';
 
@@ -761,6 +763,7 @@ function ThisScreen() {
   const sleeps = useSleeps();
   const hideZoom = useHideZoom();
   const signedIn = !!shell.who?.user;
+  const fit = useBoardFit();
   return (
     <Card title="This screen" id="thisScreen">
       {shell.kind === 'cork' && (
@@ -824,6 +827,27 @@ function ThisScreen() {
           )}
         </>
       )}
+      <h4>The board on this screen</h4>
+      <label className="check">
+        <input
+          id="fillBox2"
+          type="checkbox"
+          checked={fit.fill}
+          onChange={e => void setBoardFit({ fill: e.target.checked })}
+        />
+        <span className="t">
+          Fill the screen: taller days, instead of bands above and below (16:9 and 16:10 screens)
+        </span>
+      </label>
+      <label className="check">
+        <input
+          id="frameBox2"
+          type="checkbox"
+          checked={!fit.noFrame}
+          onChange={e => void setBoardFit({ noFrame: !e.target.checked })}
+        />
+        <span className="t">The wooden frame around the board (a screen in a frame of its own can leave it off)</span>
+      </label>
       <h4>Look of cards and menus</h4>
       <LookFields />
       <h4>Also on this screen</h4>

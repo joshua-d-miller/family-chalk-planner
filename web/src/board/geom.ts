@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | geom.ts
 ===============================================================================
- Version:   0.16.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-21
 
  Purpose:
      Where things are on the board, in board pixels (the slate is 1252 x
@@ -39,6 +39,9 @@
 
  0.16.0    2026-11-11   joshua    Turning (spin), and the box of something
                         claude    turned.
+
+ 1.2.0    2026-11-21   joshua    Art on a taller board (a screen that fills
+                        claude    itself) and back: stretchY.
 ===============================================================================
 */
 
@@ -226,6 +229,7 @@ export const isClosedLine = (s: ArtItem) =>
 // The calendar's box on the slate (the days, weekday names and any border), //
 // in board pixels                                                           //
 export const CAL = { x: 18, y: 8 + 70, w: 1252 - 18 - 14 - 14 - 214, h: 642 - 8 - 10 - 70 };
+export const SLATE_H = 642; // the board's own height; a screen that fills itself draws it taller
 export const BORDER_PAD = { s: 26, m: 32, l: 40 }; // a border's picture size + 6
 
 // Art sits on the days, so it moves with them: with a border the calendar is a little smaller, and
@@ -251,3 +255,27 @@ export function relayout(items: ArtItem[], p0: number, p1: number): ArtItem[] {
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------------------ //
+// | Art on a taller board (and back) | //
+// ------------------------------------ //
+// A screen that fills itself draws the board taller than 642: its days    //
+// are taller, so art on them moves down with them (each piece keeps its   //
+// size and shape; only where it sits changes). Art is always kept on the  //
+// board's own 642 layout, so every screen shows it on the same days: what //
+// is drawn on a taller screen is moved back before it's kept.             //
+export function stretchY(items: ArtItem[], h0: number, h1: number): ArtItem[] {
+  if (h0 === h1) return items;
+  const a = CAL.h + (h0 - SLATE_H);
+  const b = CAL.h + (h1 - SLATE_H);
+  return items.map(it => {
+    const bx = itemBox(it);
+    const cx = (bx.x1 + bx.x2) / 2;
+    const cy = (bx.y1 + bx.y2) / 2;
+    if (cx < CAL.x || cx > CAL.x + CAL.w || cy < CAL.y) return it; // (the title and Notes stay put)
+    const o = xform(it, 0, ((cy - CAL.y) * b) / a + CAL.y - cy);
+    o.id = it.id;
+    return o;
+  });
+}

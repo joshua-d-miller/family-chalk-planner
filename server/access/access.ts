@@ -101,7 +101,8 @@
  1.2.0    2026-11-21   joshua    Family screens may start their 🗓️ Week on
                         colby     today and pick Split View; a screen may
                         claude    hide its − / + / Fit buttons (from Colby
-                                  Way's board).
+                                  Way's board). Fill the screen, and the
+                                  wooden frame, per screen.
 ===============================================================================
 */
 
@@ -692,6 +693,7 @@ export function setup(
     '/weekfrom', // its 🗓️ Week from today or from the board's first day
     '/nozoom', // whether it shows the − / + / Fit buttons
     '/weekview', // its 🗓️ Week: Split View, and what's under the week
+    '/boardfit', // fill the screen, and the wooden frame
     '/clip/favorites', // ★ a picture into Favorites
     '/clip/web/keep' // a public-domain picture from the web, onto the board
   ]);

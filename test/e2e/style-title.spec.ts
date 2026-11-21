@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | style-title.spec.ts
 ===============================================================================
- Version:   1.1.2
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-20
+ Updated:   2026-11-21
 
  Purpose:
      Board style (background, presets) and the month title card.
@@ -35,6 +35,9 @@
 
  1.1.2    2026-11-20   joshua    The backgrounds show on Just this month too,
                         claude    and are saved for every month.
+
+ 1.2.0    2026-11-21   joshua    On this screen: the wooden frame and filling
+                        claude    the screen.
 ===============================================================================
 */
 
@@ -42,6 +45,21 @@ import { test, expect, thisMonth } from './fixtures.ts';
 
 const surfaceOf = (page: import('@playwright/test').Page) =>
   page.evaluate(() => document.querySelector<HTMLElement>('.slate')!.dataset.surface);
+
+test('🎨 Style → On this screen: the wooden frame can come off, and the board can fill the screen', async ({ as }) => {
+  const page = await as('tablet');
+  const pad = () => page.locator('#board').evaluate(el => getComputedStyle(el).paddingTop);
+  expect(await pad()).not.toBe('0px'); // a tablet's board has its frame
+  await page.locator('#styleBtn').click();
+  await page.locator('#frameBox').click(); // off
+  await expect(page.locator('#frameBox')).not.toBeChecked();
+  await expect.poll(pad).toBe('0px');
+  await page.locator('#frameBox').click(); // and back
+  await expect(page.locator('#frameBox')).toBeChecked();
+  await expect.poll(pad).not.toBe('0px');
+  await expect(page.locator('#fillBox')).not.toBeChecked();
+  expect(page.errors).toEqual([]);
+});
 
 test('board style: a different background and preset, saved and sent to the wall', async ({ as, board }) => {
   await board.admin.post('/api/theme', { p: 'classic', o: {} });
