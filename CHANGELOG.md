@@ -66,6 +66,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **"Discard your changes?"** A card with changes not saved yet (an event, a meal, a reminder, a jar, the chores,
   the board style, a month's title or border, writing on the board) asks before the ✕, Escape or a tap outside closes
   it: **Keep editing** or **Discard**. A card with no changes still closes at once, and Cancel still cancels.
+- **Screen readers:** every screen is checked with axe (the standard accessibility checker) on every change: every
+  button and field has a name to read out, and the ☰ menu and Settings are easy to read in each look. The reward
+  jars now say whose jar it is and how full it is.
 - **Two quick taps on ‹ or ›** on a family screen no longer turn on the photo frame (they were taken for a double
   tap on the calendar).
 

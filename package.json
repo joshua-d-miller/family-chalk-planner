@@ -104,6 +104,7 @@
     "qrcode": "1.5.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.65.0",
     "@types/express": "5.0.6",

@@ -39,13 +39,12 @@ import { useEffect } from 'react';
 // ---------------------- //
 // | No zooming the page | //
 // ---------------------- //
-// The viewport says "don't scale", the page's touch-action takes pinches   //
-// and double taps away from the browser, and Safari's own gesture events   //
-// are turned down.                                                          //
-const VIEW = 'width=device-width, initial-scale=1, viewport-fit=cover';
+// The page's touch-action takes pinches and double taps away from the     //
+// browser (Chrome, Android's web view), and Safari's own gesture events    //
+// are turned down. (Not the viewport's user-scalable=no: that would also   //
+// stop someone who needs to zoom in on purpose, in a browser's own         //
+// accessibility zoom.)                                                     //
 function lockZoom(on: boolean) {
-  const meta = document.querySelector<HTMLMetaElement>('meta[name=viewport]');
-  if (meta) meta.content = on ? VIEW + ', maximum-scale=1, user-scalable=no' : VIEW;
   document.documentElement.classList.toggle('nozoom', on);
   const stop = (e: Event) => e.preventDefault();
   if (!on) return () => {};

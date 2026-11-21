@@ -138,10 +138,17 @@ export function Jars({ who }: { who: Who | null }) {
                 {j.count >= j.goal && ' 🎉'}
               </small>
             </h3>
-            <div className="jarbar" role="progressbar" aria-valuemin={0} aria-valuemax={j.goal} aria-valuenow={j.count}>
+            <div
+              className="jarbar"
+              role="progressbar"
+              aria-label={`${j.name}: ${j.count} of ${j.goal}`}
+              aria-valuemin={0}
+              aria-valuemax={j.goal}
+              aria-valuenow={j.count}
+            >
               <span style={{ width: `${Math.min(100, (j.count / j.goal) * 100)}%` }} />
             </div>
-            <div className="jarpic" aria-label={`${j.count} pieces`}>
+            <div className="jarpic" role="img" aria-label={`${j.name}’s jar, ${j.count} pieces`}>
               <JarArt jar={j} />
             </div>
             {can && (

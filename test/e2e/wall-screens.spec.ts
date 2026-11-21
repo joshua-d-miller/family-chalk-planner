@@ -38,12 +38,11 @@ test('a screen on the wall doesn’t zoom; a tablet still can', async ({ as }) =
   for (const kind of ['wall', 'family'] as const) {
     const p = await as(kind);
     await expect(p.locator('html')).toHaveClass(/nozoom/);
-    expect(await p.locator('meta[name=viewport]').getAttribute('content')).toContain('user-scalable=no');
     expect(await p.evaluate(() => getComputedStyle(document.documentElement).touchAction)).toBe('pan-x pan-y');
   }
   const tab = await as('tablet');
   await expect(tab.locator('html')).not.toHaveClass(/nozoom/);
-  expect(await tab.locator('meta[name=viewport]').getAttribute('content')).not.toContain('user-scalable');
+  expect(await tab.evaluate(() => getComputedStyle(document.documentElement).touchAction)).toBe('auto');
 });
 
 test('a low-power screen: nothing moves, and the chalk is drawn plainer', async ({ as }) => {
