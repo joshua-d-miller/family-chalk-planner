@@ -17,6 +17,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   zooms. It's kept on the board, so a cleared browser keeps it.
 - **A tap on the month's name reloads the board** (from Colby Way's board), on family screens and tablets. Not on
   the wall, and not while drawing.
+- **Swipe the slideshow** (from Colby Way's board): right to left for the next photos, left to right to go back
+  through the last ones, which helps with a big album. A swipe doesn't close the slideshow, and the next photos wait
+  their full time after it.
 - **A ✕ on every page**, at the top right like every card: back to the calendar (Colby Way's back button on
   Settings, for every page).
 - **Two quick taps on ‹ or ›** on a family screen no longer turn on the photo frame (they were taken for a double

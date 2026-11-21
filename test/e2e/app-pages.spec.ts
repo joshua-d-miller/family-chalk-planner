@@ -65,6 +65,7 @@
 
  1.2.0    2026-11-21   joshua    Settings: finds the Calendar card by its
                         claude    heading (other cards mention the calendar).
+                                  Swiping the slideshow.
 ===============================================================================
 */
 
@@ -412,6 +413,35 @@ test('the board (new screen, wall): a tap shows the day, the photo frame, the sl
   expect(wall.errors).toEqual([]);
   for (const r of rem.items) await board.admin.post('/api/reminders/item/delete', { id: r.id });
   for (const t of tm.items) await board.admin.post('/api/timers/item/delete', { id: t.id });
+});
+
+test('the slideshow: a swipe goes on to the next photos, and back to the last ones; it stays on', async ({ as }) => {
+  const wall = await as('wall', { path: '/?slides' });
+  await expect(wall.locator('#slides')).toHaveClass(/on/);
+  const shown = () =>
+    wall
+      .locator('#slides .sl.on .tile')
+      .evaluateAll(ts =>
+        ts.map(t => (t as HTMLElement).style.cssText + (t.querySelector('img.fg')?.getAttribute('src') || '')).join('|')
+      );
+  await expect.poll(shown).not.toBe('');
+  await expect(wall.locator('#slides .sl.on .tile img.fg').first()).toBeVisible();
+  const first = await shown();
+  const swipe = async (from: number, to: number) => {
+    await wall.mouse.move(from, 400);
+    await wall.mouse.down();
+    await wall.mouse.move((from + to) / 2, 405);
+    await wall.mouse.move(to, 410);
+    await wall.mouse.up();
+  };
+  await swipe(900, 300); // right to left: the next photos
+  await expect.poll(async () => (await wall.locator('#slides .sl').count()) === 2 && (await shown()) !== '').toBe(true);
+  await expect(wall.locator('#slides')).toHaveClass(/on/); // a swipe isn't a tap
+  await wall.waitForTimeout(600);
+  await swipe(300, 900); // left to right: back to the first
+  await expect.poll(shown).toBe(first);
+  await expect(wall.locator('#slides')).toHaveClass(/on/);
+  expect(wall.errors).toEqual([]);
 });
 
 test('the board (new screen, wall): the slideshow with today’s extras, in the side panel', async ({ as, board }) => {
