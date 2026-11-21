@@ -187,3 +187,9 @@
 .setpop .about {
   margin: 6px 0 0;
 }
+/* the slideshow's two sliders, side by side under the times */
+.scard .slides2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 4px 24px;
+}
