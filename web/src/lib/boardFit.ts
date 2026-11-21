@@ -10,7 +10,9 @@
      How this screen's board fits it: filling the screen (a taller
      calendar on a 16:9 or 16:10 screen, instead of bands above and
      below), and whether the wooden frame is left off (a screen in a
-     frame of its own). Kept on the board (kv 'boardfit'), per screen or
+     frame of its own), and whether it's a low-power screen (a slow wall
+     screen: no moving weather, GIFs or fades, and plainer chalk). Kept on
+     the board (kv 'boardfit'), per screen or
      per person; the admin console sets any screen's.
 
  Used by:
@@ -34,10 +36,11 @@ import { tellThisScreen, useLive } from './live.ts';
 export interface BoardFit {
   fill: boolean;
   noFrame: boolean;
+  low: boolean; // a low-power screen: no moving weather, GIFs or fades, and plainer chalk
 }
 export function useBoardFit(): BoardFit {
   const d = useLive<BoardFit>('api/boardfit', ['boardfit']).data;
-  return { fill: !!d?.fill, noFrame: !!d?.noFrame };
+  return { fill: !!d?.fill, noFrame: !!d?.noFrame, low: !!d?.low };
 }
 export async function setBoardFit(change: Partial<BoardFit>) {
   await post('api/boardfit', change);

@@ -43,7 +43,10 @@
      And whether its board fills the screen (a taller calendar on a 16:9
      or 16:10 screen, instead of bands above and below), and whether it
      hides the wooden frame (a screen in a frame of its own):
-       kv 'boardfit'  { 'p:...' | 's:...': { fill: true, noFrame: true } }
+     and whether it's a low-power screen (no moving weather, GIFs or fades,
+     and plainer chalk, for a slow wall screen):
+       kv 'boardfit'  { 'p:...' | 's:...': { fill: true, noFrame: true,
+           low: true } }
      And whether it hides the − / + / Fit zoom buttons (shown unless set;
      only a screen someone is signed in on has them; from Colby Way's
      board):
@@ -88,7 +91,7 @@
                                   dock).
                                   Fill the screen and no wooden frame, per
                                   screen (Colby Way's frame and padding
-                                  settings, reworked).
+                                  settings, reworked); a low-power screen.
 ===============================================================================
 */
 
@@ -425,16 +428,22 @@ export function setup({
   interface BoardFit {
     fill: boolean;
     noFrame: boolean;
+    low: boolean; // a low-power screen: no moving weather, GIFs or fades, and plainer chalk
   }
   const fits = () => kv.get<Record<string, BoardFit>>('boardfit') || {};
-  const fitOf = (v: Partial<BoardFit> | undefined): BoardFit => ({ fill: !!v?.fill, noFrame: !!v?.noFrame });
+  const fitOf = (v: Partial<BoardFit> | undefined): BoardFit => ({
+    fill: !!v?.fill,
+    noFrame: !!v?.noFrame,
+    low: !!v?.low
+  });
   const setFit = (k: string, b: Record<string, unknown>): BoardFit | null => {
     const now = fitOf(fits()[k]);
     const fill = b.fill ?? now.fill;
     const noFrame = b.noFrame ?? now.noFrame;
-    if (typeof fill !== 'boolean' || typeof noFrame !== 'boolean') return null;
+    const low = b.low ?? now.low;
+    if (typeof fill !== 'boolean' || typeof noFrame !== 'boolean' || typeof low !== 'boolean') return null;
     const map = fits();
-    if (fill || noFrame) map[k] = { fill, noFrame };
+    if (fill || noFrame || low) map[k] = { fill, noFrame, low };
     else delete map[k];
     kv.set('boardfit', map);
     broadcast('boardfit', {});
@@ -459,7 +468,7 @@ export function setup({
   app.post('/api/devices/boardfit', (req, res) => {
     const id = String(req.body?.id || '');
     if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
-    const v = setFit('s:' + id, { fill: req.body?.fill, noFrame: req.body?.noFrame });
+    const v = setFit('s:' + id, { fill: req.body?.fill, noFrame: req.body?.noFrame, low: req.body?.low });
     if (!v) return res.status(400).json({ error: 'On or off' });
     res.json(v);
   });

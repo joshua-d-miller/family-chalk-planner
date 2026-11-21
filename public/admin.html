@@ -1021,7 +1021,7 @@ button:disabled{opacity:.5;cursor:default}
   }
   // filling the screen (a taller calendar instead of bands), and the wooden frame
   function fitLine(x, cur) {
-    cur = cur || { fill: false, noFrame: false };
+    cur = cur || { fill: false, noFrame: false, low: false };
     var box = el('div', 'nbot');
     box.appendChild(el('span', 'dim', '↕️ The board:'));
     var sel = el('select'); sel.setAttribute('aria-label', 'How the board fits ' + x.name);
@@ -1033,6 +1033,16 @@ button:disabled{opacity:.5;cursor:default}
       api('api/devices/boardfit', { id: x.id, fill: sel.value === 'fill' }).catch(function (e) { $('dvErr').textContent = e.message; });
     });
     box.appendChild(sel);
+    // a low-power screen: no moving weather, GIFs or fades, and plainer chalk (a slow wall screen)
+    var low = el('select'); low.setAttribute('aria-label', 'Low-power screen for ' + x.name);
+    [['', 'Every effect'], ['low', 'Low-power (nothing moves)']].forEach(function (o) {
+      var op = el('option', null, o[1]); op.value = o[0]; low.appendChild(op);
+    });
+    low.value = cur.low ? 'low' : '';
+    low.addEventListener('change', function () {
+      api('api/devices/boardfit', { id: x.id, low: low.value === 'low' }).catch(function (e) { $('dvErr').textContent = e.message; });
+    });
+    box.appendChild(low);
     return box;
   }
   function loadScreens() {

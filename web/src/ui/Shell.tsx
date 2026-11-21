@@ -63,6 +63,8 @@
                         claude    (<SettingsHost />), where the look of cards
                                   and menus is set now. The menu in the Notes
                         colby     column (Colby Way's dock): `dock`.
+                                  A screen on the wall doesn't zoom and stays
+                                  awake (useWallScreen).
 ===============================================================================
 */
 
@@ -70,6 +72,7 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import type { ReactNode } from 'react';
 import { useFavorites } from '../lib/favorites.ts';
 import { useMenuPref } from '../lib/menuStyle.ts';
+import { useWallScreen } from '../lib/wallScreen.ts';
 import type { DockBtn } from '../lib/menuStyle.ts';
 import { applyUiLook, useUiLook } from '../lib/uiLook.ts';
 import { SettingsHost } from '../pages/Settings.tsx';
@@ -144,6 +147,8 @@ export const useShell = () => useContext(Ctx);
 
 export function Shell({ who, here, children }: { who: Who | null; here: string; children: ReactNode }) {
   const kind = shellKind(who);
+  // a screen on the wall (paired, nobody signed in): no zooming the page, and it stays awake
+  useWallScreen(!who?.user && !!who?.device);
   // only a screen that would get the cork can swap it for the button (phones and tablets keep their tab bar)
   const pref = useMenuPref();
   // this screen's look for its cards, ☰ menu and Settings (🎨 Look of cards and menus)

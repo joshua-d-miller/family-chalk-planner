@@ -54,7 +54,8 @@
                                   Way's board). Switches for the checkboxes,
                                   sliders for the slideshow's timing and
                                   brightness. This screen: fill the screen,
-                                  and the wooden frame. A family screen gets
+                                  and the wooden frame; a low-power screen.
+                                  A family screen gets
                                   the board's parts too.
 ===============================================================================
 */
@@ -849,6 +850,17 @@ function ThisScreen() {
           onChange={e => void setBoardFit({ noFrame: !e.target.checked })}
         />
         <span className="t">The wooden frame around the board (a screen in a frame of its own can leave it off)</span>
+      </label>
+      <label className="check">
+        <input
+          id="lowBox"
+          type="checkbox"
+          checked={fit.low}
+          onChange={e => void setBoardFit({ low: e.target.checked })}
+        />
+        <span className="t">
+          Low-power screen: no moving weather, GIFs or fades, and plainer chalk (for a slow wall screen)
+        </span>
       </label>
       <h4>Look of cards and menus</h4>
       <LookFields />

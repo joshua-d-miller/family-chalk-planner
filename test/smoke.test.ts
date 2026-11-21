@@ -630,17 +630,26 @@ test('the menu in the Notes column: up to 3 buttons, from the list', async () =>
 });
 
 test('filling the screen and the wooden frame: per screen, and the console sets any screen’s', async () => {
-  assert.deepEqual(await (await api('/api/boardfit')).json(), { fill: false, noFrame: false });
-  assert.deepEqual(await (await post('/api/boardfit', { fill: true })).json(), { fill: true, noFrame: false });
-  assert.deepEqual(await (await post('/api/boardfit', { noFrame: true })).json(), { fill: true, noFrame: true });
+  assert.deepEqual(await (await api('/api/boardfit')).json(), { fill: false, noFrame: false, low: false });
+  assert.deepEqual(await (await post('/api/boardfit', { fill: true })).json(), {
+    fill: true,
+    noFrame: false,
+    low: false
+  });
+  assert.deepEqual(await (await post('/api/boardfit', { noFrame: true })).json(), {
+    fill: true,
+    noFrame: true,
+    low: false
+  });
   assert.equal((await post('/api/boardfit', { fill: 'yes' })).status, 400);
-  await post('/api/boardfit', { fill: false, noFrame: false });
+  await post('/api/boardfit', { fill: false, noFrame: false, low: false });
   assert.deepEqual(await (await post('/api/devices/boardfit', { id: 'wall1', fill: true })).json(), {
     fill: true,
-    noFrame: false
+    noFrame: false,
+    low: false
   });
   assert.deepEqual((await (await api('/api/devices/boardfit')).json()).boardfit, {
-    wall1: { fill: true, noFrame: false }
+    wall1: { fill: true, noFrame: false, low: false }
   });
   await post('/api/devices/boardfit', { id: 'wall1', fill: false });
   assert.deepEqual((await (await api('/api/devices/boardfit')).json()).boardfit, {});

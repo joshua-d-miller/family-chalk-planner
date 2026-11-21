@@ -115,6 +115,8 @@
                                   Two quick taps on a family screen's ‹ or ›
                                   no longer start the photo frame.
                                   A family screen sets the month's title too.
+                                  A low-power screen: no moving weather, GIFs
+                                  or fades, and the chalk drawn at 1x.
 ===============================================================================
 */
 
@@ -405,7 +407,10 @@ export function Board({
     const t = setTimeout(() => setSettled(zoom.z), 300);
     return () => clearTimeout(t);
   }, [zoom.z]);
-  const res = Math.max(1, Math.min(4, Math.round(fit.scale * settled * (devicePixelRatio || 1) * 2) / 2));
+  // (a low-power screen: the chalk drawn at 1x, however sharp the screen)
+  const res = boardFit.low
+    ? 1
+    : Math.max(1, Math.min(4, Math.round(fit.scale * settled * (devicePixelRatio || 1) * 2) / 2));
   const zoomTo = (z: number, at?: [number, number]) =>
     setZoom(cur => {
       const z1 = Math.max(1, Math.min(4, z));
@@ -622,6 +627,10 @@ export function Board({
   useEffect(() => {
     document.body.classList.toggle('drawing', drawing);
   }, [drawing]);
+  // a low-power screen: no animations or fades anywhere on it
+  useEffect(() => {
+    document.documentElement.classList.toggle('lowpower', boardFit.low);
+  }, [boardFit.low]);
   useEffect(() => {
     const b = document.body.classList;
     b.toggle('display', !edit);
@@ -939,9 +948,9 @@ export function Board({
             only={split ? ['info'] : undefined}
             dockRef={edit && shell.dock ? setDockEl : undefined}
           />
-          <WeatherMotion wall={!edit} />
-          {behind.length > 0 && <Art items={behind} bg={sf.lum} res={res} gifsPlay under h={slateH} />}
-          <Art items={front} bg={sf.lum} res={res} gifsPlay h={slateH} />
+          {!boardFit.low && <WeatherMotion wall={!edit} />}
+          {behind.length > 0 && <Art items={behind} bg={sf.lum} res={res} gifsPlay={!boardFit.low} under h={slateH} />}
+          <Art items={front} bg={sf.lum} res={res} gifsPlay={!boardFit.low} h={slateH} />
           {edit && drawing && (
             <DrawLayer
               art={view}
