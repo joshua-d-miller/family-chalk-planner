@@ -231,6 +231,40 @@ test('the bottom of Notes: each screen its own, the wall’s from the admin cons
   await fam.post('/api/notesbottom', { bottom: null });
 });
 
+test('the Notes column: each screen its own on the month and the week; the wall’s from the admin console', async () => {
+  assert.deepEqual(await (await fam.api('/api/notescol')).json(), { month: null, week: null });
+  let r = await fam.post('/api/notescol', {
+    view: 'week',
+    col: { on: true, pages: ['today', 'bogus', 'today', 'chores', 'jars', 'meals'], bottom: { def: 'jars', can: [] } }
+  });
+  assert.deepEqual(await r.json(), {
+    month: null,
+    week: { on: true, pages: ['today', 'chores', 'jars'], bottom: { def: 'jars', can: ['jars'] } }
+  });
+  r = await fam.post('/api/notescol', { view: 'month', col: { on: false, pages: [] } });
+  assert.deepEqual((await r.json()).month, { on: false, pages: [] });
+  assert.equal((await fam.post('/api/notescol', { view: 'day', col: null })).status, 400);
+  assert.equal((await fam.post('/api/notescol', { view: 'month', col: { pages: [] } })).status, 400);
+  assert.equal((await wall.post('/api/notescol', { view: 'month', col: null })).status, 403, 'the wall can’t');
+  // another screen (and the board) are untouched
+  assert.deepEqual(await (await wall.api('/api/notescol')).json(), { month: null, week: null });
+  // the admin console sets the wall's
+  const devs = (await (await ed.api('/api/devices')).json()).devices as { id: string; role: string }[];
+  const wallId = devs.find(d => d.role === 'view')!.id;
+  r = await ed.post('/api/devices/notes-col', { id: wallId, view: 'month', col: { on: false, pages: ['info'] } });
+  assert.equal(r.status, 200);
+  assert.deepEqual((await (await wall.api('/api/notescol')).json()).month, { on: false, pages: ['info'] });
+  assert.equal((await fam.post('/api/devices/notes-col', { id: wallId, view: 'month', col: null })).status, 403);
+  const all = (await (await ed.api('/api/devices/notes-col')).json()).cols;
+  assert.deepEqual(Object.keys(all).sort(), [wallId, devs.find(d => d.role === 'family')!.id].sort());
+  // back to the board's
+  await ed.post('/api/devices/notes-col', { id: wallId, view: 'month', col: null });
+  await fam.post('/api/notescol', { view: 'month', col: null });
+  r = await fam.post('/api/notescol', { view: 'week', col: null });
+  assert.deepEqual(await r.json(), { month: null, week: null });
+  assert.deepEqual((await (await ed.api('/api/devices/notes-col')).json()).cols, {});
+});
+
 test('each screen keeps its own menu on the board (the cork, or the ☰ button on either side)', async () => {
   assert.deepEqual(await (await fam.api('/api/menustyle')).json(), {
     style: 'cork',

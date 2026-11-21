@@ -692,6 +692,7 @@ export function setup(
     '/right-pages',
     '/favorites', // a view-only screen (the wall) has no strip, so it never sends any
     '/notesbottom', // (the wall's is set in the admin console)
+    '/notescol', // its own Notes column on the month and the week (the wall's: the admin console)
     '/menustyle', // the cork or the ☰ button (the wall has neither)
     '/uilook', // the look of its cards and ☰ menu
     '/sleeps', // its countdowns in sleeps or days

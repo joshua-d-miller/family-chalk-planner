@@ -1042,6 +1042,30 @@ button:disabled{opacity:.5;cursor:default}
     box.appendChild(lbl); box.appendChild(ticks); draw();
     return box;
   }
+  // a screen's own Notes column on the month and the week: like the rest of the board, shown or off
+  // (its pages: set on the screen itself, or the board's when it's turned back on here)
+  function colLine(x, cur) {
+    var box = el('div', 'nbot');
+    box.appendChild(el('span', 'dim', 'Notes column:'));
+    ['month', 'week'].forEach(function (view) {
+      var sel = el('select'); sel.setAttribute('aria-label', 'Notes column on the ' + view + ' on ' + x.name);
+      [['', view === 'week' ? 'Week: like the rest of the board' : 'Month: like the rest of the board'], ['on', view === 'week' ? 'Week: shown' : 'Month: shown'], ['off', view === 'week' ? 'Week: off' : 'Month: off']].forEach(function (p) {
+        var o = el('option', null, p[1]); o.value = p[0]; sel.appendChild(o);
+      });
+      var mine = cur && cur[view];
+      sel.value = mine ? (mine.on ? 'on' : 'off') : '';
+      sel.addEventListener('change', function () {
+        var send = function (pages) {
+          var col = sel.value ? { on: sel.value === 'on', pages: pages, bottom: mine && mine.bottom } : null;
+          return api('api/devices/notes-col', { id: x.id, view: view, col: col }).then(function (r) { cur = r; mine = r[view]; });
+        };
+        (mine ? Promise.resolve(mine.pages) : api('api/extras').then(function (e) { return (view === 'week' && e.notes.week) || e.notes.pages; }))
+          .then(send).catch(function (e) { $('dvErr').textContent = e.message; });
+      });
+      box.appendChild(sel);
+    });
+    return box;
+  }
   // countdowns in sleeps ("3 sleeps!") or days: the screen's own default is sleeps on a kid's tablet, days elsewhere
   function sleepsLine(x, cur) {
     var box = el('div', 'nbot');
@@ -1141,8 +1165,8 @@ button:disabled{opacity:.5;cursor:default}
     return box;
   }
   function loadScreens() {
-    var bottoms = {}, sleeps = {}, weekfrom = {}, weekview = {}, boardfit = {};
-    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices/weekfrom').then(function (b) { weekfrom = b.weekfrom || {}; }, function () {}); }).then(function () { return api('api/devices/weekview').then(function (b) { weekview = b.weekview || {}; }, function () {}); }).then(function () { return api('api/devices/boardfit').then(function (b) { boardfit = b.boardfit || {}; }, function () {}); }).then(function () { return api('api/devices/lang').then(function (b) { screenLangs = b.lang || {}; boardLang = b.board || 'en'; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
+    var bottoms = {}, cols = {}, sleeps = {}, weekfrom = {}, weekview = {}, boardfit = {};
+    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/notes-col').then(function (b) { cols = b.cols || {}; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices/weekfrom').then(function (b) { weekfrom = b.weekfrom || {}; }, function () {}); }).then(function () { return api('api/devices/weekview').then(function (b) { weekview = b.weekview || {}; }, function () {}); }).then(function () { return api('api/devices/boardfit').then(function (b) { boardfit = b.boardfit || {}; }, function () {}); }).then(function () { return api('api/devices/lang').then(function (b) { screenLangs = b.lang || {}; boardLang = b.board || 'en'; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
       var w = $('dvWaiting'); w.innerHTML = '';
       d.waiting.forEach(function (p) { w.appendChild(el('p', 'dim', '⏳ ' + p.agent + ' is showing a code (' + ago(p.created) + ') - type it above.')); });
       var list = $('dvList'); list.innerHTML = '';
@@ -1163,6 +1187,7 @@ button:disabled{opacity:.5;cursor:default}
         line.appendChild(nm); line.appendChild(sel); line.appendChild(rm); it.appendChild(line);
         it.appendChild(el('div', 'meta', x.agent + ' · paired ' + new Date(x.created).toLocaleDateString() + ' · last seen ' + ago(x.last_seen)));
         if (!/^kid:/.test(x.role)) it.appendChild(bottomLine(x, bottoms[x.id] || null));
+        if (!/^kid:/.test(x.role)) it.appendChild(colLine(x, cols[x.id] || null));
         it.appendChild(sleepsLine(x, x.id in sleeps ? sleeps[x.id] : null));
         if (!/^kid:/.test(x.role)) it.appendChild(weekFromLine(x, weekfrom[x.id] || null));
         if (!/^kid:/.test(x.role)) it.appendChild(weekViewLine(x, weekview[x.id] || null));

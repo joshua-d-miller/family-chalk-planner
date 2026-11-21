@@ -18,6 +18,11 @@
      console):
        kv 'notesbottom'  { 'p:...' | 's:...': { def: 'upnext', can:
            ['upnext', 'today', 'photos'] } }
+     And its own Notes column on the month and on the week (a view it
+     hasn't set shows the board's): whether it shows, its pages, and the
+     bottom's switch:
+       kv 'notescol'  { 'p:...' | 's:...': { month?: { on: true, pages:
+           ['info', 'meals', 'jars'], bottom?: { def, can } }, week?: ... } }
      And how it gets to its pages and tools: the cork (nothing saved), the
      ☰ button in the bottom right or left corner, with or without a ✏️
      Draw button beside it, or the ☰ and up to 3 buttons it picks in the
@@ -100,6 +105,7 @@
 
 import type { Express, Request } from 'express';
 import type { Kv } from './kv.ts';
+import { rightPages } from './extras.ts';
 
 const MAX = 3; // pinned to the bar (Home, 3 pages and More on a phone)
 
@@ -121,6 +127,23 @@ const cleanBottom = (b: unknown): Bottom | null => {
   if (typeof v.def !== 'string' || !BOTTOM.includes(v.def)) return null;
   const can = BOTTOM.filter(m => m === v.def || (Array.isArray(v.can) && v.can.includes(m)));
   return { def: v.def, can };
+};
+
+// a screen's own Notes column on the month or the week
+const COL_VIEWS = ['month', 'week'] as const;
+type ColView = (typeof COL_VIEWS)[number];
+interface Col {
+  on: boolean;
+  pages: string[];
+  bottom?: Bottom;
+}
+const cleanCol = (c: unknown): Col | null => {
+  const v = (c || {}) as { on?: unknown; pages?: unknown; bottom?: unknown };
+  if (typeof v.on !== 'boolean' || !Array.isArray(v.pages)) return null;
+  const out: Col = { on: v.on, pages: rightPages(v.pages, 'none') };
+  const b = v.bottom ? cleanBottom(v.bottom) : null;
+  if (b) out.bottom = b;
+  return out;
 };
 
 export function setup({
@@ -191,6 +214,58 @@ export function setup({
     if (req.body?.bottom !== null && !b) return res.status(400).json({ error: 'Pick what it shows' });
     setBottom('s:' + id, b);
     res.json({ bottom: b });
+  });
+
+  // ------------------------------------ //
+  // | Its own Notes column, month & week | //
+  // ------------------------------------ //
+  // Set on the screen (🗒️ Notes, or ⚙️ Settings → Notes column); the      //
+  // admin console sets any screen's, the wall's too. A view it hasn't set //
+  // shows the board's.                                                    //
+  type Cols = Partial<Record<ColView, Col>>;
+  const cols = () => kv.get<Record<string, Cols>>('notescol') || {};
+  const colsOf = (k: string | null) => {
+    const c = (k && cols()[k]) || {};
+    return { month: c.month || null, week: c.week || null };
+  };
+  const setCol = (k: string, view: ColView, c: Col | null) => {
+    const map = cols();
+    const mine: Cols = { ...map[k] };
+    if (c) mine[view] = c;
+    else delete mine[view];
+    if (mine.month || mine.week) map[k] = mine;
+    else delete map[k];
+    kv.set('notescol', map);
+    broadcast('notescol', {});
+    return colsOf(k);
+  };
+  // { view: 'month' | 'week', col: { on, pages, bottom? } | null (like the rest of the board) }
+  const readCol = (body: Record<string, unknown> | undefined) => {
+    const view = COL_VIEWS.find(v => v === body?.view);
+    if (!view) return { err: 'Pick the month or the week' };
+    const col = body?.col === null ? null : cleanCol(body?.col);
+    if (body?.col !== null && !col) return { err: 'Pick what the Notes column shows' };
+    return { view, col };
+  };
+  app.get('/api/notescol', (req, res) => res.json(colsOf(whose(req))));
+  app.post('/api/notescol', (req, res) => {
+    const k = whose(req);
+    if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+    const r = readCol(req.body);
+    if (r.err !== undefined) return res.status(400).json({ error: r.err });
+    res.json(setCol(k, r.view!, r.col!));
+  });
+  app.get('/api/devices/notes-col', (_req, res) => {
+    const out: Record<string, Cols> = {};
+    for (const [k, v] of Object.entries(cols())) if (k.startsWith('s:')) out[k.slice(2)] = v;
+    res.json({ cols: out });
+  });
+  app.post('/api/devices/notes-col', (req, res) => {
+    const id = String(req.body?.id || '');
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    const r = readCol(req.body);
+    if (r.err !== undefined) return res.status(400).json({ error: r.err });
+    res.json(setCol('s:' + id, r.view!, r.col!));
   });
 
   // ---------------------- //
