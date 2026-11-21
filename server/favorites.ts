@@ -72,9 +72,12 @@
                                   screen's.
 
  1.2.0    2026-11-21   joshua    🗓️ Week from today (today and the next 6
-                        claude    days) or from the board's first day, per
-                                  screen; the admin console sets any
-                                  screen's.
+                        colby     days) or from the board's first day, and
+                        claude    🗓️ Week's Split View and what goes under
+                                  the week (Colby Way's idea), per screen; the
+                                  admin console sets any screen's.
+                                  Hide the − / + / Fit buttons, per person
+                                  (from Colby Way's board).
 ===============================================================================
 */
 

@@ -3,7 +3,7 @@
  Family Chalk Planner | Screens | Helpers | weekFrom.ts
 ===============================================================================
  Version:   1.2.0
- Author:    Joshua D. Miller, Claude
+ Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-21
 
  Purpose:
@@ -23,8 +23,9 @@
 ===============================================================================
  Version   Date         Author    Description
  -------   ----------   -------   --------------------------------------------
- 1.2.0    2026-11-21   joshua    New file. Split View and its spaces too.
-                        claude
+ 1.2.0    2026-11-21   joshua    New file: where the week starts (Colby Way
+                        colby     built the same on his board) and Split View
+                        claude    (his idea), kept on the board per screen.
 ===============================================================================
 */
 

@@ -101,8 +101,17 @@
                         claude
 
  1.2.0    2026-11-21   joshua    🗓️ Week from today (today and the next 6
-                        claude    days) on a screen that picks it, with the
-                                  events of both months a week can span.
+                        colby     days) on a screen that picks it, with the
+                        claude    events of both months a week can span
+                                  (Colby Way built it too, on his board).
+                                  🗓️ Week's Split View (Colby Way's idea), and
+                                  ⚙️ Week in its tools.
+                                  From Colby Way's board: a tap on a reward
+                                  jar opens it big; the − / + / Fit buttons
+                                  can be hidden; a tap on the month's name
+                                  reloads a screen that edits.
+                                  Two quick taps on a family screen's ‹ or ›
+                                  no longer start the photo frame.
 ===============================================================================
 */
 
