@@ -4,6 +4,14 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.2.0 — (in progress)
+- **🗓️ Week from today:** a screen's Week can start on today and show the next 6 days, instead of starting on Sunday.
+  Tap **📆 From Sunday** in the Week page's tools to switch (and **📆 From today** to switch back). It's kept for each
+  screen: also in ⚙️ Settings → This screen, and for any screen (the wall too) in the admin console → 📺 Screens.
+  The arrows go a week at a time from there, and a week that starts at the end of one month shows all its events.
+- **Two quick taps on ‹ or ›** on a family screen no longer turn on the photo frame (they were taken for a double
+  tap on the calendar).
+
 ## 1.1.2 — A background for each month
 - **Backgrounds are back in sight:** 🎨 Board style → Style shows the backgrounds whichever is picked above (they only
   showed after tapping Every month, so they seemed to have gone).

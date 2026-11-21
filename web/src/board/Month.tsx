@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Month.tsx
 ===============================================================================
- Version:   1.1.1
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-18
+ Updated:   2026-11-21
 
  Purpose:
      The month: its name, the weekdays, and a box per day with its events,
@@ -61,6 +61,9 @@
 
  1.1.1    2026-11-18   joshua    No month arrows where they don't work (the
                         claude    wall).
+
+ 1.2.0    2026-11-21   joshua    A week starts on its own first day (today,
+                        claude    on a screen whose week starts today).
 ===============================================================================
 */
 
@@ -230,11 +233,11 @@ export function Month({
   title?: ReactNode;
 }) {
   const g = data.grid;
-  const ws = g.weekStart || 0;
+  // a week starts on its own first day (today, on a screen whose 🗓️ Week starts today)
+  const ws = week ? new Date(week + 'T12:00:00Z').getUTCDay() : g.weekStart || 0;
   const sleeps = useSleeps(); // a countdown badge in sleeps or days
   const pad = border ? BORDER_SZ[border.size] + 6 : 0;
   // the weeks shown: the month's, or one of them
-  const w0 = week ? Math.max(0, Math.round((Date.parse(week) - Date.parse(g.start)) / (7 * 864e5))) : 0;
   const nWeeks = week ? 1 : g.weeks;
   const cellH = (GRID_H - 2 * pad) / nWeeks;
   const big = week ? 1.35 : 1; // a week has the room for bigger writing
@@ -242,8 +245,8 @@ export function Month({
   const multi = data.events.filter(e => e.start !== e.end);
   const color = (e: BoardEvent) => (e.color || e.calColor ? readable((e.color || e.calColor)!, bg) : undefined);
   const weeks: ReactNode[] = [];
-  for (let w = w0; w < w0 + nWeeks; w++) {
-    const weekStart = addDays(g.start, w * 7);
+  for (let w = 0; w < nWeeks; w++) {
+    const weekStart = week || addDays(g.start, w * 7);
     const weekEnd = addDays(weekStart, 6);
     const lanes: [number, number][][] = [];
     const dayLanes = [0, 0, 0, 0, 0, 0, 0];

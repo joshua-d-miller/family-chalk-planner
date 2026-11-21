@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Settings.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      ⚙️ Settings on the board (signed-in people). Admins also get the
@@ -36,6 +36,9 @@
                                   This screen: sleeps or days; Photos: the
                                   next countdown on the slideshow.
                                   What Apple or Google say about the calendar.
+
+ 1.2.0    2026-11-21   joshua    This screen: start 🗓️ Week on today.
+                        claude
 ===============================================================================
 */
 
@@ -48,6 +51,7 @@ import type { Who } from '../lib/who.ts';
 import { Btn, Field, Pick } from '../ui/bits.tsx';
 import { openLookCard } from '../ui/LookCard.tsx';
 import { setSleeps, useSleeps } from '../lib/countdowns.ts';
+import { setWeekFrom, useWeekFrom } from '../lib/weekFrom.ts';
 import { Page } from '../ui/Page.tsx';
 import './settings.css';
 
@@ -597,6 +601,7 @@ function RightColumn() {
 function ThisScreen() {
   const [speak, setSpeak] = useState(speaksHere());
   const sleeps = useSleeps();
+  const weekFrom = useWeekFrom();
   return (
     <Card title="This screen">
       <label className="check">
@@ -613,6 +618,15 @@ function ThisScreen() {
       <label className="check">
         <input id="sleepsBox" type="checkbox" checked={sleeps} onChange={e => void setSleeps(e.target.checked)} />
         <span className="t">Count down in sleeps (“3 sleeps!”) instead of days</span>
+      </label>
+      <label className="check">
+        <input
+          id="weekFromBox"
+          type="checkbox"
+          checked={weekFrom === 'today'}
+          onChange={e => void setWeekFrom(e.target.checked ? 'today' : 'board')}
+        />
+        <span className="t">Start 🗓️ Week on today (today and the next 6 days)</span>
       </label>
       <p style={{ marginTop: 12 }}>
         <Btn id="lookOpen" onClick={openLookCard}>

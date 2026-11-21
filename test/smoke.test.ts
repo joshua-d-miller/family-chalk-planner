@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | smoke.test.ts
 ===============================================================================
- Version:   1.1.2
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-20
+ Updated:   2026-11-21
 
  Purpose:
      End-to-end smoke test: real server + mock CalDAV + mock photo album,
@@ -77,6 +77,9 @@
                                   background.
 
  1.1.2    2026-11-20   joshua    A month's own background.
+                        claude
+
+ 1.2.0    2026-11-21   joshua    Where each screen's 🗓️ Week starts.
                         claude
 ===============================================================================
 */
@@ -572,6 +575,20 @@ test('countdowns in sleeps or days: nothing saved until a screen picks, and the 
   assert.deepEqual(await (await post('/api/devices/sleeps', { id: 'wall1', sleeps: true })).json(), { sleeps: true });
   assert.deepEqual((await (await api('/api/devices/sleeps')).json()).sleeps, { wall1: true });
   await post('/api/devices/sleeps', { id: 'wall1', sleeps: null });
+});
+
+test('🗓️ Week from today or the board’s first day: per screen, and the console sets any screen’s', async () => {
+  assert.deepEqual(await (await api('/api/weekfrom')).json(), { from: 'board' });
+  assert.deepEqual(await (await post('/api/weekfrom', { from: 'today' })).json(), { from: 'today' });
+  assert.deepEqual(await (await api('/api/weekfrom')).json(), { from: 'today' });
+  assert.equal((await post('/api/weekfrom', { from: 'monday' })).status, 400);
+  assert.deepEqual(await (await post('/api/weekfrom', { from: 'board' })).json(), { from: 'board' });
+  assert.deepEqual(await (await post('/api/devices/weekfrom', { id: 'wall1', from: 'today' })).json(), {
+    from: 'today'
+  });
+  assert.deepEqual((await (await api('/api/devices/weekfrom')).json()).weekfrom, { wall1: 'today' });
+  await post('/api/devices/weekfrom', { id: 'wall1', from: 'board' });
+  assert.deepEqual((await (await api('/api/devices/weekfrom')).json()).weekfrom, {});
 });
 
 test('Check connections: the calendar and the photos now, and a real round trip only when asked', async () => {
