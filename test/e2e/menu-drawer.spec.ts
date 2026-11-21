@@ -22,7 +22,8 @@
                         claude    the Notes list stops above the button.
 
  1.2.0    2026-11-21   joshua    The screen's menu is picked in ⚙️ Settings
-                        claude    → This screen.
+                        colby     → This screen. The menu in the Notes
+                        claude    column (Colby Way's dock).
 ===============================================================================
 */
 
@@ -111,6 +112,46 @@ test('a family screen can swap the cork for the ☰ button on either side', asyn
   await menuStyle(fam, 'cork');
   await expect(fam.locator('#menuFab')).toHaveCount(0);
   await expect(fam.locator('.corkbar')).toBeVisible();
+  expect(fam.errors).toEqual([]);
+});
+
+test('the menu in the Notes column: the ☰ and the buttons this screen picks (Colby Way’s dock)', async ({ as }) => {
+  const fam = await as('family', { context: { viewport: { width: 1920, height: 1080 } } });
+  await fam.locator('#menuBtn').click();
+  await fam.locator('#thisScreenBtn').click();
+  await fam.locator('#menuStyle-notes').click();
+  // the first three to start with; a fourth takes the first one's place
+  for (const b of ['add', 'slides', 'week'])
+    await expect(fam.locator('#dockPick-' + b)).toHaveAttribute('aria-pressed', 'true');
+  await fam.locator('#dockPick-chores').click();
+  await expect(fam.locator('#dockPick-add')).toHaveAttribute('aria-pressed', 'false');
+  await expect(fam.locator('#dockPick-chores')).toHaveAttribute('aria-pressed', 'true');
+  await fam.locator('#settingsCard .shead .closex').click();
+  // in the Notes column's last row: no cork, nothing floating over the board
+  const dock = fam.locator('.slate .notes .ndock');
+  await expect(dock.locator('.menufab')).toHaveCount(4);
+  await expect(fam.locator('#editBtn')).toHaveCount(0);
+  await expect(fam.locator('.fabwrap .fabrow .menufab')).toHaveCount(0);
+  // 🗓️ the week, and 📅 back to the month
+  await dock.locator('#dock-week').click();
+  await expect(fam).toHaveURL(/\/week$/);
+  await expect(dock.locator('#dock-week')).toHaveAttribute('aria-label', 'The month');
+  await dock.locator('#dock-week').click();
+  await expect(fam).toHaveURL(/\/edit$/);
+  // the ☰ opens the drawer, from the right
+  await dock.locator('.menufab').last().click();
+  await expect(fam.locator('#menuPanel')).toHaveClass(/right/);
+  // decorating: ✏️ Done in the corner, the row steps aside
+  await fam.locator('#menuPanel #drawBtn').click();
+  await expect(fam.locator('#doneFab')).toBeVisible();
+  await expect(dock.locator('.menufab')).toHaveCount(0);
+  await fam.locator('#doneFab').click();
+  await expect(dock.locator('.menufab')).toHaveCount(4);
+  // 🧹 goes to the chores, where the ☰ floats in the corner
+  await dock.locator('#dock-chores').click();
+  await expect(fam).toHaveURL(/\/chores$/);
+  await expect(fam.locator('#menuFab')).toHaveClass(/right/);
+  await menuStyle(fam, 'cork');
   expect(fam.errors).toEqual([]);
 });
 

@@ -257,6 +257,8 @@ test('🗓️ Split View: the week as a band and what the screen picks under it;
   await board.admin.post('/api/jars', { jars: [{ id: 'nora', name: 'Nora', pieces: ['star'], count: 3, goal: 10 }] });
   const page = await as('family', { path: '/week', context: { viewport: { width: 1280, height: 800 } } });
   await expect(page.locator('#grid .week')).toHaveCount(1);
+  // Split View is a choice: a screen that hasn't picked it has the week in the whole height
+  await expect(page.locator('.slate .under')).toHaveCount(0);
   const fullH = (await page.locator('#grid').boundingBox())!.height;
   // ⚙️ Week, in the Week page's tools: Settings → Week
   await page.locator('#editBtn').click();

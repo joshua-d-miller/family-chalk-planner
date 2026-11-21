@@ -47,7 +47,9 @@
                         joshua    piece, take one out, ★ Reward.
                         claude    Its pages can go under 🗓️ Week's Split View
                                   (Split.tsx), and the column can be just the
-                                  weather and countdowns there.
+                                  weather and countdowns there. Its last row
+                                  can hold the menu's buttons (Colby Way's
+                                  dock).
 ===============================================================================
 */
 
@@ -494,12 +496,14 @@ export function Notes({
   time24,
   edit = false,
   drawing = false,
-  only
+  only,
+  dockRef
 }: {
   time24: boolean;
   edit?: boolean;
   drawing?: boolean; // (a tap on a jar while drawing is drawing, not the big jar)
   only?: string[]; // these pages and no switch (Split View: the weather, trash and countdowns)
+  dockRef?: (el: HTMLDivElement | null) => void; // the menu in the Notes column: its last row, for the buttons
 }) {
   const x = useLive<Extras>('api/extras', ['extras']).data;
   const pages = only || x?.notes?.pages || ['info', 'meals', 'jars'];
@@ -569,6 +573,8 @@ export function Notes({
               </div>
             );
           })}
+        {/* the menu in the Notes column: the ☰ and this screen's buttons go in this row (Colby Way's dock) */}
+        {dockRef && <div className="ndock" ref={dockRef} />}
       </aside>
       <JarZoom
         jar={bigJar}

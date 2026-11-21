@@ -18,11 +18,12 @@
      console):
        kv 'notesbottom'  { 'p:...' | 's:...': { def: 'upnext', can:
            ['upnext', 'today', 'photos'] } }
-     And how it gets to its pages and tools: the cork (nothing saved), or
-     the ☰ button in the bottom right or left corner, with or without a ✏️
-     Draw button beside it:
-       kv 'menustyle'  { 'p:...' | 's:...': { style: 'right' | 'left',
-           draw: true | false } }
+     And how it gets to its pages and tools: the cork (nothing saved), the
+     ☰ button in the bottom right or left corner, with or without a ✏️
+     Draw button beside it, or the ☰ and up to 3 buttons it picks in the
+     Notes column's last row (from Colby Way's board):
+       kv 'menustyle'  { 'p:...' | 's:...': { style: 'right' | 'left' |
+           'notes', draw: true | false, dock?: ['add', 'slides', ...] } }
      And the look of its cards and ☰ menu (chalk unless changed), an
      accent color, and their text size:
        kv 'uilook'  { 'p:...' | 's:...': { look: 'light' | 'dark' |
@@ -78,6 +79,9 @@
                                   admin console sets any screen's.
                                   Hide the − / + / Fit buttons, per person
                                   (from Colby Way's board).
+                                  The menu in the Notes column: the ☰ and up
+                                  to 3 buttons the screen picks (Colby Way's
+                                  dock).
 ===============================================================================
 */
 
@@ -183,11 +187,19 @@ export function setup({
   // screen changes at once when it's saved. A change can send just one of   //
   // the two.                                                                //
   interface MenuPref {
-    style: 'right' | 'left';
+    style: 'right' | 'left' | 'notes';
     draw: boolean;
+    dock?: string[]; // 'notes': the buttons beside the ☰ in the Notes column (up to 3)
   }
+  // what can go beside the ☰ in the Notes column (from Colby Way's board)
+  const DOCK = ['add', 'slides', 'week', 'draw', 'chores', 'meals', 'reminders', 'timers', 'pantry', 'jars', 'reload'];
+  const DOCK_DEFAULT = ['add', 'slides', 'week'];
   const prefs = () => kv.get<Record<string, MenuPref>>('menustyle') || {};
-  const view = (p: MenuPref | undefined) => ({ style: p?.style || 'cork', draw: !!p?.draw });
+  const view = (p: MenuPref | undefined) => ({
+    style: p?.style || 'cork',
+    draw: !!p?.draw,
+    dock: p?.style === 'notes' ? p.dock || DOCK_DEFAULT : DOCK_DEFAULT
+  });
   app.get('/api/menustyle', (req, res) => {
     const k = whose(req);
     res.json({ ...view(k ? prefs()[k] : undefined), saved: !!k });
@@ -200,11 +212,14 @@ export function setup({
     const now = view(map[k]);
     const style = body.style ?? now.style;
     const draw = body.draw ?? now.draw;
-    if (!['cork', 'right', 'left'].includes(style) || typeof draw !== 'boolean')
+    const dock = body.dock ?? now.dock;
+    if (!['cork', 'right', 'left', 'notes'].includes(style) || typeof draw !== 'boolean')
       return res.status(400).json({ error: 'Pick where the menu goes' });
+    if (!Array.isArray(dock) || dock.length > 3 || dock.some((d: unknown) => !DOCK.includes(d as string)))
+      return res.status(400).json({ error: 'Pick up to 3 buttons' });
     if (style === 'cork')
       delete map[k]; // (the cork has no ✏️ button of its own)
-    else map[k] = { style, draw };
+    else map[k] = { style, draw, ...(style === 'notes' ? { dock: [...new Set(dock as string[])] } : {}) };
     kv.set('menustyle', map);
     broadcast('menustyle', {});
     res.json({ ...view(map[k]), saved: true });
