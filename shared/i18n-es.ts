@@ -627,6 +627,12 @@ export const ES: Dict = {
   '⏲️ Timers': '⏲️ Temporizadores',
   'The right-hand column': 'La columna de la derecha',
   'Up to 3, from the top. Tap to add or take away.': 'Hasta 3, desde arriba. Toca para agregar o quitar.',
+  'On the month': 'En el mes',
+  'On the week': 'En la semana',
+  'Show the Notes column on the month (off: the calendar takes the whole board)':
+    'Mostrar la columna de Notas en el mes (apagada: el calendario ocupa todo el tablero)',
+  'Show the Notes column on the week (off: the week takes the whole board)':
+    'Mostrar la columna de Notas en la semana (apagada: la semana ocupa todo el tablero)',
   'The menu': 'El menú',
   'This screen’s menu': 'El menú de esta pantalla',
   'The ☰ and up to': 'El ☰ y hasta',

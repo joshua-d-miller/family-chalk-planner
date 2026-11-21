@@ -23,6 +23,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   the corner button. The ☰ and up to 3 buttons you pick sit in the last row of the Notes column, so nothing floats
   over the board: + Add event, ▶ Slideshow, 🗓️ Week / 📅 month, Decorate, a page (chores, meals, reminders, timers,
   pantry, jars) or Reload. Pick them in ⚙️ Settings → This screen.
+- **The Notes column for the month and the week:** ⚙️ Settings → Notes column now has its own settings for each
+  view: which pages it shows (up to 3) on the month, and on the week. Either can turn the column off, and the
+  calendar then takes the whole board (art on the days moves across with them, so it stays on its day).
 - **Family screens do everything but freehand drawing:** a family screen can now set the month's title (🔤 Month
   title) and open ⚙️ Settings for the board's own parts (holidays, birthdays, photos and the slideshow, the Notes
   column, 🗓️ Week and This screen), without a parent signing in. The calendar and trash day stay the admin's, and

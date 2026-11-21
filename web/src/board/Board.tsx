@@ -141,6 +141,7 @@ import { TitlePhotos, titlePool } from './TitlePhotos.tsx';
 import type { Side } from './TitlePhotos.tsx';
 import { DayView, ReminderAlert, TimerDone } from './Alerts.tsx';
 import { Notes } from './Notes.tsx';
+import type { NotesCfg } from './Notes.tsx';
 import { WeatherMotion } from './Weather.tsx';
 import { Slideshow, useSlides } from './Slideshow.tsx';
 import { EventEditor } from './EventEditor.tsx';
@@ -163,7 +164,7 @@ import { RecolorSheet, SaveStampSheet, TextSheet, Tools } from './draw/Tools.tsx
 import { useArt } from './draw/useArt.ts';
 import { coveredBy, writingOn } from './cover.ts';
 import type { Writing } from './cover.ts';
-import { BORDER_PAD, SLATE_H, relayout, stretchY, unionBox, xform } from './geom.ts';
+import { BORDER_PAD, CAL, CAL_WIDE, SLATE_H, relayout, stretchX, stretchY, unionBox, xform } from './geom.ts';
 import { post, url as apiUrl } from '../lib/api.ts';
 import { CLIENT } from './draw/useArt.ts';
 import { RANK } from '../lib/who.ts';
@@ -473,7 +474,10 @@ export function Board({
         }
       }
     : {};
-  const extras = useLive<{ bins: Bins }>('api/extras', ['extras']).data;
+  const extras = useLive<{ bins: Bins; notes?: NotesCfg }>('api/extras', ['extras']).data;
+  // the Notes column: each view can leave it off (⚙️ Notes column), and the calendar takes its room
+  const notesOn = extras?.notes?.on?.[week ? 'week' : 'month'] ?? true;
+  const calW = notesOn ? CAL.w : CAL_WIDE;
   const savedTheme = useLive<Theme>('api/theme', ['theme']).data;
   const [themeDraft, setThemeDraft] = useState<Theme | null>(null);
   const [lookDraft, setLookDraft] = useState<Record<string, string> | null>(null); // this month's colors, being picked
@@ -685,10 +689,15 @@ export function Board({
   }, [week, edit, shown, mm, borderDraft, placed, realPad, who, art, ed.items, metaLive]);
   // a taller board (filling the screen): the art shown on its taller days, and anything drawn, moved or
   // changed here put back on the board's own layout before it's kept (every screen sees it on the same days)
-  const tallItems = useMemo(() => stretchY(ed.items, SLATE_H, slateH), [ed.items, slateH]);
-  const back = (list: ArtItem[]) => stretchY(list, slateH, SLATE_H);
+  // (and the same across, on a calendar that's wider with the Notes column off)
+  const toBoard = useCallback(
+    (list: ArtItem[]) => stretchX(stretchY(list, SLATE_H, slateH), CAL.w, calW),
+    [slateH, calW]
+  );
+  const tallItems = useMemo(() => toBoard(ed.items), [toBoard, ed.items]);
+  const back = (list: ArtItem[]) => stretchY(stretchX(list, calW, CAL.w), slateH, SLATE_H);
   const view: typeof ed =
-    slateH === SLATE_H
+    slateH === SLATE_H && calW === CAL.w
       ? ed
       : {
           ...ed,
@@ -700,8 +709,8 @@ export function Board({
           preview: (list: ArtItem[]) => ed.preview(back(list))
         };
   const base = useMemo(
-    () => (week || placed === shownPad ? tallItems : stretchY(laidOut, SLATE_H, slateH)),
-    [week, placed, shownPad, tallItems, laidOut, slateH]
+    () => (week || placed === shownPad ? tallItems : toBoard(laidOut)),
+    [week, placed, shownPad, tallItems, laidOut, toBoard]
   );
   const items = hidden.length ? base.filter(x => !hidden.includes(x.id)) : base;
   const selItems = view.items.filter(x => selection.includes(x.id));
@@ -911,6 +920,7 @@ export function Board({
             <Month
               data={m}
               height={slateH}
+              wide={!notesOn}
               bins={extras?.bins || null}
               bg={sf.lum}
               today={{ shape: tv.todayS, color: tv.todayC }}
@@ -941,13 +951,16 @@ export function Board({
               layoutKey={`${monthName}|${JSON.stringify(titleStyle)}|${border?.size || ''}`}
             />
           )}
-          <Notes
-            time24={!!today?.time24}
-            edit={edit}
-            drawing={drawing}
-            only={split ? ['info'] : undefined}
-            dockRef={edit && shell.dock ? setDockEl : undefined}
-          />
+          {notesOn && (
+            <Notes
+              time24={!!today?.time24}
+              edit={edit}
+              drawing={drawing}
+              only={split ? ['info'] : undefined}
+              view={week ? 'week' : 'month'}
+              dockRef={edit && shell.dock ? setDockEl : undefined}
+            />
+          )}
           {!boardFit.low && <WeatherMotion wall={!edit} />}
           {behind.length > 0 && <Art items={behind} bg={sf.lum} res={res} gifsPlay={!boardFit.low} under h={slateH} />}
           <Art items={front} bg={sf.lum} res={res} gifsPlay={!boardFit.low} h={slateH} />

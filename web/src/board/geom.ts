@@ -228,7 +228,9 @@ export const isClosedLine = (s: ArtItem) =>
 // ----------------------- //
 // The calendar's box on the slate (the days, weekday names and any border), //
 // in board pixels                                                           //
-export const CAL = { x: 18, y: 8 + 70, w: 1252 - 18 - 14 - 14 - 214, h: 642 - 8 - 10 - 70 };
+export const NOTES_W = 214 + 14; // the Notes column and the gap before it
+export const CAL = { x: 18, y: 8 + 70, w: 1252 - 18 - 14 - NOTES_W, h: 642 - 8 - 10 - 70 };
+export const CAL_WIDE = CAL.w + NOTES_W; // the calendar where the Notes column is left off
 export const SLATE_H = 642; // the board's own height; a screen that fills itself draws it taller
 export const BORDER_PAD = { s: 26, m: 32, l: 40 }; // a border's picture size + 6
 
@@ -275,6 +277,21 @@ export function stretchY(items: ArtItem[], h0: number, h1: number): ArtItem[] {
     const cy = (bx.y1 + bx.y2) / 2;
     if (cx < CAL.x || cx > CAL.x + CAL.w || cy < CAL.y) return it; // (the title and Notes stay put)
     const o = xform(it, 0, ((cy - CAL.y) * b) / a + CAL.y - cy);
+    o.id = it.id;
+    return o;
+  });
+}
+
+// The Notes column left off: the calendar is wider, so art on its days    //
+// moves across with them (the same way it moves down on a taller board).  //
+export function stretchX(items: ArtItem[], w0: number, w1: number): ArtItem[] {
+  if (w0 === w1) return items;
+  return items.map(it => {
+    const bx = itemBox(it);
+    const cx = (bx.x1 + bx.x2) / 2;
+    const cy = (bx.y1 + bx.y2) / 2;
+    if (cx < CAL.x || cx > CAL.x + w0 || cy < CAL.y) return it; // (the title stays put)
+    const o = xform(it, ((cx - CAL.x) * w1) / w0 + CAL.x - cx, 0);
     o.id = it.id;
     return o;
   });

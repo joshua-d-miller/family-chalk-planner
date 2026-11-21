@@ -167,6 +167,27 @@ test('the right-hand column: up to 3 pages; older boards keep what they showed',
   assert.deepEqual(x.notes.pages, ['info', 'meals', 'upnext']);
 });
 
+test('the right-hand column: the month and the week each have their own, and either can be off', async () => {
+  let x = await (await ed.api('/api/extras')).json();
+  assert.deepEqual(x.notes.on, { month: true, week: true });
+  assert.deepEqual(x.notes.week, x.notes.pages, 'a week that was never set shows the month’s');
+  const month = x.notes.pages;
+  let r = await (await fam.post('/api/right-pages', { view: 'week', pages: ['today', 'chores'] })).json();
+  assert.deepEqual([r.pages, r.week], [month, ['today', 'chores']]);
+  r = await (await fam.post('/api/right-pages', { view: 'week', on: false })).json();
+  assert.deepEqual(r.on, { month: true, week: false });
+  r = await (await fam.post('/api/right-pages', { view: 'month', on: false })).json();
+  assert.deepEqual(r.on, { month: false, week: false });
+  assert.deepEqual(r.week, ['today', 'chores'], 'turning it off keeps its pages');
+  r = await (await fam.post('/api/right-pages', { view: 'month', pages: ['meals'] })).json();
+  assert.deepEqual([r.pages, r.week], [['meals'], ['today', 'chores']]);
+  await fam.post('/api/right-pages', { view: 'week', on: true });
+  r = await (await fam.post('/api/right-pages', { view: 'month', on: true })).json();
+  assert.deepEqual(r.on, { month: true, week: true });
+  x = await (await wall.api('/api/extras')).json();
+  assert.deepEqual([x.notes.pages, x.notes.week, x.notes.on], [['meals'], ['today', 'chores'], r.on]);
+});
+
 test('pinned pages: kept per person and per screen, up to 3', async () => {
   let f = await (
     await fam.post('/api/favorites', { items: ['meals', 'timers', 'meals', 'x y', 'pantry', 'jars', 'chores'] })

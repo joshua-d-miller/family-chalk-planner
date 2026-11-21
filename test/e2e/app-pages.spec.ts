@@ -271,19 +271,76 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
   await page.getByLabel('Show photos overnight on the wall (a slideshow)').check();
   await page.getByLabel('With the temperature').check();
   await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.showTemp).toBe(true);
-  await page.getByRole('button', { name: /Reward jars/ }).click();
-  await page.getByRole('button', { name: /Reminders/ }).click();
+  await page
+    .locator('#notes-month')
+    .getByRole('button', { name: /Reward jars/ })
+    .click();
+  await page
+    .locator('#notes-month')
+    .getByRole('button', { name: /Reminders/ })
+    .click();
   await expect
     .poll(async () => (await (await board.admin.api('/api/extras')).json()).notes.pages)
     .toEqual(['info', 'meals', 'reminders']);
   // put things back for the other tests (the night slideshow would cover the screens)
   await page.getByLabel('Show photos overnight on the wall (a slideshow)').uncheck();
   await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.night).toBe(false);
-  await page.getByRole('button', { name: /Reminders/ }).click();
-  await page.getByRole('button', { name: /Reward jars/ }).click();
+  await page
+    .locator('#notes-month')
+    .getByRole('button', { name: /Reminders/ })
+    .click();
+  await page
+    .locator('#notes-month')
+    .getByRole('button', { name: /Reward jars/ })
+    .click();
   await expect
     .poll(async () => (await (await board.admin.api('/api/extras')).json()).notes.pages)
     .toEqual(['info', 'meals', 'jars']);
+  expect(page.errors).toEqual([]);
+});
+
+test('🗒️ Notes column: the month and the week each set their own, and either can be off', async ({ as, board }) => {
+  const page = await as('tablet', { path: '/settings' });
+  const extras = async () => (await (await board.admin.api('/api/extras')).json()).notes;
+  await page
+    .locator('#notes-week')
+    .getByRole('button', { name: /Reward jars/ })
+    .click();
+  await page
+    .locator('#notes-week')
+    .getByRole('button', { name: /Chores/ })
+    .click();
+  await expect.poll(async () => (await extras()).week).toEqual(['info', 'meals', 'chores']);
+  expect((await extras()).pages).toEqual(['info', 'meals', 'jars']);
+  await page.locator('#notesOn-month').uncheck();
+  await expect.poll(async () => (await extras()).on).toEqual({ month: false, week: true });
+  await expect(page.locator('#notes-month .segs')).toHaveCount(0);
+  // the board: no Notes column on the month, and the calendar takes its room
+  const wall = await as('tablet');
+  await expect(wall.locator('.slate .cal')).toBeVisible();
+  await expect(wall.locator('.slate .notes')).toHaveCount(0);
+  expect((await wall.locator('.slate .cal').boundingBox())!.width).toBeGreaterThan(
+    (await wall.locator('.slate').boundingBox())!.width * 0.9
+  );
+  if (process.env.NOTES_SHOT) await wall.screenshot({ path: process.env.NOTES_SHOT });
+  // put things back for the other tests
+  await page.locator('#notesOn-month').check();
+  await page
+    .locator('#notes-week')
+    .getByRole('button', { name: /Chores/ })
+    .click();
+  await page
+    .locator('#notes-week')
+    .getByRole('button', { name: /Reward jars/ })
+    .click();
+  await expect
+    .poll(async () => await extras())
+    .toMatchObject({
+      pages: ['info', 'meals', 'jars'],
+      week: ['info', 'meals', 'jars'],
+      on: { month: true, week: true }
+    });
+  await expect(wall.locator('.slate .notes')).toBeVisible();
   expect(page.errors).toEqual([]);
 });
 

@@ -114,7 +114,13 @@ interface Extras {
     tomorrow: { hi: number; lo: number; rain: number; kind: string };
   } | null;
   trash: { title: string; label: string; sub: string | null } | null;
-  notes: { pages: string[] };
+  notes: NotesCfg;
+}
+// the column's settings: the month's pages, the week's, and whether each shows it
+export interface NotesCfg {
+  pages: string[];
+  week?: string[];
+  on?: { month: boolean; week: boolean };
 }
 
 function Info({ x }: { x: Extras }) {
@@ -500,16 +506,18 @@ export function Notes({
   edit = false,
   drawing = false,
   only,
+  view = 'month',
   dockRef
 }: {
   time24: boolean;
   edit?: boolean;
   drawing?: boolean; // (a tap on a jar while drawing is drawing, not the big jar)
   only?: string[]; // these pages and no switch (Split View: the weather, trash and countdowns)
+  view?: 'month' | 'week'; // which view's pages it shows
   dockRef?: (el: HTMLDivElement | null) => void; // the menu in the Notes column: its last row, for the buttons
 }) {
   const x = useLive<Extras>('api/extras', ['extras']).data;
-  const pages = only || x?.notes?.pages || ['info', 'meals', 'jars'];
+  const pages = only || (view === 'week' ? x?.notes?.week : null) || x?.notes?.pages || ['info', 'meals', 'jars'];
   // this screen's own choice for the bottom (if it has one), else the board's
   const mine = useLive<{ bottom: { def: string; can: string[] } | null }>('api/notesbottom', ['notesbottom']).data
     ?.bottom;
