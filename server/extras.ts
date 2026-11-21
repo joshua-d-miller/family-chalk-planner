@@ -16,7 +16,9 @@
                    'biweekly' = every other week on recycle.day, counting
                        from anchor (a known pickup date)
        kv 'notes'  { bottom: 'jars' | 'upnext' | 'today' | 'photos' |
-           'none', pages: up to 3 of RIGHT_PAGES }
+           'none', pages: up to 3 of RIGHT_PAGES (the month),
+           week?: up to 3 of RIGHT_PAGES (the week; unset: the month's),
+           off?: ['month' | 'week'] (the column left off there) }
 
  Routes:
      GET    /api/extras
@@ -52,6 +54,7 @@ interface TrashCfg {
   day: number | null;
   recycle: { mode: RecycleMode; day?: number; anchor?: string };
 }
+const VIEWS: NotesView[] = ['month', 'week'];
 const NOTES_BOTTOM = ['jars', 'upnext', 'today', 'photos', 'none'];
 export const RIGHT_PAGES = [
   'info',
@@ -65,9 +68,18 @@ export const RIGHT_PAGES = [
   'timers',
   'pantry'
 ];
+type NotesView = 'month' | 'week';
 interface NotesCfg {
   bottom: string;
+  pages: string[]; // the month's
+  week: string[]; // the week's
+  on: { month: boolean; week: boolean }; // whether the column shows there
+}
+interface NotesKept {
+  bottom: string;
   pages: string[];
+  week?: string[];
+  off?: NotesView[];
 }
 export function rightPages(list: unknown, bottom: string): string[] {
   if (Array.isArray(list)) {
@@ -186,20 +198,45 @@ export function setup({ app, kvGet, kvSet, broadcast, today, weather: w, trashDa
   // The right-hand column: up to 3 mini pages (from Colby Way's board).     //
   // Boards from before keep what they showed: the weather and trash, the    //
   // meals, then the bottom they had picked.                                 //
-  function notesCfg(): NotesCfg {
-    const raw = (kvGet('notes') as Partial<NotesCfg> | null) || {};
+  // The month and the week each have their own pages (a week that was     //
+  // never set shows the month's), and either can leave the column off.    //
+  function kept(): NotesKept {
+    const raw = (kvGet('notes') as Partial<NotesKept> | null) || {};
     const bottom = NOTES_BOTTOM.includes(raw.bottom as string) ? (raw.bottom as string) : 'jars';
-    return { bottom, pages: rightPages(raw.pages, bottom) };
+    const out: NotesKept = { bottom, pages: rightPages(raw.pages, bottom) };
+    if (Array.isArray(raw.week)) out.week = rightPages(raw.week, bottom);
+    const off = Array.isArray(raw.off) ? VIEWS.filter(v => raw.off!.includes(v)) : [];
+    if (off.length) out.off = off;
+    return out;
+  }
+  function notesCfg(): NotesCfg {
+    const k = kept();
+    const off = k.off || [];
+    return {
+      bottom: k.bottom,
+      pages: k.pages,
+      week: k.week || k.pages,
+      on: { month: !off.includes('month'), week: !off.includes('week') }
+    };
   }
   function saveNotes(body: Record<string, unknown>) {
-    const cur = notesCfg();
+    const cur = kept();
+    const view: NotesView = body.view === 'week' ? 'week' : 'month';
     const bottom = NOTES_BOTTOM.includes(body.bottom as string) ? (body.bottom as string) : cur.bottom;
-    // sending only a bottom (the current board) changes the last page; sending pages sets them all
-    const pages = Array.isArray(body.pages) ? rightPages(body.pages, bottom) : rightPages(null, bottom);
-    const cfg = { bottom, pages };
-    kvSet('notes', cfg);
+    const next: NotesKept = { ...cur, bottom };
+    if (Array.isArray(body.pages)) {
+      if (view === 'week') next.week = rightPages(body.pages, bottom);
+      else next.pages = rightPages(body.pages, bottom);
+    } else if ('bottom' in body) next.pages = rightPages(null, bottom); // sending only a bottom (the current board) changes the last page
+    if (typeof body.on === 'boolean') {
+      const off = (cur.off || []).filter(v => v !== view);
+      if (!body.on) off.push(view);
+      if (off.length) next.off = VIEWS.filter(v => off.includes(v));
+      else delete next.off;
+    }
+    kvSet('notes', next);
     broadcast('extras', {});
-    return cfg;
+    return notesCfg();
   }
 
   // ---------------------- //

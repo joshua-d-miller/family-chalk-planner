@@ -720,36 +720,71 @@ const RIGHT: [string, string][] = [
   ['pantry', '🥫 Pantry'],
   ['photos', '📷 Photos']
 ];
+type NotesView = 'month' | 'week';
+type NotesCfg = { pages: string[]; week?: string[]; on?: { month: boolean; week: boolean } };
 function RightColumn() {
-  const x = useLive<{ notes: { pages: string[] } }>('api/extras', ['extras']);
+  const x = useLive<{ notes: NotesCfg }>('api/extras', ['extras']);
   const sv = useSaved();
   if (!x.data) return null;
-  const pages = x.data.notes.pages;
-  const save = (next: string[]) => {
-    x.set({ ...x.data!, notes: { ...x.data!.notes, pages: next } });
-    sv.run(post('api/right-pages', { pages: next }));
+  const n = x.data.notes;
+  const send = (view: NotesView, body: { pages?: string[]; on?: boolean }) => {
+    const next: NotesCfg = { ...n, on: { month: n.on?.month ?? true, week: n.on?.week ?? true } };
+    if (body.pages) next[view === 'week' ? 'week' : 'pages'] = body.pages;
+    if (body.on !== undefined) next.on![view] = body.on;
+    x.set({ ...x.data!, notes: next });
+    sv.run(post('api/right-pages', { view, ...body }));
   };
   return (
     <Card title="The right-hand column">
-      <p className="dim small">Up to 3, from the top. Tap to add or take away.</p>
-      <div className="segs">
-        {RIGHT.map(([id, label]) => {
-          const at = pages.indexOf(id);
-          return (
-            <button
-              key={id}
-              type="button"
-              className={'seg' + (at >= 0 ? ' on' : '')}
-              aria-pressed={at >= 0}
-              disabled={at < 0 && pages.length >= 3}
-              onClick={() => save(at >= 0 ? pages.filter(p => p !== id) : [...pages, id])}
-            >
-              {at >= 0 && <b>{at + 1}. </b>}
-              {label}
-            </button>
-          );
-        })}
-      </div>
+      {(
+        [
+          ['month', 'On the month', n.pages],
+          ['week', 'On the week', n.week || n.pages]
+        ] as [NotesView, string, string[]][]
+      ).map(([view, title, pages]) => {
+        const on = n.on?.[view] ?? true;
+        return (
+          <div key={view} id={'notes-' + view}>
+            <h4>{title}</h4>
+            <label className="check">
+              <input
+                id={'notesOn-' + view}
+                type="checkbox"
+                checked={on}
+                onChange={e => send(view, { on: e.target.checked })}
+              />
+              <span className="t">
+                {view === 'week'
+                  ? 'Show the Notes column on the week (off: the week takes the whole board)'
+                  : 'Show the Notes column on the month (off: the calendar takes the whole board)'}
+              </span>
+            </label>
+            {on && (
+              <>
+                <p className="dim small">Up to 3, from the top. Tap to add or take away.</p>
+                <div className="segs" role="group" aria-label={title}>
+                  {RIGHT.map(([id, label]) => {
+                    const at = pages.indexOf(id);
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        className={'seg' + (at >= 0 ? ' on' : '')}
+                        aria-pressed={at >= 0}
+                        disabled={at < 0 && pages.length >= 3}
+                        onClick={() => send(view, { pages: at >= 0 ? pages.filter(p => p !== id) : [...pages, id] })}
+                      >
+                        {at >= 0 && <b>{at + 1}. </b>}
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })}
       {sv.line}
     </Card>
   );
