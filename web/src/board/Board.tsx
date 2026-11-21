@@ -114,6 +114,7 @@
                                   from it on a tablet too.
                                   Two quick taps on a family screen's ‹ or ›
                                   no longer start the photo frame.
+                                  A family screen sets the month's title too.
 ===============================================================================
 */
 
@@ -1079,14 +1080,13 @@ export function Board({
             )}
             {m && !drawing && (
               <>
-                {!family && (
-                  <button type="button" className="pill" id="titleBtn" onClick={() => setEditing({ k: 'title' })}>
-                    <span className="ic" aria-hidden="true">
-                      🔤
-                    </span>{' '}
-                    Month title
-                  </button>
-                )}
+                {/* (a family screen too: everything but drawing is a family screen's) */}
+                <button type="button" className="pill" id="titleBtn" onClick={() => setEditing({ k: 'title' })}>
+                  <span className="ic" aria-hidden="true">
+                    🔤
+                  </span>{' '}
+                  Month title
+                </button>
                 <button type="button" className="pill" id="borderBtn" onClick={() => setEditing({ k: 'border' })}>
                   <span className="ic" aria-hidden="true">
                     🖼️
@@ -1238,14 +1238,7 @@ export function Board({
       )}
       {editing?.k === 'notes' && <NotesEditor onClose={closeEditor} />}
       {editing?.k === 'photos' && shown && (
-        <PhotosEditor
-          ym={shown}
-          monthName={monthName}
-          meta={mm}
-          photos={photos}
-          family={family}
-          onClose={closeEditor}
-        />
+        <PhotosEditor ym={shown} monthName={monthName} meta={mm} photos={photos} onClose={closeEditor} />
       )}
       {editing?.k === 'style' && shown && (
         <StyleEditor

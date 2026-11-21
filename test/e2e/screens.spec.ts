@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | screens.spec.ts
 ===============================================================================
- Version:   1.1.1
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-18
+ Updated:   2026-11-21
 
  Purpose:
      The other kinds of screen: the wall (view only), a family touch
@@ -30,6 +30,9 @@
 
  1.1.1    2026-11-18   joshua    A family screen with someone signed in still
                         claude    edits; the wall has no dead month arrows.
+
+ 1.2.0    2026-11-21   joshua    A family screen sets month titles too
+                        claude    (everything but freehand drawing).
 ===============================================================================
 */
 
@@ -79,12 +82,12 @@ test('the wall: the slideshow shows the clock and photos', async ({ as }) => {
   await expect(wall.locator('#sTime')).toHaveText(/\d{1,2}:\d{2}/);
 });
 
-test('a family screen edits on the board but has no settings, account or freehand drawing', async ({ as }) => {
+test('a family screen does everything on the board but freehand drawing (month titles too)', async ({ as }) => {
   const fam = await as('family');
   await expect(fam.locator('body')).toHaveClass(/family/);
   await expect(fam.locator('#drawBtn')).toContainText('Decorate');
-  await expect(fam.locator('#titleBtn')).toHaveCount(0);
   await fam.locator('#editBtn').click(); // the tools are in the drawer on the cork
+  await expect(fam.locator('#titleBtn')).toBeVisible();
   await fam.locator('#drawBtn').click();
   await expect(fam.locator('#chalkBtn')).toBeHidden();
   await expect(fam.locator('#poscaBtn')).toBeHidden();

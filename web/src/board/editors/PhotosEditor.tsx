@@ -34,6 +34,8 @@
 
  1.2.0    2026-11-21   joshua    ⚙️ Settings opens as a card over the board
                         claude    (a page on a phone or tablet).
+ 1.2.0    2026-11-21   joshua    A family screen opens ⚙️ Settings → Photos
+                        claude    too (everything but drawing is its own).
 ===============================================================================
 */
 
@@ -56,14 +58,12 @@ export function PhotosEditor({
   monthName,
   meta,
   photos,
-  family = false,
   onClose
 }: {
   ym: string;
   monthName: string;
   meta: MonthMeta | null;
   photos: Photos | null;
-  family?: boolean; // a family screen can't open Settings (it needs a parent signed in)
   onClose: () => void;
 }) {
   const sd = meta?.side;
@@ -133,23 +133,19 @@ export function PhotosEditor({
         </div>
       )}
       <div className="sublbl">
-        {family ? (
-          'The overnight slideshow is in ⚙️ Settings, on a parent’s phone or tablet.'
-        ) : (
-          <>
-            The overnight slideshow:{' '}
-            <a
-              href="settings"
-              onClick={e => {
-                e.preventDefault();
-                onClose();
-                showSettings('photos');
-              }}
-            >
-              ⚙️ Settings
-            </a>
-          </>
-        )}
+        <>
+          The overnight slideshow:{' '}
+          <a
+            href="settings"
+            onClick={e => {
+              e.preventDefault();
+              onClose();
+              showSettings('photos');
+            }}
+          >
+            ⚙️ Settings
+          </a>
+        </>
       </div>
       <div className="err">{err}</div>
       <div className="actions">

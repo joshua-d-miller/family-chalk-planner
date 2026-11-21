@@ -102,7 +102,8 @@
                         colby     today and pick Split View; a screen may
                         claude    hide its − / + / Fit buttons (from Colby
                                   Way's board). Fill the screen, and the
-                                  wooden frame, per screen.
+                                  wooden frame, per screen. Birthdays for
+                                  family screens too.
 ===============================================================================
 */
 
@@ -643,8 +644,9 @@ export function setup(
   ];
   const SELF = [/^\/account\//, /^\/passkey\//]; // need a signed-in person; checked in the route
   // family screens: events, meals, jars, countdowns, event colors, placing/moving/erasing art (stamps,
-  // clipart, words), board style, month title and photos: everything but drawing.
-  // Not: wiping a month, changing the stamp/GIF libraries, uploads, settings.
+  // clipart, words), board style, month title, photos, holidays, birthdays and the Notes column:
+  // everything but drawing. Not: wiping a month, changing the stamp/GIF libraries, uploads, the
+  // calendar and trash day (the admin's).
   const FAMILY_POSTS = new Set([
     '/events',
     '/events/update',
@@ -659,6 +661,7 @@ export function setup(
     '/evsize',
     '/art/relayout',
     '/holidays',
+    '/birthdays', // (a cake on birthdays, and counting down to every one)
     '/art',
     '/art/update',
     '/art/bulk',

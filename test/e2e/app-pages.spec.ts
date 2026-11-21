@@ -67,7 +67,7 @@
                         claude    heading (other cards mention the calendar).
                                   Swiping the slideshow. ⚙️ Settings as a card
                                   over the board. Pinning: a long press on a
-                                  tile.
+                                  tile. A family screen's Settings.
 ===============================================================================
 */
 
@@ -328,6 +328,35 @@ test('⚙️ Settings on a computer: a card over the board, its parts down the s
   await expect(card).toHaveCount(0);
   await expect(page.locator('#grid')).toBeVisible();
   expect(page.errors).toEqual([]);
+});
+
+test('a family screen: everything but the calendar and trash day (Month title and Settings too)', async ({
+  as,
+  board
+}) => {
+  const LINUX = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
+  const fam = await as('family', { context: { viewport: { width: 1920, height: 1080 }, userAgent: LINUX } });
+  await fam.locator('#editBtn').click();
+  await expect(fam.locator('#titleBtn')).toBeVisible();
+  await fam.locator('#doneBtn').click();
+  await fam.locator('#menuBtn').click();
+  await fam.locator('#tile-settings').click();
+  const card = fam.locator('#settingsCard');
+  await expect(card.getByRole('tab')).toHaveText([
+    '🎉 Holidays',
+    '🎂 Birthdays',
+    '📷 Photos',
+    '🗒️ Notes column',
+    '🗓️ Week',
+    '🖥️ This screen'
+  ]);
+  await card.locator('#setTab-birthdays').click();
+  const cake = card.getByRole('tabpanel').getByRole('checkbox').first();
+  const was = await cake.isChecked();
+  await cake.click();
+  await expect.poll(async () => (await (await board.admin.api('/api/birthdays')).json()).cake).toBe(!was);
+  await board.admin.post('/api/birthdays', { cake: was });
+  expect(fam.errors).toEqual([]);
 });
 
 test('settings for an admin: the calendar and trash day', async ({ as, board }) => {
@@ -718,18 +747,16 @@ test('the board (new screen, tablet): zoom in to draw, back to fit; the Notes op
   expect(t.errors).toEqual([]);
 });
 
-test('a family screen sent to Settings can get back (it needs a parent signed in)', async ({ as }) => {
-  const page = await as('family');
+test('a family screen: the Photos card sends it to ⚙️ Settings → Photos, over the board', async ({ as }) => {
+  const LINUX = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
+  const page = await as('family', { context: { userAgent: LINUX } });
   await page.locator('#editBtn').click();
   await page.locator('#photosBtn').click();
-  await expect(page.locator('#photosSheet')).toContainText('on a parent’s phone or tablet');
-  await expect(page.locator('#photosSheet a[href="settings"]')).toHaveCount(0);
-  await page.keyboard.press('Escape');
-  await page.goto(page.url().replace(/edit$/, 'settings'));
-  await expect(page.locator('#signpad')).toBeVisible();
-  await expect(page.locator('.cork')).toBeVisible(); // its bar stays
-  await page.locator('#signBack').click();
-  await expect(page).toHaveURL(/\/edit$/);
+  await page.locator('#photosSheet a[href="settings"]').click();
+  await expect(page.locator('#photosSheet')).toHaveCount(0);
+  await expect(page.locator('#settingsCard #setTab-photos')).toHaveAttribute('aria-selected', 'true');
+  await expect(page).toHaveURL(/\/edit$/); // the board is still there, under it
+  await page.locator('#settingsCard .shead .closex').click();
   await expect(page.locator('#grid')).toBeVisible();
 });
 

@@ -14,6 +14,10 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   the corner button. The ☰ and up to 3 buttons you pick sit in the last row of the Notes column, so nothing floats
   over the board: + Add event, ▶ Slideshow, 🗓️ Week / 📅 month, Decorate, a page (chores, meals, reminders, timers,
   pantry, jars) or Reload. Pick them in ⚙️ Settings → This screen.
+- **Family screens do everything but freehand drawing:** a family screen can now set the month's title (🔤 Month
+  title) and open ⚙️ Settings for the board's own parts (holidays, birthdays, photos and the slideshow, the Notes
+  column, 🗓️ Week and This screen), without a parent signing in. The calendar and trash day stay the admin's, and
+  freehand chalk and paint pens stay on phones and tablets, where they're accurate.
 - **⚙️ Settings opens over the board** on a wall or family screen (and a computer), like every other card, with a
   ✕: the parts down the side and the one picked beside them, so closing it puts you back where you were. On a phone
   or tablet it's still a page. Checkboxes are on/off switches, and the slideshow's timing (5 to 120 seconds) and

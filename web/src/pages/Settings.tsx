@@ -54,7 +54,8 @@
                                   Way's board). Switches for the checkboxes,
                                   sliders for the slideshow's timing and
                                   brightness. This screen: fill the screen,
-                                  and the wooden frame.
+                                  and the wooden frame. A family screen gets
+                                  the board's parts too.
 ===============================================================================
 */
 
@@ -85,8 +86,8 @@ import './settings.css';
 // | The parts of Settings | //
 // ------------------------ //
 // Each part, and who sees it: the calendar and trash day only the admin;   //
-// the board's parts anyone who may change the board; 🗓️ Week and 🖥️ This  //
-// screen every screen with a menu (a family screen too).                    //
+// the board's parts, 🗓️ Week and 🖥️ This screen every screen with a menu   //
+// (a family screen too).                                                    //
 export type SectionId = 'calendar' | 'holidays' | 'birthdays' | 'photos' | 'trash' | 'notes' | 'week' | 'screen';
 interface Section {
   id: SectionId;
@@ -96,7 +97,8 @@ interface Section {
   El: () => ReactNode;
 }
 const isAdmin = (who: Who | null) => who?.user?.role === 'admin' && !!who.admin;
-const editor = (who: Who | null) => (who?.rank || 0) >= RANK.editor;
+// (the board's parts: a family screen too, since everything but drawing is a family screen's)
+const editor = (who: Who | null) => (who?.rank || 0) >= RANK.family;
 const screen = (who: Who | null) => (who?.rank || 0) >= RANK.family;
 export const SECTIONS: Section[] = [
   { id: 'calendar', icon: '📅', title: 'Calendar', show: isAdmin, El: () => <Calendar /> },

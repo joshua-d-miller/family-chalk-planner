@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | routes.ts
 ===============================================================================
- Version:   0.15.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-08
+ Updated:   2026-11-21
 
  Purpose:
      Every page, for the router and the ☰ menu. `href` is relative to the
@@ -26,6 +26,9 @@
                         claude
 
  0.15.0    2026-11-08   joshua    🗓️ Week, a page you can pin.
+                        claude
+
+ 1.2.0    2026-11-21   joshua    ⚙️ Settings for a family screen too.
                         claude
 ===============================================================================
 */
@@ -58,7 +61,7 @@ export const PAGES: PageDef[] = [
   { id: 'timers', title: 'Timers', icon: '⏲️', href: 'timers', need: RANK.view, group: 'pages' },
   { id: 'pantry', title: 'Pantry', icon: '🥫', href: 'pantry', need: RANK.view, group: 'pages' },
   { id: 'jars', title: 'Reward jars', icon: '🫙', href: 'jars', need: RANK.view, group: 'pages' },
-  { id: 'settings', title: 'Settings', icon: '⚙️', href: 'settings', need: RANK.editor, group: 'account' },
+  { id: 'settings', title: 'Settings', icon: '⚙️', href: 'settings', need: RANK.family, group: 'account' },
   { id: 'admin', title: 'Admin console', icon: '🛡️', href: 'admin', need: RANK.admin, group: 'account' }
 ];
 
