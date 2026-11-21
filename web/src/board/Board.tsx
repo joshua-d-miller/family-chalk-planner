@@ -141,7 +141,7 @@ import { TitlePhotos, titlePool } from './TitlePhotos.tsx';
 import type { Side } from './TitlePhotos.tsx';
 import { DayView, ReminderAlert, TimerDone } from './Alerts.tsx';
 import { Notes } from './Notes.tsx';
-import type { NotesCfg } from './Notes.tsx';
+import { useNotesCol } from '../lib/notesCol.ts';
 import { WeatherMotion } from './Weather.tsx';
 import { Slideshow, useSlides } from './Slideshow.tsx';
 import { EventEditor } from './EventEditor.tsx';
@@ -474,9 +474,10 @@ export function Board({
         }
       }
     : {};
-  const extras = useLive<{ bins: Bins; notes?: NotesCfg }>('api/extras', ['extras']).data;
-  // the Notes column: each view can leave it off (⚙️ Notes column), and the calendar takes its room
-  const notesOn = extras?.notes?.on?.[week ? 'week' : 'month'] ?? true;
+  const extras = useLive<{ bins: Bins }>('api/extras', ['extras']).data;
+  // the Notes column: this screen (or the board) can leave it off on the month or the week, and the
+  // calendar takes its room
+  const notesOn = useNotesCol(week ? 'week' : 'month').on;
   const calW = notesOn ? CAL.w : CAL_WIDE;
   const savedTheme = useLive<Theme>('api/theme', ['theme']).data;
   const [themeDraft, setThemeDraft] = useState<Theme | null>(null);
@@ -1258,7 +1259,7 @@ export function Board({
           }}
         />
       )}
-      {editing?.k === 'notes' && <NotesEditor onClose={closeEditor} />}
+      {editing?.k === 'notes' && <NotesEditor view={week ? 'week' : 'month'} onClose={closeEditor} />}
       {editing?.k === 'photos' && shown && (
         <PhotosEditor ym={shown} monthName={monthName} meta={mm} photos={photos} onClose={closeEditor} />
       )}

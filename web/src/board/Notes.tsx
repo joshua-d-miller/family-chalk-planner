@@ -56,6 +56,8 @@
 ===============================================================================
 */
 
+import { useNotesCol } from '../lib/notesCol.ts';
+import type { BoardNotes, Bottom } from '../lib/notesCol.ts';
 import { navigate } from '../lib/nav.ts';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -114,13 +116,7 @@ interface Extras {
     tomorrow: { hi: number; lo: number; rain: number; kind: string };
   } | null;
   trash: { title: string; label: string; sub: string | null } | null;
-  notes: NotesCfg;
-}
-// the column's settings: the month's pages, the week's, and whether each shows it
-export interface NotesCfg {
-  pages: string[];
-  week?: string[];
-  on?: { month: boolean; week: boolean };
+  notes: BoardNotes;
 }
 
 function Info({ x }: { x: Extras }) {
@@ -517,10 +513,12 @@ export function Notes({
   dockRef?: (el: HTMLDivElement | null) => void; // the menu in the Notes column: its last row, for the buttons
 }) {
   const x = useLive<Extras>('api/extras', ['extras']).data;
-  const pages = only || (view === 'week' ? x?.notes?.week : null) || x?.notes?.pages || ['info', 'meals', 'jars'];
-  // this screen's own choice for the bottom (if it has one), else the board's
-  const mine = useLive<{ bottom: { def: string; can: string[] } | null }>('api/notesbottom', ['notesbottom']).data
-    ?.bottom;
+  // this screen's own column for this view (if it set one), else the board's
+  const col = useNotesCol(view);
+  const pages = only || col.pages;
+  // the bottom's switch: this view's own column has its own; else this screen's (if it set one), else the board's
+  const screenBottom = useLive<{ bottom: Bottom | null }>('api/notesbottom', ['notesbottom']).data?.bottom;
+  const mine = col.own ? col.bottom : screenBottom;
   const last = (!only && mine?.def) || pages[pages.length - 1];
   const sw = useSwitch(
     !only && SWITCH.some(([m]) => m === last) ? last : '',
