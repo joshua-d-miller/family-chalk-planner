@@ -996,9 +996,32 @@ button:disabled{opacity:.5;cursor:default}
     box.appendChild(sel);
     return box;
   }
+  // 🗓️ Week: the whole height, or Split View and what goes under the week (left, then right)
+  var SPACES = [['photos', '📷 Photos'], ['draw', '✏️ Room to draw'], ['meals', '🍽️ Meal plan'], ['pantry', '🥫 Pantry'], ['jars', '🫙 Reward jars'], ['chores', '🧹 Chores'], ['reminders', '🔔 Reminders'], ['upnext', '📅 Up next']];
+  function weekViewLine(x, cur) {
+    cur = cur || { split: false, a: 'photos', b: 'draw' };
+    var box = el('div', 'nbot');
+    box.appendChild(el('span', 'dim', '🗓️ Week shows:'));
+    var pick = function (label, opts, val, key) {
+      var sel = el('select'); sel.setAttribute('aria-label', label + ' on ' + x.name);
+      opts.forEach(function (o) { var op = el('option', null, o[1]); op.value = o[0]; sel.appendChild(op); });
+      sel.value = val;
+      sel.addEventListener('change', function () {
+        var body = { id: x.id }; body[key] = key === 'split' ? sel.value === 'split' : sel.value;
+        api('api/devices/weekview', body).then(loadScreens).catch(function (e) { $('dvErr').textContent = e.message; });
+      });
+      box.appendChild(sel);
+    };
+    pick('What the week shows', [['week', 'The week, full height'], ['split', 'Split View']], cur.split ? 'split' : 'week', 'split');
+    if (cur.split) {
+      pick('Under the week, on the left', SPACES, cur.a, 'a');
+      pick('Under the week, on the right', [['none', 'Nothing']].concat(SPACES.filter(function (o) { return o[0] !== cur.a; })), cur.b, 'b');
+    }
+    return box;
+  }
   function loadScreens() {
-    var bottoms = {}, sleeps = {}, weekfrom = {};
-    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices/weekfrom').then(function (b) { weekfrom = b.weekfrom || {}; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
+    var bottoms = {}, sleeps = {}, weekfrom = {}, weekview = {};
+    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices/weekfrom').then(function (b) { weekfrom = b.weekfrom || {}; }, function () {}); }).then(function () { return api('api/devices/weekview').then(function (b) { weekview = b.weekview || {}; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
       var w = $('dvWaiting'); w.innerHTML = '';
       d.waiting.forEach(function (p) { w.appendChild(el('p', 'dim', '⏳ ' + p.agent + ' is showing a code (' + ago(p.created) + ') - type it above.')); });
       var list = $('dvList'); list.innerHTML = '';
@@ -1021,6 +1044,7 @@ button:disabled{opacity:.5;cursor:default}
         if (!/^kid:/.test(x.role)) it.appendChild(bottomLine(x, bottoms[x.id] || null));
         it.appendChild(sleepsLine(x, x.id in sleeps ? sleeps[x.id] : null));
         if (!/^kid:/.test(x.role)) it.appendChild(weekFromLine(x, weekfrom[x.id] || null));
+        if (!/^kid:/.test(x.role)) it.appendChild(weekViewLine(x, weekview[x.id] || null));
         list.appendChild(it);
       });
     }).catch(function (e) { if (!(e.body && e.body.admin)) $('dvErr').textContent = e.message; });

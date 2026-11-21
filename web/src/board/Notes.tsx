@@ -45,7 +45,9 @@
 
  1.2.0    2026-11-21   colby     A tap on a reward jar opens it big: add a
                         joshua    piece, take one out, ★ Reward.
-                        claude
+                        claude    Its pages can go under 🗓️ Week's Split View
+                                  (Split.tsx), and the column can be just the
+                                  weather and countdowns there.
 ===============================================================================
 */
 
@@ -177,7 +179,7 @@ function Info({ x }: { x: Extras }) {
 // | The pages | //
 // ------------- //
 // Each page the right-hand column can show.                                 //
-function MealsPage() {
+export function MealsPage() {
   const m = useLive<Meals>('api/meals', ['meals']);
   const items = (m.data?.items || []).slice(0, 20);
   const box = useRef<HTMLDivElement>(null);
@@ -235,7 +237,7 @@ function MealsPage() {
     </div>
   );
 }
-function JarsPage({ onJar }: { onJar?: (jar: Jar, el: HTMLElement) => void }) {
+export function JarsPage({ onJar }: { onJar?: (jar: Jar, el: HTMLElement) => void }) {
   const j = useLive<Jar[]>('api/jars', ['jars']);
   if (!j.data) return null;
   if (!j.data.length) return <UpNext todayOnly />; // no jars: today's events, as the current board does
@@ -249,7 +251,7 @@ function JarsPage({ onJar }: { onJar?: (jar: Jar, el: HTMLElement) => void }) {
 const DOW3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 // what's coming: the next two weeks under day headings, or just today. Lines that don't fit are left
 // off whole, never cut in half.
-function UpNext({ todayOnly = false }: { todayOnly?: boolean }) {
+export function UpNext({ todayOnly = false }: { todayOnly?: boolean }) {
   const u = useLive<{
     today: string;
     events: { date: string; title: string; time: string | null; color?: string | null; calColor?: string | null }[];
@@ -337,7 +339,7 @@ function PhotoPage() {
   );
 }
 // today's chores still to do, and who they're for
-function ChoresPage() {
+export function ChoresPage() {
   const v = useLive<ChoresView>('api/chores', ['chores']).data;
   if (!v) return null;
   const names = Object.fromEntries(v.people.map(p => [p.id, p.name]));
@@ -359,7 +361,7 @@ function ChoresPage() {
   );
 }
 // the pantry: what's been there longest, first
-function PantryPage() {
+export function PantryPage() {
   const v = useLive<{ items: PantryItem[] }>('api/pantry', ['pantry']).data;
   if (!v) return null;
   const items = v.items.slice().sort((a, b) => a.date.localeCompare(b.date));
@@ -378,7 +380,7 @@ function PantryPage() {
     </div>
   );
 }
-function RemindersPage({ time24 }: { time24: boolean }) {
+export function RemindersPage({ time24 }: { time24: boolean }) {
   const r = useLive<RemindersView>('api/reminders', ['reminders']);
   const v = r.data;
   return (
@@ -491,19 +493,25 @@ function Switch({ sw }: { sw: ReturnType<typeof useSwitch> }) {
 export function Notes({
   time24,
   edit = false,
-  drawing = false
+  drawing = false,
+  only
 }: {
   time24: boolean;
   edit?: boolean;
   drawing?: boolean; // (a tap on a jar while drawing is drawing, not the big jar)
+  only?: string[]; // these pages and no switch (Split View: the weather, trash and countdowns)
 }) {
   const x = useLive<Extras>('api/extras', ['extras']).data;
-  const pages = x?.notes?.pages || ['info', 'meals', 'jars'];
+  const pages = only || x?.notes?.pages || ['info', 'meals', 'jars'];
   // this screen's own choice for the bottom (if it has one), else the board's
   const mine = useLive<{ bottom: { def: string; can: string[] } | null }>('api/notesbottom', ['notesbottom']).data
     ?.bottom;
-  const last = mine?.def || pages[pages.length - 1];
-  const sw = useSwitch(SWITCH.some(([m]) => m === last) ? last : '', pages.slice(0, -1), mine?.can || null);
+  const last = (!only && mine?.def) || pages[pages.length - 1];
+  const sw = useSwitch(
+    !only && SWITCH.some(([m]) => m === last) ? last : '',
+    pages.slice(0, -1),
+    only ? [] : mine?.can || null
+  );
   const swipe = useRef<number | null>(null);
   // ------------------- //
   // | The big jar | //

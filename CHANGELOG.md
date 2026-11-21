@@ -16,10 +16,15 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   brightness are sliders. **🗓️ Week** has its own part (where the week starts), and **🖥️ This screen** now holds the
   screen's menu and its look of cards and menus too.
 - **🗓️ Week from today:** a screen's Week can start on today and show the next 6 days, instead of starting on Sunday.
-  Tap **📆 From Sunday** in the Week page's tools to switch (and **📆 From today** to switch back). It's kept for each
-  screen: also in ⚙️ Settings → This screen, and for any screen (the wall too) in the admin console → 📺 Screens.
-  The arrows go a week at a time from there, and a week that starts at the end of one month shows all its events.
+  Set it in **⚙️ Week** (in the Week page's tools, or ⚙️ Settings → Week), and for any screen (the wall too) in the
+  admin console → 📺 Screens. The arrows go a week at a time from there, and a week that starts at the end of one
+  month shows all its events.
   (Colby Way built this too, on his own board.)
+- **🗓️ Split View** (Colby Way's idea): the week as a band across the top, so it no longer leaves a tall empty
+  space, and one or two things under it, picked for each screen in ⚙️ Week: **photos** (the whole photo, centered and
+  never stretched; swipe for the next or the last), **room to draw**, the **meal plan**, the **pantry**, the **reward
+  jars**, **chores**, **reminders** or **up next**. The Notes column then shows the weather, trash day and
+  countdowns. The admin console sets the wall's.
 - **The big jar** (from Colby Way's board): on a screen that edits, tap a reward jar in the Notes column and it opens
   big. Drop in a heart, rainbow, star, lightning bolt or critter, take one out, and when it's full, **★ Reward!**
   celebrates and empties it. A jar that fills up bursts into confetti.

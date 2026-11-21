@@ -80,7 +80,7 @@
                         claude
 
  1.2.0    2026-11-21   joshua    Where each screen's 🗓️ Week starts; hiding
-                        claude    the − / + / Fit buttons.
+                        claude    the − / + / Fit buttons; Split View.
 ===============================================================================
 */
 
@@ -589,6 +589,29 @@ test('🗓️ Week from today or the board’s first day: per screen, and the co
   assert.deepEqual((await (await api('/api/devices/weekfrom')).json()).weekfrom, { wall1: 'today' });
   await post('/api/devices/weekfrom', { id: 'wall1', from: 'board' });
   assert.deepEqual((await (await api('/api/devices/weekfrom')).json()).weekfrom, {});
+});
+
+test('🗓️ Split View: per screen, what goes under the week, and the console sets any screen’s', async () => {
+  assert.deepEqual(await (await api('/api/weekview')).json(), { split: false, a: 'photos', b: 'draw' });
+  assert.deepEqual(await (await post('/api/weekview', { split: true, b: 'meals' })).json(), {
+    split: true,
+    a: 'photos',
+    b: 'meals'
+  });
+  assert.equal((await post('/api/weekview', { a: 'everything' })).status, 400);
+  // not the same thing twice: the right one is then nothing
+  assert.equal((await (await post('/api/weekview', { a: 'meals' })).json()).b, 'none');
+  await post('/api/weekview', { split: false, a: 'photos', b: 'draw' });
+  assert.deepEqual(await (await post('/api/devices/weekview', { id: 'wall1', split: true })).json(), {
+    split: true,
+    a: 'photos',
+    b: 'draw'
+  });
+  assert.deepEqual((await (await api('/api/devices/weekview')).json()).weekview, {
+    wall1: { split: true, a: 'photos', b: 'draw' }
+  });
+  await post('/api/devices/weekview', { id: 'wall1', split: false });
+  assert.deepEqual((await (await api('/api/devices/weekview')).json()).weekview, {});
 });
 
 test('the − / + / Fit buttons: shown until a screen hides them', async () => {

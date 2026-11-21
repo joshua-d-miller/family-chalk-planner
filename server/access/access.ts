@@ -99,7 +99,8 @@
                                   their countdowns.
 
  1.2.0    2026-11-21   joshua    Family screens may start their 🗓️ Week on
-                        claude    today, and hide their − / + / Fit buttons.
+                        claude    today, pick Split View, and hide their −
+                                  / + / Fit buttons.
 ===============================================================================
 */
 
@@ -689,6 +690,7 @@ export function setup(
     '/sleeps', // its countdowns in sleeps or days
     '/weekfrom', // its 🗓️ Week from today or from the board's first day
     '/nozoom', // whether it shows the − / + / Fit buttons
+    '/weekview', // its 🗓️ Week: Split View, and what's under the week
     '/clip/favorites', // ★ a picture into Favorites
     '/clip/web/keep' // a public-domain picture from the web, onto the board
   ]);

@@ -711,3 +711,84 @@ body.boardpage {
 .titlerow.tapname #monthName {
   cursor: pointer;
 }
+
+/* -------------------------------------------------------------------------
+   🗓️ Week's Split View: the week as a band, and one or two spaces under it
+   ------------------------------------------------------------------------- */
+.slate .calbody.band {
+  flex-grow: 0;
+  flex-shrink: 0;
+}
+.slate .under {
+  flex: 1;
+  min-height: 0;
+  margin-top: 14px;
+  display: flex;
+}
+.slate .spaces {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+.slate .spaces.n2 {
+  grid-template-columns: 1.15fr 1fr;
+}
+.slate .space {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+/* a Notes page in a space: a little bigger than in the column, and its own frame */
+.slate .space:not(.space-photos, .space-draw) {
+  padding: 6px 14px;
+  border: 1.5px solid rgba(201, 180, 122, 0.45);
+  border-radius: 10px;
+  font-size: 1.1em;
+}
+/* the photos: the whole photo, centered, never stretched or cropped */
+.slate .sphoto {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: pan-y;
+}
+.slate .sphoto img {
+  flex: none;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  animation: sphotoin 0.6s ease;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+@keyframes sphotoin {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slate .sphoto img {
+    animation: none;
+  }
+}
+.slate .nophotos {
+  margin: auto;
+}
+/* room to draw: the chalkboard itself (a faint outline only on a screen that edits, so the wall stays clean) */
+.slate .space-draw:has(.drawhint) {
+  border: 1.5px dashed rgba(201, 180, 122, 0.3);
+  border-radius: 10px;
+}
+.slate .drawhint {
+  position: absolute;
+  right: 10px;
+  bottom: 6px;
+  font-size: 13px;
+  color: rgba(var(--ink), 0.4);
+  pointer-events: none;
+}
