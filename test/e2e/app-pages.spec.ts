@@ -65,7 +65,8 @@
 
  1.2.0    2026-11-21   joshua    Settings: finds the Calendar card by its
                         claude    heading (other cards mention the calendar).
-                                  Swiping the slideshow.
+                                  Swiping the slideshow. ⚙️ Settings as a card
+                                  over the board.
 ===============================================================================
 */
 
@@ -281,6 +282,49 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
   await expect
     .poll(async () => (await (await board.admin.api('/api/extras')).json()).notes.pages)
     .toEqual(['info', 'meals', 'jars']);
+  expect(page.errors).toEqual([]);
+});
+
+test('⚙️ Settings on a computer: a card over the board, its parts down the side; ✕ goes back', async ({
+  as,
+  board
+}) => {
+  const LINUX = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
+  const page = await as('admin', { context: { viewport: { width: 1920, height: 1080 }, userAgent: LINUX } });
+  await page.locator('#menuBtn').click();
+  await page.locator('#menuPanel a[href="settings"]').click();
+  const card = page.locator('#settingsCard');
+  await expect(card).toBeVisible();
+  await expect(page).toHaveURL(/\/edit$/); // still on the board, under the card
+  // the admin's parts, the first one open
+  await expect(card.getByRole('tab')).toHaveText([
+    '📅 Calendar',
+    '🎉 Holidays',
+    '🎂 Birthdays',
+    '📷 Photos',
+    '🗑️ Trash',
+    '🗒️ Notes column',
+    '🗓️ Week',
+    '🖥️ This screen'
+  ]);
+  await expect(card.getByRole('tabpanel')).toContainText('Showing “Family”');
+  // a switch and a slider save
+  await card.locator('#setTab-photos').click();
+  const night = card.getByRole('tabpanel').getByRole('checkbox', { name: /overnight/ });
+  await night.click();
+  await expect(night).toBeChecked();
+  const every = card.getByRole('slider', { name: 'Next photo every' });
+  await every.fill('45');
+  await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.every).toBe(45);
+  await board.admin.post('/api/photos/settings', { night: false, every: 20 });
+  // the week starts on today, from its own part
+  await card.locator('#setTab-week').click();
+  await card.getByRole('radio', { name: /Today/ }).click();
+  await expect.poll(async () => (await (await board.admin.api('/api/weekfrom')).json()).from).toBe('today');
+  await board.admin.post('/api/weekfrom', { from: 'board' });
+  await card.locator('.closex').first().click();
+  await expect(card).toHaveCount(0);
+  await expect(page.locator('#grid')).toBeVisible();
   expect(page.errors).toEqual([]);
 });
 

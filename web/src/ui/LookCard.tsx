@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | LookCard.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-17
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      🎨 Look of cards and menus: this screen's look for its cards, ☰ menu
@@ -29,6 +29,9 @@
  -------   ----------   -------   --------------------------------------------
  1.1.0    2026-11-17   joshua    New file.
                         claude
+
+ 1.2.0    2026-11-21   joshua    Its fields on their own too, for ⚙️ Settings
+                        claude    → 🖥️ This screen.
 ===============================================================================
 */
 
@@ -65,6 +68,25 @@ export function LookHost() {
 const ACCENTS = ['#F6B3CB', '#F2D479', '#9CC9E6', '#A9D8A0', '#E8A35C', '#B49CE0', '#E05A7A', '#2F8F83'];
 
 function LookCard({ onClose }: { onClose: () => void }) {
+  return (
+    <Sheet title="Look of cards and menus" onClose={onClose} id="lookCard">
+      <LookFields />
+      <div className="actions">
+        <Btn kind="go" onClick={onClose}>
+          Done
+        </Btn>
+      </div>
+    </Sheet>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------- //
+// | The fields | //
+// -------------- //
+// The look, the accent and the text size: on the card, and in ⚙️ Settings → //
+// 🖥️ This screen.                                                          //
+export function LookFields() {
   const cur = useUiLook();
   const [err, setErr] = useState('');
   const change = (c: Partial<UiLook>) => {
@@ -72,7 +94,7 @@ function LookCard({ onClose }: { onClose: () => void }) {
     setUiLook(c).catch(e => setErr((e as Error).message));
   };
   return (
-    <Sheet title="Look of cards and menus" onClose={onClose} id="lookCard">
+    <>
       <p className="dim small" style={{ margin: 0 }}>
         For this screen’s cards, ☰ menu and Settings. The calendar keeps its own style (🎨 Board style).
       </p>
@@ -95,13 +117,6 @@ function LookCard({ onClose }: { onClose: () => void }) {
         <Segs label="Text size" value={cur.size} options={SIZES} onChange={size => change({ size })} />
       </div>
       <div className="err">{err}</div>
-      <div className="actions">
-        <Btn kind="go" onClick={onClose}>
-          Done
-        </Btn>
-      </div>
-    </Sheet>
+    </>
   );
 }
-
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

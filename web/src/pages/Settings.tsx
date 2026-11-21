@@ -8,14 +8,22 @@
  Updated:   2026-11-21
 
  Purpose:
-     ⚙️ Settings on the board (signed-in people). Admins also get the
-     calendar (Google sign-in and which calendars) and trash day; the rest
-     of the board's settings are in the admin console. Everyone signed in:
-     holidays, the photos and the overnight slideshow, the right-hand
-     column, and this screen.
+     ⚙️ Settings on the board. Admins also get the calendar (Google
+     sign-in and which calendars) and trash day; the rest of the board's
+     settings are in the admin console. Everyone signed in: holidays,
+     birthdays, the photos and the overnight slideshow, and the Notes
+     column. Every screen with a menu (a family screen too): 🗓️ Week and
+     🖥️ This screen.
+
+     A card over the board, its parts down the side, on a wall or family
+     screen and a computer (openSettings, shown by the Shell's
+     <SettingsHost />); a page on a phone or tablet, and at /settings.
 
  Used by:
      web/src/App.tsx
+     web/src/ui/Shell.tsx
+     web/src/ui/Menu.tsx
+     web/src/board/Board.tsx
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -37,20 +45,32 @@
                                   next countdown on the slideshow.
                                   What Apple or Google say about the calendar.
 
- 1.2.0    2026-11-21   joshua    This screen: start 🗓️ Week on today.
-                        claude    Hide the − / + / Fit buttons (from Colby
-                        colby     Way's board).
+ 1.2.0    2026-11-21   joshua    A card over the board on a wall or family
+                        claude    screen (and a computer), the parts down its
+                        colby     side; still a page on a phone or tablet.
+                                  🗓️ Week: where it starts. This screen: its
+                                  menu (from the ☰ menu) and its look, and
+                                  hide the − / + / Fit buttons (from Colby
+                                  Way's board). Switches for the checkboxes,
+                                  sliders for the slideshow's timing and
+                                  brightness.
 ===============================================================================
 */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { post } from '../lib/api.ts';
 import { useLive } from '../lib/live.ts';
+import { navigate } from '../lib/nav.ts';
 import { setSpeaksHere, speaksHere } from '../lib/timers.ts';
 import { DAY_NAMES } from '../lib/today.ts';
+import { RANK } from '../lib/who.ts';
 import type { Who } from '../lib/who.ts';
-import { Btn, Field, Pick } from '../ui/bits.tsx';
-import { openLookCard } from '../ui/LookCard.tsx';
+import { Btn, Field, Pick, Segs } from '../ui/bits.tsx';
+import { LookFields } from '../ui/LookCard.tsx';
+import { CloseX } from '../ui/Sheet.tsx';
+import { useShell } from '../ui/Shell.tsx';
+import { MENU_STYLES, setMenuPref, useMenuPref } from '../lib/menuStyle.ts';
 import { setSleeps, useSleeps } from '../lib/countdowns.ts';
 import { setWeekFrom, useWeekFrom } from '../lib/weekFrom.ts';
 import { setHideZoom, useHideZoom } from '../lib/zoomControls.ts';
@@ -58,40 +78,148 @@ import { Page } from '../ui/Page.tsx';
 import './settings.css';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | The parts of Settings | //
+// ------------------------ //
+// Each part, and who sees it: the calendar and trash day only the admin;   //
+// the board's parts anyone who may change the board; 🗓️ Week and 🖥️ This  //
+// screen every screen with a menu (a family screen too).                    //
+export type SectionId = 'calendar' | 'holidays' | 'birthdays' | 'photos' | 'trash' | 'notes' | 'week' | 'screen';
+interface Section {
+  id: SectionId;
+  icon: string;
+  title: string;
+  show: (who: Who | null) => boolean;
+  El: () => ReactNode;
+}
+const isAdmin = (who: Who | null) => who?.user?.role === 'admin' && !!who.admin;
+const editor = (who: Who | null) => (who?.rank || 0) >= RANK.editor;
+const screen = (who: Who | null) => (who?.rank || 0) >= RANK.family;
+export const SECTIONS: Section[] = [
+  { id: 'calendar', icon: '📅', title: 'Calendar', show: isAdmin, El: () => <Calendar /> },
+  { id: 'holidays', icon: '🎉', title: 'Holidays', show: editor, El: () => <Holidays /> },
+  { id: 'birthdays', icon: '🎂', title: 'Birthdays', show: editor, El: () => <Birthdays /> },
+  { id: 'photos', icon: '📷', title: 'Photos', show: editor, El: () => <Photos /> },
+  { id: 'trash', icon: '🗑️', title: 'Trash', show: isAdmin, El: () => <Trash /> },
+  { id: 'notes', icon: '🗒️', title: 'Notes column', show: editor, El: () => <RightColumn /> },
+  { id: 'week', icon: '🗓️', title: 'Week', show: screen, El: () => <WeekPart /> },
+  { id: 'screen', icon: '🖥️', title: 'This screen', show: screen, El: () => <ThisScreen /> }
+];
+// an admin signed in on the board, but not in the admin console: the calendar and trash day wait for that
+function AdminNote({ who }: { who: Who | null }) {
+  if (!(who?.user?.role === 'admin' && !who.admin)) return null;
+  return (
+    <p className="dim">
+      The calendar and trash day need the admin console’s sign-in: <a href="admin">sign in there</a>, then come back.
+    </p>
+  );
+}
+function About() {
+  return (
+    <p className="dim small about">
+      Family Chalk Planner {document.querySelector<HTMLMetaElement>('meta[name=app-version]')?.content} · free software
+      under the AGPL-3.0 · <a href="https://github.com/joshua-d-miller/family-chalk-planner">source code</a>
+    </p>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------------------- //
 // | The settings page | //
 // --------------------- //
-// A card for each part; the ones this screen may not change are left out.   //
+// On a phone or tablet (and at /settings): every part this screen may      //
+// change, one under the other.                                             //
 export function Settings({ who }: { who: Who | null }) {
-  const admin = who?.user?.role === 'admin' && who.admin;
-  const adminPerson = who?.user?.role === 'admin';
   return (
     <Page id="settings" title="Settings" who={who}>
-      {adminPerson && !admin && (
-        <p className="dim">
-          The calendar and trash day need the admin console’s sign-in: <a href="admin">sign in there</a>, then come
-          back.
-        </p>
-      )}
-      {admin && <Calendar />}
-      <Holidays />
-      <Birthdays />
-      <Photos />
-      {admin && <Trash />}
-      <RightColumn />
-      <ThisScreen />
-      <p className="dim small about">
-        Family Chalk Planner {document.querySelector<HTMLMetaElement>('meta[name=app-version]')?.content} · free
-        software under the AGPL-3.0 · <a href="https://github.com/joshua-d-miller/family-chalk-planner">source code</a>
-      </p>
+      <AdminNote who={who} />
+      {SECTIONS.filter(x => x.show(who)).map(x => (
+        <x.El key={x.id} />
+      ))}
+      <About />
     </Page>
   );
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ---------------------- //
-// | A card, and saving | //
+// | Settings, as a card | //
 // ---------------------- //
+// On a wall or family screen (and a computer): over the board like every   //
+// other card, with a ✕, so closing it puts you back where you were. The    //
+// parts down the side; the one picked on the right.                        //
+const OPEN = 'chalk:settings';
+export const openSettings = (part?: SectionId) => dispatchEvent(new CustomEvent(OPEN, { detail: part || null }));
+// Settings, or a part of it: the card where there's one (a wall or family screen, a computer), else the page
+let barNow = 'none';
+export const showSettings = (part?: SectionId) =>
+  barNow === 'cork' ? openSettings(part) : navigate('settings' + (part ? '#' + part : ''));
+export function SettingsHost({ who }: { who: Who | null }) {
+  barNow = useShell().kind;
+  const [open, setOpen] = useState<{ part: SectionId | null } | null>(null);
+  useEffect(() => {
+    const show = (e: Event) => setOpen({ part: (e as CustomEvent<SectionId | null>).detail });
+    addEventListener(OPEN, show);
+    return () => removeEventListener(OPEN, show);
+  }, []);
+  return open ? <SettingsCard who={who} part={open.part} onClose={() => setOpen(null)} /> : null;
+}
+function SettingsCard({ who, part, onClose }: { who: Who | null; part: SectionId | null; onClose: () => void }) {
+  const list = SECTIONS.filter(x => x.show(who));
+  const [cur, setCur] = useState<SectionId | undefined>(part && list.some(x => x.id === part) ? part : list[0]?.id);
+  const down = useRef(false);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => e.key === 'Escape' && close.current();
+    addEventListener('keydown', key);
+    return () => removeEventListener('keydown', key);
+  }, []);
+  const shown = list.find(x => x.id === cur);
+  return (
+    <div
+      className="scrim"
+      onPointerDown={e => (down.current = e.target === e.currentTarget)}
+      onClick={e => {
+        if (down.current && e.target === e.currentTarget) onClose();
+        down.current = false;
+      }}
+    >
+      <div className="sheet setpop" role="dialog" aria-modal="true" aria-label="Settings" id="settingsCard">
+        <div className="shead">
+          <h3>Settings</h3>
+          <CloseX onClose={onClose} />
+        </div>
+        <div className="setbody">
+          <div className="setrail" role="tablist" aria-label="Parts of Settings" aria-orientation="vertical">
+            {list.map(x => (
+              <button
+                key={x.id}
+                type="button"
+                role="tab"
+                id={'setTab-' + x.id}
+                aria-selected={x.id === cur}
+                className={x.id === cur ? 'on' : undefined}
+                onClick={() => setCur(x.id)}
+              >
+                <span className="ic" aria-hidden="true">
+                  {x.icon}
+                </span>{' '}
+                {x.title}
+              </button>
+            ))}
+          </div>
+          <div className="setpane" role="tabpanel" aria-labelledby={cur && 'setTab-' + cur}>
+            {cur === list[0]?.id && <AdminNote who={who} />}
+            {shown && <shown.El key={shown.id} />}
+          </div>
+        </div>
+        <About />
+      </div>
+    </div>
+  );
+}
+
 function Card({ title, children, id }: { title: string; children: React.ReactNode; id?: string }) {
   return (
     <section className="section scard" id={id}>
@@ -416,11 +544,18 @@ function Photos() {
     ['photos']
   );
   const sv = useSaved();
+  const later = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   if (!p.data) return null;
   const c = p.data.cfg;
   const set = (patch: Partial<PhotoCfg>) => {
     p.set({ ...p.data!, cfg: { ...c, ...patch } });
     sv.run(post('api/photos/settings', patch));
+  };
+  // a slider: it moves at once, and is saved once it stops moving (not at every step of a drag)
+  const slide = (patch: Partial<PhotoCfg>) => {
+    p.set({ ...p.data!, cfg: { ...c, ...patch } });
+    clearTimeout(later.current);
+    later.current = setTimeout(() => sv.run(post('api/photos/settings', patch)), 400);
   };
   const box = (k: keyof PhotoCfg, label: string) => (
     <label className="check">
@@ -445,20 +580,32 @@ function Photos() {
         <div className="row">
           <Field label="From" type="time" value={c.from} onChange={e => set({ from: e.target.value })} />
           <Field label="Until" type="time" value={c.to} onChange={e => set({ to: e.target.value })} />
-          <Pick label="Next photo every" value={c.every} onChange={e => set({ every: +e.target.value })}>
-            {[10, 20, 30, 60].map(n => (
-              <option key={n} value={n}>
-                {n} seconds
-              </option>
-            ))}
-          </Pick>
-          <Pick label="Brightness" value={c.dim} onChange={e => set({ dim: +e.target.value })}>
-            {[30, 50, 70, 100].map(n => (
-              <option key={n} value={n}>
-                {n}%
-              </option>
-            ))}
-          </Pick>
+          <label className="slide">
+            <span>Next photo every</span>
+            <b>{c.every} seconds</b>
+            <input
+              type="range"
+              aria-label="Next photo every"
+              min={5}
+              max={120}
+              step={5}
+              value={c.every}
+              onChange={e => slide({ every: +e.target.value })}
+            />
+          </label>
+          <label className="slide">
+            <span>Brightness</span>
+            <b>{c.dim}%</b>
+            <input
+              type="range"
+              aria-label="Brightness"
+              min={10}
+              max={100}
+              step={10}
+              value={c.dim}
+              onChange={e => slide({ dim: +e.target.value })}
+            />
+          </label>
         </div>
       )}
       {c.night && (
@@ -600,13 +747,55 @@ function RightColumn() {
 // -------------------- //
 // | This screen only | //
 // -------------------- //
+// How this screen gets around (a family screen or computer: the cork, or   //
+// the ☰ button in a corner), its look, and the rest that's just for it.    //
 function ThisScreen() {
+  const shell = useShell();
+  const pref = useMenuPref();
   const [speak, setSpeak] = useState(speaksHere());
   const sleeps = useSleeps();
-  const weekFrom = useWeekFrom();
   const hideZoom = useHideZoom();
+  const signedIn = !!shell.who?.user;
   return (
-    <Card title="This screen">
+    <Card title="This screen" id="thisScreen">
+      {shell.kind === 'cork' && (
+        <>
+          <h4>The menu</h4>
+          <div className="segs" role="radiogroup" aria-label="This screen’s menu">
+            {MENU_STYLES.map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                role="radio"
+                id={'menuStyle-' + v}
+                aria-checked={pref.style === v}
+                className={'seg' + (pref.style === v ? ' on' : '')}
+                onClick={() => void setMenuPref({ style: v })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {pref.style !== 'cork' && (
+            <label className="check">
+              <input
+                id="menuStyle-draw"
+                type="checkbox"
+                checked={pref.draw}
+                onChange={e => void setMenuPref({ draw: e.target.checked })}
+              />
+              <span className="t">A ✏️ Draw button beside the ☰</span>
+            </label>
+          )}
+        </>
+      )}
+      <h4>Look of cards and menus</h4>
+      <LookFields />
+      <h4>Also on this screen</h4>
+      <label className="check">
+        <input id="sleepsBox" type="checkbox" checked={sleeps} onChange={e => void setSleeps(e.target.checked)} />
+        <span className="t">Count down in sleeps (“3 sleeps!”) instead of days</span>
+      </label>
       <label className="check">
         <input
           type="checkbox"
@@ -618,28 +807,42 @@ function ThisScreen() {
         />
         <span className="t">Say a timer’s name out loud when it’s done</span>
       </label>
-      <label className="check">
-        <input id="sleepsBox" type="checkbox" checked={sleeps} onChange={e => void setSleeps(e.target.checked)} />
-        <span className="t">Count down in sleeps (“3 sleeps!”) instead of days</span>
-      </label>
-      <label className="check">
-        <input
-          id="weekFromBox"
-          type="checkbox"
-          checked={weekFrom === 'today'}
-          onChange={e => void setWeekFrom(e.target.checked ? 'today' : 'board')}
-        />
-        <span className="t">Start 🗓️ Week on today (today and the next 6 days)</span>
-      </label>
-      <label className="check">
-        <input id="hideZoomBox" type="checkbox" checked={hideZoom} onChange={e => void setHideZoom(e.target.checked)} />
-        <span className="t">Hide the − / + / Fit buttons on the calendar</span>
-      </label>
-      <p style={{ marginTop: 12 }}>
-        <Btn id="lookOpen" onClick={openLookCard}>
-          🎨 Look of cards and menus…
-        </Btn>
-      </p>
+      {/* (only a screen someone is signed in on has the zoom buttons) */}
+      {signedIn && (
+        <label className="check">
+          <input
+            id="hideZoomBox"
+            type="checkbox"
+            checked={hideZoom}
+            onChange={e => void setHideZoom(e.target.checked)}
+          />
+          <span className="t">Hide the − / + / Fit buttons on the calendar</span>
+        </label>
+      )}
+    </Card>
+  );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------ //
+// | The week | //
+// ------------ //
+// 🗓️ Week on this screen: from the board's first day, or from today.      //
+function WeekPart() {
+  const weekFrom = useWeekFrom();
+  const first = DAY_NAMES[useLive<{ weekStart?: number }>('api/today', ['calendar']).data?.weekStart || 0];
+  return (
+    <Card title="Week" id="weekPart">
+      <h4>Starts on</h4>
+      <Segs
+        label="The week starts on"
+        value={weekFrom}
+        options={[
+          ['today', 'Today (and the next 6 days)'],
+          ['board', first]
+        ]}
+        onChange={v => void setWeekFrom(v)}
+      />
     </Card>
   );
 }

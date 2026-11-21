@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | looks.spec.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-17
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      🎨 Look of cards and menus: a screen picks light, dark or high
@@ -19,6 +19,9 @@
  -------   ----------   -------   --------------------------------------------
  1.1.0    2026-11-17   joshua    New file.
                         claude
+
+ 1.2.0    2026-11-21   joshua    The look's settings are in Settings → This
+                        claude    screen itself.
 ===============================================================================
 */
 
@@ -92,12 +95,10 @@ test('a screen picks the look of its cards and menu, and keeps it', async ({ as 
   await expect.poll(() => bg('#lookCard')).toBe('rgb(22, 23, 22)');
 });
 
-test('Settings opens the same card, and its parts take the look', async ({ as }) => {
+test('Settings → This screen has the same look settings, and its parts take the look', async ({ as }) => {
   const tab = await as('tablet', { path: '/settings' });
-  await tab.locator('#lookOpen').click();
-  const card = tab.locator('#lookCard');
-  await card.getByRole('radio', { name: 'Dark', exact: true }).click();
-  await card.locator('.closex').click();
+  const part = tab.locator('#thisScreen');
+  await part.getByRole('radio', { name: 'Dark', exact: true }).click();
   await expect
     .poll(() =>
       tab
@@ -108,6 +109,5 @@ test('Settings opens the same card, and its parts take the look', async ({ as })
     .toBe('rgb(29, 30, 33)');
   if (process.env.SHOTS) await tab.screenshot({ path: 'test-results/look-dark-settings.png' });
   // back to chalk
-  await tab.locator('#lookOpen').click();
-  await card.getByRole('radio', { name: 'Chalk', exact: true }).click();
+  await part.getByRole('radio', { name: 'Chalk', exact: true }).click();
 });

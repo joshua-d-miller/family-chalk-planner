@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | PhotosEditor.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-21
 
  Purpose:
      📷 Beside the month name: the family's photos (a random few, or ones
@@ -31,6 +31,9 @@
 
  1.1.0    2026-11-17   joshua    Small pictures for picking from a big album,
                         claude    and a note when the album can't be reached.
+
+ 1.2.0    2026-11-21   joshua    ⚙️ Settings opens as a card over the board
+                        claude    (a page on a phone or tablet).
 ===============================================================================
 */
 
@@ -38,6 +41,7 @@ import { useState } from 'react';
 import { post } from '../../lib/api.ts';
 import { Btn, Segs } from '../../ui/bits.tsx';
 import { Sheet } from '../../ui/Sheet.tsx';
+import { showSettings } from '../../pages/Settings.tsx';
 import type { MonthMeta } from '../Board.tsx';
 import { photoSrc, thumbSrc } from '../photos.ts';
 import type { Photos } from '../photos.ts';
@@ -133,7 +137,17 @@ export function PhotosEditor({
           'The overnight slideshow is in ⚙️ Settings, on a parent’s phone or tablet.'
         ) : (
           <>
-            The overnight slideshow: <a href="settings">⚙️ Settings</a>
+            The overnight slideshow:{' '}
+            <a
+              href="settings"
+              onClick={e => {
+                e.preventDefault();
+                onClose();
+                showSettings('photos');
+              }}
+            >
+              ⚙️ Settings
+            </a>
           </>
         )}
       </div>

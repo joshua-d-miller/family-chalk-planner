@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Alerts.tsx
 ===============================================================================
- Version:   0.16.0
+ Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-11
+ Updated:   2026-11-21
 
  Purpose:
      What pops up on the board: a reminder whose time has come (from Colby
@@ -32,10 +32,13 @@
 
  0.16.0    2026-11-11   joshua    A cake on birthdays only when ⚙️ Settings
                         claude    says so.
+
+ 1.2.0    2026-11-21   joshua    A holiday in the day list opens ⚙️ Settings
+                        claude    → Holidays (as a card on a wall or family
+                                  screen).
 ===============================================================================
 */
 
-import { navigate } from '../lib/nav.ts';
 import { useEffect, useRef, useState } from 'react';
 import type { Reminder, RemindersView } from '../../../shared/lists.ts';
 import { post } from '../lib/api.ts';
@@ -43,6 +46,7 @@ import { useLive } from '../lib/live.ts';
 import { useTimers } from '../lib/timers.ts';
 import { fmtTime } from '../lib/today.ts';
 import { isDone } from '../pages/Reminders.tsx';
+import { showSettings } from '../pages/Settings.tsx';
 import { Btn } from '../ui/bits.tsx';
 import { Sheet } from '../ui/Sheet.tsx';
 import { readable } from './color.ts';
@@ -196,7 +200,7 @@ export function DayView({
                 !onEvent
                   ? undefined
                   : e.holiday
-                    ? () => navigate('settings#holidays') // hide it every year
+                    ? () => showSettings('holidays') // hide it every year
                     : !e.readOnly
                       ? () => onEvent(e)
                       : undefined

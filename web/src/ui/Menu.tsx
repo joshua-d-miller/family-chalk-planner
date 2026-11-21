@@ -52,6 +52,7 @@ import { MENU_STYLES, setMenuPref, useMenuPref } from '../lib/menuStyle.ts';
 import type { Who } from '../lib/who.ts';
 import { CloseX } from './Sheet.tsx';
 import { openLookCard } from './LookCard.tsx';
+import { openSettings } from '../pages/Settings.tsx';
 import { PAGES, homeHref, isHome } from '../routes.ts';
 import { useShell } from './Shell.tsx';
 
@@ -141,6 +142,16 @@ export function Menu({
                       className={'item' + (p.id === here ? ' here' : '')}
                       href={p.href}
                       aria-current={p.id === here ? 'page' : undefined}
+                      onClick={
+                        // ⚙️ Settings: a card over the board on a wall or family screen and a computer
+                        p.id === 'settings' && shell.kind === 'cork'
+                          ? e => {
+                              e.preventDefault();
+                              onClose();
+                              openSettings();
+                            }
+                          : undefined
+                      }
                     >
                       <span className="ic" aria-hidden="true">
                         {p.icon}
