@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   1.1.0
+ Version:   1.1.2
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-20
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -96,6 +96,9 @@
                         claude    (dimmed).
                                   What Apple or Google say, when the calendar
                                   can't be reached.
+
+ 1.1.2    2026-11-20   joshua    This month's own background, if it has one.
+                        claude
 ===============================================================================
 */
 
@@ -401,9 +404,13 @@ export function Board({
   const [editing, setEditing] = useState<Editing>(null);
   const [titleDraft, setTitleDraft] = useState<TitleDraft | null>(null);
   const [borderDraft, setBorderDraft] = useState<Border | null | undefined>(undefined);
-  const sf = surfaceOf(theme?.s || 'slate');
+  // the background: this month's own, if it has one, else the board's
+  const monthBg = (lookDraft || (meta && 'artPad' in meta ? meta.look : undefined)) as
+    Record<string, string> | undefined;
+  const bgOf = monthBg?.s ? { s: monthBg.s, img: monthBg.img } : { s: theme?.s, img: theme?.img };
+  const sf = surfaceOf(bgOf.s || 'slate');
   const season = theme?.z && shown ? seasonOf(+shown.slice(5, 7), false) : '';
-  const photoBg = sf.id === 'photo' && theme?.img ? theme.img : null; // a photo of your own
+  const photoBg = sf.id === 'photo' && bgOf.img ? bgOf.img : null; // a photo of your own
   const bg = useMemo(() => {
     if (photoBg) return photoBackground(apiUrl(photoBg));
     try {
