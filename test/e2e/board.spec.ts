@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   1.2.5
+ Version:   1.2.6
  Author:    Joshua D. Miller, Claude
  Updated:   2026-11-22
 
@@ -47,8 +47,8 @@
  1.2.4    2026-11-22   joshua    Split View shows the week's own Notes
                         claude    pages, less what's under the week.
 
- 1.2.5    2026-11-22   joshua    ⚙️ This screen → Drawing tests.
-                        claude
+ 1.2.6    2026-11-22   joshua    The art on a layer of its own, and never a
+                        claude    stretched copy.
 ===============================================================================
 */
 
@@ -456,73 +456,40 @@ test('a family screen: the cork stays put going from the calendar to a page and 
       ).toBeLessThanOrEqual(2);
   }
 });
-test('⚙️ This screen → Drawing tests: each changes one thing about the drawing, and the screen’s details', async ({
+
+test('the art on a layer of its own over the calendar (not painted in with its lines), and never a stretched copy', async ({
   as,
   board
 }) => {
   const { ym } = thisMonth();
-  const art = await (
+  const stroke = await (
     await board.admin.post('/api/art', { ym, stroke: { c: '#F6B3CB', w: 6, p: [300, 300, 340, 260, 380, 300] } })
   ).json();
-  // a moving picture (its own address, and a still one to rest on)
-  const gif = await (
+  const pic = await (
     await board.admin.post('/api/art/bulk', {
       ym,
-      items: [
-        {
-          k: 'g',
-          x: 600,
-          y: 300,
-          w: 80,
-          h: 80,
-          src: '/api/clip/birthday-cake.svg',
-          still: '/api/clip/gi-mummy-head.svg',
-          mode: 'loop'
-        }
-      ]
+      items: [{ k: 'g', x: 470, y: 330, w: 120, h: 120, src: '/api/clip/birthday-cake.svg', mode: 'still' }]
     })
   ).json();
-  const page = await as('family');
-  const stroke = page.locator('.artSvg .lines path').last();
-  const pic = page.locator('.gifLayer img').last();
-  await expect(pic).toHaveAttribute('src', /birthday-cake\.svg$/);
-  await expect(stroke).toHaveAttribute('stroke', /^url\(#g/); // chalk: the grain
-  await expect.poll(() => page.locator('#board').evaluate(el => (el as HTMLElement).style.zoom)).not.toBe('');
-  const open = async () => {
-    await page.locator('#menuBtn').click();
-    await page.locator('#thisScreenBtn').click();
-    await expect(page.locator('#dtDetails')).toBeVisible();
-  };
-  const flip = async (id: string) => {
-    await open();
-    await Promise.all([page.waitForEvent('load'), page.locator('#' + id).click()]); // (reloads the board)
-  };
+  const t = await as('tablet', { path: '/edit' });
+  const own = () =>
+    t.evaluate(() =>
+      [...document.querySelectorAll('.slate .artSvg, .slate .gifLayer')].map(
+        el => el.classList.contains('own') && getComputedStyle(el).willChange === 'transform'
+      )
+    );
   try {
-    await open();
-    for (const k of ['Browser', 'Graphics', 'Screen', 'Board scale'])
-      await expect(page.locator('#dtDetails')).toContainText(k);
-    await expect(page.locator('#dtDetails')).toContainText(/\d\.\d{3}× \(zoomed\)/);
-    await page.keyboard.press('Escape');
-    // pictures stay still: the still one, not the moving one (and the board still zoomed, sharp)
-    await flip('dtStill');
-    await expect(pic).toHaveAttribute('src', /gi-mummy-head\.svg$/);
-    expect(await page.locator('#board').evaluate(el => (el as HTMLElement).style.zoom)).not.toBe('');
-    // the art on its own layer
-    await flip('dtLayer');
-    await expect(page.locator('html')).toHaveClass(/dt-layer/);
-    expect(await page.locator('.artSvg').evaluate(el => getComputedStyle(el).willChange)).toBe('transform');
-    // flat chalk
-    await flip('dtPlain');
-    await expect(stroke).not.toHaveAttribute('stroke', /^url/);
-    // and all back, as it was
-    for (const id of ['dtStill', 'dtLayer', 'dtPlain']) await flip(id);
-    await expect(pic).toHaveAttribute('src', /birthday-cake\.svg$/);
-    await expect(page.locator('html')).not.toHaveClass(/dt-layer/);
-    await expect(stroke).toHaveAttribute('stroke', /^url\(#g/);
-    await expect.poll(() => page.locator('#board').evaluate(el => (el as HTMLElement).style.zoom)).not.toBe('');
-    expect(page.errors).toEqual([]);
+    await expect(t.locator('.gifLayer img').first()).toBeVisible();
+    await expect.poll(own).toEqual([true, true]);
+    // drawn at the screen's own resolution: the board is zoomed, not stretched as one layer
+    expect(await t.locator('#board').evaluate(el => (el as HTMLElement).style.zoom)).not.toBe('');
+    // zoomed in to draw: painted in again, so it's drawn sharp at 2x, not a stretched copy of the layer
+    await t.getByRole('button', { name: 'Zoom in' }).click();
+    await expect.poll(own).toEqual([false, false]);
+    await t.getByRole('button', { name: 'Fit' }).click();
+    await expect.poll(own).toEqual([true, true]);
+    expect(t.errors).toEqual([]);
   } finally {
-    await page.evaluate(() => localStorage.removeItem('chalkDrawTests'));
-    await board.admin.post('/api/art/delete', { ym, ids: [art.id, ...gif.ids] });
+    await board.admin.post('/api/art/delete', { ym, ids: [stroke.id, ...pic.ids] });
   }
 });
