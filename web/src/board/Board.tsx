@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   1.2.5
+ Version:   1.2.4
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-22
@@ -125,11 +125,6 @@
 
  1.2.4    2026-11-22   joshua    Split View hands the Notes column what's
                         claude    under the week, not just the weather.
-
- 1.2.5    2026-11-22   joshua    The board drawn afresh a few seconds into
-                        claude    the slideshow, or hourly when nobody's at it
-                                  (stray dots a screen keeps), its writing
-                                  under art marked again.
 ===============================================================================
 */
 
@@ -156,7 +151,6 @@ import { DayView, ReminderAlert, TimerDone } from './Alerts.tsx';
 import { Notes } from './Notes.tsx';
 import { useNotesCol } from '../lib/notesCol.ts';
 import { boardScaleStyle } from '../lib/zoomFit.ts';
-import { useRepaint } from '../lib/repaint.ts';
 import { WeatherMotion } from './Weather.tsx';
 import { Slideshow, useSlides } from './Slideshow.tsx';
 import { EventEditor } from './EventEditor.tsx';
@@ -647,8 +641,6 @@ export function Board({
   useEffect(() => {
     document.body.classList.toggle('drawing', drawing);
   }, [drawing]);
-  // the board drawn afresh now and then, when nobody's looking (stray dots a screen keeps from an earlier paint)
-  const paint = useRepaint(!drawing && !editing && !day && !placing && zoom.z === 1, slides.on);
   // a low-power screen: no animations or fades anywhere on it
   useEffect(() => {
     document.documentElement.classList.toggle('lowpower', boardFit.low);
@@ -829,7 +821,7 @@ export function Board({
     run();
     const t = setTimeout(run, 500); // again once the writing's fonts have settled
     return () => clearTimeout(t);
-  }, [items, m, week, paint]); // (paint: a fresh board, its writing marked again)
+  }, [items, m, week]);
   // the question, while decorating: what should this piece do to the events under it?
   const [ask, setAsk] = useState<{ ids: number[]; what: string } | null>(null);
   const answered = useRef<'hide' | 'under' | null>(null); // this time's answer, for the next pieces
@@ -912,9 +904,7 @@ export function Board({
       {...touchHandlers}
     >
       <div
-        key={paint}
         id="board"
-        data-paint={paint}
         className={edit ? 'edit' : ''}
         style={{
           ...boardScaleStyle(fit.scale, zoom.z, zoom.x, zoom.y),

@@ -338,6 +338,11 @@ body.boardpage {
 .slate .njar span:first-child {
   flex: 1;
 }
+/* a drawing test (⚙️ Settings → This screen): the art on a layer of its own, drawn apart from the lines under it */
+html.dt-layer .slate .artSvg,
+html.dt-layer .slate .gifLayer {
+  will-change: transform;
+}
 .slate .artSvg {
   position: absolute;
   left: 0;

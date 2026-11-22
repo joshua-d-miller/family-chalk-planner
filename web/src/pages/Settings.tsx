@@ -84,6 +84,9 @@ import { useShell } from '../ui/Shell.tsx';
 import { DOCK_BTNS, DOCK_MAX, MENU_STYLES, setMenuPref, useMenuPref } from '../lib/menuStyle.ts';
 import { setSleeps, useSleeps } from '../lib/countdowns.ts';
 import { SPACES, setWeekFrom, setWeekView, useWeekFrom, useWeekView } from '../lib/weekFrom.ts';
+import { drawTests, screenDetails, setDrawTests } from '../lib/drawTests.ts';
+import type { DrawTests } from '../lib/drawTests.ts';
+import { canZoomBoard } from '../lib/zoomFit.ts';
 import type { WeekView } from '../lib/weekFrom.ts';
 import { setHideZoom, useHideZoom } from '../lib/zoomControls.ts';
 import { setBoardFit, useBoardFit } from '../lib/boardFit.ts';
@@ -1010,7 +1013,46 @@ function ThisScreen() {
           <span className="t">Hide the − / + / Fit buttons on the calendar</span>
         </label>
       )}
+      <DrawTestFields />
     </Card>
+  );
+}
+// ------------------- //
+// | Drawing tests | //
+// ------------------- //
+// For a screen that shows stray dots or seams the board doesn't draw: one  //
+// change at a time to how it's drawn here, and the screen's own details.  //
+function DrawTestFields() {
+  const t = drawTests();
+  const [details] = useState(screenDetails);
+  const test = (id: string, key: keyof DrawTests, label: string) => (
+    <label className="check">
+      <input id={id} type="checkbox" checked={!!t[key]} onChange={e => setDrawTests({ [key]: e.target.checked })} />
+      <span className="t">{label}</span>
+    </label>
+  );
+  return (
+    <>
+      <h4>Drawing tests</h4>
+      <p className="dim small">
+        For stray dots or seams the board doesn't draw: try one at a time and see if they stop. Each one reloads the
+        board, and is kept on this screen only.
+      </p>
+      {test('dtStretch', 'stretch', 'Scale the board as one stretched layer (as before 1.2.1)')}
+      {test('dtLayer', 'layer', 'Draw the art on a layer of its own, apart from the calendar’s lines')}
+      {test('dtPlain', 'plain', 'Draw chalk colors in art flat, without the chalk grain')}
+      <dl className="dtDetails" id="dtDetails">
+        {details.map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>
+              <span translate="no">{v}</span>
+              {k === 'Board scale' && <span>{canZoomBoard() ? ' (zoomed)' : ' (stretched)'}</span>}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </>
   );
 }
 

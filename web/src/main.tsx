@@ -34,12 +34,15 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import { Oops } from './ui/Oops.tsx';
 import { startLanguage } from './lib/lang.ts';
+import { applyDrawTests } from './lib/drawTests.ts';
 import './ui/theme.css';
 import './ui/ui.css';
 import './ui/looks.css';
 
 // the board's language (or this screen's), before it's drawn
 startLanguage();
+// this screen's drawing tests (⚙️ Settings → This screen), before it's drawn
+applyDrawTests();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

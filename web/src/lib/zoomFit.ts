@@ -34,6 +34,8 @@
 ===============================================================================
 */
 
+import { drawTests } from './drawTests.ts';
+
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------------------------- //
 // | Can this browser zoom the board? | //
@@ -65,6 +67,7 @@ function zoomWorks(): boolean {
 }
 let known: boolean | null = null;
 export function canZoomBoard(): boolean {
+  if (drawTests().stretch) return false; // (⚙️ Settings → This screen → Drawing tests: stretched, as before)
   if (known === null) known = zoomWorks();
   return known;
 }

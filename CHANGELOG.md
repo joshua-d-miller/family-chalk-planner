@@ -4,12 +4,14 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
-## 1.2.5 — No stray dots on a screen that's been up a while
-- **Fixed:** a screen left on for hours could show a few tiny blue or green dots at the edges of art, left over
-  from the browser's own drawing, until the page was reloaded. The board is now drawn afresh, as a reload would,
-  at moments nobody sees: a few seconds into the slideshow (it covers the screen by then), and otherwise once an
-  hour when nobody has touched the screen for 10 minutes and nothing is open. Events, art and what the art hides
-  stay as they were.
+## 1.2.5 — Drawing tests, to find where stray dots come from
+- **New:** ⚙️ Settings → This screen → **Drawing tests**, for a screen that shows stray dots or seams the board
+  doesn't draw (tiny blue or green dots by art, on an Apolosign, until the page is reloaded). Each test changes
+  one thing about how the board is drawn on that screen: scaled as one stretched layer as before 1.2.1, the art
+  on a layer of its own apart from the calendar's lines, or the chalk colors in art drawn flat. Trying them one
+  at a time shows where the dots come from. Below them are the screen's own details: its browser and version, the
+  graphics the browser reports, its size and pixel ratio, and the board's scale. The tests are kept on that screen
+  only.
 
 ## 1.2.4 — The week's Notes column, with Split View too
 - **Fixed:** with 🗓️ Week's **Split View** on, the Notes column on the week showed only the weather, trash day and

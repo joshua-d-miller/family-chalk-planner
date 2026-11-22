@@ -55,6 +55,7 @@
 import { fontShorthand } from '../../../shared/fonts.ts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { url } from '../lib/api.ts';
+import { drawTests } from '../lib/drawTests.ts';
 import { readable } from './color.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -216,7 +217,8 @@ export function Art({
   }, [items, bg]);
   const playing = useGentle(items, gifsPlay);
   const pid = (c: string) => 'g' + c.slice(1);
-  const paint = (c: string, chalk: boolean) => (chalk ? `url(#${pid(c)})` : c);
+  // (⚙️ Settings → This screen → Drawing tests: the chalk colors flat, no grain)
+  const paint = (c: string, chalk: boolean) => (chalk && !drawTests().plain ? `url(#${pid(c)})` : c);
   return (
     <>
       <svg
