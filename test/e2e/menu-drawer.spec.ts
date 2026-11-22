@@ -29,10 +29,12 @@
                         claude    floated over the photos).
 
  1.2.3    2026-11-22   joshua    ...on a screen whose browser has no :has()
-                        claude    too (html.slides-on).
+                        claude    too (html.slides-on), checked with the
+                                  page's :has() rules taken out.
 ===============================================================================
 */
 
+import type { Page } from '@playwright/test';
 import { expect, menuStyle, test } from './fixtures.ts';
 
 test('a family screen can swap the cork for the ☰ button on either side', async ({ as }) => {
@@ -209,25 +211,45 @@ test('on a 16:9 screen the button floats: the board keeps its size, the Notes li
   }
 });
 
-test('the slideshow covers the ☰ button (it floats over the board, not over the photos)', async ({ as }) => {
-  const fam = await as('family');
-  await menuStyle(fam, 'right');
-  const fab = fam.locator('#menuFab');
-  await expect(fab).toBeVisible();
-  // a double tap on the calendar: the photo frame, over the whole screen
-  await fam.waitForTimeout(1000);
-  const cell = (await fam.locator('#grid .day').nth(10).boundingBox())!;
-  await fam.mouse.dblclick(cell.x + 20, cell.y + 40);
-  await expect(fam.locator('#slides')).toHaveClass(/on/);
-  // (html.slides-on, not body:has(): a wall screen's browser can be older than :has())
-  await expect(fam.locator('html')).toHaveClass(/slides-on/);
-  await expect(fab).toBeHidden();
-  // a tap goes back to the calendar, and the button with it
-  await fam.waitForTimeout(1600);
-  await fam.mouse.click(400, 400);
-  await expect(fam.locator('#slides')).not.toHaveClass(/on/);
-  await expect(fam.locator('html')).not.toHaveClass(/slides-on/);
-  await expect(fab).toBeVisible();
-  await menuStyle(fam, 'cork');
-  expect(fam.errors).toEqual([]);
-});
+// a browser older than :has() (Chrome 105, an older wall screen's) drops every rule with :has() in it,
+// even one the minifier merged other selectors into: take them out of the page the same way
+const dropHasRules = (page: Page) =>
+  page.evaluate(() => {
+    let n = 0;
+    const walk = (list: CSSRuleList, del: (i: number) => void) => {
+      for (let i = list.length - 1; i >= 0; i--) {
+        const r = list[i] as CSSStyleRule & CSSGroupingRule;
+        if (r.selectorText?.includes(':has(')) {
+          del(i);
+          n++;
+        } else if (r.cssRules) walk(r.cssRules, j => r.deleteRule(j));
+      }
+    };
+    for (const sh of Array.from(document.styleSheets)) walk(sh.cssRules, i => sh.deleteRule(i));
+    return n;
+  });
+
+for (const oldBrowser of [false, true])
+  test(`the slideshow covers the ☰ button${oldBrowser ? ', in a browser without :has()' : ''}`, async ({ as }) => {
+    const fam = await as('family');
+    await menuStyle(fam, 'left'); // (the wall's own button, in its bottom left corner)
+    if (oldBrowser) expect(await dropHasRules(fam)).toBeGreaterThan(0);
+    const fab = fam.locator('#menuFab');
+    await expect(fab).toBeVisible();
+    // a double tap on the calendar: the photo frame, over the whole screen
+    await fam.waitForTimeout(1000);
+    const cell = (await fam.locator('#grid .day').nth(10).boundingBox())!;
+    await fam.mouse.dblclick(cell.x + 20, cell.y + 40);
+    await expect(fam.locator('#slides')).toHaveClass(/on/);
+    await expect(fam.locator('html')).toHaveClass(/slides-on/);
+    await expect(fab).toBeHidden();
+    // a tap goes back to the calendar, and the button with it
+    await fam.waitForTimeout(1600);
+    await fam.mouse.click(400, 400);
+    await expect(fam.locator('#slides')).not.toHaveClass(/on/);
+    await expect(fam.locator('html')).not.toHaveClass(/slides-on/);
+    await expect(fab).toBeVisible();
+    if (oldBrowser) await fam.reload(); // (the board's own styles back, for the next test)
+    await menuStyle(fam, 'cork');
+    expect(fam.errors).toEqual([]);
+  });

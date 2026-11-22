@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | countdowns.spec.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.3
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-17
- Updated:   2026-11-17
+ Updated:   2026-11-22
 
  Purpose:
      The fun countdowns: a starred event gets a picture and a badge on its
@@ -19,6 +19,10 @@
  -------   ----------   -------   --------------------------------------------
  1.1.0    2026-11-17   joshua    New file.
                         claude
+
+ 1.2.3    2026-11-22   joshua    The starred event goes before the next
+                        claude    holiday's countdown (Thanksgiving, 4 days
+                                  out, was the next one instead).
 ===============================================================================
 */
 
@@ -29,8 +33,11 @@ const plus = (date: string, n: number) => new Date(Date.parse(date) + n * 864e5)
 test('a starred event: its picture, a badge on its day, the big card and the paper chain', async ({ as, board }) => {
   const { ym, date } = thisMonth();
   const left = new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate() - +date.slice(8);
-  const n = Math.min(5, left); // a day still in this month (the badge is on this month's grid)
-  test.skip(n < 1, 'the last day of the month: nothing later in it to count down to');
+  // the next one already counting down (a holiday, like Thanksgiving): ours goes before it, so it's the next
+  const soonest = ((await (await board.admin.api('/api/countdowns')).json()) as { days: number }[])[0]?.days ?? 99;
+  // a day still in this month (the badge is on this month's grid)
+  const n = Math.min(5, left, soonest - 1);
+  test.skip(n < 1, 'the last day of the month, or a holiday tomorrow: no day before it to count down to');
   const day = plus(date, n);
 
   // --------------------------------------------- //

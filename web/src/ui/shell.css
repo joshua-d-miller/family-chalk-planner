@@ -350,11 +350,14 @@ body:has(.menuScrim) .menufab {
 /* the slideshow is on: the ☰ (and its row) and the tab bar step aside. The slideshow's z-index only
    counts inside the board's #stage (a fixed box is its own stacking context), and these sit on the
    body, so without this they'd float over the photos. html.slides-on comes from Slideshow.tsx, not
-   body:has(): a wall screen's browser can be older than :has() (Chrome 105) */
+   body:has(): a wall screen's browser can be older than :has() (Chrome 105). Keep this rule's own
+   declarations (pointer-events too): with only visibility the minifier folds it into the :has()
+   rule above, and a browser without :has() then drops the whole thing */
 html.slides-on .fabwrap,
 html.slides-on .menufab,
 html.slides-on .tabbar {
   visibility: hidden;
+  pointer-events: none;
 }
 /* the "can't reach the board" note keeps out of the button's corner */
 html.menu-right .offline {

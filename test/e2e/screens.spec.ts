@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | screens.spec.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.3
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      The other kinds of screen: the wall (view only), a family touch
@@ -33,6 +33,9 @@
 
  1.2.0    2026-11-21   joshua    A family screen sets month titles too
                         claude    (everything but freehand drawing).
+
+ 1.2.3    2026-11-22   joshua    The family screen's event goes on the 21st
+                        claude    when today is the 22nd (today fills up).
 ===============================================================================
 */
 
@@ -94,7 +97,8 @@ test('a family screen does everything on the board but freehand drawing (month t
   await expect(fam.locator('#stampsBtn')).toBeVisible();
   await fam.locator('#drawBtn').click();
   // events: yes (on a day of its own; today fills up with the other tests' events)
-  const date = thisMonth().ym + '-22';
+  const { ym, date: today } = thisMonth();
+  const date = ym + (today.endsWith('-22') ? '-21' : '-22'); // (not today, even on the 22nd)
   await fam.locator('#addBtn').click();
   await fam.locator('#evTitle').fill('Family screen event');
   await fam.locator('#evDate').fill(date);
