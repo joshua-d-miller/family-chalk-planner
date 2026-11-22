@@ -142,6 +142,7 @@ import type { Side } from './TitlePhotos.tsx';
 import { DayView, ReminderAlert, TimerDone } from './Alerts.tsx';
 import { Notes } from './Notes.tsx';
 import { useNotesCol } from '../lib/notesCol.ts';
+import { boardScaleStyle } from '../lib/zoomFit.ts';
 import { WeatherMotion } from './Weather.tsx';
 import { Slideshow, useSlides } from './Slideshow.tsx';
 import { EventEditor } from './EventEditor.tsx';
@@ -204,7 +205,8 @@ function useFit(pad: number, h: number, below = 0) {
   // below: the tab bar's height on a phone or tablet (the board fits above it)
   const calc = () => {
     const scale = Math.min(innerWidth / (W + 2 * pad), (visibleHeight() - below) / (h + 2 * pad));
-    return { scale, res: Math.max(1, Math.min(4, Math.round(scale * (devicePixelRatio || 1) * 2) / 2)) };
+    // (the chalk and surface textures: painted at the screen's own resolution, never stretched up)
+    return { scale, res: Math.max(1, Math.min(4, Math.ceil(scale * (devicePixelRatio || 1) * 4 - 0.01) / 4)) };
   };
   const [fit, setFit] = useState(calc);
   useEffect(() => {
@@ -401,7 +403,6 @@ export function Board({
   // ---------------------- //
   // A tablet zooms in to draw: pinch, or the − / + / Fit buttons            //
   const [zoom, setZoom] = useState({ z: 1, x: 0, y: 0 });
-  const scale = fit.scale * zoom.z;
   // the surface and chalk grain are painted for the zoom once it settles (not on every step of a pinch)
   const [settled, setSettled] = useState(1);
   useEffect(() => {
@@ -411,7 +412,7 @@ export function Board({
   // (a low-power screen: the chalk drawn at 1x, however sharp the screen)
   const res = boardFit.low
     ? 1
-    : Math.max(1, Math.min(4, Math.round(fit.scale * settled * (devicePixelRatio || 1) * 2) / 2));
+    : Math.max(1, Math.min(4, Math.ceil(fit.scale * settled * (devicePixelRatio || 1) * 4 - 0.01) / 4));
   const zoomTo = (z: number, at?: [number, number]) =>
     setZoom(cur => {
       const z1 = Math.max(1, Math.min(4, z));
@@ -898,7 +899,7 @@ export function Board({
         id="board"
         className={edit ? 'edit' : ''}
         style={{
-          transform: `translate(${zoom.x}px, ${zoom.y}px) scale(${scale})`,
+          ...boardScaleStyle(fit.scale, zoom.z, zoom.x, zoom.y),
           padding: pad,
           width: W + 2 * pad,
           height: bh + 2 * pad,

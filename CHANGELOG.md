@@ -29,6 +29,12 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   board (art on the days moves across with them, so it stays on its day). A screen that hasn't set its own shows
   the board's (⚙️ Settings → Notes column → Every screen), and the admin console → 📺 Screens sets any screen's (the wall's
   too) the same way: on or off, its pages and the bottom's switch, for the month and the week.
+- **Sharp on every screen, drawn at its own resolution:** the board is now sized with the browser's zoom instead
+  of being stretched as one layer, on Chrome, Edge, Android screens (the Apolosign too) and Firefox. Its lines and
+  boxes land on the screen's own pixels, which fixes the smears and seams that could show up now and then along the
+  edges of boxes on a 1080p screen (a stretch of 1.53x). The chalk and surface textures are painted at the
+  screen's resolution too, never stretched up. Art stays on the same days on every screen. iPads and Safari draw
+  it as before.
 - **Family screens do everything but freehand drawing:** a family screen can now set the month's title (🔤 Month
   title) and open ⚙️ Settings for the board's own parts (holidays, birthdays, photos and the slideshow, the Notes
   column, 🗓️ Week and This screen), without a parent signing in. The calendar and trash day stay the admin's, and
