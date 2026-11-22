@@ -1041,7 +1041,7 @@ function DrawTestFields() {
         For stray dots or seams the board doesn't draw: try one at a time and see if they stop. Each one reloads the
         board, and is kept on this screen only.
       </p>
-      {test('dtStretch', 'stretch', 'Scale the board as one stretched layer (as before 1.2.1)')}
+      {test('dtStill', 'still', 'Keep pictures still (no moving GIFs now and then)')}
       {test('dtLayer', 'layer', 'Draw the art on a layer of its own, apart from the calendar’s lines')}
       {test('dtPlain', 'plain', 'Draw chalk colors in art flat, without the chalk grain')}
       <dl className="dtDetails" id="dtDetails">

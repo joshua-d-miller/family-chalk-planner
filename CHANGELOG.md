@@ -7,8 +7,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 ## 1.2.5 — Drawing tests, to find where stray dots come from
 - **New:** ⚙️ Settings → This screen → **Drawing tests**, for a screen that shows stray dots or seams the board
   doesn't draw (tiny blue or green dots by art, on an Apolosign, until the page is reloaded). Each test changes
-  one thing about how the board is drawn on that screen: scaled as one stretched layer as before 1.2.1, the art
-  on a layer of its own apart from the calendar's lines, or the chalk colors in art drawn flat. Trying them one
+  one thing about how the board is drawn on that screen, and none of them makes it less sharp: pictures kept
+  still (no GIFs moving now and then), the art on a layer of its own apart from the calendar's lines, or the chalk
+  colors in art drawn flat. Trying them one
   at a time shows where the dots come from. Below them are the screen's own details: its browser and version, the
   graphics the browser reports, its size and pixel ratio, and the board's scale. The tests are kept on that screen
   only.

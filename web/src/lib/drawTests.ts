@@ -15,14 +15,13 @@
      come from; and the screen's own details (its browser, its graphics,
      its size and the board's scale) to go with what's seen.
 
-     - stretch: the board scaled as one stretched layer (as before 1.2.1),
-       not zoomed.
+     - still: pictures stay on their still frame (no GIF playing now and
+       then, and so no picture swapped for its moving one and back).
      - layer: the art on a layer of its own, drawn apart from the
        calendar's lines under it.
      - plain: the chalk colors in art drawn flat, without the chalk grain.
 
  Used by:
-     web/src/lib/zoomFit.ts
      web/src/board/Art.tsx
      web/src/pages/Settings.tsx
 
@@ -40,7 +39,7 @@
 */
 
 export interface DrawTests {
-  stretch?: boolean;
+  still?: boolean;
   layer?: boolean;
   plain?: boolean;
 }

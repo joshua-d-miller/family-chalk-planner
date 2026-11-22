@@ -644,8 +644,8 @@ export const ES: Dict = {
   ' (stretched)': ' (estirado)',
   "For stray dots or seams the board doesn't draw: try one at a time and see if they stop. Each one reloads the board, and is kept on this screen only.":
     'Para puntos sueltos o costuras que el tablero no dibuja: prueba una a la vez y mira si desaparecen. Cada una vuelve a cargar el tablero y se guarda solo en esta pantalla.',
-  'Scale the board as one stretched layer (as before 1.2.1)':
-    'Escalar el tablero como una sola capa estirada (como antes de 1.2.1)',
+  'Keep pictures still (no moving GIFs now and then)':
+    'Mantener las imágenes quietas (sin GIF que se mueven de vez en cuando)',
   'Draw the art on a layer of its own, apart from the calendar’s lines':
     'Dibujar el arte en su propia capa, aparte de las líneas del calendario',
   'Draw chalk colors in art flat, without the chalk grain':

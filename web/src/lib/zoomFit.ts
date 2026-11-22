@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | zoomFit.ts
 ===============================================================================
- Version:   1.2.5
+ Version:   1.2.1
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-22
  Updated:   2026-11-22
@@ -31,13 +31,8 @@
  -------   ----------   -------   --------------------------------------------
  1.2.1    2026-11-22   joshua    New file.
                         claude
-
- 1.2.5    2026-11-22   joshua    Drawing tests: stretched as before, if this
-                        claude    screen asks.
 ===============================================================================
 */
-
-import { drawTests } from './drawTests.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------------------------- //
@@ -70,7 +65,6 @@ function zoomWorks(): boolean {
 }
 let known: boolean | null = null;
 export function canZoomBoard(): boolean {
-  if (drawTests().stretch) return false; // (⚙️ Settings → This screen → Drawing tests: stretched, as before)
   if (known === null) known = zoomWorks();
   return known;
 }

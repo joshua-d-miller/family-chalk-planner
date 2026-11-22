@@ -50,8 +50,8 @@
  1.2.0    2026-11-21   joshua    As tall as the slate on a screen that fills
                         claude    itself.
 
- 1.2.5    2026-11-22   joshua    Drawing tests: chalk colors flat, if this
-                        claude    screen asks.
+ 1.2.5    2026-11-22   joshua    Drawing tests: chalk colors flat, pictures
+                        claude    still, if this screen asks.
 ===============================================================================
 */
 
@@ -218,7 +218,9 @@ export function Art({
     }
     return [...set];
   }, [items, bg]);
-  const playing = useGentle(items, gifsPlay);
+  // (⚙️ Settings → This screen → Drawing tests: pictures stay still)
+  const moving = gifsPlay && !drawTests().still;
+  const playing = useGentle(items, moving);
   const pid = (c: string) => 'g' + c.slice(1);
   // (⚙️ Settings → This screen → Drawing tests: the chalk colors flat, no grain)
   const paint = (c: string, chalk: boolean) => (chalk && !drawTests().plain ? `url(#${pid(c)})` : c);
@@ -311,7 +313,7 @@ export function Art({
               alt=""
               decoding="async"
               src={src(
-                gifsPlay && (it.mode === 'loop' || (it.mode === 'gentle' && playing.has(it.id))) ? it.src : it.still
+                moving && (it.mode === 'loop' || (it.mode === 'gentle' && playing.has(it.id))) ? it.src : it.still
               )}
               style={{
                 left: (it.x || 0) - (it.w || 0) / 2,
