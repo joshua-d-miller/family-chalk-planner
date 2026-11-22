@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | notesCol.ts
 ===============================================================================
- Version:   1.2.1
+ Version:   1.2.4
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-22
  Updated:   2026-11-22
@@ -26,6 +26,9 @@
  -------   ----------   -------   --------------------------------------------
  1.2.1    2026-11-22   joshua    New file.
                         claude
+
+ 1.2.4    2026-11-22   joshua    picked: whether the week's own pages were
+                        claude    chosen (Split View shows them then).
 ===============================================================================
 */
 
@@ -47,6 +50,7 @@ export interface Col {
 export interface BoardNotes {
   pages: string[];
   week?: string[];
+  weekSet?: boolean; // the week's own were picked (else week is the month's)
   on?: { month: boolean; week: boolean };
 }
 export const NOTES_PAGES: [string, string][] = [
@@ -76,11 +80,13 @@ export const boardCol = (b: BoardNotes | undefined, view: NotesView): Col => ({
   pages: (view === 'week' ? b?.week : null) || b?.pages || DEFAULT_PAGES
 });
 // what this screen shows on a view: its own (if it set one), else the board's; `own` says which
-export function useNotesCol(view: NotesView): Col & { own: boolean; ready: boolean } {
+export function useNotesCol(view: NotesView): Col & { own: boolean; picked: boolean; ready: boolean } {
   const board = useLive<{ notes?: BoardNotes }>('api/extras', ['extras']).data;
   const mine = useMyCols().data;
   const own = mine?.[view] || null;
-  return { ...(own || boardCol(board?.notes, view)), own: !!own, ready: !!board };
+  // picked: someone chose the week's own pages (this screen, or the board's), not the month's shown on it
+  const picked = !!own || (view === 'week' && !!board?.notes?.weekSet);
+  return { ...(own || boardCol(board?.notes, view)), own: !!own, picked, ready: !!board };
 }
 export async function setMyCol(view: NotesView, col: Col | null): Promise<MyCols> {
   const r = await post<MyCols>('api/notescol', { view, col });

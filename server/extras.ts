@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | extras.ts
 ===============================================================================
- Version:   1.2.1
+ Version:   1.2.4
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
  Updated:   2026-11-22
@@ -42,6 +42,9 @@
  1.2.1    2026-11-22   joshua    The month and the week each have their
                         claude    own pages, and either can leave the column
                                   off.
+
+ 1.2.4    2026-11-22   joshua    /api/extras: notes.weekSet, whether the
+                        claude    week's own pages were picked.
 ===============================================================================
 */
 
@@ -77,6 +80,7 @@ interface NotesCfg {
   bottom: string;
   pages: string[]; // the month's
   week: string[]; // the week's
+  weekSet: boolean; // the week's own were picked (not the month's, shown because it never was)
   on: { month: boolean; week: boolean }; // whether the column shows there
 }
 interface NotesKept {
@@ -220,6 +224,7 @@ export function setup({ app, kvGet, kvSet, broadcast, today, weather: w, trashDa
       bottom: k.bottom,
       pages: k.pages,
       week: k.week || k.pages,
+      weekSet: !!k.week,
       on: { month: !off.includes('month'), week: !off.includes('week') }
     };
   }

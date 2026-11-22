@@ -4,6 +4,13 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.2.4 — The week's Notes column, with Split View too
+- **Fixed:** with 🗓️ Week's **Split View** on, the Notes column on the week showed only the weather, trash day and
+  countdowns, whatever pages were picked for the week (🗒️ Notes, or ⚙️ Settings → Notes column). It now shows the
+  week's own pages, leaving out any that's already under the week so nothing shows twice. A week that was never
+  given its own pages still shows just the weather, as before. ⚙️ Settings → Notes column says so when Split View
+  is on.
+
 ## 1.2.3 — The ☰ button stays out of the slideshow, on every wall screen
 - **Fixed:** 1.2.2's fix for the ☰ button over the slideshow's photos needed a newer browser than some wall screens
   have (one older than Chrome 105, such as an older Android tablet's). The button and the tab bar now step aside for
