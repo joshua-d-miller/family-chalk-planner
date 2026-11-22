@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Settings.tsx
 ===============================================================================
- Version:   1.2.1
+ Version:   1.2.4
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-22
@@ -60,6 +60,9 @@
 
  1.2.1    2026-11-22   joshua    Notes column: this screen's or every
                         claude    screen's, on the month and the week.
+
+ 1.2.4    2026-11-22   joshua    Notes column on the week: a note that
+                        claude    Split View leaves out what's under it.
 ===============================================================================
 */
 
@@ -737,6 +740,7 @@ function ColumnPicker({
 }) {
   const title = view === 'week' ? 'On the week' : 'On the month';
   const { on, pages } = col;
+  const split = useWeekView().split && view === 'week';
   return (
     <div id={'notes-' + view}>
       <h4>{title}</h4>
@@ -756,6 +760,9 @@ function ColumnPicker({
       {on && (
         <>
           <p className="dim small">Up to 3, from the top. Tap to add or take away.</p>
+          {split && (
+            <p className="dim small">With Split View, a page that's already under the week isn't shown here too.</p>
+          )}
           <div className="segs" role="group" aria-label={title}>
             {NOTES_PAGES.map(([id, label]) => {
               const at = pages.indexOf(id);

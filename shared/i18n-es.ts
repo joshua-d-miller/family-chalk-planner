@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Shared | i18n-es.ts
 ===============================================================================
- Version:   1.2.1
+ Version:   1.2.4
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-21
  Updated:   2026-11-22
@@ -25,6 +25,9 @@
                         claude
 
  1.2.1    2026-11-22   joshua    The Notes column's settings per screen.
+                        claude
+
+ 1.2.4    2026-11-22   joshua    Split View and the week's Notes pages.
                         claude
 ===============================================================================
 */
@@ -630,6 +633,8 @@ export const ES: Dict = {
   '⏲️ Timers': '⏲️ Temporizadores',
   'The right-hand column': 'La columna de la derecha',
   'Up to 3, from the top. Tap to add or take away.': 'Hasta 3, desde arriba. Toca para agregar o quitar.',
+  "With Split View, a page that's already under the week isn't shown here too.":
+    'Con la vista dividida, una página que ya está debajo de la semana no se muestra aquí también.',
   'On the month': 'En el mes',
   'Every screen': 'Todas las pantallas',
   'Whose Notes column': 'De quién es la columna de Notas',

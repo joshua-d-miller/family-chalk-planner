@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Notes.tsx
 ===============================================================================
- Version:   1.2.1
+ Version:   1.2.4
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-22
@@ -56,6 +56,10 @@
 
  1.2.1    2026-11-22   joshua    This screen's own pages on the month or
                         claude    the week.
+
+ 1.2.4    2026-11-22   joshua    Split View: the pages picked for the week,
+                        claude    less what's already under it (not just
+                                  the weather).
 ===============================================================================
 */
 
@@ -504,28 +508,33 @@ export function Notes({
   time24,
   edit = false,
   drawing = false,
-  only,
+  under,
   view = 'month',
   dockRef
 }: {
   time24: boolean;
   edit?: boolean;
   drawing?: boolean; // (a tap on a jar while drawing is drawing, not the big jar)
-  only?: string[]; // these pages and no switch (Split View: the weather, trash and countdowns)
+  under?: string[]; // Split View: what's under the week (those pages stay out of the column)
   view?: 'month' | 'week'; // which view's pages it shows
   dockRef?: (el: HTMLDivElement | null) => void; // the menu in the Notes column: its last row, for the buttons
 }) {
   const x = useLive<Extras>('api/extras', ['extras']).data;
   // this screen's own column for this view (if it set one), else the board's
   const col = useNotesCol(view);
-  const pages = only || col.pages;
+  // Split View: the pages picked for the week, less what's already under it; nobody picked any (or
+  // they're all under the week): the weather, trash and countdowns, nothing to switch
+  const kept = under && col.picked ? col.pages.filter(p => !under.includes(p)) : [];
+  const only = under && !kept.length ? ['info'] : undefined;
+  const pages = only || (under ? kept : col.pages);
   // the bottom's switch: this view's own column has its own; else this screen's (if it set one), else the board's
   const screenBottom = useLive<{ bottom: Bottom | null }>('api/notesbottom', ['notesbottom']).data?.bottom;
   const mine = col.own ? col.bottom : screenBottom;
-  const last = (!only && mine?.def) || pages[pages.length - 1];
+  const def = mine?.def && !under?.includes(mine.def) ? mine.def : undefined; // (not one that's under the week)
+  const last = (!only && def) || pages[pages.length - 1];
   const sw = useSwitch(
     !only && SWITCH.some(([m]) => m === last) ? last : '',
-    pages.slice(0, -1),
+    [...pages.slice(0, -1), ...(under || [])], // (what's under the week isn't one to switch to)
     only ? [] : mine?.can || null
   );
   const swipe = useRef<number | null>(null);

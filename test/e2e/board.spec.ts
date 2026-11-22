@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.4
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      The board itself: this month on the tablet, moving between months,
@@ -43,6 +43,9 @@
                                   Hiding the − / + / Fit buttons; a tap on the
                                   month's name reloads (not on the wall); a ✕
                                   on every page. Split View; ⚙️ Week.
+
+ 1.2.4    2026-11-22   joshua    Split View shows the week's own Notes
+                        claude    pages, less what's under the week.
 ===============================================================================
 */
 
@@ -299,6 +302,29 @@ test('🗓️ Split View: the week as a band and what the screen picks under it;
   // the Notes column: the weather, trash day and countdowns, nothing to switch
   await expect(page.locator('.slate .notes #wNow')).toBeVisible();
   await expect(page.locator('.slate .notes .nslot')).toHaveCount(1);
+  // pages picked for this screen's week show there too, less what's already under the week (the jars)
+  const col = (pages: string[] | null) =>
+    page.evaluate(
+      c =>
+        fetch('api/notescol', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify({ view: 'week', col: c && { on: true, pages: c } })
+        }).then(r => r.status),
+      pages
+    );
+  expect(await col(['info', 'upnext', 'pantry'])).toBe(200);
+  await expect(page.locator('.slate .notes .nslot')).toHaveCount(3);
+  for (const p of ['info', 'upnext', 'pantry']) await expect(page.locator('.slate .notes .nslot-' + p)).toHaveCount(1);
+  expect(await col(['jars', 'upnext'])).toBe(200);
+  await expect(page.locator('.slate .notes .nslot')).toHaveCount(1);
+  await expect(page.locator('.slate .notes .nslot-upnext')).toHaveCount(1);
+  await expect(page.locator('.slate .notes .jar')).toHaveCount(0); // (the jars are under the week, not twice)
+  expect(await col(['jars'])).toBe(200); // all of them under the week: the weather
+  await expect(page.locator('.slate .notes .nslot')).toHaveCount(1);
+  await expect(page.locator('.slate .notes #wNow')).toBeVisible();
+  expect(await col(null)).toBe(200); // like the rest of the board
+  await expect(page.locator('.slate .notes #wNow')).toBeVisible();
   // a photo alone: centered in the whole width, its own shape
   await page.evaluate(() =>
     fetch('api/weekview', {

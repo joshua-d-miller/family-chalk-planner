@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   1.2.1
+ Version:   1.2.4
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-22
@@ -122,6 +122,9 @@
                         claude    (zoom, not a stretched layer); the Notes
                                   column can be off, and the calendar and
                                   its art take its room.
+
+ 1.2.4    2026-11-22   joshua    Split View hands the Notes column what's
+                        claude    under the week, not just the weather.
 ===============================================================================
 */
 
@@ -963,7 +966,7 @@ export function Board({
               time24={!!today?.time24}
               edit={edit}
               drawing={drawing}
-              only={split ? ['info'] : undefined}
+              under={split ? [weekView.a, weekView.b] : undefined}
               view={week ? 'week' : 'month'}
               dockRef={edit && shell.dock ? setDockEl : undefined}
             />

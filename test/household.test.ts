@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | household.test.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.4
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      Reminders, timers, the pantry and the right-hand column's pages (from
@@ -34,6 +34,9 @@
 
  1.2.0    2026-11-21   joshua    The menu setting also says which buttons go
                         claude    in the Notes column.
+
+ 1.2.4    2026-11-22   joshua    notes.weekSet.
+                        claude
 ===============================================================================
 */
 
@@ -171,9 +174,11 @@ test('the right-hand column: the month and the week each have their own, and eit
   let x = await (await ed.api('/api/extras')).json();
   assert.deepEqual(x.notes.on, { month: true, week: true });
   assert.deepEqual(x.notes.week, x.notes.pages, 'a week that was never set shows the month’s');
+  assert.equal(x.notes.weekSet, false, '…and says so (Split View then shows just the weather)');
   const month = x.notes.pages;
   let r = await (await fam.post('/api/right-pages', { view: 'week', pages: ['today', 'chores'] })).json();
   assert.deepEqual([r.pages, r.week], [month, ['today', 'chores']]);
+  assert.equal(r.weekSet, true);
   r = await (await fam.post('/api/right-pages', { view: 'week', on: false })).json();
   assert.deepEqual(r.on, { month: true, week: false });
   r = await (await fam.post('/api/right-pages', { view: 'month', on: false })).json();
