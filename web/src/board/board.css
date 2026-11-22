@@ -338,11 +338,6 @@ body.boardpage {
 .slate .njar span:first-child {
   flex: 1;
 }
-/* a drawing test (⚙️ Settings → This screen): the art on a layer of its own, drawn apart from the lines under it */
-html.dt-layer .slate .artSvg,
-html.dt-layer .slate .gifLayer {
-  will-change: transform;
-}
 .slate .artSvg {
   position: absolute;
   left: 0;
@@ -361,6 +356,15 @@ html.dt-layer .slate .gifLayer {
 }
 .slate .gifLayer img {
   position: absolute;
+}
+/* The art on a layer of its own: drawn once, apart from the calendar, and laid over it (or under it) like a
+   sheet of glass. Painted together with the lines and boxes, a repaint of either at a fractional scale (1.53 on
+   a 1080p screen) could leave stray pixels at the art's edges on some screens (an Apolosign: tiny blue or
+   green dots until a reload). Board.tsx leaves it off while zoomed in to draw, so the layer is never a
+   stretched copy: it's drawn at the board's own scale, as sharp as the rest. */
+.slate .artSvg.own,
+.slate .gifLayer.own {
+  will-change: transform;
 }
 #stage.light .slate {
   --chalk: #2a2a26;

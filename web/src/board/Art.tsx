@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Art.tsx
 ===============================================================================
- Version:   1.2.5
+ Version:   1.2.6
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
  Updated:   2026-11-22
@@ -50,15 +50,14 @@
  1.2.0    2026-11-21   joshua    As tall as the slate on a screen that fills
                         claude    itself.
 
- 1.2.5    2026-11-22   joshua    Drawing tests: chalk colors flat, pictures
-                        claude    still, if this screen asks.
+ 1.2.6    2026-11-22   joshua    The art on a layer of its own over the
+                        claude    calendar (layer), not painted in with it.
 ===============================================================================
 */
 
 import { fontShorthand } from '../../../shared/fonts.ts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { url } from '../lib/api.ts';
-import { drawTests } from '../lib/drawTests.ts';
 import { readable } from './color.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -201,6 +200,7 @@ export function Art({
   res,
   gifsPlay,
   under = false,
+  layer = false,
   h = 642
 }: {
   items: ArtItem[];
@@ -208,6 +208,7 @@ export function Art({
   res: number;
   gifsPlay: boolean;
   under?: boolean; // the art she put behind the writing (drawn under the calendar's words)
+  layer?: boolean; // on a layer of its own, over (or under) the calendar: see board.css
   h?: number; // the slate's height on this screen (taller where it fills the screen)
 }) {
   const colors = useMemo(() => {
@@ -218,16 +219,13 @@ export function Art({
     }
     return [...set];
   }, [items, bg]);
-  // (⚙️ Settings → This screen → Drawing tests: pictures stay still)
-  const moving = gifsPlay && !drawTests().still;
-  const playing = useGentle(items, moving);
+  const playing = useGentle(items, gifsPlay);
   const pid = (c: string) => 'g' + c.slice(1);
-  // (⚙️ Settings → This screen → Drawing tests: the chalk colors flat, no grain)
-  const paint = (c: string, chalk: boolean) => (chalk && !drawTests().plain ? `url(#${pid(c)})` : c);
+  const paint = (c: string, chalk: boolean) => (chalk ? `url(#${pid(c)})` : c);
   return (
     <>
       <svg
-        className={'artSvg' + (under ? ' under' : '')}
+        className={'artSvg' + (under ? ' under' : '') + (layer ? ' own' : '')}
         width="1252"
         height={h}
         viewBox={`0 0 1252 ${h}`}
@@ -304,7 +302,7 @@ export function Art({
           })}
         </g>
       </svg>
-      <div className={'gifLayer' + (under ? ' under' : '')}>
+      <div className={'gifLayer' + (under ? ' under' : '') + (layer ? ' own' : '')}>
         {items
           .filter(it => it.k === 'g')
           .map(it => (
@@ -313,7 +311,7 @@ export function Art({
               alt=""
               decoding="async"
               src={src(
-                moving && (it.mode === 'loop' || (it.mode === 'gentle' && playing.has(it.id))) ? it.src : it.still
+                gifsPlay && (it.mode === 'loop' || (it.mode === 'gentle' && playing.has(it.id))) ? it.src : it.still
               )}
               style={{
                 left: (it.x || 0) - (it.w || 0) / 2,

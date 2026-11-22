@@ -4,6 +4,15 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.2.6 — Art drawn on a layer of its own
+- **Fixed:** now and then, tiny blue or green dots could show up at the edges of clip art and words, mostly where
+  they sat on or near the calendar's lines, until the page was reloaded (seen on an Apolosign). The art was painted
+  in together with the calendar's lines and boxes, and on some screens a repaint of either left stray pixels there.
+  The art is now drawn on a layer of its own and laid over the calendar (or under its writing, for art put behind),
+  so neither is painted into the other. It's drawn at the screen's own resolution, as sharp as before; while zoomed
+  in to draw it's painted in again, so it's never a stretched copy.
+- 1.2.5's ⚙️ Settings → This screen → Drawing tests are gone: there's nothing to try out on the screen.
+
 ## 1.2.5 — Drawing tests, to find where stray dots come from
 - **New:** ⚙️ Settings → This screen → **Drawing tests**, for a screen that shows stray dots or seams the board
   doesn't draw (tiny blue or green dots by art, on an Apolosign, until the page is reloaded). Each test changes

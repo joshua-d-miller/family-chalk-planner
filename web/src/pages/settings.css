@@ -193,24 +193,3 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 4px 24px;
 }
-
-/* ⚙️ Settings → This screen → Drawing tests: the screen's own details */
-.dtDetails {
-  margin: 10px 0 0;
-  font-size: 0.85em;
-  opacity: 0.8;
-}
-.dtDetails > div {
-  display: flex;
-  gap: 10px;
-  padding: 2px 0;
-}
-.dtDetails dt {
-  flex: none;
-  width: 7.5em;
-  font-weight: 700;
-}
-.dtDetails dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}

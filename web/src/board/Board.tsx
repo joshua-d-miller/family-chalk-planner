@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   1.2.4
+ Version:   1.2.6
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-22
@@ -125,6 +125,9 @@
 
  1.2.4    2026-11-22   joshua    Split View hands the Notes column what's
                         claude    under the week, not just the weather.
+
+ 1.2.6    2026-11-22   joshua    The art on a layer of its own, except
+                        claude    zoomed in to draw.
 ===============================================================================
 */
 
@@ -411,6 +414,9 @@ export function Board({
   // ---------------------- //
   // A tablet zooms in to draw: pinch, or the − / + / Fit buttons            //
   const [zoom, setZoom] = useState({ z: 1, x: 0, y: 0 });
+  // the art on a layer of its own over the calendar (board.css), but not zoomed in to draw: a layer keeps the
+  // scale it was drawn at, and would be a stretched, soft copy at 2x or 4x
+  const artLayer = zoom.z === 1;
   // the surface and chalk grain are painted for the zoom once it settles (not on every step of a pinch)
   const [settled, setSettled] = useState(1);
   useEffect(() => {
@@ -972,8 +978,10 @@ export function Board({
             />
           )}
           {!boardFit.low && <WeatherMotion wall={!edit} />}
-          {behind.length > 0 && <Art items={behind} bg={sf.lum} res={res} gifsPlay={!boardFit.low} under h={slateH} />}
-          <Art items={front} bg={sf.lum} res={res} gifsPlay={!boardFit.low} h={slateH} />
+          {behind.length > 0 && (
+            <Art items={behind} bg={sf.lum} res={res} gifsPlay={!boardFit.low} under layer={artLayer} h={slateH} />
+          )}
+          <Art items={front} bg={sf.lum} res={res} gifsPlay={!boardFit.low} layer={artLayer} h={slateH} />
           {edit && drawing && (
             <DrawLayer
               art={view}
