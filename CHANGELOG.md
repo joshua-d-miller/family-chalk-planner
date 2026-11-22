@@ -27,8 +27,8 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   you're on) or go to ⚙️ Settings → Notes column → This screen. Each view picks its own pages (up to 3), what the
   bottom's little switch can flip to, and whether the column shows at all; with it off the calendar takes the whole
   board (art on the days moves across with them, so it stays on its day). A screen that hasn't set its own shows
-  the board's (⚙️ Settings → Notes column → Every screen), and the admin console → 📺 Screens can turn the wall's
-  column off on the month or the week.
+  the board's (⚙️ Settings → Notes column → Every screen), and the admin console → 📺 Screens sets any screen's (the wall's
+  too) the same way: on or off, its pages and the bottom's switch, for the month and the week.
 - **Family screens do everything but freehand drawing:** a family screen can now set the month's title (🔤 Month
   title) and open ⚙️ Settings for the board's own parts (holidays, birthdays, photos and the slideshow, the Notes
   column, 🗓️ Week and This screen), without a parent signing in. The calendar and trash day stay the admin's, and

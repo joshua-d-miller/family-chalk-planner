@@ -52,3 +52,35 @@ test('a paired screen can always see the kid’s tablet role', async ({ as, boar
   await expect(role.locator('option', { hasText: 'add the family' })).toHaveCount(0);
   await board.admin.post('/api/chores/save', { people: was.people, chores: was.chores });
 });
+
+test('📺 Screens: a screen’s own Notes column on the month and the week, its pages and switch, or off', async ({
+  as,
+  board
+}) => {
+  const wall = await as('wall');
+  await expect(wall.locator('.slate .notes')).toBeVisible();
+  const page = await as('admin', { path: '/admin' });
+  const devs = (await (await board.admin.api('/api/devices')).json()).devices as { id: string; role: string }[];
+  const id = devs.find(d => d.role === 'view')!.id;
+  const month = page.locator('#nc-month-' + id);
+  if (!(await month.isVisible())) await page.getByText('📺 Screens', { exact: false }).first().click();
+  const cols = async () => (await (await board.admin.api('/api/devices/notes-col')).json()).cols[id] || null;
+  // off on the month: the wall's calendar takes the whole board
+  await month.locator('select').selectOption('off');
+  await expect.poll(cols).toMatchObject({ month: { on: false } });
+  await expect(wall.locator('.slate .notes')).toHaveCount(0);
+  // its own: the pages and the bottom's switch
+  await month.locator('select').selectOption('on');
+  await expect(wall.locator('.slate .notes')).toBeVisible();
+  await month.locator('label', { hasText: 'Jars' }).first().locator('input').uncheck();
+  await month.locator('label', { hasText: 'Up next' }).first().locator('input').check();
+  await expect.poll(async () => (await cols())?.month?.pages).toEqual(['info', 'meals', 'upnext']);
+  await expect(month.locator('label', { hasText: '3. 📅 Up next' })).toBeVisible(); // (drawn again)
+  await month.locator('label', { hasText: 'Photos' }).last().locator('input').uncheck();
+  await expect.poll(async () => (await cols())?.month?.bottom?.can).not.toContain('photos');
+  // the week is its own: untouched
+  expect((await cols())?.week).toBeUndefined();
+  await month.locator('select').selectOption('');
+  await expect.poll(cols).toBe(null);
+  expect(page.errors).toEqual([]);
+});
