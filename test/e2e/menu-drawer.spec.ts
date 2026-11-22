@@ -39,7 +39,10 @@ test('a family screen can swap the cork for the ☰ button on either side', asyn
   await expect(fam.locator('#editBtn')).toHaveCount(0); // no cork
   await expect(fam.locator('#menuFab')).toHaveClass(/right/);
   // the board takes the cork's room (a family screen has no frame)
-  await expect(fam.locator('#board')).toHaveCSS('height', '642px');
+  // (642: a zoomed board says 641.998, to the screen's own pixels)
+  await expect
+    .poll(async () => Math.round(await fam.locator('#board').evaluate(el => parseFloat(getComputedStyle(el).height))))
+    .toBe(642);
   if (process.env.SHOTS) await fam.screenshot({ path: 'test-results/menu-right-board.png' });
 
   // ------------------------------------- //

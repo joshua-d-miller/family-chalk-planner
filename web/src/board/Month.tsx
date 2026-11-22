@@ -77,7 +77,7 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 import { clipSrc } from './clip.ts';
-import { hash } from './geom.ts';
+import { CAL, CAL_WIDE, hash } from './geom.ts';
 import { TODAY_MARKS } from './theme.ts';
 import { readable } from './color.ts';
 import { howLong, useSleeps } from '../lib/countdowns.ts';
@@ -231,7 +231,8 @@ export function Month({
   onTitle,
   week = null,
   under = null,
-  height = 642
+  height = 642,
+  wide = false
 }: {
   data: MonthData;
   bins: Bins | null;
@@ -243,6 +244,7 @@ export function Month({
   week?: string | null; // just this week (its first day), in the whole height
   under?: ReactNode; // Split View: the week as a band across the top, and this under it
   height?: number; // the slate's height on this screen (taller where it fills the screen)
+  wide?: boolean; // the Notes column is left off: the calendar is wider
   onDay?: (date: string) => void;
   onEvent?: (ev: BoardEvent) => void;
   title?: ReactNode;
@@ -435,7 +437,7 @@ export function Month({
         >
           {weeks}
         </div>
-        {border && <BorderLayer border={border} />}
+        {border && <BorderLayer border={border} wide={wide} />}
       </div>
       {under && <div className="under">{under}</div>}
     </div>
@@ -478,10 +480,9 @@ const NavBtn = ({ dir, onClick }: { dir: 'prev' | 'next'; onClick?: () => void }
 // A holiday border: up to 8 pictures repeated around the calendar's edge    //
 export type Border = { items: string[]; color: string; size: 's' | 'm' | 'l' };
 const BORDER_SZ = { s: 20, m: 26, l: 34 };
-const CAL_W = 1252 - 18 - 14 - 14 - 214; // the calendar box in board pixels: the slate less its padding, the gap and the notes
 const CAL_H = GRID_H + 28;
 export const borderSrc = (n: string, color: string) => clipSrc(n, color);
-function BorderLayer({ border: b }: { border: Border }) {
+function BorderLayer({ border: b, wide }: { border: Border; wide: boolean }) {
   const sz = BORDER_SZ[b.size] || 26;
   const half = (sz + 6) / 2;
   const gap = sz * 0.45;
@@ -496,7 +497,7 @@ function BorderLayer({ border: b }: { border: Border }) {
   };
   // a border of only light bulbs is a string of lights: on a wire, every bulb pointing out
   const lights = b.items.every(n => n.startsWith('cp-bulb-'));
-  const W = CAL_W;
+  const W = wide ? CAL_WIDE : CAL.w; // the calendar box in board pixels (wider with the Notes column off)
   const H = CAL_H;
   side(half, half, W - half, half, 180);
   side(W - half, half, W - half, H - half, -90);

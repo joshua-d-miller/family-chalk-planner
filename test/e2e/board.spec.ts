@@ -148,24 +148,39 @@ test('the bottom of Notes: a switch between today, up next and photos', async ({
   await expect(wall.locator('#slides.on')).toHaveCount(0); // two taps on the switch aren't a double tap
 });
 
-test('the bottom of Notes on this screen: what it shows and what the switch can flip to', async ({ as }) => {
+test('🗒️ Notes on this screen: its pages, the bottom’s switch, and off (the month and the week each)', async ({
+  as
+}) => {
   const page = await as('family');
+  const sheet = page.locator('#notesSheet');
   await page.locator('#editBtn').click();
   await page.locator('#notesBtn').click();
-  await page.locator('#notesSheet').getByRole('radio', { name: '📅 Up next' }).click();
+  await expect(sheet.getByRole('heading', { name: 'Notes on the month' })).toBeVisible();
+  await sheet.getByRole('button', { name: /Reward jars/ }).click();
+  await sheet.getByRole('button', { name: /Up next/ }).click();
   for (const name of ['🫙 Jars', '📷 Photos'])
-    await page.locator('#notesSheet .tick', { hasText: name }).locator('input').uncheck();
-  await page.locator('#notesSheet').getByRole('button', { name: 'Save' }).click();
+    await sheet.locator('.tick', { hasText: name }).locator('input').uncheck();
+  await sheet.getByRole('button', { name: 'Save' }).click();
   await expect(page.locator('.notes .hasswitch .mh')).toHaveText('Up Next');
   await expect(page.locator('.notes .bslide button')).toHaveCount(2); // up next and today
   // just one: no switch
   await page.locator('#notesBtn').click();
-  await page.locator('#notesSheet .tick', { hasText: '☀️ Today' }).locator('input').uncheck();
-  await page.locator('#notesSheet').getByRole('button', { name: 'Save' }).click();
+  await sheet.locator('.tick', { hasText: '☀️ Today' }).locator('input').uncheck();
+  await sheet.getByRole('button', { name: 'Save' }).click();
   await expect(page.locator('.notes .bslide')).toHaveCount(0);
   await expect(page.locator('.notes .nslot').last().locator('.mh')).toHaveText('Up Next');
+  // off on the month: the calendar takes the whole board; the week still has it
   await page.locator('#notesBtn').click();
-  await page.locator('#notesSheet').getByRole('button', { name: 'Like the rest of the board' }).click();
+  await sheet.locator('#notesShow').uncheck();
+  await sheet.getByRole('button', { name: 'Save' }).click();
+  await expect(page.locator('.slate .notes')).toHaveCount(0);
+  const wall = await as('wall');
+  await expect(wall.locator('.slate .notes')).toBeVisible(); // (another screen: the board's)
+  const wk = await as('family', { path: '/week' }); // (this screen, on the week)
+  await expect(wk.locator('.slate .cal')).toBeVisible();
+  await expect(wk.locator('.slate .notes')).toBeVisible();
+  await page.locator('#notesBtn').click();
+  await sheet.getByRole('button', { name: 'Like the rest of the board' }).click();
   await expect(page.locator('.notes .bslide')).toBeVisible();
 });
 

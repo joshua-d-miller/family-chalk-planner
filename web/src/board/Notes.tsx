@@ -56,6 +56,8 @@
 ===============================================================================
 */
 
+import { useNotesCol } from '../lib/notesCol.ts';
+import type { BoardNotes, Bottom } from '../lib/notesCol.ts';
 import { navigate } from '../lib/nav.ts';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -114,7 +116,7 @@ interface Extras {
     tomorrow: { hi: number; lo: number; rain: number; kind: string };
   } | null;
   trash: { title: string; label: string; sub: string | null } | null;
-  notes: { pages: string[] };
+  notes: BoardNotes;
 }
 
 function Info({ x }: { x: Extras }) {
@@ -500,19 +502,23 @@ export function Notes({
   edit = false,
   drawing = false,
   only,
+  view = 'month',
   dockRef
 }: {
   time24: boolean;
   edit?: boolean;
   drawing?: boolean; // (a tap on a jar while drawing is drawing, not the big jar)
   only?: string[]; // these pages and no switch (Split View: the weather, trash and countdowns)
+  view?: 'month' | 'week'; // which view's pages it shows
   dockRef?: (el: HTMLDivElement | null) => void; // the menu in the Notes column: its last row, for the buttons
 }) {
   const x = useLive<Extras>('api/extras', ['extras']).data;
-  const pages = only || x?.notes?.pages || ['info', 'meals', 'jars'];
-  // this screen's own choice for the bottom (if it has one), else the board's
-  const mine = useLive<{ bottom: { def: string; can: string[] } | null }>('api/notesbottom', ['notesbottom']).data
-    ?.bottom;
+  // this screen's own column for this view (if it set one), else the board's
+  const col = useNotesCol(view);
+  const pages = only || col.pages;
+  // the bottom's switch: this view's own column has its own; else this screen's (if it set one), else the board's
+  const screenBottom = useLive<{ bottom: Bottom | null }>('api/notesbottom', ['notesbottom']).data?.bottom;
+  const mine = col.own ? col.bottom : screenBottom;
   const last = (!only && mine?.def) || pages[pages.length - 1];
   const sw = useSwitch(
     !only && SWITCH.some(([m]) => m === last) ? last : '',

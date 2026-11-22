@@ -60,6 +60,8 @@
 ===============================================================================
 */
 
+import { NOTES_PAGES, boardCol, setMyCol, useMyCols } from '../lib/notesCol.ts';
+import type { BoardNotes, Col, NotesView } from '../lib/notesCol.ts';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { post } from '../lib/api.ts';
@@ -707,49 +709,143 @@ function Trash() {
 // ------------------------- //
 // | The right-hand column | //
 // ------------------------- //
-// Up to 3 pages (from Colby Way's board).                                   //
-const RIGHT: [string, string][] = [
-  ['info', '🌤️ Weather, trash, countdowns'],
-  ['meals', '🍽️ Meal plan'],
-  ['jars', '🫙 Reward jars'],
-  ['upnext', '📅 Up next'],
-  ['today', '☀️ Today'],
-  ['reminders', '🔔 Reminders'],
-  ['chores', '🧹 Chores'],
-  ['timers', '⏲️ Timers'],
-  ['pantry', '🥫 Pantry'],
-  ['photos', '📷 Photos']
-];
+// Up to 3 pages (from Colby Way's board), on the month and on the week,   //
+// and either can be left off: for this screen (or the person signed in), //
+// or for every screen that hasn't set its own.                            //
+const SWITCH_PAGES = ['jars', 'today', 'upnext', 'photos'];
+// a column with new pages or on/off: the bottom's switch kept if its page is still at the bottom
+function changeCol(c: Col, change: Partial<Col>): Col {
+  const next: Col = { on: change.on ?? c.on, pages: change.pages ?? c.pages };
+  const last = next.pages[next.pages.length - 1];
+  if (SWITCH_PAGES.includes(last))
+    next.bottom = c.bottom?.def === last ? c.bottom : { def: last, can: c.bottom?.can || SWITCH_PAGES };
+  return next;
+}
+function ColumnPicker({
+  view,
+  col,
+  onChange,
+  onReset
+}: {
+  view: NotesView;
+  col: Col;
+  onChange: (c: Col) => void;
+  onReset?: () => void; // this screen's own: back to the board's
+}) {
+  const title = view === 'week' ? 'On the week' : 'On the month';
+  const { on, pages } = col;
+  return (
+    <div id={'notes-' + view}>
+      <h4>{title}</h4>
+      <label className="check">
+        <input
+          id={'notesOn-' + view}
+          type="checkbox"
+          checked={on}
+          onChange={e => onChange(changeCol(col, { on: e.target.checked }))}
+        />
+        <span className="t">
+          {view === 'week'
+            ? 'Show the Notes column on the week (off: the week takes the whole board)'
+            : 'Show the Notes column on the month (off: the calendar takes the whole board)'}
+        </span>
+      </label>
+      {on && (
+        <>
+          <p className="dim small">Up to 3, from the top. Tap to add or take away.</p>
+          <div className="segs" role="group" aria-label={title}>
+            {NOTES_PAGES.map(([id, label]) => {
+              const at = pages.indexOf(id);
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={'seg' + (at >= 0 ? ' on' : '')}
+                  aria-pressed={at >= 0}
+                  disabled={at < 0 && pages.length >= 3}
+                  onClick={() =>
+                    onChange(changeCol(col, { pages: at >= 0 ? pages.filter(p => p !== id) : [...pages, id] }))
+                  }
+                >
+                  {at >= 0 && <b>{at + 1}. </b>}
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+      {onReset && (
+        <div className="segs">
+          <button type="button" className="seg" id={'notesReset-' + view} onClick={onReset}>
+            ↩️ Like the rest of the board
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 function RightColumn() {
-  const x = useLive<{ notes: { pages: string[] } }>('api/extras', ['extras']);
+  const x = useLive<{ notes: BoardNotes }>('api/extras', ['extras']);
+  const mine = useMyCols();
+  const [scope, setScope] = useState<'screen' | 'board'>('screen');
   const sv = useSaved();
-  if (!x.data) return null;
-  const pages = x.data.notes.pages;
-  const save = (next: string[]) => {
-    x.set({ ...x.data!, notes: { ...x.data!.notes, pages: next } });
-    sv.run(post('api/right-pages', { pages: next }));
+  if (!x.data || !mine.data) return null;
+  const n = x.data.notes;
+  const views: NotesView[] = ['month', 'week'];
+  // every screen's (the board's)
+  const sendBoard = (view: NotesView, c: Col) => {
+    const next: BoardNotes = { ...n, on: { month: n.on?.month ?? true, week: n.on?.week ?? true } };
+    next[view === 'week' ? 'week' : 'pages'] = c.pages;
+    next.on![view] = c.on;
+    x.set({ ...x.data!, notes: next });
+    sv.run(post('api/right-pages', { view, pages: c.pages, on: c.on }));
+  };
+  // this screen's
+  const sendMine = (view: NotesView, c: Col | null) => {
+    mine.set({ ...mine.data!, [view]: c });
+    sv.run(setMyCol(view, c));
   };
   return (
     <Card title="The right-hand column">
-      <p className="dim small">Up to 3, from the top. Tap to add or take away.</p>
-      <div className="segs">
-        {RIGHT.map(([id, label]) => {
-          const at = pages.indexOf(id);
-          return (
-            <button
-              key={id}
-              type="button"
-              className={'seg' + (at >= 0 ? ' on' : '')}
-              aria-pressed={at >= 0}
-              disabled={at < 0 && pages.length >= 3}
-              onClick={() => save(at >= 0 ? pages.filter(p => p !== id) : [...pages, id])}
-            >
-              {at >= 0 && <b>{at + 1}. </b>}
-              {label}
-            </button>
-          );
-        })}
+      <div className="segs" role="radiogroup" aria-label="Whose Notes column">
+        {(
+          [
+            ['screen', '🖥️ This screen'],
+            ['board', '🏠 Every screen']
+          ] as const
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            type="button"
+            role="radio"
+            id={'notesScope-' + v}
+            aria-checked={scope === v}
+            className={'seg' + (scope === v ? ' on' : '')}
+            onClick={() => setScope(v)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
+      <p className="dim small">
+        {scope === 'screen'
+          ? 'Just this screen (or you, signed in). Until it’s changed here, it shows the same as every screen.'
+          : 'Every screen that hasn’t set its own.'}
+      </p>
+      {views.map(view =>
+        scope === 'board' ? (
+          <ColumnPicker key={view} view={view} col={boardCol(n, view)} onChange={c => sendBoard(view, c)} />
+        ) : (
+          <ColumnPicker
+            key={view}
+            view={view}
+            col={mine.data![view] || boardCol(n, view)}
+            onChange={c => sendMine(view, c)}
+            onReset={mine.data![view] ? () => sendMine(view, null) : undefined}
+          />
+        )
+      )}
       {sv.line}
     </Card>
   );

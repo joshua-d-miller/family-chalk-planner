@@ -1042,6 +1042,71 @@ button:disabled{opacity:.5;cursor:default}
     box.appendChild(lbl); box.appendChild(ticks); draw();
     return box;
   }
+  // a screen's own Notes column on the month and the week: like the rest of the board, or its own (shown with its
+  // pages and the bottom's switch, or off), the same as 🗒️ Notes on the screen itself
+  var NOTE_PAGES = { info: '🌤️ Weather', meals: '🍽️ Meals', jars: '🫙 Jars', upnext: '📅 Up next', today: '☀️ Today', reminders: '🔔 Reminders', chores: '🧹 Chores', timers: '⏲️ Timers', pantry: '🥫 Pantry', photos: '📷 Photos' };
+  function colLine(x, cur, boardNotes) {
+    var wrap = el('div');
+    ['month', 'week'].forEach(function (view) {
+      var mine = cur && cur[view];
+      var box = el('div', 'nbot'); box.id = 'nc-' + view + '-' + x.id;
+      box.appendChild(el('span', 'dim', view === 'week' ? '🗒️ Notes on the week:' : '🗒️ Notes on the month:'));
+      var sel = el('select'); sel.setAttribute('aria-label', 'Notes column on the ' + view + ' on ' + x.name);
+      [['', 'Like the rest of the board'], ['on', 'Its own'], ['off', 'Off']].forEach(function (p) {
+        var o = el('option', null, p[1]); o.value = p[0]; sel.appendChild(o);
+      });
+      box.appendChild(sel);
+      var ticks = el('span'); ticks.style.display = 'contents';
+      box.appendChild(ticks);
+      var boardPages = function () { return (view === 'week' && boardNotes && boardNotes.week) || (boardNotes && boardNotes.pages) || ['info', 'meals', 'jars']; };
+      function save(col) {
+        api('api/devices/notes-col', { id: x.id, view: view, col: col }).then(function (r) { mine = r[view]; draw(); }).catch(function (e) { $('dvErr').textContent = e.message; draw(); });
+      }
+      function bottomOf(pages, can) {
+        var last = pages[pages.length - 1];
+        if (!BOTTOMS[last]) return undefined;
+        return { def: last, can: can || (mine && mine.bottom && mine.bottom.can) || Object.keys(BOTTOMS) };
+      }
+      function draw() {
+        sel.value = mine ? (mine.on ? 'on' : 'off') : '';
+        ticks.innerHTML = '';
+        if (!mine || !mine.on) return;
+        var pages = mine.pages;
+        ticks.appendChild(el('span', 'dim', 'pages (up to 3, from the top):'));
+        Object.keys(NOTE_PAGES).forEach(function (pg) {
+          var at = pages.indexOf(pg);
+          var l = el('label'), i = el('input'); i.type = 'checkbox'; i.value = pg; i.checked = at >= 0;
+          i.disabled = at < 0 && pages.length >= 3;
+          i.addEventListener('change', function () {
+            var next = i.checked ? pages.concat(pg) : pages.filter(function (p) { return p !== pg; });
+            save({ on: true, pages: next, bottom: bottomOf(next) });
+          });
+          l.appendChild(i); l.appendChild(document.createTextNode((at >= 0 ? at + 1 + '. ' : '') + NOTE_PAGES[pg])); ticks.appendChild(l);
+        });
+        var b = mine.bottom;
+        if (!b) return;
+        ticks.appendChild(el('span', 'dim', 'its switch can flip to:'));
+        Object.keys(BOTTOMS).forEach(function (m) {
+          var l = el('label'), i = el('input'); i.type = 'checkbox'; i.value = m;
+          i.checked = m === b.def || b.can.indexOf(m) >= 0; i.disabled = m === b.def;
+          i.addEventListener('change', function () {
+            var can = b.can.filter(function (c) { return c !== m; });
+            if (i.checked) can.push(m);
+            save({ on: true, pages: mine.pages, bottom: { def: b.def, can: can } });
+          });
+          l.appendChild(i); l.appendChild(document.createTextNode(BOTTOMS[m])); ticks.appendChild(l);
+        });
+      }
+      sel.addEventListener('change', function () {
+        if (!sel.value) return save(null);
+        var pages = mine ? mine.pages : boardPages();
+        save({ on: sel.value === 'on', pages: pages, bottom: bottomOf(pages) });
+      });
+      draw();
+      wrap.appendChild(box);
+    });
+    return wrap;
+  }
   // countdowns in sleeps ("3 sleeps!") or days: the screen's own default is sleeps on a kid's tablet, days elsewhere
   function sleepsLine(x, cur) {
     var box = el('div', 'nbot');
@@ -1141,8 +1206,8 @@ button:disabled{opacity:.5;cursor:default}
     return box;
   }
   function loadScreens() {
-    var bottoms = {}, sleeps = {}, weekfrom = {}, weekview = {}, boardfit = {};
-    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices/weekfrom').then(function (b) { weekfrom = b.weekfrom || {}; }, function () {}); }).then(function () { return api('api/devices/weekview').then(function (b) { weekview = b.weekview || {}; }, function () {}); }).then(function () { return api('api/devices/boardfit').then(function (b) { boardfit = b.boardfit || {}; }, function () {}); }).then(function () { return api('api/devices/lang').then(function (b) { screenLangs = b.lang || {}; boardLang = b.board || 'en'; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
+    var bottoms = {}, cols = {}, boardNotes = null, sleeps = {}, weekfrom = {}, weekview = {}, boardfit = {};
+    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/notes-col').then(function (b) { cols = b.cols || {}; }, function () {}); }).then(function () { return api('api/extras').then(function (e) { boardNotes = e.notes; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices/weekfrom').then(function (b) { weekfrom = b.weekfrom || {}; }, function () {}); }).then(function () { return api('api/devices/weekview').then(function (b) { weekview = b.weekview || {}; }, function () {}); }).then(function () { return api('api/devices/boardfit').then(function (b) { boardfit = b.boardfit || {}; }, function () {}); }).then(function () { return api('api/devices/lang').then(function (b) { screenLangs = b.lang || {}; boardLang = b.board || 'en'; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
       var w = $('dvWaiting'); w.innerHTML = '';
       d.waiting.forEach(function (p) { w.appendChild(el('p', 'dim', '⏳ ' + p.agent + ' is showing a code (' + ago(p.created) + ') - type it above.')); });
       var list = $('dvList'); list.innerHTML = '';
@@ -1162,7 +1227,9 @@ button:disabled{opacity:.5;cursor:default}
         rm.addEventListener('click', function () { if (confirm('Remove “' + x.name + '”? It stops showing the board until it’s paired again.')) api('api/devices/remove', { id: x.id }).then(loadScreens).catch(function (e) { $('dvErr').textContent = e.message; }); });
         line.appendChild(nm); line.appendChild(sel); line.appendChild(rm); it.appendChild(line);
         it.appendChild(el('div', 'meta', x.agent + ' · paired ' + new Date(x.created).toLocaleDateString() + ' · last seen ' + ago(x.last_seen)));
-        if (!/^kid:/.test(x.role)) it.appendChild(bottomLine(x, bottoms[x.id] || null));
+        // (the older bottom-only choice: shown while a screen still has one, so it can be put back)
+        if (!/^kid:/.test(x.role) && bottoms[x.id]) it.appendChild(bottomLine(x, bottoms[x.id]));
+        if (!/^kid:/.test(x.role)) it.appendChild(colLine(x, cols[x.id] || null, boardNotes));
         it.appendChild(sleepsLine(x, x.id in sleeps ? sleeps[x.id] : null));
         if (!/^kid:/.test(x.role)) it.appendChild(weekFromLine(x, weekfrom[x.id] || null));
         if (!/^kid:/.test(x.role)) it.appendChild(weekViewLine(x, weekview[x.id] || null));
