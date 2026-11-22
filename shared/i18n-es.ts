@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Shared | i18n-es.ts
 ===============================================================================
- Version:   1.2.4
+ Version:   1.2.5
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-21
  Updated:   2026-11-22
@@ -28,6 +28,9 @@
                         claude
 
  1.2.4    2026-11-22   joshua    Split View and the week's Notes pages.
+                        claude
+
+ 1.2.5    2026-11-22   joshua    Drawing tests.
                         claude
 ===============================================================================
 */

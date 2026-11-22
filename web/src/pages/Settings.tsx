@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Settings.tsx
 ===============================================================================
- Version:   1.2.4
+ Version:   1.2.5
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
  Updated:   2026-11-22
@@ -63,6 +63,9 @@
 
  1.2.4    2026-11-22   joshua    Notes column on the week: a note that
                         claude    Split View leaves out what's under it.
+
+ 1.2.5    2026-11-22   joshua    This screen → Drawing tests, and the
+                        claude    screen's own details.
 ===============================================================================
 */
 

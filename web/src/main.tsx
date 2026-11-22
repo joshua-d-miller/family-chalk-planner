@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | main.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.5
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      Where the screens start: the fonts, the shared styles, and the App,
@@ -26,6 +26,9 @@
 
  1.2.0    2026-11-21   joshua    The board's language, before it's drawn.
                         claude
+
+ 1.2.5    2026-11-22   joshua    This screen's drawing tests, before it's
+                        claude    drawn.
 ===============================================================================
 */
 

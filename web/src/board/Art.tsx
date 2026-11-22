@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Art.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.5
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      The art on a month: chalk and Posca lines, fills, words, clipart and
@@ -49,6 +49,9 @@
 
  1.2.0    2026-11-21   joshua    As tall as the slate on a screen that fills
                         claude    itself.
+
+ 1.2.5    2026-11-22   joshua    Drawing tests: chalk colors flat, if this
+                        claude    screen asks.
 ===============================================================================
 */
 
