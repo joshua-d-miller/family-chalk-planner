@@ -36,7 +36,7 @@ Every setting is made in the **admin console → ⚙️ Board** (after you creat
 | Photos | The share link of an iCloud or Google Photos shared album ([photos.md](photos.md)). |
 | On your network | The board's https address (passkeys, invite links), your reverse proxy's address, whether unpaired devices may view, release or main updates, the source-code link. |
 
-**Save and restart** applies them in a few seconds. Passwords, the Google client secret, the calendar account name, the album link and calendar links are encrypted in the database with a key kept outside it (`data/secret.key`, copied into the nightly backup); passwords are never shown again. Trash and recycling days and the bottom of the Notes column are set on the tablet (⚙️ Settings).
+**Save and restart** applies them in a few seconds. Passwords, the Google client secret, the calendar account name, the album link and calendar links are encrypted in the database with a key kept outside it (`data/secret.key`, copied into the nightly backup); passwords are never shown again. Trash and recycling days and the Notes column are set on the tablet (⚙️ Settings).
 
 Only where the board listens and keeps its data are set by the installer (in the service definition, `/etc/systemd/system/family-chalk-planner.service.d/server.conf`): `install.sh --unit-only --port 3002 --bind 0.0.0.0 --data DIR --backup-dir DIR`.
 
