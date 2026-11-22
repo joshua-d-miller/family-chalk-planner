@@ -76,3 +76,20 @@ test('a slow screen (CPU six times slower, 1080p) still answers a tap quickly', 
   expect(month).toBeLessThan(3000);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
 });
+
+test('a 1080p screen: the board drawn at the screen’s own resolution (zoomed, not a stretched layer)', async ({
+  as
+}) => {
+  const wall = await as('wall', { context: { viewport: { width: 1920, height: 1080 } } });
+  const board = wall.locator('#board');
+  await expect(wall.locator('#grid .day').first()).toBeVisible();
+  const style = await board.evaluate(el => ({ zoom: el.style.zoom, transform: el.style.transform }));
+  expect(Number(style.zoom)).toBeGreaterThan(1.4);
+  expect(style.transform).toBe('');
+  // it fills the screen's width, and a day's box is where its size says
+  const b = (await board.boundingBox())!;
+  expect(b.width).toBeGreaterThan(1900);
+  const day = (await wall.locator('#grid .day').first().boundingBox())!;
+  expect(day.width).toBeGreaterThan(200);
+  expect(wall.errors).toEqual([]);
+});
