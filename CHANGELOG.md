@@ -4,6 +4,13 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.2.5 — No stray dots on a screen that's been up a while
+- **Fixed:** a screen left on for hours could show a few tiny blue or green dots at the edges of art, left over
+  from the browser's own drawing, until the page was reloaded. The board is now drawn afresh, as a reload would,
+  at moments nobody sees: a few seconds into the slideshow (it covers the screen by then), and otherwise once an
+  hour when nobody has touched the screen for 10 minutes and nothing is open. Events, art and what the art hides
+  stay as they were.
+
 ## 1.2.4 — The week's Notes column, with Split View too
 - **Fixed:** with 🗓️ Week's **Split View** on, the Notes column on the week showed only the weather, trash day and
   countdowns, whatever pages were picked for the week (🗒️ Notes, or ⚙️ Settings → Notes column). It now shows the

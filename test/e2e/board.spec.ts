@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   1.2.4
+ Version:   1.2.5
  Author:    Joshua D. Miller, Claude
  Updated:   2026-11-22
 
@@ -46,6 +46,9 @@
 
  1.2.4    2026-11-22   joshua    Split View shows the week's own Notes
                         claude    pages, less what's under the week.
+
+ 1.2.5    2026-11-22   joshua    The board drawn afresh under the slideshow,
+                        claude    and the same once it's gone.
 ===============================================================================
 */
 
@@ -451,5 +454,71 @@ test('a family screen: the cork stays put going from the calendar to a page and 
         Math.abs(onPage[i] - onBoard[i]),
         `${['left', 'top', 'width', 'height', 'button left', 'button top', 'button height'][i]}: ${onBoard} → ${onPage}`
       ).toBeLessThanOrEqual(2);
+  }
+});
+
+test('a few seconds into the slideshow the board is drawn afresh under it (stray dots go), and stays the same', async ({
+  as,
+  board
+}) => {
+  const { ym, date } = thisMonth();
+  const ev = (await (await board.admin.post('/api/events', { title: 'Under the pumpkin', date, allDay: true })).json())
+    .href as string;
+  const page = await as('family');
+  const cell = page.locator(`#grid [data-date="${date}"]`);
+  await expect(cell).toContainText('Under the pumpkin');
+  // art over it that hides it: still hidden on the fresh board
+  const spot = await page.evaluate(d => {
+    const s = document.querySelector('#slate')!.getBoundingClientRect();
+    const z = s.width / 1252;
+    const e = [...document.querySelectorAll<HTMLElement>(`[data-date="${d}"] .ev`)].find(x =>
+      x.textContent!.includes('Under the pumpkin')
+    )!;
+    const r = e.getBoundingClientRect();
+    return { x: (r.left + r.width / 2 - s.left) / z, y: (r.top + r.height / 2 - s.top) / z };
+  }, date);
+  const art = await (
+    await board.admin.post('/api/art/bulk', {
+      ym,
+      items: [{ k: 'g', src: '/api/clip/gi-mummy-head.svg', x: spot.x, y: spot.y, w: 150, h: 150, cv: 'hide' }]
+    })
+  ).json();
+  try {
+    const hidden = () =>
+      page.evaluate(
+        d =>
+          [...document.querySelectorAll(`[data-date="${d}"] .ev`)].some(
+            e => e.textContent!.includes('Under the pumpkin') && e.classList.contains('underart')
+          ),
+        date
+      );
+    await expect.poll(hidden).toBe(true);
+    await expect(page.locator('#board')).toHaveAttribute('data-paint', '0');
+    await page.evaluate(
+      () => ((window as unknown as { oldBoard: Element }).oldBoard = document.getElementById('board')!)
+    );
+    // the slideshow: a few seconds in, a new board under it
+    await page.waitForTimeout(1000);
+    const box = (await page.locator('#grid .day').nth(10).boundingBox())!;
+    await page.mouse.dblclick(box.x + 20, box.y + 40);
+    await expect(page.locator('#slides')).toHaveClass(/on/);
+    await expect(page.locator('#board')).toHaveAttribute('data-paint', '1', { timeout: 10_000 });
+    expect(
+      await page.evaluate(
+        () => document.getElementById('board') !== (window as unknown as { oldBoard: Element }).oldBoard
+      )
+    ).toBe(true);
+    await expect(page.locator('#slides')).toHaveClass(/on/); // (the slideshow carries on)
+    await page.mouse.click(400, 400);
+    await expect(page.locator('#slides')).not.toHaveClass(/on/);
+    // the same board as before: its events, the art, and what the art hides
+    await expect(cell).toContainText('Under the pumpkin');
+    await expect(page.locator('.artSvg image, .artSvg use, .art img, .artSvg').first()).toBeAttached();
+    await expect.poll(hidden).toBe(true);
+    await expect(page.locator('#board')).toHaveAttribute('data-paint', '1'); // (once, not again and again)
+    expect(page.errors).toEqual([]);
+  } finally {
+    await board.admin.post('/api/art/delete', { ym, ids: art.ids });
+    await board.admin.post('/api/events/delete', { ref: { href: ev }, origDate: date });
   }
 });
