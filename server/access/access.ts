@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | access.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      Who may do what.
@@ -105,6 +105,9 @@
                                   wooden frame, per screen. Birthdays for
                                   family screens too. Its language (anyone
                                   may ask which; a screen may pick its own).
+
+ 1.2.1    2026-11-22   joshua    /notescol: a screen's own Notes column.
+                        claude
 ===============================================================================
 */
 

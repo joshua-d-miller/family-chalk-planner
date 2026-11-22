@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Server | favorites.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.1
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      Favorites: the few things each person (and each family screen) uses
@@ -100,6 +100,9 @@
                                   screen (Colby Way's frame and padding
                                   settings, reworked); a low-power screen.
                                   Its language, when it isn't the board's.
+
+ 1.2.1    2026-11-22   joshua    Each screen's own Notes column on the
+                        claude    month and the week (kv 'notescol').
 ===============================================================================
 */
 

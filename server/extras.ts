@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | extras.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-22
 
  Purpose:
      The top of the Notes column: weather (Open-Meteo, no account needed)
@@ -38,6 +38,10 @@
                         colby
                                   Reminders, timers, the pantry and the right-
                                   hand column's pages (server).
+
+ 1.2.1    2026-11-22   joshua    The month and the week each have their
+                        claude    own pages, and either can leave the column
+                                  off.
 ===============================================================================
 */
 

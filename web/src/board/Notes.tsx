@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Notes.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      The right-hand column: up to 3 pages, chosen in ⚙️ Settings (weather,
@@ -53,6 +53,9 @@
                                   The family's events, pantry, reminders and
                                   timers stay in their own words in another
                                   language.
+
+ 1.2.1    2026-11-22   joshua    This screen's own pages on the month or
+                        claude    the week.
 ===============================================================================
 */
 
