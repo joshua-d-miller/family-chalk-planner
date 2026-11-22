@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | main.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.5
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      Where the screens start: the fonts, the shared styles, and the App,
@@ -26,6 +26,9 @@
 
  1.2.0    2026-11-21   joshua    The board's language, before it's drawn.
                         claude
+
+ 1.2.5    2026-11-22   joshua    This screen's drawing tests, before it's
+                        claude    drawn.
 ===============================================================================
 */
 
@@ -34,12 +37,15 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import { Oops } from './ui/Oops.tsx';
 import { startLanguage } from './lib/lang.ts';
+import { applyDrawTests } from './lib/drawTests.ts';
 import './ui/theme.css';
 import './ui/ui.css';
 import './ui/looks.css';
 
 // the board's language (or this screen's), before it's drawn
 startLanguage();
+// this screen's drawing tests (⚙️ Settings → This screen), before it's drawn
+applyDrawTests();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

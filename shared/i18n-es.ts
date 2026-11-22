@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Shared | i18n-es.ts
 ===============================================================================
- Version:   1.2.4
+ Version:   1.2.5
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-21
  Updated:   2026-11-22
@@ -28,6 +28,9 @@
                         claude
 
  1.2.4    2026-11-22   joshua    Split View and the week's Notes pages.
+                        claude
+
+ 1.2.5    2026-11-22   joshua    Drawing tests.
                         claude
 ===============================================================================
 */
@@ -633,6 +636,20 @@ export const ES: Dict = {
   '⏲️ Timers': '⏲️ Temporizadores',
   'The right-hand column': 'La columna de la derecha',
   'Up to 3, from the top. Tap to add or take away.': 'Hasta 3, desde arriba. Toca para agregar o quitar.',
+  'Drawing tests': 'Pruebas de dibujo',
+  Graphics: 'Gráficos',
+  Screen: 'Pantalla',
+  'Board scale': 'Escala del tablero',
+  ' (zoomed)': ' (con zoom)',
+  ' (stretched)': ' (estirado)',
+  "For stray dots or seams the board doesn't draw: try one at a time and see if they stop. Each one reloads the board, and is kept on this screen only.":
+    'Para puntos sueltos o costuras que el tablero no dibuja: prueba una a la vez y mira si desaparecen. Cada una vuelve a cargar el tablero y se guarda solo en esta pantalla.',
+  'Keep pictures still (no moving GIFs now and then)':
+    'Mantener las imágenes quietas (sin GIF que se mueven de vez en cuando)',
+  'Draw the art on a layer of its own, apart from the calendar’s lines':
+    'Dibujar el arte en su propia capa, aparte de las líneas del calendario',
+  'Draw chalk colors in art flat, without the chalk grain':
+    'Dibujar los colores de tiza del arte lisos, sin el grano de tiza',
   "With Split View, a page that's already under the week isn't shown here too.":
     'Con la vista dividida, una página que ya está debajo de la semana no se muestra aquí también.',
   'On the month': 'En el mes',
