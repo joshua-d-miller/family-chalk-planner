@@ -347,6 +347,14 @@ body:has(.scrim) .menufab,
 body:has(.menuScrim) .menufab {
   visibility: hidden;
 }
+/* the slideshow is on: the ☰ (and its row) and the tab bar step aside. The slideshow's z-index only
+   counts inside the board's #stage (a fixed box is its own stacking context), and these sit on the
+   body, so without this they'd float over the photos */
+body:has(#slides.on) .fabwrap,
+body:has(#slides.on) .menufab,
+body:has(#slides.on) .tabbar {
+  visibility: hidden;
+}
 /* the "can't reach the board" note keeps out of the button's corner */
 html.menu-right .offline {
   right: auto;

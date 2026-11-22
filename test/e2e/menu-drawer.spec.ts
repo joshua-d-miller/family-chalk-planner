@@ -202,3 +202,23 @@ test('on a 16:9 screen the button floats: the board keeps its size, the Notes li
     expect(fam.errors).toEqual([]);
   }
 });
+
+test('the slideshow covers the ☰ button (it floats over the board, not over the photos)', async ({ as }) => {
+  const fam = await as('family');
+  await menuStyle(fam, 'right');
+  const fab = fam.locator('#menuFab');
+  await expect(fab).toBeVisible();
+  // a double tap on the calendar: the photo frame, over the whole screen
+  await fam.waitForTimeout(1000);
+  const cell = (await fam.locator('#grid .day').nth(10).boundingBox())!;
+  await fam.mouse.dblclick(cell.x + 20, cell.y + 40);
+  await expect(fam.locator('#slides')).toHaveClass(/on/);
+  await expect(fab).toBeHidden();
+  // a tap goes back to the calendar, and the button with it
+  await fam.waitForTimeout(1600);
+  await fam.mouse.click(400, 400);
+  await expect(fam.locator('#slides')).not.toHaveClass(/on/);
+  await expect(fab).toBeVisible();
+  await menuStyle(fam, 'cork');
+  expect(fam.errors).toEqual([]);
+});
