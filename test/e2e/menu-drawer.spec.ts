@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | menu-drawer.spec.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.2
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-12
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      A family screen that swaps the cork for the ☰ button: on the right,
@@ -24,6 +24,9 @@
  1.2.0    2026-11-21   joshua    The screen's menu is picked in ⚙️ Settings
                         colby     → This screen. The menu in the Notes
                         claude    column (Colby Way's dock).
+
+ 1.2.2    2026-11-22   joshua    The slideshow covers the ☰ button (it
+                        claude    floated over the photos).
 ===============================================================================
 */
 
