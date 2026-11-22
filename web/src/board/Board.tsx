@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -117,6 +117,11 @@
                                   A family screen sets the month's title too.
                                   A low-power screen: no moving weather, GIFs
                                   or fades, and the chalk drawn at 1x.
+
+ 1.2.1    2026-11-22   joshua    Drawn at the screen's own resolution
+                        claude    (zoom, not a stretched layer); the Notes
+                                  column can be off, and the calendar and
+                                  its art take its room.
 ===============================================================================
 */
 

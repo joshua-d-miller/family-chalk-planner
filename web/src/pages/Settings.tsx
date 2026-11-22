@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Settings.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      ⚙️ Settings on the board. Admins also get the calendar (Google
@@ -57,6 +57,9 @@
                                   and the wooden frame; a low-power screen.
                                   Its language. A family screen gets
                                   the board's parts too.
+
+ 1.2.1    2026-11-22   joshua    Notes column: this screen's or every
+                        claude    screen's, on the month and the week.
 ===============================================================================
 */
 

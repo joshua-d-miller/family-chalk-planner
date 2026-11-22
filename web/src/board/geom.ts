@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | geom.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      Where things are on the board, in board pixels (the slate is 1252 x
@@ -42,6 +42,9 @@
 
  1.2.0    2026-11-21   joshua    Art on a taller board (a screen that fills
                         claude    itself) and back: stretchY.
+
+ 1.2.1    2026-11-22   joshua    Art moves across with the days on a
+                        claude    wider calendar (stretchX).
 ===============================================================================
 */
 

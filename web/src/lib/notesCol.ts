@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | notesCol.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.1
  Author:    Joshua D. Miller, Claude
- Created:   2026-11-21
- Updated:   2026-11-21
+ Created:   2026-11-22
+ Updated:   2026-11-22
 
  Purpose:
      🗒️ This screen's Notes column, on the month and on the week: whether
@@ -24,7 +24,7 @@
 ===============================================================================
  Version   Date         Author    Description
  -------   ----------   -------   --------------------------------------------
- 1.2.0    2026-11-21   joshua    New file.
+ 1.2.1    2026-11-22   joshua    New file.
                         claude
 ===============================================================================
 */

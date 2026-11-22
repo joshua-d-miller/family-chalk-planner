@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | NotesEditor.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.1
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-08
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      🗒️ This screen's Notes column on the view it's showing (the month or
@@ -25,9 +25,11 @@
                         claude
 
  1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
-                        claude    with changes. The whole column, for the
-                                  month and the week each: on or off, its
-                                  pages and the bottom's switch.
+                        claude    with changes.
+
+ 1.2.1    2026-11-22   joshua    The whole column, for the month and the
+                        claude    week each: on or off, its pages and the
+                                  bottom's switch.
 ===============================================================================
 */
 

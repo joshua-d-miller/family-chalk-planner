@@ -4,6 +4,20 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.2.1 — Each screen's own Notes column, and sharp on every screen
+- **Each screen's own Notes column, on the month and on the week:** tap **🗒️ Notes** on the board (it sets the view
+  you're on) or go to ⚙️ Settings → Notes column → This screen. Each view picks its own pages (up to 3), what the
+  bottom's little switch can flip to, and whether the column shows at all; with it off the calendar takes the whole
+  board (art on the days moves across with them, so it stays on its day). A screen that hasn't set its own shows
+  the board's (⚙️ Settings → Notes column → Every screen), and the admin console → 📺 Screens sets any screen's (the wall's
+  too) the same way: on or off, its pages and the bottom's switch, for the month and the week.
+- **Sharp on every screen, drawn at its own resolution:** the board is now sized with the browser's zoom instead
+  of being stretched as one layer, on Chrome, Edge, Android screens (the Apolosign too) and Firefox. Its lines and
+  boxes land on the screen's own pixels, which fixes the smears and seams that could show up now and then along the
+  edges of boxes on a 1080p screen (a stretch of 1.53x). The chalk and surface textures are painted at the
+  screen's resolution too, never stretched up. Art stays on the same days on every screen. iPads and Safari draw
+  it as before.
+
 ## 1.2.0 — Made for the wall screen, and en español
 - **En español:** the board in Spanish, everywhere: the board itself, ⚙️ Settings, the app pages, the menus and
   cards, the messages, the setup guide and the admin console. Pick the board's language in the admin console →
@@ -23,18 +37,6 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   the corner button. The ☰ and up to 3 buttons you pick sit in the last row of the Notes column, so nothing floats
   over the board: + Add event, ▶ Slideshow, 🗓️ Week / 📅 month, Decorate, a page (chores, meals, reminders, timers,
   pantry, jars) or Reload. Pick them in ⚙️ Settings → This screen.
-- **Each screen's own Notes column, on the month and on the week:** tap **🗒️ Notes** on the board (it sets the view
-  you're on) or go to ⚙️ Settings → Notes column → This screen. Each view picks its own pages (up to 3), what the
-  bottom's little switch can flip to, and whether the column shows at all; with it off the calendar takes the whole
-  board (art on the days moves across with them, so it stays on its day). A screen that hasn't set its own shows
-  the board's (⚙️ Settings → Notes column → Every screen), and the admin console → 📺 Screens sets any screen's (the wall's
-  too) the same way: on or off, its pages and the bottom's switch, for the month and the week.
-- **Sharp on every screen, drawn at its own resolution:** the board is now sized with the browser's zoom instead
-  of being stretched as one layer, on Chrome, Edge, Android screens (the Apolosign too) and Firefox. Its lines and
-  boxes land on the screen's own pixels, which fixes the smears and seams that could show up now and then along the
-  edges of boxes on a 1080p screen (a stretch of 1.53x). The chalk and surface textures are painted at the
-  screen's resolution too, never stretched up. Art stays on the same days on every screen. iPads and Safari draw
-  it as before.
 - **Family screens do everything but freehand drawing:** a family screen can now set the month's title (🔤 Month
   title) and open ⚙️ Settings for the board's own parts (holidays, birthdays, photos and the slideshow, the Notes
   column, 🗓️ Week and This screen), without a parent signing in. The calendar and trash day stay the admin's, and

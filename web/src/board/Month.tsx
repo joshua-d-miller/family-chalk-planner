@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Month.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.1
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      The month: its name, the weekdays, and a box per day with its events,
@@ -72,6 +72,9 @@
                                   The family's events stay in their own words
                                   in another language (holidays are
                                   translated).
+
+ 1.2.1    2026-11-22   joshua    A wider calendar with the Notes column
+                        claude    off (its border too).
 ===============================================================================
 */
 

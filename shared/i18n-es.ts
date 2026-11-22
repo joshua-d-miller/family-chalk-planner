@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Shared | i18n-es.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.1
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-21
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      The board in Spanish: each piece of English on the screens and in the
@@ -22,6 +22,9 @@
  Version   Date         Author    Description
  -------   ----------   -------   --------------------------------------------
  1.2.0    2026-11-21   joshua    New file.
+                        claude
+
+ 1.2.1    2026-11-22   joshua    The Notes column's settings per screen.
                         claude
 ===============================================================================
 */
