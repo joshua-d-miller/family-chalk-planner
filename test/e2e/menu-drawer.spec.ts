@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | menu-drawer.spec.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.2
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-12
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      A family screen that swaps the cork for the ☰ button: on the right,
@@ -24,6 +24,9 @@
  1.2.0    2026-11-21   joshua    The screen's menu is picked in ⚙️ Settings
                         colby     → This screen. The menu in the Notes
                         claude    column (Colby Way's dock).
+
+ 1.2.2    2026-11-22   joshua    The slideshow covers the ☰ button (it
+                        claude    floated over the photos).
 ===============================================================================
 */
 
@@ -201,4 +204,24 @@ test('on a 16:9 screen the button floats: the board keeps its size, the Notes li
     await expect(fam.locator('#editBtn')).toBeVisible();
     expect(fam.errors).toEqual([]);
   }
+});
+
+test('the slideshow covers the ☰ button (it floats over the board, not over the photos)', async ({ as }) => {
+  const fam = await as('family');
+  await menuStyle(fam, 'right');
+  const fab = fam.locator('#menuFab');
+  await expect(fab).toBeVisible();
+  // a double tap on the calendar: the photo frame, over the whole screen
+  await fam.waitForTimeout(1000);
+  const cell = (await fam.locator('#grid .day').nth(10).boundingBox())!;
+  await fam.mouse.dblclick(cell.x + 20, cell.y + 40);
+  await expect(fam.locator('#slides')).toHaveClass(/on/);
+  await expect(fab).toBeHidden();
+  // a tap goes back to the calendar, and the button with it
+  await fam.waitForTimeout(1600);
+  await fam.mouse.click(400, 400);
+  await expect(fam.locator('#slides')).not.toHaveClass(/on/);
+  await expect(fab).toBeVisible();
+  await menuStyle(fam, 'cork');
+  expect(fam.errors).toEqual([]);
 });
