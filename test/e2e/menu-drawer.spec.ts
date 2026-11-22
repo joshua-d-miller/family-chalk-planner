@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | menu-drawer.spec.ts
 ===============================================================================
- Version:   1.2.2
+ Version:   1.2.3
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-12
  Updated:   2026-11-22
@@ -27,6 +27,9 @@
 
  1.2.2    2026-11-22   joshua    The slideshow covers the ☰ button (it
                         claude    floated over the photos).
+
+ 1.2.3    2026-11-22   joshua    ...on a screen whose browser has no :has()
+                        claude    too (html.slides-on).
 ===============================================================================
 */
 
@@ -216,11 +219,14 @@ test('the slideshow covers the ☰ button (it floats over the board, not over th
   const cell = (await fam.locator('#grid .day').nth(10).boundingBox())!;
   await fam.mouse.dblclick(cell.x + 20, cell.y + 40);
   await expect(fam.locator('#slides')).toHaveClass(/on/);
+  // (html.slides-on, not body:has(): a wall screen's browser can be older than :has())
+  await expect(fam.locator('html')).toHaveClass(/slides-on/);
   await expect(fab).toBeHidden();
   // a tap goes back to the calendar, and the button with it
   await fam.waitForTimeout(1600);
   await fam.mouse.click(400, 400);
   await expect(fam.locator('#slides')).not.toHaveClass(/on/);
+  await expect(fam.locator('html')).not.toHaveClass(/slides-on/);
   await expect(fab).toBeVisible();
   await menuStyle(fam, 'cork');
   expect(fam.errors).toEqual([]);

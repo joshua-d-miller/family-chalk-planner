@@ -4,6 +4,11 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.2.3 — The ☰ button stays out of the slideshow, on every wall screen
+- **Fixed:** 1.2.2's fix for the ☰ button over the slideshow's photos needed a newer browser than some wall screens
+  have (one older than Chrome 105, such as an older Android tablet's). The button and the tab bar now step aside for
+  the slideshow on every browser the board supports.
+
 ## 1.2.2 — The ☰ button stays out of the slideshow
 - **Fixed:** on a screen that uses the ☰ button instead of the cork, the button (and the ✏️ beside it) floated over
   the photos in the slideshow. It now steps aside while the slideshow is on and comes back with the calendar, as it

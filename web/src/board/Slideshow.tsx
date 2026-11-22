@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Slideshow.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.3
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-22
 
  Purpose:
      The overnight slideshow on the wall: a photo, or a collage of 2-3,
@@ -39,6 +39,10 @@
                         claude    Dates in the screen's language; the family's
                                   events and reminders stay in their own
                                   words.
+
+ 1.2.3    2026-11-22   joshua    While it's on, html.slides-on, so the ☰
+                        claude    button steps aside on a screen whose
+                                  browser has no :has().
 ===============================================================================
 */
 
@@ -431,6 +435,12 @@ export function Slideshow({
   }, [on, next, cfg.every, kick]);
   useEffect(() => {
     if (!on) setKick(0); // the next time it comes on, it starts with new photos
+  }, [on]);
+  // while it's on, html.slides-on: the ☰ button and the tab bar sit outside the board and step aside
+  // for it (a class, not body:has(): a wall screen's browser can be older than :has())
+  useEffect(() => {
+    document.documentElement.classList.toggle('slides-on', on);
+    return () => document.documentElement.classList.remove('slides-on');
   }, [on]);
 
   const shown = slides[cur];
