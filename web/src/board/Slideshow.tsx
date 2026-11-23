@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Slideshow.tsx
 ===============================================================================
- Version:   1.2.3
+ Version:   1.2.7
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-22
+ Updated:   2026-11-23
 
  Purpose:
      The overnight slideshow on the wall: a photo, or a collage of 2-3,
@@ -43,6 +43,9 @@
  1.2.3    2026-11-22   joshua    While it's on, html.slides-on, so the ☰
                         claude    button steps aside on a screen whose
                                   browser has no :has().
+
+ 1.2.7    2026-11-23   joshua    The photos read safely when the board's
+                        claude    answer didn't come through whole.
 ===============================================================================
 */
 
@@ -82,7 +85,7 @@ export function nightNow(cfg: PhotoCfg | undefined, d = new Date()) {
 // ---------------------------- //
 // Whether the slideshow is showing, and the taps that change it             //
 export function useSlides(photos: Photos | null, wall: boolean) {
-  const has = !!photos?.photos.length;
+  const has = !!photos?.photos?.length;
   const [manual, setManual] = useState(false); // the photo frame, turned on by a double tap
   const [peekUntil, setPeekUntil] = useState(0); // a tap at night: the calendar for a while
   const [, tick] = useState(0);

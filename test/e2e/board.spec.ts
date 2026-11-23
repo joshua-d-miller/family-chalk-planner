@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   1.2.6
+ Version:   1.2.7
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-22
+ Updated:   2026-11-23
 
  Purpose:
      The board itself: this month on the tablet, moving between months,
@@ -49,6 +49,9 @@
 
  1.2.6    2026-11-22   joshua    The art on a layer of its own, and never a
                         claude    stretched copy.
+
+ 1.2.7    2026-11-23   joshua    An answer that's cut short doesn't crash
+                        claude    the screen.
 ===============================================================================
 */
 
@@ -59,6 +62,21 @@ test('the tablet opens on this month, with weather, countdowns and no errors', a
   await expect(page.locator('#monthName')).toContainText(thisMonth().name);
   await expect(page.locator(`[data-date="${thisMonth().date}"]`)).toBeVisible();
   await expect(page.locator('#wNow')).toContainText('58°');
+  expect(page.errors).toEqual([]);
+});
+
+test('an answer from the board that’s cut short (the photos, here) doesn’t crash the screen', async ({ as }) => {
+  const page = await as('family');
+  const crashed: string[] = [];
+  page.on('request', r => r.url().includes('api/screen-error') && crashed.push(r.postData() || ''));
+  // a 200 that isn't the board's answer: cut off while the board restarted, or a page from something in between
+  await page.route('**/api/photos', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{"enabl' }));
+  await page.reload();
+  await expect(page.locator('#monthName')).toContainText(thisMonth().name);
+  await page.locator('#editBtn').click();
+  await page.waitForTimeout(500);
+  await expect(page.locator('#monthName')).toBeVisible();
+  expect(crashed).toEqual([]);
   expect(page.errors).toEqual([]);
 });
 

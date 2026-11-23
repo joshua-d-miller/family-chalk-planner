@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Notes.tsx
 ===============================================================================
- Version:   1.2.4
+ Version:   1.2.7
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-22
+ Updated:   2026-11-23
 
  Purpose:
      The right-hand column: up to 3 pages, chosen in ⚙️ Settings (weather,
@@ -60,6 +60,9 @@
  1.2.4    2026-11-22   joshua    Split View: the pages picked for the week,
                         claude    less what's already under it (not just
                                   the weather).
+
+ 1.2.7    2026-11-23   joshua    The photos read safely when the board's
+                        claude    answer didn't come through whole.
 ===============================================================================
 */
 
@@ -341,7 +344,7 @@ function PhotoPage() {
     const t = setInterval(() => setP(next.current(list)), 3 * 60 * 1000);
     return () => clearInterval(t);
   }, [ph]);
-  if (!ph?.photos.length) return null;
+  if (!ph?.photos?.length) return null;
   const bw = box.current?.clientWidth || 180;
   const bh = box.current?.clientHeight || 140;
   return (
@@ -468,7 +471,7 @@ function useSwitch(def: string, others: string[], can: string[] | null) {
       !others.includes(m) &&
       (!can || can.includes(m) || m === def) &&
       (m !== 'jars' || !!jars?.length) &&
-      (m !== 'photos' || !!ph?.photos.length)
+      (m !== 'photos' || !!ph?.photos?.length)
   );
   const [view, setView] = useState<string | null>(null);
   const back = useRef<ReturnType<typeof setTimeout> | null>(null);
