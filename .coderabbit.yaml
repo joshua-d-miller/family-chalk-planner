@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit's pull request reviews (free for public repositories). It reviews a pull request when asked with a
+# comment "@coderabbitai review" (CodeRabbit only reviews on its own once a public repository has 10 stars).
+language: en-US
+tone_instructions: 'Be brief and concrete. Lead with security and correctness problems, then real inefficiencies. Skip style that Prettier and ESLint already enforce.'
+reviews:
+  profile: chill # fewer nitpicks; security and bugs are still reported
+  request_changes_workflow: false # comments only; the maintainer approves
+  high_level_summary: true
+  poem: false
+  sequence_diagrams: false
+  collapse_walkthrough: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - '!package-lock.json'
+    - '!clipart/**'
+    - '!dist/**'
+  path_instructions:
+    - path: '**/*'
+      instructions: >-
+        Family Chalk Planner is a self-hosted family wall calendar on a home network, often on a Raspberry Pi.
+        Contributing rules are in CONTRIBUTING.md. The code must keep working on Node.js 22 (32-bit Raspberry Pi
+        OS) as well as 26.
+    - path: 'server/**'
+      instructions: >-
+        Check security first: every /api route must check the caller's rank (editor-only unless there's a reason;
+        see server/access/); no path built from request input without containment (uploads, media, photos, clip
+        art, backups); no SSRF in calendar, photo or link fetching; SQL through node:sqlite must use parameters;
+        no passwords, tokens or setup codes in logs or responses; limits on upload and request sizes. Then
+        efficiency on a Raspberry Pi: blocking work on the request path, repeated database queries in loops,
+        unbounded caches or memory growth. A server change should come with a test in test/.
+    - path: 'web/**'
+      instructions: >-
+        The screens run for days on cheap tablets and wall displays. Watch for leaks (timers, listeners,
+        subscriptions not cleaned up), needless re-renders, and anything on the wall that depends on an outside
+        site at display time. No dangerouslySetInnerHTML or HTML built from user text.
+    - path: 'deploy/**'
+      instructions: >-
+        These scripts run as root on a family's Raspberry Pi. Check quoting, set -e handling, safe temporary
+        files, file permissions on the data folder and secrets, and that a failed update is rolled back.
+    - path: '.github/workflows/**'
+      instructions: >-
+        Check for script injection from pull request titles, branch names or other event text in run steps,
+        permissions broader than needed, and secrets reachable from pull requests.
+chat:
+  auto_reply: true
