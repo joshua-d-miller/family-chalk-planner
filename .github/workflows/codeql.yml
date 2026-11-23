@@ -1,0 +1,47 @@
+name: CodeQL
+# GitHub's code scanning (free for public repositories): reads the server, the screens and these workflows for
+# security problems such as a path built from what a request sent, a request to an address a user typed or a
+# shell command made from untrusted text. Problems show up on the pull request and under Security → Code scanning.
+# It runs on pull requests, on main (the baseline pull requests are compared with) and weekly, since new checks
+# arrive with CodeQL updates even when the code hasn't changed. Library problems are npm audit's and Dependabot's.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '41 6 * * 2'
+  workflow_dispatch:
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # to report what it finds
+    strategy:
+      fail-fast: false
+      matrix:
+        # javascript-typescript covers server/, shared/, web/ and public/; actions covers .github/workflows.
+        # Neither needs a build: CodeQL reads the source.
+        language: [javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          # The standard security checks plus the extended set: more findings, a few of them less certain
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - node_modules
+              - dist
+              - clipart
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
