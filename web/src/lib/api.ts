@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | api.ts
 ===============================================================================
- Version:   0.14.2
+ Version:   1.2.7
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-08
+ Updated:   2026-11-23
 
  Purpose:
      Talking to the board's server. Every address is relative to the
@@ -26,6 +26,11 @@
 
  0.14.2    2026-11-08   joshua    <html data-busy> while requests are on their
                         claude    way (the tests wait for it).
+
+ 1.2.7    2026-11-23   joshua    An answer that didn't come through whole
+                        claude    (cut off, or a page instead of the
+                                  board's answer) is an error, not an empty
+                                  answer the screen reads as nothing there.
 ===============================================================================
 */
 
@@ -77,8 +82,16 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   } finally {
     track(-1);
   }
-  const body = (await r.json().catch(() => ({}))) as Record<string, unknown>;
-  if (!r.ok) throw new ApiError(String(body.error || `The board answered ${r.status}`), r.status, body);
+  let body: Record<string, unknown> | null | undefined;
+  try {
+    body = (await r.json()) as Record<string, unknown>;
+  } catch {
+    /* not the board's answer, or cut off on its way */
+  }
+  if (!r.ok) throw new ApiError(String(body?.error || `The board answered ${r.status}`), r.status, body || {});
+  // an answer that didn't come through whole (the board restarting, a page from something in between): an error,
+  // so the screen keeps what it has, not an empty answer it reads as nothing there (a crash, for the photos)
+  if (body === undefined) throw new ApiError('The board’s answer didn’t come through - try again', r.status, {});
   return body as T;
 }
 

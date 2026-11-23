@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Settings.tsx
 ===============================================================================
- Version:   1.2.4
+ Version:   1.2.7
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-22
+ Updated:   2026-11-23
 
  Purpose:
      ⚙️ Settings on the board. Admins also get the calendar (Google
@@ -63,6 +63,9 @@
 
  1.2.4    2026-11-22   joshua    Notes column on the week: a note that
                         claude    Split View leaves out what's under it.
+
+ 1.2.7    2026-11-23   joshua    The photos read safely when the board's
+                        claude    answer didn't come through whole.
 ===============================================================================
 */
 
@@ -587,7 +590,7 @@ function Photos() {
     <Card title="Photos and the slideshow">
       <p className="dim small">
         {p.data.enabled
-          ? `${p.data.photos.length} photos from ${p.data.kind === 'immich' || p.data.kind === 'immich-share' ? 'Immich' : p.data.kind === 'google' ? 'Google Photos' : 'iCloud'}.`
+          ? `${p.data.photos?.length ?? 0} photos from ${p.data.kind === 'immich' || p.data.kind === 'immich-share' ? 'Immich' : p.data.kind === 'google' ? 'Google Photos' : 'iCloud'}.`
           : 'No photo album yet: the admin console sets it up (⚙️ Board → Photos).'}
         {p.data.error && <span className="err"> {p.data.error}</span>}
       </p>

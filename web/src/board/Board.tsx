@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   1.2.6
+ Version:   1.2.7
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-22
+ Updated:   2026-11-23
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -128,6 +128,9 @@
 
  1.2.6    2026-11-22   joshua    The art on a layer of its own, except
                         claude    zoomed in to draw.
+
+ 1.2.7    2026-11-23   joshua    The photos read safely when the board's
+                        claude    answer didn't come through whole.
 ===============================================================================
 */
 
@@ -1054,7 +1057,7 @@ export function Board({
                 ? () =>
                     setEditing({ k: 'event', ev: null, date: m.ym === m.today.slice(0, 7) ? m.today : m.ym + '-01' })
                 : undefined,
-              slides: photos?.photos.length ? slides.doubleTap : undefined,
+              slides: photos?.photos?.length ? slides.doubleTap : undefined,
               week: () => navigate(weekly ? homeHref(who) : 'week'),
               weekly
             }}
@@ -1133,7 +1136,7 @@ export function Board({
                   </span>{' '}
                   Border
                 </button>
-                {!!photos?.photos.length && (
+                {!!photos?.photos?.length && (
                   <button type="button" className="pill" id="photosBtn" onClick={() => setEditing({ k: 'photos' })}>
                     <span className="ic" aria-hidden="true">
                       📷

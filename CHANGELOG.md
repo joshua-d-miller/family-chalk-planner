@@ -4,6 +4,13 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.2.7 — No crash when the board's answer is cut short
+- **Fixed:** now and then a screen showed "A screen crashed" (seen in Firefox, on the board and while editing it),
+  saying `e.photos is undefined`. When the board's answer to a screen didn't come through whole (cut off while the
+  board restarted, say, or a page from something in between instead of the board's answer), the screen took it as
+  an empty answer, and the photos had nothing to count. Such an answer is now treated as one that didn't arrive:
+  the screen keeps what it already had and asks again on the next change, and the photos read safely either way.
+
 ## 1.2.6 — Art drawn on a layer of its own
 - **Fixed:** now and then, tiny blue or green dots could show up at the edges of clip art and words, mostly where
   they sat on or near the calendar's lines, until the page was reloaded (seen on an Apolosign). The art was painted

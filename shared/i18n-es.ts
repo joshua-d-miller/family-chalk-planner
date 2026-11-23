@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Shared | i18n-es.ts
 ===============================================================================
- Version:   1.2.4
+ Version:   1.2.7
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-21
- Updated:   2026-11-22
+ Updated:   2026-11-23
 
  Purpose:
      The board in Spanish: each piece of English on the screens and in the
@@ -29,6 +29,9 @@
 
  1.2.4    2026-11-22   joshua    Split View and the week's Notes pages.
                         claude
+
+ 1.2.7    2026-11-23   joshua    An answer from the board that didn't come
+                        claude    through whole.
 ===============================================================================
 */
 
@@ -425,6 +428,8 @@ export const ES: Dict = {
   Scrawl: 'Garabato',
   'Can’t reach the board - check the Wi-Fi': 'No se puede llegar al tablero: revisa el Wi-Fi',
   'The board answered {0}': 'El tablero respondió {0}',
+  'The board’s answer didn’t come through - try again':
+    'La respuesta del tablero no llegó completa: inténtalo de nuevo',
   '1 sleep': '1 noche',
   'Cork along the bottom': 'Corcho abajo',
   'Button, drawer on the right': 'Botón, panel a la derecha',
