@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | google.test.ts
 ===============================================================================
- Version:   0.15.1
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-10
+ Updated:   2026-11-24
 
  Purpose:
      Google Calendar end to end against a fake Google: sign in (paste
@@ -30,6 +30,9 @@
 
  0.15.1    2026-11-10   joshua    Without Google, the month still shows and
                         claude    says why.
+
+ 1.2.8    2026-11-24   joshua    Its board's setup code comes from the
+                        claude    board's log (watchLog()).
 ===============================================================================
 */
 
@@ -48,7 +51,7 @@ let server,
   google,
   data,
   cookie = '';
-import { pairAdmin, client } from './helpers.ts';
+import { pairAdmin, client, watchLog } from './helpers.ts';
 import * as mockGoogle from './mock-google.ts';
 const { api, post } = client(base, () => cookie);
 const month = async () => await (await api('/api/month?ym=2026-10')).json();
@@ -76,6 +79,7 @@ test.before(async () => {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
+  watchLog(data, server); // the setup code comes from its log, as a person reads it
   for (let i = 0; i < 50; i++) {
     try {
       if ((await fetch(base + '/api/whoami')).ok) break;

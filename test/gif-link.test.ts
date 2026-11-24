@@ -21,6 +21,9 @@
  1.2.8    2026-11-24   joshua    The test GIF is a whole picture (the board
                         claude    draws pictures again now); an IPv4 address
                                   written as IPv6 is never fetched.
+
+                                  Its board's setup code comes from the
+                                  board's log (test/helpers.ts watchLog()).
 ===============================================================================
 */
 
@@ -31,7 +34,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { makeAdmin, client } from './helpers.ts';
+import { makeAdmin, client, watchLog } from './helpers.ts';
 import { GIF } from './sample-pictures.ts';
 import { kindOf } from '../server/images.ts';
 
@@ -56,6 +59,7 @@ function startBoard(port, extra) {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
+  watchLog(data, p); // the setup code comes from its log, as a person reads it
   boards.push(p);
   return data;
 }

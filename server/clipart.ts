@@ -53,7 +53,8 @@
                         claude    kept (server/images.ts), the still picture
                                   as a PNG, the list kept in the database,
                                   each file inside its folder and written in
-                                  one step.
+                                  one step. A board's list and SVG stills
+                                  from before are carried over, offline.
 ===============================================================================
 */
 
@@ -324,7 +325,8 @@ export function setup({ app, cacheDir, kv }: { app: Express; cacheDir: string; k
     try {
       let buf = readIfThere(file);
       // a still picture kept as Google's SVG before 1.2.8: drawn as the PNG from that copy (no internet needed)
-      const before = !buf && kind === 'svg' ? readIfThere(path.join(animDir, `${cp}.svg`)) : null;
+      const old = kind === 'svg' ? inside(animDir, `${cp}.svg`) : null;
+      const before = !buf && old ? readIfThere(old) : null;
       if (before) {
         buf = await svgAsPng(before);
         if (buf) writeWhole(file, buf);

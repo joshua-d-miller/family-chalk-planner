@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | gphotos.test.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-06
+ Updated:   2026-11-24
 
  Purpose:
      Google Photos shared album as the photo source (mock Google on
@@ -16,6 +16,9 @@
  -------   ----------   -------   --------------------------------------------
  0.13.0    2026-11-06   joshua    Server and tests are all TypeScript (ES
                         claude    modules).
+
+ 1.2.8    2026-11-24   joshua    Its board's setup code comes from the
+                        claude    board's log (watchLog()).
 ===============================================================================
 */
 
@@ -36,7 +39,7 @@ let server,
   gp,
   data,
   cookie = '';
-import { pairAdmin, client } from './helpers.ts';
+import { pairAdmin, client, watchLog } from './helpers.ts';
 import * as mockCaldav from './mock-caldav.ts';
 import * as mockGphotos from './mock-gphotos.ts';
 const { api, post } = client(base, () => cookie);
@@ -61,6 +64,7 @@ test.before(async () => {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
+  watchLog(data, server); // the setup code comes from its log, as a person reads it
   for (let i = 0; i < 50; i++) {
     try {
       if ((await fetch(base + '/api/whoami')).ok) break;

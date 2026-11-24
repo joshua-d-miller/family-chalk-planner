@@ -86,6 +86,9 @@
 
  1.2.8    2026-11-24   joshua    Whole pictures from test/sample-pictures.ts
                         claude    for uploads.
+
+                                  Its board's setup code comes from the
+                                  board's log (test/helpers.ts watchLog()).
 ===============================================================================
 */
 
@@ -106,7 +109,7 @@ let server,
   album,
   data,
   cookie = '';
-import { pairAdmin, client } from './helpers.ts';
+import { pairAdmin, client, watchLog } from './helpers.ts';
 import { GIF, PNG } from './sample-pictures.ts';
 import * as mockAlbum from './mock-album.ts';
 import * as mockCaldav from './mock-caldav.ts';
@@ -136,6 +139,7 @@ test.before(async () => {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
+  watchLog(data, server); // the setup code comes from its log, as a person reads it
   for (let i = 0; i < 50; i++) {
     try {
       if ((await fetch(base + '/api/whoami')).ok) break;
