@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Server | theme.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-24
 
  Purpose:
      Board style ("theme"): a preset name plus the family's tweaks to it,
@@ -42,6 +42,10 @@
 
  1.2.0    2026-11-21   joshua    Saved styles, by name (up to 20).
                         claude
+
+ 1.2.8    2026-11-24   joshua    Only a listed tweak's name is ever kept (a
+                        claude    "__proto__" one could crash the request
+                                  before).
 ===============================================================================
 */
 
@@ -55,7 +59,7 @@ import { BOARD_FONTS, CLASSIC_FONT } from '../shared/fonts.ts';
 // ------------------------- //
 const FONTS = [...BOARD_FONTS.map(b => b.id), CLASSIC_FONT.id];
 // each tweak: a color, a font, or one of a few choices
-const TWEAKS: Record<string, 'color' | 'font' | string[]> = {
+export const TWEAKS: Record<string, 'color' | 'font' | string[]> = {
   numF: 'font',
   numC: 'color',
   boxes: ['on', 'off'],
@@ -79,7 +83,8 @@ const TWEAKS: Record<string, 'color' | 'font' | string[]> = {
 // a tweak a style may hold: a known part, with a value that part can take
 // (a month can have its own style and tweaks too: server/month.ts)
 export function okTweak(k: string, v: unknown): v is string {
-  const kind = TWEAKS[k];
+  // only the tweaks listed above (never a name every object has, like "__proto__" or "constructor")
+  const kind = Object.hasOwn(TWEAKS, k) ? TWEAKS[k] : undefined;
   if (typeof v !== 'string' || !kind) return false;
   return kind === 'color' ? /^#[0-9a-fA-F]{6}$/.test(v) : kind === 'font' ? FONTS.includes(v) : kind.includes(v);
 }
@@ -129,7 +134,8 @@ export function cleanTheme(input: unknown): Theme {
     else delete out.s; // no photo yet: the slate
   }
   if (t.z === 1 || t.z === true) out.z = 1; // "change with the season" (off unless turned on)
-  for (const [k, v] of Object.entries((t.o || {}) as Record<string, unknown>)) if (okTweak(k, v)) out.o[k] = v;
+  for (const [k, v] of Object.entries((t.o || {}) as Record<string, unknown>))
+    if (Object.hasOwn(TWEAKS, k) && okTweak(k, v)) out.o[k] = v; // only a listed tweak's name is ever kept
   return out;
 }
 
@@ -154,9 +160,9 @@ export function setup({
     res.json(t);
   });
 
-  // ------------------- //
+  // ---------------- //
   // | Saved styles | //
-  // ------------------- //
+  // ---------------- //
   // Styles the family saved by name (up to 20), to pick again later; each   //
   // one checked like the board style itself.                                //
   app.get('/api/styles', (_req, res) => res.json(kv.get<SavedStyle[]>('savedStyles') || []));

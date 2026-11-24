@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | mock-caldav.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-06
+ Updated:   2026-11-24
 
  Purpose:
      A minimal CalDAV stand-in shaped like iCloud's responses, for tests
@@ -20,6 +20,10 @@
  -------   ----------   -------   --------------------------------------------
  0.13.0    2026-11-06   joshua    Server and tests are all TypeScript (ES
                         claude    modules).
+
+ 1.2.8    2026-11-24   joshua    Calendar files and the dump are sent as
+                        claude    what they are, said explicitly (never a
+                                  page).
 ===============================================================================
 */
 
@@ -144,7 +148,11 @@ app.all('/1/calendars/kids/', (req, res) =>
   )
 );
 app.all('/1/calendars/kids/swim.ics', (req, res) => {
-  if (req.method === 'GET') return res.set('ETag', kidsStore.etag).type('text/calendar').send(kidsStore.text);
+  if (req.method === 'GET') {
+    res.set('ETag', kidsStore.etag);
+    res.set('Content-Type', 'text/calendar; charset=utf-8'); // a calendar file, never a page
+    return res.send(kidsStore.text);
+  }
   if (req.method === 'PUT') {
     if (req.get('if-match') && req.get('if-match') !== kidsStore.etag) return res.sendStatus(412);
     kidsStore.text = req.body;
@@ -190,8 +198,12 @@ app.all('/1/calendars/fam/:f', (req, res) => {
     cur = store.get(f),
     im = req.get('if-match'),
     inm = req.get('if-none-match');
-  if (req.method === 'GET')
-    return cur ? res.set('ETag', cur.etag).type('text/calendar').send(cur.text) : res.sendStatus(404);
+  if (req.method === 'GET') {
+    if (!cur) return res.sendStatus(404);
+    res.set('ETag', cur.etag);
+    res.set('Content-Type', 'text/calendar; charset=utf-8'); // a calendar file, never a page
+    return res.send(cur.text);
+  }
   if (im && (!cur || cur.etag !== im)) return res.sendStatus(412);
   if (inm === '*' && cur) return res.sendStatus(412);
   if (req.method === 'PUT') {
@@ -205,7 +217,10 @@ app.all('/1/calendars/fam/:f', (req, res) => {
   }
   res.sendStatus(405);
 });
-app.get('/__dump/:f', (req, res) => res.type('text').send((store.get(req.params.f) || {}).text || 'none'));
+app.get('/__dump/:f', (req, res) => {
+  res.set('Content-Type', 'text/plain; charset=utf-8'); // what's stored, as plain text (never a page)
+  res.send((store.get(req.params.f) || {}).text || 'none');
+});
 function start(port = 5232): Promise<import('node:http').Server> {
   return new Promise(r => {
     const srv = app.listen(port, '127.0.0.1', () => r(srv));

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | http.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-24
 
  Purpose:
      Reading requests: cookies, and what kind of device sent it.
@@ -25,6 +25,10 @@
                         colby
                                   Home-network sign-in: just a password for
                                   the board at home, off unless turned on.
+
+ 1.2.8    2026-11-24   joshua    parseCookies() makes its object in one go,
+                        claude    so a cookie named "__proto__" is just a
+                                  cookie.
 ===============================================================================
 */
 
@@ -73,18 +77,20 @@ export function openedByIp(host: string | undefined) {
 // ----------- //
 // | Cookies | //
 // ----------- //
-export function parseCookies(h: string | undefined) {
-  const out: Record<string, string> = {};
+export function parseCookies(h: string | undefined): Record<string, string> {
+  // gathered as [name, value] pairs and made into an object in one go: a cookie named "__proto__"
+  // is then just a cookie by that name, never a change to how every object behaves
+  const pairs: [string, string][] = [];
   for (const part of String(h || '').split(';')) {
     const i = part.indexOf('=');
     if (i <= 0) continue;
     try {
-      out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+      pairs.push([part.slice(0, i).trim(), decodeURIComponent(part.slice(i + 1).trim())]);
     } catch {
       /* ignore a bad cookie */
     }
   }
-  return out;
+  return Object.fromEntries(pairs);
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Calendar | source.ts
 ===============================================================================
- Version:   1.0.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-14
+ Updated:   2026-11-24
 
  Purpose:
      The family's calendar: any CalDAV server (iCloud, Nextcloud,
@@ -44,6 +44,10 @@
  1.0.0     2026-11-14   joshua    Home Assistant's calendars, as the Home
                         claude    Assistant app: read, add, change and delete
                                   where each calendar allows it.
+
+ 1.2.8    2026-11-24   joshua    Every CalDAV address passes the one address
+                        claude    check (server/address.ts) before it's
+                                  fetched.
 ===============================================================================
 */
 
@@ -56,6 +60,7 @@ import type { Google } from './google.ts';
 import { applyEventChange, makeIcal } from './ical.ts';
 import type { BoardEvent, EventChange, EventRef } from './ical.ts';
 import type { HaCalendar, HaEvent, HaEventIn, HomeAssistant } from '../homeassistant.ts';
+import { checkedAddress } from '../address.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //
@@ -96,7 +101,11 @@ const sameUrl = (u: string, base: string) => {
 // Every calendar on a CalDAV account: [{ name, url }] (also the console's   //
 // "Find my calendars")                                                      //
 export async function caldavCalendars(base: string, auth: string) {
-  const req = async (url: string, body: string, depth = '0') => {
+  // each address (the one typed, and the ones the server answers with) passes the one address check
+  // first (server/address.ts); iCloud's own per-account servers (p52-caldav.icloud.com…) pass
+  const req = async (address: string, body: string, depth = '0') => {
+    const url = checkedAddress(address);
+    if (!url) throw new Error('That isn’t a calendar server address');
     const r = await fetch(url, {
       method: 'PROPFIND',
       headers: { Authorization: auth, 'Content-Type': 'application/xml; charset=utf-8', Depth: depth },
@@ -418,9 +427,9 @@ export function createCalendarSource(
     return events;
   }
 
-  // ------------------------------------- //
+  // ------------------------------------ //
   // | One calendar, and its saved copy | //
-  // ------------------------------------- //
+  // ------------------------------------ //
   // A calendar's events for a month: fetched and saved; when it can't be    //
   // reached, the copy saved last time (from before a restart too), or none. //
   async function kept(

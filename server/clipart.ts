@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | clipart.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
- Updated:   2026-11-14
+ Updated:   2026-11-24
 
  Purpose:
      Pictures to place on the board:
@@ -48,6 +48,12 @@
                                   gone: the chalk drawings and the one search
                                   cover it. Openclipart's pictures are
                                   searched with their own words.
+
+ 1.2.8    2026-11-24   joshua    Animated emoji: drawn again before they're
+                        claude    kept (server/images.ts), the still picture
+                                  as a PNG, the list kept in the database,
+                                  each file inside its folder and written in
+                                  one step.
 ===============================================================================
 */
 
@@ -55,6 +61,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import type { Express } from 'express';
+import type { Kv } from './kv.ts';
+import { inside, readIfThere, writeWhole } from './files.ts';
+import { remade, svgAsPng } from './images.ts';
 import { buildCatalog, search } from './catalog.ts';
 import type { Picture } from './catalog.ts';
 import { makeStyles, STYLES } from './clipstyles.ts';
@@ -63,6 +72,7 @@ const require = createRequire(import.meta.url);
 export const CHALK = '#EDEAE0';
 const NAME = /^[a-z0-9-]{1,64}$/;
 const FOREVER = 'public, max-age=31536000, immutable';
+const ANIM_MAX = 10 * 1024 * 1024; // far bigger than any animated emoji
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------------------------------- //
@@ -131,7 +141,7 @@ interface IconSet {
   height?: number;
 }
 
-export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
+export function setup({ app, cacheDir, kv }: { app: Express; cacheDir: string; kv: Kv }) {
   const animDir = path.join(cacheDir, 'anim');
   const styles = makeStyles(cacheDir);
 
@@ -273,39 +283,53 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
   app.get('/api/anim/list', async (_req, res) => {
     try {
       if (!animIndex) {
-        fs.mkdirSync(cacheDir, { recursive: true });
-        const file = path.join(cacheDir, 'noto-anim-api.json');
-        let data: { icons?: { codepoint: string; tags?: string[]; categories?: string[]; popularity?: number }[] };
-        if (fs.existsSync(file)) data = JSON.parse(fs.readFileSync(file, 'utf8'));
-        else {
-          const r = await fetch('https://googlefonts.github.io/noto-emoji-animation/data/api.json', {
-            signal: AbortSignal.timeout(30000)
-          });
-          if (!r.ok) throw new Error(`Animated emoji list download failed (${r.status})`);
-          const text = await r.text();
-          fs.writeFileSync(file, text);
-          data = JSON.parse(text);
+        // kept in the board's database, as the board's own short list (not Google's file), once fetched
+        animIndex = kv.get<typeof animIndex>('animEmojiList');
+        if (!animIndex) {
+          // a board from before 1.2.8 kept Google's file itself: read once from there, so it needs no internet
+          const before = readIfThere(path.join(cacheDir, 'noto-anim-api.json'));
+          let data: { icons?: { codepoint: string; tags?: string[]; categories?: string[]; popularity?: number }[] };
+          if (before) data = JSON.parse(before.toString('utf8'));
+          else {
+            const r = await fetch('https://googlefonts.github.io/noto-emoji-animation/data/api.json', {
+              signal: AbortSignal.timeout(30000)
+            });
+            if (!r.ok) throw new Error(`Animated emoji list download failed (${r.status})`);
+            data = (await r.json()) as typeof data;
+          }
+          animIndex = (data.icons || [])
+            .filter(i => /^[0-9a-f_]{2,48}$/.test(i.codepoint))
+            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+            .map(i => ({
+              cp: i.codepoint,
+              tags: (i.tags || []).join(' ').replace(/:/g, '').replace(/-/g, ' ').slice(0, 300),
+              cat: String((i.categories || [])[0] || '').slice(0, 40)
+            }));
+          kv.set('animEmojiList', animIndex);
         }
-        animIndex = (data.icons || [])
-          .filter(i => /^[0-9a-f_]{2,48}$/.test(i.codepoint))
-          .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
-          .map(i => ({
-            cp: i.codepoint,
-            tags: (i.tags || []).join(' ').replace(/:/g, '').replace(/-/g, ' '),
-            cat: (i.categories || [])[0] || ''
-          }));
       }
       res.json(animIndex);
     } catch (e) {
       res.status(502).json({ error: (e as Error).message });
     }
   });
+  // one emoji: the moving GIF, or its still picture (Google's SVG drawing, kept as a 512 × 512 PNG; the
+  // address still ends in /svg, as the art on boards already has it). Each is drawn again before it's kept
+  // (server/images.ts), and written in one step.
   app.get('/api/anim/:cp/:kind', async (req, res) => {
     const { cp, kind } = req.params;
     if (!/^[0-9a-f_]{2,48}$/.test(cp) || !['gif', 'svg'].includes(kind)) return res.sendStatus(404);
-    const file = path.join(animDir, `${cp}.${kind}`);
+    const file = inside(animDir, kind === 'gif' ? `${cp}.gif` : `${cp}.still.png`);
+    if (!file) return res.sendStatus(404);
     try {
-      if (!fs.existsSync(file)) {
+      let buf = readIfThere(file);
+      // a still picture kept as Google's SVG before 1.2.8: drawn as the PNG from that copy (no internet needed)
+      const before = !buf && kind === 'svg' ? readIfThere(path.join(animDir, `${cp}.svg`)) : null;
+      if (before) {
+        buf = await svgAsPng(before);
+        if (buf) writeWhole(file, buf);
+      }
+      if (!buf) {
         const r = await fetch(
           `https://fonts.gstatic.com/s/e/notoemoji/latest/${cp}/${kind === 'gif' ? '512.gif' : 'emoji.svg'}`,
           {
@@ -313,21 +337,25 @@ export function setup({ app, cacheDir }: { app: Express; cacheDir: string }) {
           }
         );
         if (!r.ok) return res.sendStatus(404);
+        const got = Buffer.from(await r.arrayBuffer());
+        if (got.byteLength > ANIM_MAX) return res.sendStatus(404);
+        buf = kind === 'gif' ? (await remade(got, 'gif'))?.buf || null : await svgAsPng(got);
+        if (!buf) return res.sendStatus(404);
         fs.mkdirSync(animDir, { recursive: true });
-        fs.writeFileSync(file, Buffer.from(await r.arrayBuffer()));
+        writeWhole(file, buf);
       }
       res
         .set('Cache-Control', FOREVER)
-        .type(kind === 'gif' ? 'image/gif' : 'image/svg+xml')
-        .sendFile(file);
+        .type(kind === 'gif' ? 'image/gif' : 'image/png')
+        .send(buf);
     } catch {
       res.sendStatus(502);
     }
   });
 
-  // ------------------------- //
+  // --------------------------- //
   // | Every picture, searched | //
-  // ------------------------- //
+  // --------------------------- //
   // Built the first time it's wanted, and again once the other styles have  //
   // finished unpacking (until then, Fluent and the chalk drawings).         //
   let cat: Picture[] | null = null;

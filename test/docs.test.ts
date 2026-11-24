@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Tests | docs.test.ts
 ===============================================================================
- Version:   0.17.1
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-14
- Updated:   2026-11-14
+ Updated:   2026-11-24
 
  Purpose:
      The README and every guide in docs/ point at things that exist: each
@@ -19,6 +19,9 @@
  -------   ----------   -------   --------------------------------------------
  0.17.1    2026-11-14   joshua    New file.
                         claude
+
+ 1.2.8    2026-11-24   joshua    HTML tags are taken out of a heading again
+                        claude    until none are left.
 ===============================================================================
 */
 
@@ -38,13 +41,15 @@ const pages = [
 ];
 
 // a heading's #anchor, the way GitHub makes it
-const slug = (h: string) =>
-  h
-    .trim()
-    .toLowerCase()
-    .replace(/<[^>]+>/g, '')
-    .replace(/[^\p{L}\p{N}\s_-]/gu, '')
-    .replace(/\s/g, '-');
+const slug = (h: string) => {
+  // HTML tags out, again until none are left (a tag can hide inside another: "<<b>b>")
+  let s = h.trim().toLowerCase();
+  for (let prev = ''; prev !== s;) {
+    prev = s;
+    s = s.replace(/<[^>]+>/g, '');
+  }
+  return s.replace(/[^\p{L}\p{N}\s_-]/gu, '').replace(/\s/g, '-');
+};
 const anchors = (file: string) => {
   const seen = new Map<string, number>();
   const out = new Set<string>();

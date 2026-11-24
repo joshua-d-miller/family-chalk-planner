@@ -4,6 +4,27 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.2.8 — Safer pictures, links and limits
+A security check-up, from GitHub's code scanning: nothing you do on the board changes.
+- **Fixed:** "Add from link" could be pointed at the board's own computer or your home network with an address
+  written the IPv6 way (`http://[::ffff:127.0.0.1]/`), which slipped past its private-network check. It's turned
+  away now, like every other private address.
+- **Safer:** every picture the board brings in from elsewhere (album photos, web pictures and their thumbnails,
+  animated emoji, pictures from a link or an upload) is drawn again as a new picture before it's kept, so
+  anything hidden in the original (a script, a second file tucked on the end, where a photo was taken) never
+  comes along. GIFs still move and photos stay the right way up. An animated emoji's still picture is now kept
+  as a PNG.
+- **Safer:** one check for every address the board fetches from (an Immich or calendar server, and what those
+  answer with): plain web addresses only, never one with a password in it or one no real server has. Your own
+  network is still fine for Immich and calendars, and iCloud's own servers still work.
+- **Safer:** a limit on requests a minute, counted for each signed-in person, paired screen and Home Assistant
+  person (anyone else by address), so a stuck device can't wear the board down. Far above what a home's screens
+  use; sign-in and pairing keep their own, tighter limits.
+- **Safer:** files the board keeps are always inside their own folder and written in one step; odd names in a
+  board style, a month's look or a cookie are ignored (a style tweak named `__proto__` could make that request
+  fail); what a screen or a sign-in sends goes into the log in quotes, so it can't start a fake log line.
+- Docker's actions in the release workflow are pinned to exact versions.
+
 ## 1.2.7 — No crash when the board's answer is cut short
 - **Fixed:** now and then a screen showed "A screen crashed" (seen in Firefox, on the board and while editing it),
   saying `e.photos is undefined`. When the board's answer to a screen didn't come through whole (cut off while the

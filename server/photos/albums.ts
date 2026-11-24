@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Photos | albums.ts
 ===============================================================================
- Version:   0.15.1
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
- Updated:   2026-11-10
+ Updated:   2026-11-24
 
  Purpose:
      Reading a shared photo album, the way the album's own web page reads
@@ -29,6 +29,10 @@
 
  0.15.1    2026-11-10   joshua    When iCloud won't open the album, says iCloud
                         claude    may be down (and passes on iCloud's reason).
+
+ 1.2.8    2026-11-24   joshua    Only photos.google.com itself is swapped
+                        claude    for the stand-in (never
+                                  photos.google.com.example.org).
 ===============================================================================
 */
 
@@ -232,7 +236,8 @@ export function gpItems(items: any[]): AlbumPhoto[] {
 // page itself makes.                                                        //
 async function googleAlbum(cfg: AlbumConfig) {
   const gpHost = cfg.googleHost || 'https://photos.google.com';
-  const page = await fetch(cfg.url.replace(/^https:\/\/photos\.google\.com/i, gpHost), {
+  // only photos.google.com itself (the address ends there or a / follows), never photos.google.com.example.org
+  const page = await fetch(cfg.url.replace(/^https:\/\/photos\.google\.com(?=\/|$)/i, gpHost), {
     headers: GP_UA,
     redirect: 'follow',
     signal: AbortSignal.timeout(30000)

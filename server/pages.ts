@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | pages.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-21
+ Updated:   2026-11-24
 
  Purpose:
      The pages themselves: the board page (wall, tablet and phone chores),
@@ -63,6 +63,9 @@
  1.2.0    2026-11-21   joshua    /i18n.js and /i18n-es.js: the translator and
                         claude    the Spanish dictionary, for the admin
                                   console.
+
+ 1.2.8    2026-11-24   joshua    A font file is always inside its package's
+                        claude    folder.
 ===============================================================================
 */
 
@@ -73,6 +76,7 @@ import { createRequire, stripTypeScriptTypes } from 'node:module';
 import express from 'express';
 import type { Express, RequestHandler } from 'express';
 import { ICONS } from './icons.ts';
+import { inside } from './files.ts';
 import { CSP_BOARD } from './access/access.ts';
 import { BOARD_FONTS, CLASSIC_FONT } from '../shared/fonts.ts';
 
@@ -295,7 +299,9 @@ export function setup({
       return res.sendStatus(404);
     }
     res.set('Cache-Control', 'public, max-age=31536000, immutable');
-    res.sendFile(path.join(dir, 'files', file), err => {
+    const full = inside(path.join(dir, 'files'), file);
+    if (!full) return res.sendStatus(404);
+    res.sendFile(full, err => {
       if (err && !res.headersSent) res.sendStatus(404);
     });
   });

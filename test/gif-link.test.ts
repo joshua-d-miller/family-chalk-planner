@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | gif-link.test.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-06
+ Updated:   2026-11-24
 
  Purpose:
      "Add from link": the board downloads a GIF (or the GIF a page shares)
@@ -17,6 +17,10 @@
  -------   ----------   -------   --------------------------------------------
  0.13.0    2026-11-06   joshua    Server and tests are all TypeScript (ES
                         claude    modules).
+
+ 1.2.8    2026-11-24   joshua    The test GIF is a whole picture (the board
+                        claude    draws pictures again now); an IPv4 address
+                                  written as IPv6 is never fetched.
 ===============================================================================
 */
 
@@ -28,17 +32,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { makeAdmin, client } from './helpers.ts';
+import { GIF } from './sample-pictures.ts';
+import { kindOf } from '../server/images.ts';
 
 const SITE = 5994,
   OPEN = 3994,
   SAFE = 3995;
-const GIF = Buffer.concat([
-  Buffer.from('GIF89a'),
-  Buffer.from([
-    1, 0, 1, 0, 0x80, 0, 0, 0, 0, 0, 255, 255, 255, 0x21, 0xf9, 4, 0, 0, 0, 0, 0, 0x2c, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2,
-    0x44, 1, 0, 0x3b
-  ])
-]);
 let site;
 const boards = [],
   dirs = [];
@@ -114,7 +113,7 @@ test('a GIF link, a redirect and a page that shares a GIF are saved on the board
     assert.match(src, /^\/api\/media\/[a-z0-9]{16}\.gif$/);
     const img = await open.api(src);
     assert.equal(img.status, 200);
-    assert.ok(Buffer.from(await img.arrayBuffer()).equals(GIF), 'the board serves its own copy');
+    assert.equal(kindOf(Buffer.from(await img.arrayBuffer())), 'gif', 'the board serves its own copy, a GIF');
   }
 });
 
@@ -139,7 +138,11 @@ test('never fetches the local network (no SSRF)', async () => {
     'http://192.168.1.1/a.gif',
     'http://169.254.169.254/latest/meta-data',
     'http://[::1]/a.gif',
-    'http://0.0.0.0/'
+    'http://0.0.0.0/',
+    // an IPv4 address written as IPv6 (the URL parser makes this [::ffff:7f00:1]; got past before 1.2.8)
+    'http://[::ffff:127.0.0.1]/a.gif',
+    'http://[::ffff:c0a8:101]/a.gif',
+    'http://[64:ff9b::a00:1]/a.gif'
   ]) {
     const r = await safe.post('/api/media/fromlink', { url: u });
     assert.equal(r.status, 400, u);
