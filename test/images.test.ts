@@ -50,6 +50,38 @@ test('each kind comes out as the same kind of picture, the same size', async () 
   }
 });
 
+test('as sharp as before: a photo loses next to nothing; a GIF keeps every pixel', async () => {
+  // a picture with small text and colored lines (the hardest kind for JPEG), drawn again
+  const src = fs.readFileSync(path.join(import.meta.dirname, '..', 'docs', 'images', 'start-3b-calendar.jpg'));
+  const out = await remade(src);
+  assert.ok(out);
+  const a = await sharp(src).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const b = await sharp(out.buf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  assert.deepEqual([b.info.width, b.info.height], [a.info.width, a.info.height], 'the same size: never made smaller');
+  let se = 0;
+  for (let i = 0; i < a.data.length; i++) se += (a.data[i] - b.data[i]) ** 2;
+  const psnr = 10 * Math.log10((255 * 255) / (se / a.data.length));
+  assert.ok(psnr > 50, `${psnr.toFixed(1)} dB (above about 40 dB, a difference can't be seen)`);
+  // a moving GIF: every frame, every pixel the same
+  const frame = (c: string) =>
+    sharp({ create: { width: 40, height: 40, channels: 4, background: c } })
+      .composite([
+        { input: Buffer.from('<svg width="40" height="40"><circle cx="20" cy="20" r="14" fill="#fa0"/></svg>') }
+      ])
+      .png()
+      .toBuffer();
+  const gif = await sharp(await Promise.all(['#c33', '#3c3', '#33c'].map(frame)), { join: { animated: true } })
+    .gif()
+    .toBuffer();
+  const again = await remade(gif);
+  assert.ok(again);
+  assert.ok(
+    (await sharp(gif, { animated: true }).raw().toBuffer()).equals(
+      await sharp(again.buf, { animated: true }).raw().toBuffer()
+    )
+  );
+});
+
 test('nothing tucked on the end comes along', async () => {
   const hidden = Buffer.from('<script>alert(1)</script> and a whole second file');
   for (const buf of [GIF, PNG, JPEG]) {
@@ -98,7 +130,7 @@ test('something that only looks like a picture is turned away', async () => {
   assert.equal(await remade(Buffer.alloc(4)), null);
 });
 
-test('an emoji’s SVG drawing becomes a 512 × 512 PNG, with nothing in it run', async () => {
+test('an emoji’s SVG drawing becomes a sharp 2048 × 2048 PNG, with nothing in it run', async () => {
   const svg = Buffer.from(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><script>alert(1)</script><circle cx="5" cy="5" r="4" fill="red"/></svg>'
   );
@@ -106,7 +138,13 @@ test('an emoji’s SVG drawing becomes a 512 × 512 PNG, with nothing in it run'
   assert.ok(png);
   assert.equal(kindOf(png), 'png');
   const m = await sharp(png).metadata();
-  assert.deepEqual([m.width, m.height], [512, 512]);
+  assert.deepEqual([m.width, m.height], [2048, 2048]);
+  // drawn at that size, not a small picture made bigger: the circle's edge is about a pixel wide (a
+  // 512 picture stretched to 2048 has over 20,000 half-see-through pixels around it; this has under 4,000)
+  const alpha = await sharp(png).extractChannel(3).raw().toBuffer();
+  const soft = alpha.filter(v => v >= 32 && v <= 223).length;
+  const around = 2 * Math.PI * (2048 * 0.4); // the circle is 4 of 10 units across, of 2048
+  assert.ok(soft < around, `${soft} soft pixels around a ${Math.round(around)}-pixel edge`);
   assert.equal(png.includes(Buffer.from('script')), false);
   assert.equal(await svgAsPng(Buffer.from('not a drawing')), null);
 });
@@ -137,7 +175,7 @@ test('a board from before 1.2.8: its animated emoji list and still pictures need
     assert.equal(still.status, 200);
     assert.equal(still.headers.get('content-type'), 'image/png');
     const m = await sharp(Buffer.from(await still.arrayBuffer())).metadata();
-    assert.deepEqual([m.width, m.height], [512, 512]);
+    assert.deepEqual([m.width, m.height], [2048, 2048]);
   } finally {
     await board.stop();
     fs.rmSync(data, { recursive: true, force: true });

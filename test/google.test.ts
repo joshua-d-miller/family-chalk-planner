@@ -33,6 +33,9 @@
 
  1.2.8    2026-11-24   joshua    Its board's setup code comes from the
                         claude    board's log (watchLog()).
+ 1.2.8    2026-11-24   joshua    Its folder is removed with a few tries (the
+                        claude    board may still be unpacking clipart into
+                                  it).
 ===============================================================================
 */
 
@@ -91,7 +94,8 @@ test.before(async () => {
 test.after(() => {
   server && server.kill();
   google && google.close();
-  fs.rmSync(data, { recursive: true, force: true });
+  // the board may still be unpacking clipart into the folder for a moment after it's stopped
+  fs.rmSync(data, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 test('before connecting, the board says how to connect', async () => {

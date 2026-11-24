@@ -94,8 +94,9 @@ export async function remade(buf: Buffer, as?: Kind): Promise<{ buf: Buffer; kin
         : kind === 'png'
           ? img.png()
           : kind === 'webp'
-            ? img.webp({ quality: 90 })
-            : img.flatten({ background: '#ffffff' }).jpeg({ quality: 90 });
+            ? img.webp({ quality: 95, alphaQuality: 100 })
+            : // quality 95 with full color detail (4:4:4): no softer than the original, even on a 4K wall
+              img.flatten({ background: '#ffffff' }).jpeg({ quality: 95, chromaSubsampling: '4:4:4' });
     return { buf: await out.toBuffer(), kind };
   } catch {
     return null;
@@ -105,12 +106,17 @@ export async function remade(buf: Buffer, as?: Kind): Promise<{ buf: Buffer; kin
 // ----------------------- //
 // | A drawing, as a PNG | //
 // ----------------------- //
-// An SVG drawing (an emoji's still picture) drawn as a 512 × 512 PNG, the  //
-// size of its animated GIF; null when it can't be drawn. Nothing in the    //
-// SVG runs or is fetched: only its shapes are painted.                     //
-export async function svgAsPng(svg: Buffer, size = 512): Promise<Buffer | null> {
+// An SVG drawing (an emoji's still picture) drawn as a 2048 × 2048 PNG,     //
+// drawn at that size (never a small picture made bigger), so it stays sharp //
+// even as big as the whole board on a 4K wall (the board is 1252 × 642,     //
+// about 3 × on 4K). Null when it can't be drawn. Nothing in the SVG runs or //
+// is fetched: only its shapes are painted.                                  //
+export async function svgAsPng(svg: Buffer, size = 2048): Promise<Buffer | null> {
   try {
-    return await sharp(svg, { ...LIMITS, density: 300 })
+    // how big the drawing says it is (at 72 dots an inch), so it's drawn at the density that makes it size across
+    const { width = 128, height = 128 } = await sharp(svg, LIMITS).metadata();
+    const density = Math.min(20000, (72 * size) / Math.max(width, height, 1));
+    return await sharp(svg, { ...LIMITS, density })
       .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
       .png()
       .toBuffer();

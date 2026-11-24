@@ -314,7 +314,7 @@ export function setup({ app, cacheDir, kv }: { app: Express; cacheDir: string; k
       res.status(502).json({ error: (e as Error).message });
     }
   });
-  // one emoji: the moving GIF, or its still picture (Google's SVG drawing, kept as a 512 × 512 PNG; the
+  // one emoji: the moving GIF, or its still picture (Google's SVG drawing, kept as a 2048 × 2048 PNG, sharp on a 4K wall; the
   // address still ends in /svg, as the art on boards already has it). Each is drawn again before it's kept
   // (server/images.ts), and written in one step.
   app.get('/api/anim/:cp/:kind', async (req, res) => {
