@@ -111,9 +111,10 @@
 
  1.2.8    2026-11-24   joshua    limitKeyOf(): who a request counts as for
                         claude    the request limit, checked for real first.
-                                  A screen's crash report goes into the log
-                                  in quotes, so it can't start a fake log
-                                  line.
+                                  A screen's crash report: its stack one
+                                  line per step, indented, each without
+                                  line breaks of its own (oneLine()), so it
+                                  can't start a fake log line.
 ===============================================================================
 */
 
@@ -122,7 +123,7 @@ import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import type { Express, Request, Response } from 'express';
 import type { Kv } from '../kv.ts';
-import { describe, openedByIp, parseCookies, privateAddress } from './http.ts';
+import { describe, oneLine, openedByIp, parseCookies, privateAddress } from './http.ts';
 import type { ReqLike } from './http.ts';
 import { fmtCode, normCode, randCode, randomKey, safeEq, sha } from './secrets.ts';
 import { haApp, ingressPath, ingressUser } from './ingress.ts';
@@ -796,9 +797,16 @@ export function setup(
         .slice(0, n);
     const where = clip(b.where, 80) || '?';
     audit(req, 'screen.error', { target: where, detail: clip(b.message, 300) || 'no details' });
-    // in quotes with line breaks escaped, so what a screen sends can't start a fake log line
+    // readable, but only the board starts a log line: the stack is cut into its lines, each without
+    // line breaks of its own (oneLine()), then put under the report one per line, indented
+    const stack = String(b.stack || '')
+      .slice(0, 2000)
+      .split(/\r?\n/)
+      .map(l => oneLine(l).trim())
+      .filter(Boolean);
     console.warn(
-      `Chalk Planner: a screen crashed on ${JSON.stringify(where)}: ${JSON.stringify(clip(b.message, 300))} - ${JSON.stringify(String(b.stack || '').slice(0, 2000))}`
+      `Chalk Planner: a screen crashed on ${oneLine(where)}: ${oneLine(clip(b.message, 300))}` +
+        stack.map(l => '\n    ' + l).join('')
     );
     res.json({ ok: true });
   });

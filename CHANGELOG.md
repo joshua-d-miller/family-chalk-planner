@@ -22,7 +22,8 @@ A security check-up, from GitHub's code scanning: nothing you do on the board ch
   use; sign-in and pairing keep their own, tighter limits.
 - **Safer:** files the board keeps are always inside their own folder and written in one step; odd names in a
   board style, a month's look or a cookie are ignored (a style tweak named `__proto__` could make that request
-  fail); what a screen or a sign-in sends goes into the log in quotes, so it can't start a fake log line.
+  fail); what a screen or a sign-in sends can't start a fake line in the server log, and a screen's crash
+  report still shows its steps one per line.
 - Docker's actions in the release workflow are pinned to exact versions.
 
 ## 1.2.7 — No crash when the board's answer is cut short

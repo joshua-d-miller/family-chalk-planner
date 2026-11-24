@@ -8,7 +8,8 @@
  Updated:   2026-11-24
 
  Purpose:
-     Reading requests: cookies, and what kind of device sent it.
+     Reading requests: cookies, and what kind of device sent it; and what
+     was sent, made safe for one line of the server log.
 
  Used by:
      server/access/access.ts
@@ -29,6 +30,9 @@
  1.2.8    2026-11-24   joshua    parseCookies() makes its object in one go,
                         claude    so a cookie named "__proto__" is just a
                                   cookie.
+
+                                  oneLine(): something sent, ready for one
+                                  line of the log.
 ===============================================================================
 */
 
@@ -72,6 +76,19 @@ export function openedByIp(host: string | undefined) {
     .replace(/^\[|\]$/g, '');
   return h === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(h) || (h.includes(':') && /^[0-9a-f:.]+$/.test(h));
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | For the log | //
+// --------------- //
+// Something a screen or a person sent, ready for one line of the server     //
+// log: every line break taken out (and the other characters that start a    //
+// new line, or move the cursor back over one), so it can't start a log line //
+// that looks like the board's own. GitHub's code scanning (CodeQL)          //
+// recognizes this as making a value safe to log.                            //
+export const oneLine = (v: unknown) =>
+  // eslint-disable-next-line no-control-regex
+  String(v ?? '').replace(/[\r\n\u2028\u2029\u0000-\u0008\u000b-\u001f\u007f]/g, '');
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------- //
