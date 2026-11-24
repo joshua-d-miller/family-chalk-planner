@@ -81,6 +81,7 @@
 
 import path from 'node:path';
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import pkg from '../package.json' with { type: 'json' };
 import { openDatabase, prepareDatabase } from './db.ts';
 import { migrate } from './migrations.ts';
@@ -215,6 +216,18 @@ watchDay(() => clock.today(), broadcast);
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.set('trust proxy', cfg.trustProxy);
+// A ceiling on requests from one address, so a stuck script or a busy neighbour on the network can't wear the
+// board down. Generous: every screen in a home (and everything that comes through Home Assistant's proxy, which
+// shares one address) stays far below it. Sign-in tries have their own, much tighter limits (server/access/).
+app.use(
+  rateLimit({
+    windowMs: 60e3,
+    limit: 3000,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { error: 'Too many requests - wait a minute' }
+  })
+);
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------- //
