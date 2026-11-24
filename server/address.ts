@@ -36,10 +36,20 @@
  -------   ----------   -------   --------------------------------------------
  1.2.8     2026-11-24   joshua    New: one check for the addresses the board
                         claude    fetches from.
+
+                                  safeFetch() and checkedLookup(): Immich,
+                                  calendar and album servers are checked
+                                  where their name leads and on every
+                                  redirect; the sign-in stays with its own
+                                  server.
 ===============================================================================
 */
 
+import dns from 'node:dns';
+import http from 'node:http';
+import https from 'node:https';
 import net from 'node:net';
+import { Readable } from 'node:stream';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------------------------- //
@@ -119,4 +129,96 @@ export function checkedAddress(
     if (net.isIP(host) && opts.isPrivate?.(host)) return null;
   }
   return u.href;
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | Where a name really leads to | //
+// -------------------------------- //
+// Looks a server's name up the way the system does, and refuses when any    //
+// address it leads to is one no server has (a name pointing at              //
+// 169.254.169.254, say). Used as the connection's own lookup, so what's     //
+// checked is what's connected to: a name can't change its answer between    //
+// the check and the connection. resolve: for the tests.                     //
+type LookupCb = (err: Error | null, address?: string | dns.LookupAddress[], family?: number) => void;
+export function checkedLookup(resolve: typeof dns.lookup = dns.lookup) {
+  return (host: string, opts: dns.LookupOptions, cb: LookupCb) => {
+    resolve(host, { ...opts, all: true }, (err, addrs: dns.LookupAddress[]) => {
+      if (err) return cb(err);
+      if (!addrs.length || addrs.some(a => unusableIp(a.address)))
+        return cb(Object.assign(new Error(`${host} leads to an address no server has`), { code: 'EUNUSABLE' }));
+      if (opts.all) cb(null, addrs);
+      else cb(null, addrs[0].address, addrs[0].family);
+    });
+  };
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------------------- //
+// | Fetching from a checked server | //
+// ---------------------------------- //
+// fetch() for an Immich or calendar server an admin chose (your own network //
+// is fine): every address passes checkedAddress(), the name is checked      //
+// where it leads (checkedLookup()), and redirects are followed here, at     //
+// most 5, each checked the same way. When a redirect goes to another        //
+// server, the sign-in (Authorization, Cookie, the Immich key) stays behind, //
+// as a browser does. Answers like fetch() does (a Response), so callers     //
+// read it the same way.                                                     //
+const SIGN_IN = ['authorization', 'cookie', 'x-api-key'];
+export async function safeFetch(
+  address: string,
+  init: { method?: string; headers?: Record<string, string>; body?: string | Buffer; signal?: AbortSignal } = {},
+  opts: { resolve?: typeof dns.lookup } = {}
+): Promise<Response> {
+  let method = (init.method || 'GET').toUpperCase();
+  let body = init.body;
+  let headers: Record<string, string> = { ...(init.headers || {}) };
+  let next = address;
+  let host = '';
+  for (let hop = 0; hop <= 5; hop++) {
+    const url = checkedAddress(next);
+    if (!url) throw new Error('That isn’t an address the board fetches from');
+    const u = new URL(url);
+    if (host && u.hostname !== host)
+      headers = Object.fromEntries(Object.entries(headers).filter(([k]) => !SIGN_IN.includes(k.toLowerCase())));
+    host = u.hostname;
+    const res = await new Promise<http.IncomingMessage>((resolve, reject) => {
+      const req = (u.protocol === 'https:' ? https : http).request(url, {
+        method,
+        headers,
+        lookup: checkedLookup(opts.resolve) as unknown as typeof dns.lookup,
+        signal: init.signal
+      });
+      req.on('response', resolve);
+      // a timeout reads as fetch()'s own (TimeoutError), so "didn't answer" messages still show
+      req.on('error', e => reject(init.signal?.aborted ? init.signal.reason : e));
+      req.end(body);
+    });
+    const status = res.statusCode || 0;
+    const location = res.headers.location;
+    if ([301, 302, 303, 307, 308].includes(status) && location) {
+      res.resume();
+      next = new URL(location, url).href;
+      // as fetch() does: 303 (and 301/302 after a POST) become a GET without a body
+      if (status === 303 ? method !== 'HEAD' : (status === 301 || status === 302) && method === 'POST') {
+        method = 'GET';
+        body = undefined;
+        headers = Object.fromEntries(
+          Object.entries(headers).filter(([k]) => !['content-type', 'content-length'].includes(k.toLowerCase()))
+        );
+      }
+      continue;
+    }
+    const out = new Headers();
+    for (const [k, v] of Object.entries(res.headers))
+      if (v !== undefined) for (const one of Array.isArray(v) ? v : [v]) out.append(k, one);
+    const empty = method === 'HEAD' || status === 204 || status === 304;
+    if (empty) res.resume();
+    return new Response(empty ? null : (Readable.toWeb(res) as ReadableStream), {
+      status,
+      statusText: res.statusMessage,
+      headers: out
+    });
+  }
+  throw new Error('Too many redirects');
 }

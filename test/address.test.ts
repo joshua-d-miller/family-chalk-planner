@@ -18,12 +18,17 @@
  -------   ----------   -------   --------------------------------------------
  1.2.8     2026-11-24   joshua    New file.
                         claude
+
+                                  safeFetch(): redirects, sign-in and where a
+                                  name leads.
 ===============================================================================
 */
 
 import test from 'node:test';
 import assert from 'node:assert';
-import { checkedAddress, ipv4Inside, unusableIp } from '../server/address.ts';
+import http from 'node:http';
+import type dns from 'node:dns';
+import { checkedAddress, checkedLookup, ipv4Inside, safeFetch, unusableIp } from '../server/address.ts';
 import { privateIp } from '../server/media.ts';
 
 test('Immich and calendar servers: your own network and the internet both work', () => {
@@ -89,4 +94,63 @@ test('"Add from link": the public internet only, on the usual ports', () => {
     'https://example.com:8443/a.gif'
   ])
     assert.equal(link(u), null, u);
+});
+
+test('safeFetch(): redirects followed and each one checked; the sign-in stays with its own server', async () => {
+  const seen: { path: string; auth?: string; key?: string }[] = [];
+  const srv = http.createServer((req, res) => {
+    seen.push({ path: String(req.url), auth: req.headers.authorization, key: req.headers['x-api-key'] as string });
+    const port = (srv.address() as { port: number }).port;
+    if (req.url === '/moved') return res.writeHead(302, { Location: '/here' }).end();
+    if (req.url === '/elsewhere') return res.writeHead(307, { Location: `http://localhost:${port}/here` }).end();
+    if (req.url === '/metadata') return res.writeHead(302, { Location: 'http://169.254.169.254/latest/' }).end();
+    if (req.url === '/file') return res.writeHead(302, { Location: 'file:///etc/passwd' }).end();
+    if (req.url === '/loop') return res.writeHead(302, { Location: '/loop' }).end();
+    if (req.url === '/slow') return void setTimeout(() => res.end('late'), 2000);
+    res.writeHead(207, { 'Content-Type': 'text/plain', 'X-Test': 'yes' }).end('hello ' + req.method);
+  });
+  await new Promise<void>(r => srv.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${(srv.address() as { port: number }).port}`;
+  try {
+    const sign = { Authorization: 'Basic dTpw', 'x-api-key': 'KEY' };
+    // the same server: followed, signed in, and read like fetch()
+    const r = await safeFetch(base + '/moved', { method: 'PROPFIND', headers: sign });
+    assert.equal(r.status, 207);
+    assert.equal(r.headers.get('x-test'), 'yes');
+    assert.equal(await r.text(), 'hello PROPFIND');
+    assert.deepEqual(seen.slice(-1)[0], { path: '/here', auth: 'Basic dTpw', key: 'KEY' });
+    // another server (localhost is another name than 127.0.0.1): followed, without the sign-in
+    assert.equal((await safeFetch(base + '/elsewhere', { headers: sign })).status, 207);
+    assert.deepEqual(seen.slice(-1)[0], { path: '/here', auth: undefined, key: undefined });
+    // never to an address no server has, never to a file, never round and round
+    await assert.rejects(safeFetch(base + '/metadata'), /isn’t an address the board fetches from/);
+    await assert.rejects(safeFetch(base + '/file'), /isn’t an address the board fetches from/);
+    await assert.rejects(safeFetch(base + '/loop'), /Too many redirects/);
+    // a server that doesn't answer in time reads as fetch()'s own timeout
+    await assert.rejects(safeFetch(base + '/slow', { signal: AbortSignal.timeout(200) }), { name: 'TimeoutError' });
+  } finally {
+    srv.close();
+  }
+});
+
+test('safeFetch(): a name that leads to an address no server has is refused before connecting', async () => {
+  const fake = (address: string) => (_h: string, _o: unknown, cb: (e: Error | null, a: dns.LookupAddress[]) => void) =>
+    cb(null, [{ address, family: 4 }]);
+  const lookup = (address: string) =>
+    new Promise<string>((resolve, reject) =>
+      checkedLookup(fake(address) as unknown as typeof dns.lookup)('immich.example', {}, (e, a) =>
+        e ? reject(e) : resolve(String(a))
+      )
+    );
+  await assert.rejects(lookup('169.254.169.254'), /leads to an address no server has/);
+  await assert.rejects(lookup('0.0.0.0'), /leads to an address no server has/);
+  assert.equal(await lookup('192.168.1.50'), '192.168.1.50', 'your own network is fine');
+  await assert.rejects(
+    safeFetch(
+      'http://immich.example:2283/api',
+      {},
+      { resolve: fake('169.254.169.254') as unknown as typeof dns.lookup }
+    ),
+    /leads to an address no server has/
+  );
 });

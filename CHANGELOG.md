@@ -14,11 +14,13 @@ A security check-up, from GitHub's code scanning: nothing you do on the board ch
   anything hidden in the original (a script, a second file tucked on the end, where a photo was taken) never
   comes along. GIFs still move with their own colors (unchanged unless a frame shows more than 255, the most a
   GIF frame holds), photos stay the right way up and as sharp as before (kept at quality 95 with full color
-  detail, at their own size), and an animated emoji's still picture is now a 2048 × 2048 PNG, sharp even filling
-  a 4K wall.
-- **Safer:** one check for every address the board fetches from (an Immich or calendar server, and what those
-  answer with): plain web addresses only, never one with a password in it or one no real server has. Your own
-  network is still fine for Immich and calendars, and iCloud's own servers still work.
+  detail, at their own size), and an animated emoji's still picture is now a PNG in the size each screen shows it
+  (256 to 2048 pixels across): sharp even filling a 4K wall, and a small one never holds a big picture in a wall's
+  memory.
+- **Safer:** one check for every address the board fetches from (an Immich or calendar server, an album, and
+  what those answer with): plain web addresses only, never one with a password in it or one no real server has,
+  checked again where its name leads and on every redirect; a redirect to another server leaves the sign-in
+  behind. Your own network is still fine for Immich and calendars, and iCloud's own servers still work.
 - **Safer:** a limit on requests a minute, counted for each signed-in person, paired screen and Home Assistant
   person (anyone else by address), so a stuck device can't wear the board down. Far above what a home's screens
   use; sign-in and pairing keep their own, tighter limits.

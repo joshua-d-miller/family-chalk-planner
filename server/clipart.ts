@@ -55,6 +55,10 @@
                                   each file inside its folder and written in
                                   one step. A board's list and SVG stills
                                   from before are carried over, offline.
+
+                                  An emoji's still comes in the size a screen
+                                  asks for (256 to 2048), made from the 2048
+                                  one once each.
 ===============================================================================
 */
 
@@ -64,7 +68,7 @@ import { createRequire } from 'node:module';
 import type { Express } from 'express';
 import type { Kv } from './kv.ts';
 import { inside, readIfThere, writeWhole } from './files.ts';
-import { remade, svgAsPng } from './images.ts';
+import { pngAtSize, remade, svgAsPng } from './images.ts';
 import { buildCatalog, search } from './catalog.ts';
 import type { Picture } from './catalog.ts';
 import { makeStyles, STYLES } from './clipstyles.ts';
@@ -74,6 +78,9 @@ export const CHALK = '#EDEAE0';
 const NAME = /^[a-z0-9-]{1,64}$/;
 const FOREVER = 'public, max-age=31536000, immutable';
 const ANIM_MAX = 10 * 1024 * 1024; // far bigger than any animated emoji
+// the sizes an emoji's still comes in; the biggest is sharp filling a 4K wall (art is at most 700 × 3 pixels there)
+const STILL_SIZES = [256, 512, 1024, 2048];
+const STILL_MAX = 2048;
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------------------------------- //
@@ -314,15 +321,21 @@ export function setup({ app, cacheDir, kv }: { app: Express; cacheDir: string; k
       res.status(502).json({ error: (e as Error).message });
     }
   });
-  // one emoji: the moving GIF, or its still picture (Google's SVG drawing, kept as a 2048 × 2048 PNG, sharp on a 4K wall; the
-  // address still ends in /svg, as the art on boards already has it). Each is drawn again before it's kept
-  // (server/images.ts), and written in one step.
+  // one emoji: the moving GIF, or its still picture (Google's SVG drawing, kept as a 2048 × 2048 PNG; the address
+  // still ends in /svg, as the art on boards already has it). Each is drawn again before it's kept
+  // (server/images.ts), and written in one step. A screen asks for the still at the size it shows it (?px=256,
+  // 512, 1024 or 2048; 512 without one, the moving GIF's size): sharp, without a big picture in a small spot
+  // using a wall's memory. The smaller ones are made from the 2048 one, once each.
   app.get('/api/anim/:cp/:kind', async (req, res) => {
     const { cp, kind } = req.params;
     if (!/^[0-9a-f_]{2,48}$/.test(cp) || !['gif', 'svg'].includes(kind)) return res.sendStatus(404);
     const file = inside(animDir, kind === 'gif' ? `${cp}.gif` : `${cp}.still.png`);
     if (!file) return res.sendStatus(404);
+    const px = STILL_SIZES.find(s => String(s) === req.query.px) || 512;
+    const sized = kind === 'svg' && px !== STILL_MAX ? inside(animDir, `${cp}.still-${px}.png`) : null;
     try {
+      const ready = sized ? readIfThere(sized) : null;
+      if (ready) return res.set('Cache-Control', FOREVER).type('image/png').send(ready);
       let buf = readIfThere(file);
       // a still picture kept as Google's SVG before 1.2.8: drawn as the PNG from that copy (no internet needed)
       const old = kind === 'svg' ? inside(animDir, `${cp}.svg`) : null;
@@ -345,6 +358,12 @@ export function setup({ app, cacheDir, kv }: { app: Express; cacheDir: string; k
         if (!buf) return res.sendStatus(404);
         fs.mkdirSync(animDir, { recursive: true });
         writeWhole(file, buf);
+      }
+      if (sized) {
+        const small = await pngAtSize(buf, px);
+        if (!small) return res.sendStatus(404);
+        writeWhole(sized, small);
+        buf = small;
       }
       res
         .set('Cache-Control', FOREVER)

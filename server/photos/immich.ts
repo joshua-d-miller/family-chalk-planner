@@ -33,12 +33,15 @@
  1.2.8    2026-11-24   joshua    Every Immich address passes the one address
                         claude    check (server/address.ts); an address
                                   longer than any real one isn't read.
+
+                                  Immich requests go through safeFetch() (the
+                                  name and every redirect checked).
 ===============================================================================
 */
 
 import crypto from 'node:crypto';
 import type { AlbumPhoto } from './albums.ts';
-import { checkedAddress } from '../address.ts';
+import { checkedAddress, safeFetch } from '../address.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //
@@ -96,12 +99,18 @@ export function immichShare(link: string): ImmichSource | null {
 // ----------------- //
 async function request(base: string, key: string | undefined, apiPath: string, opts: RequestInit = {}): Promise<any> {
   const headers = { Accept: 'application/json', ...(key ? { 'x-api-key': key } : {}), ...(opts.headers || {}) };
-  // the one address check (server/address.ts): a typed address is only fetched once it's passed
+  // the one address check (server/address.ts): a typed address is only fetched once it's passed, and
+  // safeFetch() checks where its name leads and every redirect too
   const url = checkedAddress(`${base}${apiPath}`);
   if (!url) throw new Error('That isn’t an Immich server address (like http://192.168.1.50:2283)');
   let r: Response;
   try {
-    r = await fetch(url, { ...opts, headers, signal: AbortSignal.timeout(30000) });
+    r = await safeFetch(url, {
+      method: opts.method,
+      body: typeof opts.body === 'string' ? opts.body : undefined,
+      headers: headers as Record<string, string>,
+      signal: AbortSignal.timeout(30000)
+    });
   } catch (e) {
     throw new Error(`Couldn’t reach Immich at ${base} (${(e as Error).message})`, { cause: e });
   }

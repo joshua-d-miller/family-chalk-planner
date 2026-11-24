@@ -50,6 +50,9 @@
                                   own colors (up to 255 a frame, all a GIF
                                   frame holds); one picture at a time;
                                   the library loads on first use.
+
+                                  pngAtSize(): a smaller copy of the board's
+                                  own PNG.
 ===============================================================================
 */
 
@@ -171,6 +174,28 @@ export async function svgAsPng(svg: Buffer, size = 2048): Promise<Buffer | null>
       const { width = 128, height = 128 } = await sharp(svg, LIMITS).metadata();
       const density = Math.min(20000, (72 * size) / Math.max(width, height, 1));
       return await sharp(svg, { ...LIMITS, density })
+        .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .png()
+        .toBuffer();
+    } catch {
+      return null;
+    }
+  });
+}
+
+// --------------------------- //
+// | A smaller copy of a PNG | //
+// --------------------------- //
+// The board's own PNG (an emoji's 2048 still) made smaller, size across:    //
+// for a screen that shows it smaller, so it uses a fraction of the memory   //
+// and still has a pixel for every pixel on the screen. Null when it can't   //
+// be made.                                                                  //
+export async function pngAtSize(png: Buffer, size: number): Promise<Buffer | null> {
+  const sharp = await sharpLib();
+  if (!sharp) return null;
+  return oneAtATime(async () => {
+    try {
+      return await sharp(png, LIMITS)
         .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
         .png()
         .toBuffer();

@@ -24,6 +24,9 @@
 
                                   A GIF whose frames have nearly the same
                                   colors keeps every pixel.
+
+                                  An emoji's still in each size a screen can
+                                  ask for.
 ===============================================================================
 */
 
@@ -194,11 +197,20 @@ test('a board from before 1.2.8: its animated emoji list and still pictures need
     assert.deepEqual(await (await ed.api('/api/anim/list')).json(), [
       { cp: '1f600', tags: 'grinning', cat: 'Smileys' }
     ]);
-    const still = await ed.api('/api/anim/1f600/svg');
-    assert.equal(still.status, 200);
-    assert.equal(still.headers.get('content-type'), 'image/png');
-    const m = await sharp(Buffer.from(await still.arrayBuffer())).metadata();
-    assert.deepEqual([m.width, m.height], [2048, 2048]);
+    // the still at the size a screen asks for (512 without one, the moving GIF's size; an odd one is 512 too)
+    for (const [ask, size] of [
+      ['', 512],
+      ['?px=256', 256],
+      ['?px=1024', 1024],
+      ['?px=2048', 2048],
+      ['?px=4000', 512]
+    ] as const) {
+      const still = await ed.api('/api/anim/1f600/svg' + ask);
+      assert.equal(still.status, 200, ask);
+      assert.equal(still.headers.get('content-type'), 'image/png');
+      const m = await sharp(Buffer.from(await still.arrayBuffer())).metadata();
+      assert.deepEqual([m.width, m.height], [size, size], ask);
+    }
   } finally {
     await board.stop();
     fs.rmSync(data, { recursive: true, force: true });

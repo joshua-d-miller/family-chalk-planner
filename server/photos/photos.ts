@@ -65,6 +65,12 @@
  1.2.8    2026-11-24   joshua    Album photos are drawn again before they're
                         claude    kept (server/images.ts), inside the cache
                                   folder and written in one step.
+
+                                  Album photos are fetched with safeFetch()
+                                  (the name and every redirect checked).
+
+                                  A photo sync problem goes into the log
+                                  without line breaks (oneLine()).
 ===============================================================================
 */
 
@@ -75,6 +81,8 @@ import path from 'node:path';
 import type { Express } from 'express';
 import type { Kv } from '../kv.ts';
 import { inside, writeIfNew, writeWhole } from '../files.ts';
+import { safeFetch } from '../address.ts';
+import { oneLine } from '../access/http.ts';
 import { remade } from '../images.ts';
 import { GP_UA, albumKind, imageHostOk, readAlbum } from './albums.ts';
 import type { AlbumConfig } from './albums.ts';
@@ -236,7 +244,8 @@ export function setup({
     headers: Record<string, string> = {},
     fallback?: string
   ): Promise<Buffer | null> {
-    const r = await fetch(url, {
+    // album servers (Immich on your network, Google, iCloud): the name and every redirect checked (server/address.ts)
+    const r = await safeFetch(url, {
       headers: google
         ? { ...GP_UA, Accept: 'image/jpeg,image/png' }
         : { Accept: 'image/jpeg,image/png,image/webp,image/*', ...headers },
@@ -414,7 +423,7 @@ export function setup({
       done(list);
     } catch (e) {
       state.error = (e as Error).message;
-      console.error('Photo sync:', state.error);
+      console.error('Photo sync:', oneLine(state.error)); // (the album's own words, never a fake log line)
     } finally {
       state.running = false;
     }
