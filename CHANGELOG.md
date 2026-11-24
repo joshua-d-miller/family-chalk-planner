@@ -19,8 +19,8 @@ A security check-up, from GitHub's code scanning: nothing you do on the board ch
   memory.
 - **Safer:** one check for every address the board fetches from (an Immich or calendar server, an album, and
   what those answer with): plain web addresses only, never one with a password in it or one no real server has,
-  checked again where its name leads and on every redirect; a redirect to another server leaves the sign-in
-  behind. Your own network is still fine for Immich and calendars, and iCloud's own servers still work.
+  checked again where its name leads and on every redirect; the sign-in only goes on to the same server
+  (never to another port, never down from https to http). Your own network is still fine for Immich and calendars, and iCloud's own servers still work.
 - **Safer:** a limit on requests a minute, counted for each signed-in person, paired screen and Home Assistant
   person (anyone else by address), so a stuck device can't wear the board down. Far above what a home's screens
   use; sign-in and pairing keep their own, tighter limits.

@@ -28,7 +28,7 @@ import test from 'node:test';
 import assert from 'node:assert';
 import http from 'node:http';
 import type dns from 'node:dns';
-import { checkedAddress, checkedLookup, ipv4Inside, safeFetch, unusableIp } from '../server/address.ts';
+import { checkedAddress, checkedLookup, ipv4Inside, safeFetch, sameServer, unusableIp } from '../server/address.ts';
 import { privateIp } from '../server/media.ts';
 
 test('Immich and calendar servers: your own network and the internet both work', () => {
@@ -153,4 +153,36 @@ test('safeFetch(): a name that leads to an address no server has is refused befo
     ),
     /leads to an address no server has/
   );
+});
+
+test('the sign-in goes on only to the same server (never to another port, never down to http)', async () => {
+  const u = (s: string) => new URL(s);
+  assert.ok(sameServer(u('https://cal.example/a'), u('https://cal.example/b')), 'the same server');
+  assert.ok(sameServer(u('http://cal.example/a'), u('https://cal.example/a')), 'moving up to https');
+  assert.ok(sameServer(u('http://192.168.1.5:2283/'), u('https://192.168.1.5/')), 'up to https, its own port');
+  assert.ok(!sameServer(u('https://cal.example/'), u('http://cal.example/')), 'never down to http');
+  assert.ok(!sameServer(u('https://cal.example/'), u('https://cal.example:8443/')), 'another port');
+  assert.ok(!sameServer(u('http://cal.example:5232/'), u('http://cal.example:6000/')), 'another port');
+  assert.ok(!sameServer(u('https://cal.example/'), u('https://evil.example/')), 'another name');
+  // and for real: a redirect to the same name on another port leaves the sign-in behind
+  const seen: (string | undefined)[] = [];
+  const b = http.createServer((req, res) => {
+    seen.push(req.headers.authorization);
+    res.end('ok');
+  });
+  await new Promise<void>(r => b.listen(0, '127.0.0.1', r));
+  const a = http.createServer((_req, res) =>
+    res.writeHead(307, { Location: `http://127.0.0.1:${(b.address() as { port: number }).port}/` }).end()
+  );
+  await new Promise<void>(r => a.listen(0, '127.0.0.1', r));
+  try {
+    const r = await safeFetch(`http://127.0.0.1:${(a.address() as { port: number }).port}/`, {
+      headers: { Authorization: 'Basic dTpw' }
+    });
+    assert.equal(await r.text(), 'ok');
+    assert.deepEqual(seen, [undefined]);
+  } finally {
+    a.close();
+    b.close();
+  }
 });

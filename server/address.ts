@@ -42,6 +42,10 @@
                                   where their name leads and on every
                                   redirect; the sign-in stays with its own
                                   server.
+
+                                  The sign-in only goes on to the same
+                                  server: never to another port or down to
+                                  http (sameServer()).
 ===============================================================================
 */
 
@@ -160,11 +164,17 @@ export function checkedLookup(resolve: typeof dns.lookup = dns.lookup) {
 // fetch() for an Immich or calendar server an admin chose (your own network //
 // is fine): every address passes checkedAddress(), the name is checked      //
 // where it leads (checkedLookup()), and redirects are followed here, at     //
-// most 5, each checked the same way. When a redirect goes to another        //
-// server, the sign-in (Authorization, Cookie, the Immich key) stays behind, //
-// as a browser does. Answers like fetch() does (a Response), so callers     //
-// read it the same way.                                                     //
+// most 5, each checked the same way. The sign-in (Authorization, Cookie,    //
+// the Immich key) only goes on to the same server: the same name, port and  //
+// kind of connection, or the same name moving up from http to https (never  //
+// down to http, where anyone on the network could read it). Answers like    //
+// fetch() does (a Response), so callers read it the same way.               //
 const SIGN_IN = ['authorization', 'cookie', 'x-api-key'];
+// may the sign-in for `from` go on to `to`? The same origin, or the same name moving up to https
+export function sameServer(from: URL, to: URL) {
+  if (from.origin === to.origin) return true;
+  return from.hostname === to.hostname && from.protocol === 'http:' && to.protocol === 'https:';
+}
 export async function safeFetch(
   address: string,
   init: { method?: string; headers?: Record<string, string>; body?: string | Buffer; signal?: AbortSignal } = {},
@@ -174,14 +184,14 @@ export async function safeFetch(
   let body = init.body;
   let headers: Record<string, string> = { ...(init.headers || {}) };
   let next = address;
-  let host = '';
+  let last: URL | null = null;
   for (let hop = 0; hop <= 5; hop++) {
     const url = checkedAddress(next);
     if (!url) throw new Error('That isn’t an address the board fetches from');
     const u = new URL(url);
-    if (host && u.hostname !== host)
+    if (last && !sameServer(last, u))
       headers = Object.fromEntries(Object.entries(headers).filter(([k]) => !SIGN_IN.includes(k.toLowerCase())));
-    host = u.hostname;
+    last = u;
     const res = await new Promise<http.IncomingMessage>((resolve, reject) => {
       const req = (u.protocol === 'https:' ? https : http).request(url, {
         method,
