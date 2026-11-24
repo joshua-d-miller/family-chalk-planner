@@ -13,7 +13,7 @@ Third-party components (fetched or installed separately, not part of this reposi
   Noto Emoji (Apache-2.0, Google), OpenMoji (CC BY-SA 4.0, https://openmoji.org), Twemoji
   (CC BY 4.0, Twitter), Firefox OS Emoji (Apache-2.0, Mozilla), EmojiOne 2 (CC BY 4.0, Emoji One) and
   IconPark (Apache-2.0, ByteDance), Meteocons (MIT, Bas Milius, https://meteocons.com) and Iconito
-  (MIT, https://iconito.com). Shown in Pictures as they come, except that OpenMoji's and IconPark's
+  (MIT, https://iconi.to). Shown in Pictures as they come, except that OpenMoji's and IconPark's
   black outlines are drawn in chalk white so they show on a dark board.
 - Emojibase (MIT, Miles Johnson), https://emojibase.dev: the words that go with each emoji, so a
   search finds them (clipart/words.json, made by clipart/words.py from emojibase-data).
