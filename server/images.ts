@@ -27,7 +27,10 @@
 
  Known limitations:
      Drawing a picture again takes a moment (a big photo, a fraction of a
-     second on a Raspberry Pi), once, when it's first kept.
+     second on a Raspberry Pi), once, when it's first kept; pictures are
+     drawn one at a time. On a 32-bit Raspberry Pi OS older than Bookworm
+     the image library can't load: the board runs, but new pictures from
+     elsewhere aren't kept there (docs/install.md → Node.js).
 
  Used by:
      server/clipart.ts
@@ -43,15 +46,55 @@
  Version   Date         Author    Description
  -------   ----------   -------   --------------------------------------------
  1.2.8     2026-11-24   joshua    New: pictures from elsewhere are drawn again
-                        claude    before they're kept.
+                        claude    before they're kept. GIF frames keep their
+                                  own colors exactly; one picture at a time;
+                                  the library loads on first use.
 ===============================================================================
 */
 
-import sharp from 'sharp';
+import type SharpType from 'sharp';
 
-// one picture at a time, nothing kept in memory between them (a Raspberry Pi has little to spare)
-sharp.cache(false);
-sharp.concurrency(1);
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------- //
+// | The image library | //
+// --------------------- //
+// Loaded the first time a picture is drawn, not when the board starts: a    //
+// computer that can't run it (a 32-bit Raspberry Pi OS older than Bullseye) //
+// still starts and shows everything it already has; only new pictures from  //
+// elsewhere aren't kept there, and the log says why. Nothing kept in memory //
+// between pictures, and one thread each (a Raspberry Pi has little to       //
+// spare).                                                                   //
+let lib: Promise<typeof SharpType | null> | null = null;
+function sharpLib() {
+  lib ??= import('sharp').then(
+    m => {
+      m.default.cache(false);
+      m.default.concurrency(1);
+      return m.default;
+    },
+    (e: Error) => {
+      console.error(
+        `Chalk Planner: new pictures from elsewhere can't be kept on this computer: its image library didn't load (${e.message}). A 32-bit Raspberry Pi OS needs Bullseye or newer.`
+      );
+      return null;
+    }
+  );
+  return lib;
+}
+
+// ------------------------- //
+// | One picture at a time | //
+// ------------------------- //
+// Drawing a big picture takes a lot of memory for a moment (up to about 160 //
+// MB for the largest), so pictures are drawn one after another, never side  //
+// by side, even when an upload, an album sync and a thumbnail arrive        //
+// together. A picture that fails never holds up the next.                   //
+let queue: Promise<unknown> = Promise.resolve();
+function oneAtATime<T>(job: () => Promise<T>): Promise<T> {
+  const run = queue.then(job, job);
+  queue = run.catch(() => undefined);
+  return run;
+}
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------- //
@@ -85,22 +128,27 @@ export async function remade(buf: Buffer, as?: Kind): Promise<{ buf: Buffer; kin
   if (!from) return null;
   const kind = as || from;
   const animated = (from === 'gif' || from === 'webp') && (kind === 'gif' || kind === 'webp');
-  try {
-    let img = sharp(buf, { ...LIMITS, animated });
-    if (!animated) img = img.rotate(); // the right way up, from the camera's note, before the notes are left behind
-    const out =
-      kind === 'gif'
-        ? img.gif()
-        : kind === 'png'
-          ? img.png()
-          : kind === 'webp'
-            ? img.webp({ quality: 95, alphaQuality: 100 })
-            : // quality 95 with full color detail (4:4:4): no softer than the original, even on a 4K wall
-              img.flatten({ background: '#ffffff' }).jpeg({ quality: 95, chromaSubsampling: '4:4:4' });
-    return { buf: await out.toBuffer(), kind };
-  } catch {
-    return null;
-  }
+  const sharp = await sharpLib();
+  if (!sharp) return null;
+  return oneAtATime(async () => {
+    try {
+      let img = sharp(buf, { ...LIMITS, animated });
+      if (!animated) img = img.rotate(); // the right way up, from the camera's note, before the notes are left behind
+      const out =
+        kind === 'gif'
+          ? // every frame's own colors, exactly: no palette carried over from another frame, no dithering
+            img.gif({ interPaletteMaxError: 0, interFrameMaxError: 0, dither: 0 })
+          : kind === 'png'
+            ? img.png()
+            : kind === 'webp'
+              ? img.webp({ quality: 95, alphaQuality: 100 })
+              : // quality 95 with full color detail (4:4:4): no softer than the original, even on a 4K wall
+                img.flatten({ background: '#ffffff' }).jpeg({ quality: 95, chromaSubsampling: '4:4:4' });
+      return { buf: await out.toBuffer(), kind };
+    } catch {
+      return null;
+    }
+  });
 }
 
 // ----------------------- //
@@ -112,15 +160,19 @@ export async function remade(buf: Buffer, as?: Kind): Promise<{ buf: Buffer; kin
 // about 3 × on 4K). Null when it can't be drawn. Nothing in the SVG runs or //
 // is fetched: only its shapes are painted.                                  //
 export async function svgAsPng(svg: Buffer, size = 2048): Promise<Buffer | null> {
-  try {
-    // how big the drawing says it is (at 72 dots an inch), so it's drawn at the density that makes it size across
-    const { width = 128, height = 128 } = await sharp(svg, LIMITS).metadata();
-    const density = Math.min(20000, (72 * size) / Math.max(width, height, 1));
-    return await sharp(svg, { ...LIMITS, density })
-      .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-      .png()
-      .toBuffer();
-  } catch {
-    return null;
-  }
+  const sharp = await sharpLib();
+  if (!sharp) return null;
+  return oneAtATime(async () => {
+    try {
+      // how big the drawing says it is (at 72 dots an inch), so it's drawn at the density that makes it size across
+      const { width = 128, height = 128 } = await sharp(svg, LIMITS).metadata();
+      const density = Math.min(20000, (72 * size) / Math.max(width, height, 1));
+      return await sharp(svg, { ...LIMITS, density })
+        .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .png()
+        .toBuffer();
+    } catch {
+      return null;
+    }
+  });
 }

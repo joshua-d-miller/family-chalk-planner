@@ -26,6 +26,9 @@ A security check-up, from GitHub's code scanning: nothing you do on the board ch
   fail); what a screen or a sign-in sends can't start a fake line in the server log, and a screen's crash
   report still shows its steps one per line.
 - Docker's actions in the release workflow are pinned to exact versions.
+- **Note for a 32-bit Raspberry Pi OS:** keeping new pictures needs Bookworm or newer (the image library that redraws
+  them needs it). On an older one the board still starts and shows everything it has, but new pictures aren't kept
+  and the server log says why; the 64-bit Raspberry Pi OS, or Bookworm, fixes it (docs/install.md → Node.js).
 
 ## 1.2.7 — No crash when the board's answer is cut short
 - **Fixed:** now and then a screen showed "A screen crashed" (seen in Firefox, on the board and while editing it),

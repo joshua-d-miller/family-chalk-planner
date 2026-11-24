@@ -21,6 +21,9 @@
  -------   ----------   -------   --------------------------------------------
  1.2.8     2026-11-24   joshua    New file.
                         claude
+
+                                  A GIF whose frames have nearly the same
+                                  colors keeps every pixel.
 ===============================================================================
 */
 
@@ -80,6 +83,26 @@ test('as sharp as before: a photo loses next to nothing; a GIF keeps every pixel
       await sharp(again.buf, { animated: true }).raw().toBuffer()
     )
   );
+});
+
+test('a GIF whose frames have nearly the same colors keeps every pixel (no palette carried over)', async () => {
+  // each frame's colors differ from the first frame's by a step or two: an encoder that reuses the first
+  // frame's palette "when close enough" changes these pixels (it did, before 1.2.8's settings)
+  const W = 16;
+  const frame = (k: number) => {
+    const b = Buffer.alloc(W * W * 4);
+    for (let i = 0; i < W * W; i++) b.set([((i * 7) & 255) ^ k, ((i * 13) & 255) ^ (k ? 1 : 0), i & 255, 255], i * 4);
+    return sharp(b, { raw: { width: W, height: W, channels: 4 } })
+      .png()
+      .toBuffer();
+  };
+  const gif = await sharp(await Promise.all([0, 1, 2].map(frame)), { join: { animated: true } })
+    .gif({ reuse: false, interPaletteMaxError: 0, interFrameMaxError: 0, dither: 0 })
+    .toBuffer();
+  const out = await remade(gif);
+  assert.ok(out);
+  const px = (b: Buffer) => sharp(b, { animated: true }).raw().toBuffer();
+  assert.ok((await px(gif)).equals(await px(out.buf)));
 });
 
 test('nothing tucked on the end comes along', async () => {

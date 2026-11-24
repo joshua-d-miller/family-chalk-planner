@@ -17,6 +17,8 @@
  -------   ----------   -------   --------------------------------------------
  1.2.8     2026-11-24   joshua    New file.
                         claude
+
+                                  The read test makes its own file.
 ===============================================================================
 */
 
@@ -60,6 +62,7 @@ test('only if it’s new: never over one that’s there', () => {
 
 test('reading a file that isn’t there is just nothing', () => {
   assert.equal(readIfThere(path.join(dir, 'missing')), null);
-  assert.equal(readIfThere(path.join(dir, 'new.key'))?.toString(), 'one');
+  fs.writeFileSync(path.join(dir, 'there.txt'), 'here');
+  assert.equal(readIfThere(path.join(dir, 'there.txt'))?.toString(), 'here');
   assert.throws(() => readIfThere(dir), 'a folder is an error, not "nothing there"');
 });
