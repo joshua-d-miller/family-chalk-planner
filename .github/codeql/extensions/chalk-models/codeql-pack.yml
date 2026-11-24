@@ -1,0 +1,10 @@
+# What GitHub's code scanning (CodeQL, .github/workflows/codeql.yml) should know about the board's own
+# safety checks, so code that goes through them isn't reported. CodeQL finds this folder by itself.
+# Each check it names is a real one in the code: see the file it points at before changing either.
+name: family-chalk-planner/chalk-models
+version: 0.0.1
+library: true
+extensionTargets:
+  codeql/javascript-all: '*'
+dataExtensions:
+  - models/*.yml

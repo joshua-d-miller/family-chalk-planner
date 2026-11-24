@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | media.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
- Updated:   2026-11-14
+ Updated:   2026-11-24
 
  Purpose:
      Pictures people add to the board: uploads, "Add from link", and the
@@ -40,6 +40,13 @@
  0.17.0    2026-11-14   joshua    keepImage(): a picture the board fetched
                         claude    itself (Pictures' "From the web") is kept
                                   like an upload.
+
+ 1.2.8    2026-11-24   joshua    Pictures are drawn again before they're
+                        claude    kept (server/images.ts), inside their
+                                  folder and written in one step. "Add from
+                                  link" also goes through the one address
+                                  check, and an IPv4 address written as IPv6
+                                  ([::ffff:7f00:1]) is now caught as private.
 ===============================================================================
 */
 
@@ -54,22 +61,12 @@ import express from 'express';
 import type { Express } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import type { Kv } from './kv.ts';
+import { checkedAddress, ipv4Inside } from './address.ts';
+import { inside, writeWhole } from './files.ts';
+import { kindOf, MIME, remade } from './images.ts';
+import type { Kind } from './images.ts';
 
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
-// ----------------- //
-// | Picture types | //
-// ----------------- //
-// Recognized by their first bytes, never by the name or what the sender     //
-// says it is.                                                               //
-type Kind = 'gif' | 'png' | 'jpg' | 'webp';
-const MAGIC: [Kind, (b: Buffer) => boolean][] = [
-  ['gif', b => b.subarray(0, 6).toString('latin1').startsWith('GIF8')],
-  ['png', b => b.readUInt32BE(0) === 0x89504e47],
-  ['jpg', b => b[0] === 0xff && b[1] === 0xd8],
-  ['webp', b => b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP']
-];
-const kindOf = (b: Buffer) => (b.length > 16 ? MAGIC.find(([, test]) => test(b))?.[0] : undefined);
-const MIME: Record<Kind, string> = { gif: 'image/gif', png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
+// Picture types (by their first bytes) and drawing a picture again: server/images.ts
 const FILE = /^[a-z0-9]{16}\.(gif|webp|png|jpg)$/;
 const SRC = /^\/api\/media\/[a-z0-9]{16}\.(gif|webp|png|jpg)$/;
 const LINK_MAX = 10 * 1024 * 1024;
@@ -96,8 +93,11 @@ export function privateIp(ip: string): boolean {
       (a === 198 && (b === 18 || b === 19))
     );
   }
+  // an IPv4 address written as IPv6 is checked as that IPv4 address (the URL parser writes
+  // "::ffff:127.0.0.1" as "::ffff:7f00:1", which slipped past the check before 1.2.8)
+  const v4 = ipv4Inside(ip);
+  if (v4) return privateIp(v4);
   const v = ip.toLowerCase();
-  if (v.startsWith('::ffff:')) return privateIp(v.slice(7));
   return v === '::' || v === '::1' || /^(fc|fd|fe[89ab]|ff)/.test(v);
 }
 
@@ -165,24 +165,32 @@ export function setup({
   // --------------------- //
   // | Keeping a picture | //
   // --------------------- //
-  // Named by its contents (a hash), so the same picture uploaded twice is   //
-  // kept once.                                                              //
-  function keep(buf: Buffer, kind: Kind) {
+  // Drawn again first, as the board's own picture (server/images.ts), so    //
+  // nothing hidden in the original is kept. Each one kept gets a new random //
+  // name (one picture uploaded twice is two files, so tidying one never     //
+  // takes the other's away). Null when it isn't a picture after all.        //
+  async function keep(buf: Buffer, kind: Kind) {
+    const pic = await remade(buf, kind);
+    if (!pic) return null;
+    const name = `${crypto.randomBytes(8).toString('hex')}.${pic.kind}`;
+    const file = inside(mediaDir, name);
+    if (!file) return null;
     fs.mkdirSync(mediaDir, { recursive: true });
-    const file = `${crypto.randomBytes(8).toString('hex')}.${kind}`;
-    fs.writeFileSync(path.join(mediaDir, file), buf);
-    return { src: `/api/media/${file}` };
+    writeWhole(file, pic.buf);
+    return { src: `/api/media/${name}` };
   }
 
   // ----------- //
   // | Uploads | //
   // ----------- //
-  app.post('/api/media', express.raw({ type: () => true, limit: '10mb' }), (req, res) => {
-    const buf = req.body;
-    if (!Buffer.isBuffer(buf) || buf.length < 16) return res.status(400).json({ error: 'No image received' });
-    const kind = MAGIC.find(([, test]) => test(buf))?.[0];
-    if (!kind) return res.status(400).json({ error: 'That file isn’t a GIF, PNG, JPEG or WebP' });
-    res.json(keep(buf, kind));
+  app.post('/api/media', express.raw({ type: () => true, limit: '10mb' }), async (req, res) => {
+    // express.raw() always gives a Buffer; anything else (and anything too short) isn't a picture
+    const buf: Buffer | null = Buffer.isBuffer(req.body) ? req.body : null;
+    if (!buf || buf.byteLength < 16) return res.status(400).json({ error: 'No image received' });
+    const kind = kindOf(buf);
+    const kept = kind ? await keep(buf, kind) : null;
+    if (!kept) return res.status(400).json({ error: 'That file isn’t a GIF, PNG, JPEG or WebP' });
+    res.json(kept);
   });
 
   // ---- from a link ----
@@ -218,8 +226,11 @@ export function setup({
       const host = u.hostname.replace(/^\[|\]$/g, '');
       if (net.isIP(host) && privateIp(host) && !allowPrivateLinks)
         return reject(new Error('That link points at a private network address'));
+      // and the one address check every fetch goes through (server/address.ts); its answer is what's fetched
+      const checked = checkedAddress(u.href, { publicOnly: !allowPrivateLinks, isPrivate: privateIp });
+      if (!checked) return reject(new Error('Only normal web links work'));
       const req = (u.protocol === 'https:' ? https : http).get(
-        u,
+        new URL(checked),
         {
           lookup: safeLookup as unknown as typeof dns.lookup,
           timeout: 15000,
@@ -313,7 +324,9 @@ export function setup({
     if (t.length > 20) return res.status(429).json({ error: 'Too many links at once — wait a minute' });
     try {
       const { buf, kind } = await imageFromLink(link);
-      res.json(keep(buf, kind));
+      const kept = await keep(buf, kind);
+      if (!kept) throw new Error('That link isn’t a GIF, PNG, JPEG or WebP');
+      res.json(kept);
     } catch (e) {
       res.status(400).json({ error: (e as Error).message || 'That link didn’t work' });
     }
@@ -326,7 +339,9 @@ export function setup({
     const m = FILE.exec(req.params.file);
     if (!m) return res.sendStatus(404);
     res.set('Cache-Control', 'public, max-age=31536000, immutable').type(MIME[m[1] as Kind]);
-    res.sendFile(path.join(mediaDir, req.params.file), err => {
+    const file = inside(mediaDir, m[0]);
+    if (!file) return res.sendStatus(404);
+    res.sendFile(file, err => {
       if (err && !res.headersSent) res.sendStatus(404);
     });
   });
@@ -408,7 +423,7 @@ export function setup({
   });
   // a picture the board fetched itself (Pictures' "From the web"): kept like an upload, if it is one
   return {
-    keepImage(buf: Buffer) {
+    async keepImage(buf: Buffer) {
       const kind = kindOf(buf);
       return kind ? keep(buf, kind) : null;
     }

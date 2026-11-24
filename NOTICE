@@ -3,7 +3,9 @@ Copyright (C) 2026 Joshua Miller
 Licensed under the GNU Affero General Public License v3.0 or later (see LICENSE).
 
 Third-party components (fetched or installed separately, not part of this repository):
-- Express (MIT), ical.js (MPL-2.0), @simplewebauthn/server (MIT), qrcode (MIT): npm dependencies.
+- Express (MIT), ical.js (MPL-2.0), @simplewebauthn/server (MIT), qrcode (MIT), express-rate-limit (MIT): npm dependencies.
+- sharp (Apache-2.0, Lovell Fuller), with libvips (LGPL-3.0-or-later) in its prebuilt npm packages
+  (@img/sharp-*): draws pictures from elsewhere again before the board keeps them (server/images.ts).
 - Fluent Emoji (MIT, Microsoft), https://github.com/microsoft/fluentui-emoji: the Clipart pictures,
   installed with the board from npm (@iconify-json/fluent-emoji-flat).
 - More clipart styles, installed with the board from npm (@iconify-json/...) and unpacked into its

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | ingress.ts
 ===============================================================================
- Version:   1.0.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-14
- Updated:   2026-11-14
+ Updated:   2026-11-24
 
  Purpose:
      Whether a request came through Home Assistant's Ingress (the board
@@ -27,6 +27,9 @@
  -------   ----------   -------   --------------------------------------------
  1.0.0     2026-11-14   joshua    New file.
                         claude
+
+ 1.2.8    2026-11-24   joshua    An X-Ingress-Path longer than any real one
+                        claude    is turned away before it's read.
 ===============================================================================
 */
 
@@ -38,22 +41,24 @@ export const haApp = () => !!process.env.SUPERVISOR_TOKEN;
 const proxyAddress = () => process.env.HA_INGRESS_FROM || '172.30.32.2';
 const PATH = /^\/api\/hassio_ingress\/[A-Za-z0-9_-]{8,200}$/;
 
-// ----------------------------------- //
+// ------------------------------------ //
 // | Through Home Assistant's Ingress | //
-// ----------------------------------- //
+// ------------------------------------ //
 // The ingress path (/api/hassio_ingress/<token>) when the request came     //
 // through Home Assistant's proxy, else null                                 //
 export function ingressPath(req: ReqLike): string | null {
   if (!haApp()) return null;
   const from = String(req.socket?.remoteAddress || '').replace(/^::ffff:/, '');
   if (from !== proxyAddress()) return null;
-  const p = String(req.get('x-ingress-path') || '').replace(/\/+$/, '');
+  const raw = String(req.get('x-ingress-path') || '');
+  if (raw.length > 300) return null; // a real one is at most about 225 characters
+  const p = raw.replace(/\/+$/, '');
   return PATH.test(p) ? p : null;
 }
 
-// ----------------------------------------- //
+// -------------------------------------- //
 // | The Home Assistant person it's for | //
-// ----------------------------------------- //
+// -------------------------------------- //
 export function ingressUser(req: ReqLike): { id: string; name: string } | null {
   if (!ingressPath(req)) return null;
   const id = String(req.get('x-remote-user-id') || '');

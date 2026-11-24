@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | webclip.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-14
- Updated:   2026-11-14
+ Updated:   2026-11-24
 
  Purpose:
      "From the web" in Pictures: when the board's own pictures don't have
@@ -46,12 +46,19 @@
  -------   ----------   -------   --------------------------------------------
  0.17.0    2026-11-14   joshua    New file.
                         claude
+
+ 1.2.8    2026-11-24   joshua    Openverse thumbnails are drawn again before
+                        claude    they're kept (server/images.ts), inside
+                                  their folder and written in one step;
+                                  keepImage() waits for that.
 ===============================================================================
 */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Express } from 'express';
+import { inside, readIfThere, writeWhole } from './files.ts';
+import { kindOf, MIME, remade } from './images.ts';
 
 export interface WebPicture {
   id: string;
@@ -80,7 +87,7 @@ export function setup({
 }: {
   app: Express;
   cacheDir: string;
-  keepImage: (buf: Buffer) => { src: string } | null;
+  keepImage: (buf: Buffer) => Promise<{ src: string } | null>;
   api?: string; // (tests: a stand-in for Openverse)
 }) {
   const thumbs = path.join(cacheDir, 'web');
@@ -171,18 +178,24 @@ export function setup({
   app.get('/api/clip/web/:id/thumb', async (req, res) => {
     const id = req.params.id;
     if (!ID.test(id)) return res.sendStatus(404);
-    const file = path.join(thumbs, id);
+    const file = inside(thumbs, id);
+    if (!file) return res.sendStatus(404);
     try {
-      if (!fs.existsSync(file)) {
+      // kept once it's been drawn again as the board's own picture (server/images.ts), in one step
+      let buf = readIfThere(file);
+      if (!buf) {
         const r = await openverse(`${api}/images/${id}/thumb/`);
-        const buf = Buffer.from(await r.arrayBuffer());
-        if (buf.length > KEEP_MAX) return res.sendStatus(404);
+        const got = Buffer.from(await r.arrayBuffer());
+        if (got.byteLength > KEEP_MAX) return res.sendStatus(404);
+        const pic = await remade(got);
+        if (!pic) return res.sendStatus(404);
         fs.mkdirSync(thumbs, { recursive: true });
-        fs.writeFileSync(file, buf);
+        writeWhole(file, pic.buf);
+        buf = pic.buf;
       }
-      const buf = fs.readFileSync(file);
-      const type = imageType(buf);
-      if (!type) return res.sendStatus(404);
+      const kind = kindOf(buf);
+      if (!kind) return res.sendStatus(404);
+      const type = MIME[kind];
       res.set('Cache-Control', 'public, max-age=604800').type(type).send(buf);
     } catch {
       res.sendStatus(503);
@@ -209,7 +222,7 @@ export function setup({
         return res.status(400).json({ error: 'That picture is too big' });
       const buf = Buffer.from(await r.arrayBuffer());
       if (buf.length > KEEP_MAX) return res.status(400).json({ error: 'That picture is too big' });
-      const kept = keepImage(buf);
+      const kept = await keepImage(buf);
       if (!kept) return res.status(400).json({ error: 'That isn’t a picture the board can show' });
       res.json(kept);
     } catch (e) {
@@ -220,14 +233,4 @@ export function setup({
       });
     }
   });
-}
-
-// what a kept thumbnail is, by its first bytes
-function imageType(b: Buffer) {
-  if (b.length < 12) return null;
-  if (b[0] === 0xff && b[1] === 0xd8) return 'image/jpeg';
-  if (b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
-  if (b.toString('ascii', 0, 4) === 'GIF8') return 'image/gif';
-  if (b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
-  return null;
 }

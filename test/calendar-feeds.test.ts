@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Tests | calendar-feeds.test.ts
 ===============================================================================
- Version:   0.17.1
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-14
- Updated:   2026-11-14
+ Updated:   2026-11-24
 
  Purpose:
      Calendar links as the big services publish them, read the way the
@@ -26,6 +26,9 @@
  -------   ----------   -------   --------------------------------------------
  0.17.1    2026-11-14   joshua    New file.
                         claude
+
+ 1.2.8    2026-11-24   joshua    Its board's setup code comes from the
+                        claude    board's log (watchLog()).
 ===============================================================================
 */
 
@@ -37,7 +40,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { makeAdmin, client } from './helpers.ts';
+import { makeAdmin, client, watchLog } from './helpers.ts';
 
 const PORT = 3986,
   FEEDS = 5986;
@@ -228,6 +231,7 @@ test.before(async () => {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
+  watchLog(data, board); // the setup code comes from its log, as a person reads it
   for (let i = 0; i < 100; i++) {
     try {
       if ((await fetch(base + '/api/whoami')).ok) break;

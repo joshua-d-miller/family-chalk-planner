@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Photos | immich.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-24
 
  Purpose:
      Immich (a photo server many families run at home): an album,
@@ -29,11 +29,19 @@
                                   album), share links too; searches page
                                   through every result (cursor or page
                                   number).
+
+ 1.2.8    2026-11-24   joshua    Every Immich address passes the one address
+                        claude    check (server/address.ts); an address
+                                  longer than any real one isn't read.
+
+                                  Immich requests go through safeFetch() (the
+                                  name and every redirect checked).
 ===============================================================================
 */
 
 import crypto from 'node:crypto';
 import type { AlbumPhoto } from './albums.ts';
+import { checkedAddress, safeFetch } from '../address.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //
@@ -58,8 +66,9 @@ export interface ImmichPhoto extends AlbumPhoto {
 // Whatever was pasted from the address bar: no /api, no web-page path       //
 // (/photos, /albums/…, /auth/login…)                                        //
 export function normalizeImmichUrl(u: string) {
-  return String(u || '')
-    .trim()
+  const s = String(u || '').trim();
+  if (s.length > 2048) return ''; // longer than any real address: not one (and the patterns below stay quick)
+  return s
     .replace(/[?#].*$/, '')
     .replace(/\/+$/, '')
     .replace(
@@ -90,9 +99,18 @@ export function immichShare(link: string): ImmichSource | null {
 // ----------------- //
 async function request(base: string, key: string | undefined, apiPath: string, opts: RequestInit = {}): Promise<any> {
   const headers = { Accept: 'application/json', ...(key ? { 'x-api-key': key } : {}), ...(opts.headers || {}) };
+  // the one address check (server/address.ts): a typed address is only fetched once it's passed, and
+  // safeFetch() checks where its name leads and every redirect too
+  const url = checkedAddress(`${base}${apiPath}`);
+  if (!url) throw new Error('That isn’t an Immich server address (like http://192.168.1.50:2283)');
   let r: Response;
   try {
-    r = await fetch(`${base}${apiPath}`, { ...opts, headers, signal: AbortSignal.timeout(30000) });
+    r = await safeFetch(url, {
+      method: opts.method,
+      body: typeof opts.body === 'string' ? opts.body : undefined,
+      headers: headers as Record<string, string>,
+      signal: AbortSignal.timeout(30000)
+    });
   } catch (e) {
     throw new Error(`Couldn’t reach Immich at ${base} (${(e as Error).message})`, { cause: e });
   }
@@ -203,9 +221,9 @@ export function onThisDay<T extends { date: number }>(photos: T[], today: string
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
-// ----------------------------------- //
+// ------------------------------------ //
 // | An album's photos, on any Immich | //
-// ----------------------------------- //
+// ------------------------------------ //
 // Older Immich lists an album's photos with the album; Immich 3 only        //
 // counts them, so they're read from its timeline instead (month by month,   //
 // the way Immich's own album page does; it works with a share link too).    //

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | accounts.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-24
 
  Purpose:
      People signing in: the first admin (with the setup code), invite
@@ -40,6 +40,10 @@
                                   Updates: database backup and restore, a real
                                   health check, Update now and nightly
                                   updates.
+
+ 1.2.8    2026-11-24   joshua    A failed sign-in's username goes into the
+                        claude    log without line breaks (oneLine()), so it
+                                  can't start a fake log line.
 ===============================================================================
 */
 
@@ -48,7 +52,7 @@ import type { Request, Response } from 'express';
 import QRCode from 'qrcode';
 import type { Ctx } from './access.ts';
 import { C, INVITE_TTL } from './access.ts';
-import { parseCookies } from './http.ts';
+import { oneLine, parseCookies } from './http.ts';
 import {
   b32enc,
   checkPassword,
@@ -256,7 +260,8 @@ export function registerAccounts(ctx: Ctx) {
     if (!u || !u.totp_ok || !pwOk || step < 0) {
       tooMany('login:' + req.ip, 20, 15 * 60e3);
       tooMany('user:' + username, 8, 15 * 60e3);
-      console.warn(`Chalk Planner: failed sign-in for "${username}" from ${req.ip}`);
+      // the name as typed, without line breaks (oneLine()), so it can't start a fake log line
+      console.warn(`Chalk Planner: failed sign-in for "${oneLine(username)}" from ${req.ip}`);
       audit(req, 'signin.failed', {
         actor: null,
         target: username || '(blank)',
