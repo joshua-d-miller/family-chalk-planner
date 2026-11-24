@@ -12,9 +12,10 @@ A security check-up, from GitHub's code scanning: nothing you do on the board ch
 - **Safer:** every picture the board brings in from elsewhere (album photos, web pictures and their thumbnails,
   animated emoji, pictures from a link or an upload) is drawn again as a new picture before it's kept, so
   anything hidden in the original (a script, a second file tucked on the end, where a photo was taken) never
-  comes along. GIFs still move (every pixel the same), photos stay the right way up and as sharp as before
-  (kept at quality 95 with full color detail, at their own size), and an animated emoji's still picture is now
-  a 2048 × 2048 PNG, sharp even filling a 4K wall.
+  comes along. GIFs still move with their own colors (unchanged unless a frame shows more than 255, the most a
+  GIF frame holds), photos stay the right way up and as sharp as before (kept at quality 95 with full color
+  detail, at their own size), and an animated emoji's still picture is now a 2048 × 2048 PNG, sharp even filling
+  a 4K wall.
 - **Safer:** one check for every address the board fetches from (an Immich or calendar server, and what those
   answer with): plain web addresses only, never one with a password in it or one no real server has. Your own
   network is still fine for Immich and calendars, and iCloud's own servers still work.

@@ -47,7 +47,8 @@
  -------   ----------   -------   --------------------------------------------
  1.2.8     2026-11-24   joshua    New: pictures from elsewhere are drawn again
                         claude    before they're kept. GIF frames keep their
-                                  own colors exactly; one picture at a time;
+                                  own colors (up to 255 a frame, all a GIF
+                                  frame holds); one picture at a time;
                                   the library loads on first use.
 ===============================================================================
 */
@@ -136,7 +137,9 @@ export async function remade(buf: Buffer, as?: Kind): Promise<{ buf: Buffer; kin
       if (!animated) img = img.rotate(); // the right way up, from the camera's note, before the notes are left behind
       const out =
         kind === 'gif'
-          ? // every frame's own colors, exactly: no palette carried over from another frame, no dithering
+          ? // every frame's own colors: no palette carried over from another frame, no dithering. Unchanged up to
+            // 255 colors a frame (what one GIF frame holds, with see-through); a frame showing more (one drawn over
+            // another) comes out as close as 255 colors get
             img.gif({ interPaletteMaxError: 0, interFrameMaxError: 0, dither: 0 })
           : kind === 'png'
             ? img.png()
