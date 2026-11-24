@@ -59,7 +59,7 @@ import type SharpType from 'sharp';
 // | The image library | //
 // --------------------- //
 // Loaded the first time a picture is drawn, not when the board starts: a    //
-// computer that can't run it (a 32-bit Raspberry Pi OS older than Bullseye) //
+// computer that can't run it (a 32-bit Raspberry Pi OS older than Bookworm) //
 // still starts and shows everything it already has; only new pictures from  //
 // elsewhere aren't kept there, and the log says why. Nothing kept in memory //
 // between pictures, and one thread each (a Raspberry Pi has little to       //
@@ -74,7 +74,7 @@ function sharpLib() {
     },
     (e: Error) => {
       console.error(
-        `Chalk Planner: new pictures from elsewhere can't be kept on this computer: its image library didn't load (${e.message}). A 32-bit Raspberry Pi OS needs Bullseye or newer.`
+        `Chalk Planner: new pictures from elsewhere can't be kept on this computer: its image library didn't load (${e.message}). A 32-bit Raspberry Pi OS needs Bookworm or newer.`
       );
       return null;
     }
