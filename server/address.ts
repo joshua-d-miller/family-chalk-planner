@@ -166,14 +166,18 @@ export function checkedLookup(resolve: typeof dns.lookup = dns.lookup) {
 // where it leads (checkedLookup()), and redirects are followed here, at     //
 // most 5, each checked the same way. The sign-in (Authorization, Cookie,    //
 // the Immich key) only goes on to the same server: the same name, port and  //
-// kind of connection, or the same name moving up from http to https (never  //
-// down to http, where anyone on the network could read it). Answers like    //
-// fetch() does (a Response), so callers read it the same way.               //
+// kind of connection, or the same name moving up from http to https on the  //
+// matching port (80 to 443, or the same port number; never another port,    //
+// never down to http, where anyone on the network could read it). Answers   //
+// like fetch() does (a Response), so callers read it the same way.          //
 const SIGN_IN = ['authorization', 'cookie', 'x-api-key'];
-// may the sign-in for `from` go on to `to`? The same origin, or the same name moving up to https
+// may the sign-in for `from` go on to `to`? The same origin, or the same name moving up to https on the
+// matching port: the usual ports (80 to 443) or the same port number (http://nas:5232 to https://nas:5232).
+// Never to another port, which may be another service on the same computer.
 export function sameServer(from: URL, to: URL) {
   if (from.origin === to.origin) return true;
-  return from.hostname === to.hostname && from.protocol === 'http:' && to.protocol === 'https:';
+  if (from.hostname !== to.hostname || from.protocol !== 'http:' || to.protocol !== 'https:') return false;
+  return (from.port === '' && to.port === '') || (from.port !== '' && from.port === to.port);
 }
 export async function safeFetch(
   address: string,

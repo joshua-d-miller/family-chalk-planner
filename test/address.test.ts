@@ -159,7 +159,10 @@ test('the sign-in goes on only to the same server (never to another port, never 
   const u = (s: string) => new URL(s);
   assert.ok(sameServer(u('https://cal.example/a'), u('https://cal.example/b')), 'the same server');
   assert.ok(sameServer(u('http://cal.example/a'), u('https://cal.example/a')), 'moving up to https');
-  assert.ok(sameServer(u('http://192.168.1.5:2283/'), u('https://192.168.1.5/')), 'up to https, its own port');
+  assert.ok(sameServer(u('http://192.168.1.5:2283/'), u('https://192.168.1.5:2283/')), 'up to https, same port');
+  assert.ok(!sameServer(u('http://192.168.1.5:2283/'), u('https://192.168.1.5/')), 'up to https, but port 443');
+  assert.ok(!sameServer(u('http://cal.example:5232/'), u('https://cal.example:8443/')), 'up to https, other port');
+  assert.ok(!sameServer(u('http://cal.example/'), u('https://cal.example:8443/')), 'up to https, not 443');
   assert.ok(!sameServer(u('https://cal.example/'), u('http://cal.example/')), 'never down to http');
   assert.ok(!sameServer(u('https://cal.example/'), u('https://cal.example:8443/')), 'another port');
   assert.ok(!sameServer(u('http://cal.example:5232/'), u('http://cal.example:6000/')), 'another port');
