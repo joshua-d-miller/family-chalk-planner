@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | fixtures.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-24
 
  Purpose:
      A real board for the browser tests: the server with a fake calendar,
@@ -30,6 +30,9 @@
 
  1.2.0    2026-11-21   joshua    menuStyle (this screen's menu, from ⚙️
                         claude    Settings → This screen) and longPress.
+
+ 1.2.8    2026-11-24   joshua    Each board's setup code comes from its log
+                        claude    (watchLog() in test/helpers.ts).
 ===============================================================================
 */
 
@@ -40,7 +43,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { makeAdmin, client, totpNow, cookiesOf } from '../helpers.ts';
+import { makeAdmin, client, totpNow, cookiesOf, watchLog } from '../helpers.ts';
 import * as mockAlbum from '../mock-album.ts';
 import * as mockCaldav from '../mock-caldav.ts';
 
@@ -111,6 +114,7 @@ async function startBoard(workerIndex: number) {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
+  watchLog(data, proc); // the setup code comes from its log, as a person reads it
   let log = '';
   proc.stdout.on('data', d => {
     log += d;
