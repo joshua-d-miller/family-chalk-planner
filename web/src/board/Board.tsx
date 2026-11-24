@@ -1059,7 +1059,11 @@ export function Board({
                 : undefined,
               slides: photos?.photos?.length ? slides.doubleTap : undefined,
               week: () => navigate(weekly ? homeHref(who) : 'week'),
-              weekly
+              weekly,
+              today: () => {
+                setYm(null);
+                setWk(null);
+              }
             }}
             add={
               m && !drawing ? (

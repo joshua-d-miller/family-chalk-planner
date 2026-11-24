@@ -118,7 +118,7 @@ export interface CorkAt {
 interface ShellState {
   kind: ShellKind;
   side: 'left' | 'right' | null; // the ☰ button and its drawer instead of the cork: which side (else null)
-  drawBtn: boolean; // and a ✏️ Draw button beside it
+  quick: DockBtn[] | null; // and these quick buttons beside it (up to 4, this screen's pick)
   dock: DockBtn[] | null; // or the ☰ (on the right) and these buttons in the Notes column's last row
   who: Who | null;
   here: string;
@@ -132,7 +132,7 @@ interface ShellState {
 const Ctx = createContext<ShellState>({
   kind: 'none',
   side: null,
-  drawBtn: false,
+  quick: null,
   dock: null,
   who: null,
   here: 'board',
@@ -157,7 +157,7 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
   useEffect(() => applyUiLook({ look: lk, accent, size }), [lk, accent, size]);
   // (the Notes column is on the right: its buttons' ☰ opens the drawer from there, and elsewhere floats there)
   const side = kind === 'cork' && pref.style !== 'cork' ? (pref.style === 'notes' ? 'right' : pref.style) : null;
-  const drawBtn = !!side && pref.draw; // a ✏️ Draw button beside the ☰ (on the calendar)
+  const quick = side && pref.style !== 'notes' ? pref.quick : null; // quick buttons beside the ☰ (on the calendar)
   const dock = kind === 'cork' && pref.style === 'notes' ? pref.dock : null;
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const [navH, setNavH] = useState(0);
@@ -207,7 +207,7 @@ export function Shell({ who, here, children }: { who: Who | null; here: string; 
       value={{
         kind,
         side,
-        drawBtn,
+        quick,
         dock,
         who,
         here,

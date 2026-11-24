@@ -84,7 +84,7 @@ import { Btn, Field, Pick, Segs } from '../ui/bits.tsx';
 import { LookFields } from '../ui/LookCard.tsx';
 import { CloseX } from '../ui/Sheet.tsx';
 import { useShell } from '../ui/Shell.tsx';
-import { DOCK_BTNS, DOCK_MAX, MENU_STYLES, setMenuPref, useMenuPref } from '../lib/menuStyle.ts';
+import { DOCK_BTNS, DOCK_MAX, MENU_STYLES, QUICK_MAX, setMenuPref, useMenuPref } from '../lib/menuStyle.ts';
 import { setSleeps, useSleeps } from '../lib/countdowns.ts';
 import { SPACES, setWeekFrom, setWeekView, useWeekFrom, useWeekView } from '../lib/weekFrom.ts';
 import type { WeekView } from '../lib/weekFrom.ts';
@@ -930,15 +930,34 @@ function ThisScreen() {
             </>
           )}
           {(pref.style === 'right' || pref.style === 'left') && (
-            <label className="check">
-              <input
-                id="menuStyle-draw"
-                type="checkbox"
-                checked={pref.draw}
-                onChange={e => void setMenuPref({ draw: e.target.checked })}
-              />
-              <span className="t">A ✏️ Draw button beside the ☰</span>
-            </label>
+            <>
+              <p className="dim small">
+                Up to {QUICK_MAX} quick buttons beside the ☰ (on the calendar). Tap to add or take one away; a fifth
+                takes the place of the first.
+              </p>
+              <div className="segs" role="group" aria-label="The quick buttons beside the ☰">
+                {DOCK_BTNS.map(([b, icon, label]) => {
+                  const at = pref.quick.indexOf(b);
+                  return (
+                    <button
+                      key={b}
+                      type="button"
+                      id={'quickPick-' + b}
+                      className={'seg' + (at >= 0 ? ' on' : '')}
+                      aria-pressed={at >= 0}
+                      onClick={() =>
+                        void setMenuPref({
+                          quick: at >= 0 ? pref.quick.filter(x => x !== b) : [...pref.quick, b].slice(-QUICK_MAX)
+                        })
+                      }
+                    >
+                      {at >= 0 && <b>{at + 1}. </b>}
+                      <span className="emoji">{icon}</span> {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
           )}
         </>
       )}

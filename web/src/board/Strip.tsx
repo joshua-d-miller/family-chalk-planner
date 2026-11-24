@@ -57,6 +57,7 @@ export interface DockActions {
   slides?: () => void; // ▶ the slideshow (when there are photos)
   week?: () => void; // 🗓️ the week, or 📅 back to the month
   weekly?: boolean; // (on the week now)
+  today?: () => void; // 📍 back to this month (or week)
 }
 const PAGE_BTNS: DockBtn[] = ['chores', 'meals', 'reminders', 'timers', 'pantry', 'jars'];
 
@@ -184,7 +185,7 @@ function SideStrip({
   actions: DockActions;
   children: ReactNode;
 }) {
-  const { who, here, drawBtn, dock: picked } = useShell();
+  const { who, here, quick, dock: picked } = useShell();
   const [open, setOpen] = useState(false); // the drawer
   const [shown, setShown] = useState(true); // the drawing tools' pop-over
   const z = useBarZoom();
@@ -200,10 +201,10 @@ function SideStrip({
   // (Colby Way's dock) The buttons this screen picked, then the ☰, in the   //
   // Notes column's last row; drawing, ✏️ Done and 🎨 are in the corner.     //
   const inDock = !!(dock && picked) && !drawing;
-  const dockRow = inDock && (
-    <div className="dockrow">
-      {picked!.map(b => {
-        const [, icon, label] = DOCK_BTNS.find(([x]) => x === b)!;
+  // one quick button (in the Notes column's row, or beside the ☰ in the corner)
+  const btn = (b: DockBtn) => {
+        const [, icon, name] = DOCK_BTNS.find(([x]) => x === b)!;
+        const label = b === 'draw' ? drawLabel : name;
         const page = PAGE_BTNS.includes(b);
         const run =
           b === 'add'
@@ -216,9 +217,18 @@ function SideStrip({
                   ? onDraw
                   : b === 'reload'
                     ? () => location.reload()
-                    : page
-                      ? () => navigate(b)
-                      : undefined;
+                    : b === 'today'
+                      ? actions.today
+                      : b === 'settings'
+                        ? () => navigate('settings')
+                        : b === 'fullscreen'
+                          ? () => {
+                              if (document.fullscreenElement) void document.exitFullscreen();
+                              else void document.documentElement.requestFullscreen?.();
+                            }
+                          : page
+                            ? () => navigate(b)
+                            : undefined;
         if (!run) return null; // (no photos yet: no ▶)
         const week = b === 'week' && actions.weekly;
         return (
@@ -234,7 +244,10 @@ function SideStrip({
             <span aria-hidden="true">{b === 'week' && week ? '📅' : icon}</span>
           </button>
         );
-      })}
+  };
+  const dockRow = inDock && (
+    <div className="dockrow">
+      {picked!.map(btn)}
       <MenuFab side={side} open={open} onClick={() => setOpen(true)} label="Menu and the calendar's tools" inRow />
     </div>
   );
@@ -267,11 +280,7 @@ function SideStrip({
             </>
           ) : inDock ? null : (
             <>
-              {drawBtn && onDraw && (
-                <button type="button" className="menufab inrow" id="drawFab" aria-label={drawLabel} onClick={onDraw}>
-                  <span aria-hidden="true">✏️</span>
-                </button>
-              )}
+              {quick?.map(btn)}
               <MenuFab
                 side={side}
                 open={open}
