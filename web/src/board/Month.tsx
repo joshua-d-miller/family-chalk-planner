@@ -1,4 +1,4 @@
-/*
+﻿/*
 ===============================================================================
  Family Chalk Planner | Screens | Board | Month.tsx
 ===============================================================================
@@ -440,7 +440,7 @@ export function Month({
         >
           {weeks}
         </div>
-        {border && <BorderLayer border={border} wide={wide} />}
+        {border && <BorderLayer border={border} wide={wide} extra={height - 642} />}
       </div>
       {under && <div className="under">{under}</div>}
     </div>
@@ -485,7 +485,7 @@ export type Border = { items: string[]; color: string; size: 's' | 'm' | 'l' };
 const BORDER_SZ = { s: 20, m: 26, l: 34 };
 const CAL_H = GRID_H + 28;
 export const borderSrc = (n: string, color: string) => clipSrc(n, color);
-function BorderLayer({ border: b, wide }: { border: Border; wide: boolean }) {
+function BorderLayer({ border: b, wide, extra }: { border: Border; wide: boolean; extra: number }) {
   const sz = BORDER_SZ[b.size] || 26;
   const half = (sz + 6) / 2;
   const gap = sz * 0.45;
@@ -501,7 +501,7 @@ function BorderLayer({ border: b, wide }: { border: Border; wide: boolean }) {
   // a border of only light bulbs is a string of lights: on a wire, every bulb pointing out
   const lights = b.items.every(n => n.startsWith('cp-bulb-'));
   const W = wide ? CAL_WIDE : CAL.w; // the calendar box in board pixels (wider with the Notes column off)
-  const H = CAL_H;
+  const H = CAL_H + extra; // (a taller slate: a taller calendar)
   side(half, half, W - half, half, 180);
   side(W - half, half, W - half, H - half, -90);
   side(W - half, H - half, half, H - half, 0);
