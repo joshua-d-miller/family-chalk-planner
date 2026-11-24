@@ -932,8 +932,8 @@ function ThisScreen() {
           {(pref.style === 'right' || pref.style === 'left') && (
             <>
               <p className="dim small">
-                Up to {QUICK_MAX} quick buttons beside the ☰ (on the calendar). Tap to add or take one away; a fifth
-                takes the place of the first.
+                Up to {QUICK_MAX} quick buttons beside the ☰ (on the calendar): up to 4 in a row (smaller as there are
+                more), then two rows of 3. Tap to add or take one away; a seventh takes the place of the first.
               </p>
               <div className="segs" role="group" aria-label="The quick buttons beside the ☰">
                 {DOCK_BTNS.map(([b, icon, label]) => {

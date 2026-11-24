@@ -42,7 +42,7 @@
 ===============================================================================
 */
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Menu } from '../ui/Menu.tsx';
@@ -280,7 +280,19 @@ function SideStrip({
             </>
           ) : inDock ? null : (
             <>
-              {quick?.map(btn)}
+              {quick && quick.length > 0 && (
+                <div
+                  className="quickgrid"
+                  style={
+                    {
+                      '--cols': quick.length <= 4 ? quick.length : 3,
+                      '--qs': (quick.length <= 3 ? 58 : quick.length === 4 ? 50 : 48) + 'px'
+                    } as CSSProperties
+                  }
+                >
+                  {quick.map(btn)}
+                </div>
+              )}
               <MenuFab
                 side={side}
                 open={open}

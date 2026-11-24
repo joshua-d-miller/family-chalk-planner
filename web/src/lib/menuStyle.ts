@@ -71,7 +71,7 @@ export const DOCK_BTNS: [DockBtn, string, string][] = [
   ['reload', '↻', 'Reload']
 ];
 export const DOCK_MAX = 3; // in the Notes column
-export const QUICK_MAX = 4; // beside the ☰ in a corner
+export const QUICK_MAX = 6; // beside the ☰ in a corner (a row of up to 4, or two rows of 3)
 export interface MenuPref {
   style: MenuStyle;
   draw: boolean; // (kept for older boards) quick includes 'draw'

@@ -283,7 +283,7 @@ export function setup({
     style: 'right' | 'left' | 'notes';
     draw: boolean;
     dock?: string[]; // 'notes': the buttons beside the ☰ in the Notes column (up to 3)
-    quick?: string[]; // 'right' / 'left': the quick buttons beside the ☰ (up to 4)
+    quick?: string[]; // up to 6
   }
   // what can go beside the ☰ (from Colby Way's board, and the corner's quick buttons)
   const DOCK = [
@@ -291,6 +291,7 @@ export function setup({
     'settings', 'fullscreen', 'reload'
   ];
   const DOCK_DEFAULT = ['add', 'slides', 'week'];
+  const QUICK_MAX = 6;
   const prefs = () => kv.get<Record<string, MenuPref>>('menustyle') || {};
   const view = (p: MenuPref | undefined) => {
     const quick = p?.quick ?? (p?.draw ? ['draw'] : []); // (an older board's ✏️ checkbox)
@@ -316,13 +317,13 @@ export function setup({
     // (an older screen sending just draw: true / false changes the ✏️ in the quick buttons)
     let quick = body.quick ?? now.quick;
     if (body.quick === undefined && typeof body.draw === 'boolean')
-      quick = body.draw ? [...new Set([...quick, 'draw'])].slice(0, 4) : quick.filter((q: string) => q !== 'draw');
+      quick = body.draw ? [...new Set([...quick, 'draw'])].slice(0, QUICK_MAX) : quick.filter((q: string) => q !== 'draw');
     if (!['cork', 'right', 'left', 'notes'].includes(style))
       return res.status(400).json({ error: 'Pick where the menu goes' });
     if (!Array.isArray(dock) || dock.length > 3 || dock.some((d: unknown) => !DOCK.includes(d as string)))
       return res.status(400).json({ error: 'Pick up to 3 buttons' });
-    if (!Array.isArray(quick) || quick.length > 4 || quick.some((d: unknown) => !DOCK.includes(d as string)))
-      return res.status(400).json({ error: 'Pick up to 4 quick buttons' });
+    if (!Array.isArray(quick) || quick.length > QUICK_MAX || quick.some((d: unknown) => !DOCK.includes(d as string)))
+      return res.status(400).json({ error: 'Pick up to 6 quick buttons' });
     const corner = style === 'right' || style === 'left';
     if (style === 'cork')
       delete map[k]; // (the cork has no buttons of its own)

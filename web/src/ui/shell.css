@@ -490,6 +490,23 @@ html.shell-drawer .page {
 .menufab.inrow {
   position: static;
 }
+/* the quick buttons beside the ☰: up to 4 in a row (a little smaller as there are more), then 2 rows of 3;
+   equal columns, so they're always evenly spaced left to right, and they shrink to fit a narrow screen */
+.quickgrid {
+  --gap: 10px;
+  --fit: calc((100vw - 58px - 32px - var(--gap) * (var(--cols) + 1)) / var(--cols));
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  gap: var(--gap);
+  justify-items: center;
+  align-items: center;
+}
+.quickgrid .menufab.inrow {
+  width: min(var(--qs), var(--fit));
+  height: min(var(--qs), var(--fit));
+  font-size: calc(min(var(--qs), var(--fit)) * 0.45);
+  font-family: var(--emoji), sans-serif;
+}
 .menufab.small {
   width: 48px;
   height: 48px;
