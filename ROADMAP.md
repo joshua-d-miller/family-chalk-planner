@@ -1,6 +1,6 @@
 # Roadmap
 
-Plans for the next releases. Nothing here is built yet.
+Plans for the next releases. Nothing here is built yet. The working plan for 1.3.0 is [PLAN-1.3.0.md](PLAN-1.3.0.md).
 
 ## 1.3.0 — Screens, kids & family
 
