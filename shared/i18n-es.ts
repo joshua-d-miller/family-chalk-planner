@@ -697,6 +697,7 @@ export const ES: Dict = {
   'Overnight, this screen shows': 'Por la noche, esta pantalla muestra',
   'The slideshow': 'La presentación de fotos',
   'The calendar, dimmed': 'El calendario, atenuado',
+  'A night clock': 'Un reloj de noche',
   'A black screen': 'Una pantalla negra',
   'Turn the screen off (where it can)': 'Apagar la pantalla (donde se pueda)',
   'Nothing (the calendar as it is)': 'Nada (el calendario tal cual)',

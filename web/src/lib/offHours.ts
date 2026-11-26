@@ -10,7 +10,8 @@
  Purpose:
      What this screen does in the board's overnight hours (⚙️ Settings →
      Photos & slideshow: on, and when): the slideshow (nothing picked, as
-     before), the calendar dimmed, a black screen, the screen turned off
+     before), the calendar dimmed, a night clock, a black screen, the screen
+     turned off
      (lib/wallScreen.ts: Fully Kiosk, else the device's own sleep, black
      meanwhile), or nothing. A tap shows
      the calendar for 5 minutes, as with the slideshow. Kept on the board
@@ -32,10 +33,11 @@
 import { post } from './api.ts';
 import { tellThisScreen, useLive } from './live.ts';
 
-export type OffMode = 'slides' | 'dim' | 'black' | 'off' | 'none';
+export type OffMode = 'slides' | 'dim' | 'clock' | 'black' | 'off' | 'none';
 export const OFF_MODES: [OffMode, string][] = [
   ['slides', 'The slideshow'],
   ['dim', 'The calendar, dimmed'],
+  ['clock', 'A night clock'],
   ['black', 'A black screen'],
   ['off', 'Turn the screen off (where it can)'],
   ['none', 'Nothing (the calendar as it is)']

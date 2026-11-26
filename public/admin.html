@@ -1211,7 +1211,7 @@ button:disabled{opacity:.5;cursor:default}
     var box = el('div', 'nbot');
     box.appendChild(el('span', 'dim', '🌙 Overnight:'));
     var sel = el('select'); sel.setAttribute('aria-label', 'Overnight on ' + x.name);
-    [['', 'The slideshow'], ['dim', 'The calendar, dimmed'], ['black', 'A black screen'], ['off', 'Turn the screen off (where it can)'], ['none', 'Nothing (the calendar as it is)']].forEach(function (o) {
+    [['', 'The slideshow'], ['dim', 'The calendar, dimmed'], ['clock', 'A night clock'], ['black', 'A black screen'], ['off', 'Turn the screen off (where it can)'], ['none', 'Nothing (the calendar as it is)']].forEach(function (o) {
       var op = el('option', null, o[1]); op.value = o[0]; sel.appendChild(op);
     });
     sel.value = offhours[x.id] || '';

@@ -49,7 +49,8 @@
 
  1.3.0    2026-11-26   joshua    Overnight a screen can dim the calendar,
                         claude    go black or do nothing instead. nightNow
-                                  is in night.ts, with days and more times.
+                                  is in night.ts, with days and more times;
+                                  the night clock.
 ===============================================================================
 */
 
@@ -87,7 +88,7 @@ export function useSlides(photos: Photos | null, wall: boolean, mode: OffMode = 
     wall && mode !== 'none' && (new URLSearchParams(location.search).has('slides') || nightNow(photos?.cfg));
   const asleep = night && Date.now() > peekUntil;
   const on = has && (manual || (asleep && mode === 'slides'));
-  const cover = !manual && asleep && (mode === 'dim' || mode === 'black' || mode === 'off') ? mode : null;
+  const cover = !manual && asleep && ['dim', 'black', 'off', 'clock'].includes(mode) ? mode : null;
   const since = useRef(0); // taps right after a change belong to it
   const mark = () => (since.current = Date.now());
   return {
@@ -323,6 +324,28 @@ function useClock(time24: boolean) {
     ampm: time24 ? '' : n.getHours() < 12 ? 'AM' : 'PM',
     date: n.toLocaleDateString(locale(), { weekday: 'long', month: 'long', day: 'numeric' })
   };
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------- //
+// | The night clock | //
+// ------------------- //
+// Overnight on a screen that shows a clock: the time and the date, big and  //
+// dim, moved a little every 10 minutes so nothing sits still all night      //
+export function NightClock({ time24 }: { time24: boolean }) {
+  const c = useClock(time24);
+  const step = Math.floor(Date.now() / 600_000); // (the clock above changes every 10 seconds; this every 10 minutes)
+  const dx = ((step * 37) % 9) - 4;
+  const dy = ((step * 53) % 7) - 3;
+  return (
+    <span className="nightClock" style={{ transform: `translate(${dx}vw, ${dy}vh)` }}>
+      <span className="t">
+        {c.time}
+        {c.ampm && <small>{c.ampm}</small>}
+      </span>
+      <span className="d">{c.date}</span>
+    </span>
+  );
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

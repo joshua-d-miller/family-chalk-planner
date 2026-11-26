@@ -366,6 +366,36 @@
 .offCover.off {
   background: #000;
 }
+.offCover.clock {
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* big and dim: readable across a dark room without lighting it */
+.nightClock,
+.nightClock .t,
+.nightClock .d {
+  display: block;
+}
+.nightClock {
+  color: rgba(237, 234, 224, 0.42);
+  font-family: var(--hand, 'Kalam', cursive);
+  text-align: center;
+  line-height: 1;
+}
+.nightClock .t {
+  font-size: min(26vw, 46vh);
+  font-variant-numeric: tabular-nums;
+}
+.nightClock .t small {
+  font-size: 0.25em;
+  margin-left: 0.2em;
+}
+.nightClock .d {
+  font-size: min(4.5vw, 7vh);
+  margin-top: 0.4em;
+}
 .offCover.dim {
   background: rgba(0, 0, 0, 0.7);
 }

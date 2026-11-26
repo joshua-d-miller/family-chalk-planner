@@ -339,6 +339,10 @@ test('overnight a screen can show the slideshow, dim the calendar, go black, or 
     await expect(cover).toHaveClass(/black/);
     await cover.click(); // a tap: the calendar for 5 minutes
     await expect(cover).toHaveCount(0);
+    expect(await call('api/offhours', { value: 'clock' })).toBe(200);
+    await fam.reload();
+    await expect(cover).toHaveClass(/clock/);
+    await expect(cover.locator('.nightClock .t')).toHaveText(/^\d{1,2}:\d\d/);
     expect(await call('api/offhours', { value: 'dim' })).toBe(200);
     await fam.reload();
     await expect(cover).toHaveClass(/dim/);

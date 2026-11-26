@@ -167,7 +167,7 @@ import { Notes } from './Notes.tsx';
 import { useNotesCol } from '../lib/notesCol.ts';
 import { boardScaleStyle } from '../lib/zoomFit.ts';
 import { WeatherMotion } from './Weather.tsx';
-import { Slideshow, useSlides } from './Slideshow.tsx';
+import { Slideshow, useSlides, NightClock } from './Slideshow.tsx';
 import { later } from '../lib/later.tsx';
 import { MonthPicker } from './MonthPicker.tsx';
 import { ARROWS_FADE_MS, arrowsDefault, useMyArrows } from '../lib/arrows.ts';
@@ -603,7 +603,7 @@ export function Board({
     return { ...d, events: [...d.events, ...o.events.filter(e => !seen.has(key(e)))] };
   }, [month.data, other.data, otherYm]);
   const slides = useSlides(photos, !edit || family, useOffHours());
-  const asleep = slides.cover === 'black' || slides.cover === 'off'; // nothing to see: nothing moves
+  const asleep = !!slides.cover && slides.cover !== 'dim'; // black, off or the night clock: nothing else moves
   useEffect(() => {
     if (slides.cover !== 'off') return;
     letScreenSleep(true);
@@ -1239,7 +1239,9 @@ export function Board({
           className={'offCover ' + slides.cover}
           aria-label="Show the calendar"
           onClick={slides.tapSlides}
-        />
+        >
+          {slides.cover === 'clock' && <NightClock time24={!!today?.time24} />}
+        </button>
       )}
       <ReminderAlert time24={!!today?.time24} />
       <TimerDone />
