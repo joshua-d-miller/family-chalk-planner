@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Photos | photos.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-21
+ Updated:   2026-11-26
 
  Purpose:
      Photos: a shared album feeds the photos beside the month name and the
@@ -61,6 +61,9 @@
  1.2.0    2026-11-21   joshua    The slideshow's timing (5 to 120 seconds)
                         claude    and brightness (10 to 100%) take any value
                                   the sliders in ⚙️ Settings give.
+
+ 1.3.0    2026-11-26   joshua    The overnight hours on chosen days, and up
+                        claude    to 3 more times.
 ===============================================================================
 */
 
@@ -128,7 +131,9 @@ const CFG_DEFAULT = {
   sidePanel: false,
   showCountdown: true // the next countdown on the slideshow (from 30 days out)
 };
-type PhotoCfg = typeof CFG_DEFAULT;
+type NightWindow = { from: string; to: string; days: number[] };
+// days: the overnight hours' weekdays (none saved: every day, as before 1.3.0); more: up to 3 more windows
+type PhotoCfg = typeof CFG_DEFAULT & { days?: number[]; more?: NightWindow[] };
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------- //
@@ -480,11 +485,23 @@ export function setup({
     const b = req.body || {};
     const hm = (v: unknown) => (typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : null);
     const cur = cfg();
+    // the overnight hours' days: weekdays 0 (Sunday) to 6, at least one; up to 3 more windows, each whole
+    const days = (v: unknown) =>
+      Array.isArray(v) && v.length && v.every(n => Number.isInteger(n) && n >= 0 && n <= 6)
+        ? [...new Set(v as number[])].sort()
+        : null;
+    const more = (v: unknown) =>
+      Array.isArray(v) && v.length <= 3
+        ? v.map(w => ({ from: hm(w?.from), to: hm(w?.to), days: days(w?.days) }))
+        : null;
+    const extra = b.more === undefined ? null : more(b.more);
     const next: PhotoCfg = {
       frame: b.frame === undefined ? cur.frame : !!b.frame,
       night: b.night === undefined ? cur.night : !!b.night,
       from: hm(b.from) || cur.from,
       to: hm(b.to) || cur.to,
+      days: (b.days === undefined ? null : days(b.days)) || cur.days,
+      more: extra && extra.every(w => w.from && w.to && w.days) ? (extra as NightWindow[]) : cur.more,
       // (⚙️ Settings has sliders: 5 to 120 seconds, in 5s; 10 to 100%, in 10s)
       every: Number.isInteger(+b.every) && +b.every >= 5 && +b.every <= 120 ? +b.every : cur.every,
       dim: Number.isInteger(+b.dim) && +b.dim >= 10 && +b.dim <= 100 ? +b.dim : cur.dim, // slideshow brightness, %

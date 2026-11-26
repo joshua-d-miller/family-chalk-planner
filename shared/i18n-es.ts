@@ -159,6 +159,7 @@ export const ES: Dict = {
   'Meal Plan': 'Comidas',
   'Reward Jars': 'Frascos de premios',
   Sun: 'dom',
+  On: 'Días',
   Mon: 'lun',
   Tue: 'mar',
   Wed: 'mié',
@@ -619,6 +620,9 @@ export const ES: Dict = {
   'No photo album yet: the admin console sets it up (⚙️ Board → Photos).':
     'Todavía no hay álbum de fotos: se configura en la consola de administración (⚙️ Tablero → Fotos).',
   'Show photos overnight on the wall (a slideshow)': 'Mostrar fotos de noche en la pared (una presentación)',
+  "+ Add another time (weekdays while everyone's out, say)":
+    '+ Añadir otro horario (entre semana mientras no hay nadie, por ejemplo)',
+  'Remove the time from {0} until {1}': 'Quitar el horario de {0} a {1}',
   From: 'Desde',
   Until: 'Hasta',
   'Next photo every': 'Siguiente foto cada',

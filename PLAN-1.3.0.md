@@ -54,7 +54,10 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   - Then **Turn the screen off (where it can)**: Fully Kiosk's `turnScreenOff` (and on again after); elsewhere the
     board stops keeping the screen awake, so the device's own sleep turns it off (black meanwhile). Under a black
     or turned-off screen, the moving weather and GIFs stop (the "asleep" switch, for what moves).
-  - Still to do for 4: several windows on chosen days, the night clock, the Good morning card, Home Assistant
+  - Then **days and more times**: the overnight hours on chosen days, and up to 3 more times with their own
+    days (`web/src/board/night.ts`, with a unit test; past midnight belongs to the day it starts). Saved
+    settings without days mean every day, as before.
+  - Still to do for 4: the night clock, the Good morning card, Home Assistant
     and FreeKiosk turning the screen off, pausing the slideshow's own timers and photo checks, and
     moving the overnight times out of the photo settings into an Off hours section (with the old ones moved
     over).

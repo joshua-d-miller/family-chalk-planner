@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | photos.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-26
 
  Purpose:
      The family's photos (the shared album or Immich): framing them on the
@@ -33,6 +33,9 @@
 
  1.1.0    2026-11-17   joshua    offline and few from the board, and small
                         claude    pictures for picking.
+
+ 1.3.0    2026-11-26   joshua    The overnight hours' days and more times.
+                        claude
 ===============================================================================
 */
 
@@ -48,6 +51,8 @@ export type PhotoCfg = {
   night: boolean;
   from: string;
   to: string;
+  days?: number[]; // the overnight hours' days (0 Sunday … 6 Saturday; none saved: every day)
+  more?: { from: string; to: string; days?: number[] }[]; // up to 3 more windows
   every: number;
   dim: number;
   showEvents: boolean;

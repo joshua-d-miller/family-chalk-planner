@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | app-pages.spec.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-26
 
  Purpose:
      The new screens (React): the meal plan, reminders, timers, the
@@ -68,6 +68,9 @@
                                   Swiping the slideshow. ⚙️ Settings as a card
                                   over the board. Pinning: a long press on a
                                   tile. A family screen's Settings.
+
+ 1.3.0    2026-11-26   joshua    The overnight hours on chosen days, and
+                        claude    another time.
 ===============================================================================
 */
 
@@ -271,6 +274,17 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
   await page.getByLabel('Show photos overnight on the wall (a slideshow)').check();
   await page.getByLabel('With the temperature').check();
   await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.showTemp).toBe(true);
+  // the overnight hours: on chosen days, and another time (weekdays while everyone's out)
+  const cfgNow = async () => (await (await board.admin.api('/api/photos')).json()).cfg;
+  const sunday = page.getByRole('group', { name: 'On' }).first().getByRole('button', { name: 'Sunday' });
+  await sunday.click();
+  await expect.poll(async () => (await cfgNow()).days).toEqual([1, 2, 3, 4, 5, 6]);
+  await page.locator('#addHours').click();
+  await expect.poll(async () => (await cfgNow()).more).toEqual([{ from: '09:00', to: '15:00', days: [1, 2, 3, 4, 5] }]);
+  await page.getByRole('button', { name: 'Remove the time from 09:00 until 15:00' }).click();
+  await expect.poll(async () => (await cfgNow()).more).toEqual([]);
+  await sunday.click(); // (every day again)
+  await expect.poll(async () => (await cfgNow()).days).toEqual([0, 1, 2, 3, 4, 5, 6]);
   await page.locator('#notesScope-board').click(); // (every screen's)
   await page
     .locator('#notes-month')

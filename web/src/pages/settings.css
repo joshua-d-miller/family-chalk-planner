@@ -193,3 +193,13 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 4px 24px;
 }
+
+/* the overnight hours: days, and more than one time */
+.segs.days .seg {
+  min-width: 52px;
+}
+.moreHours {
+  border-top: 1px dashed rgba(var(--ink, 255, 255, 255), 0.25);
+  margin-top: 10px;
+  padding-top: 10px;
+}

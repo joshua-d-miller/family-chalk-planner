@@ -68,7 +68,9 @@
                         claude    answer didn't come through whole.
 
  1.3.0    2026-11-26   joshua    This screen: the month arrows, always there
-                        claude    or fading; what it does overnight.
+                        claude    or fading; what it does overnight. The
+                                  overnight hours on chosen days, and more
+                                  than one time.
 ===============================================================================
 */
 
@@ -554,6 +556,8 @@ interface PhotoCfg {
   night: boolean;
   from: string;
   to: string;
+  days?: number[]; // the overnight hours' days (none: every day)
+  more?: { from: string; to: string; days: number[] }[]; // up to 3 more windows
   every: number;
   dim: number;
   showEvents: boolean;
@@ -561,6 +565,29 @@ interface PhotoCfg {
   showReminders: boolean;
   sidePanel: boolean;
   showCountdown: boolean;
+}
+// the days a time applies to: every day unless some are picked; at least one stays on
+function DayChips({ label, days, onChange }: { label: string; days?: number[]; onChange: (d: number[]) => void }) {
+  const on = days || [0, 1, 2, 3, 4, 5, 6];
+  return (
+    <div className="segs days" role="group" aria-label={label}>
+      {DAY_NAMES.map((n, i) => (
+        <button
+          key={n}
+          type="button"
+          aria-pressed={on.includes(i)}
+          aria-label={n}
+          className={'seg' + (on.includes(i) ? ' on' : '')}
+          onClick={() => {
+            const next = on.includes(i) ? on.filter(d => d !== i) : [...on, i].sort();
+            if (next.length) onChange(next);
+          }}
+        >
+          {n.slice(0, 3)}
+        </button>
+      ))}
+    </div>
+  );
 }
 function Photos() {
   const p = useLive<{ enabled: boolean; kind: string; cfg: PhotoCfg; photos: unknown[]; error: string | null }>(
@@ -601,10 +628,44 @@ function Photos() {
       </p>
       {box('night', 'Show photos overnight on the wall (a slideshow)')}
       {c.night && (
-        <div className="row">
-          <Field label="From" type="time" value={c.from} onChange={e => set({ from: e.target.value })} />
-          <Field label="Until" type="time" value={c.to} onChange={e => set({ to: e.target.value })} />
-        </div>
+        <>
+          <div className="row">
+            <Field label="From" type="time" value={c.from} onChange={e => set({ from: e.target.value })} />
+            <Field label="Until" type="time" value={c.to} onChange={e => set({ to: e.target.value })} />
+          </div>
+          <DayChips label="On" days={c.days} onChange={days => set({ days })} />
+          {(c.more || []).map((w, i) => {
+            const change = (patch: Partial<typeof w>) =>
+              set({ more: (c.more || []).map((x, j) => (j === i ? { ...x, ...patch } : x)) });
+            return (
+              <div className="moreHours" key={i}>
+                <div className="row">
+                  <Field label="From" type="time" value={w.from} onChange={e => change({ from: e.target.value })} />
+                  <Field label="Until" type="time" value={w.to} onChange={e => change({ to: e.target.value })} />
+                  <button
+                    type="button"
+                    className="btn"
+                    aria-label={`Remove the time from ${w.from} until ${w.to}`}
+                    onClick={() => set({ more: (c.more || []).filter((_, j) => j !== i) })}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <DayChips label="On" days={w.days} onChange={days => change({ days })} />
+              </div>
+            );
+          })}
+          {(c.more || []).length < 3 && (
+            <button
+              type="button"
+              className="btn"
+              id="addHours"
+              onClick={() => set({ more: [...(c.more || []), { from: '09:00', to: '15:00', days: [1, 2, 3, 4, 5] }] })}
+            >
+              + Add another time (weekdays while everyone's out, say)
+            </button>
+          )}
+        </>
       )}
       {c.night && (
         <div className="slides2">

@@ -48,7 +48,8 @@
                         claude    answer didn't come through whole.
 
  1.3.0    2026-11-26   joshua    Overnight a screen can dim the calendar,
-                        claude    go black or do nothing instead.
+                        claude    go black or do nothing instead. nightNow
+                                  is in night.ts, with days and more times.
 ===============================================================================
 */
 
@@ -64,24 +65,8 @@ import { useCountdowns, useSleeps } from '../lib/countdowns.ts';
 import { locale } from '../../../shared/i18n.ts';
 import type { Photo, PhotoCfg, Photos } from './photos.ts';
 import type { OffMode } from '../lib/offHours.ts';
+import { nightNow } from './night.ts';
 import './slides.css';
-
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
-// -------------- //
-// | Night time | //
-// -------------- //
-const hm = (s: string) => {
-  const m = /^(\d\d):(\d\d)$/.exec(s || '');
-  return m ? +m[1] * 60 + +m[2] : null;
-};
-export function nightNow(cfg: PhotoCfg | undefined, d = new Date()) {
-  if (!cfg?.night) return false;
-  const f = hm(cfg.from);
-  const t = hm(cfg.to);
-  if (f === null || t === null || f === t) return false;
-  const m = d.getHours() * 60 + d.getMinutes();
-  return f < t ? m >= f && m < t : m >= f || m < t;
-}
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ---------------------------- //
