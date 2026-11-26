@@ -142,7 +142,8 @@
                                   screen off, and nothing moves under it;
                                   it tells the console what it shows now;
                                   the first tap after it says good morning;
-                                  a wall starts again fresh once a night.
+                                  a wall starts again fresh once a night;
+                                  the dots, swiped back to.
 ===============================================================================
 */
 
@@ -183,6 +184,7 @@ import { navigate } from '../lib/nav.ts';
 import { homeHref } from '../routes.ts';
 import { useBarZoom, usePins, useShell, visibleHeight } from '../ui/Shell.tsx';
 import { isSwipe, swipeOffBoard } from '../lib/swipePages.ts';
+import { BackDots } from '../ui/SwipeDots.tsx';
 import { DrawLayer, firstPen, isPosca, recolor, touches } from './draw/Draw.tsx';
 import type { Pen } from './draw/Draw.tsx';
 import type { Stamp } from './draw/Library.tsx';
@@ -1289,6 +1291,7 @@ export function Board({
           {slides.cover === 'clock' && <NightClock time24={!!today?.time24} />}
         </button>
       )}
+      <BackDots />
       <ReminderAlert time24={!!today?.time24} />
       <TimerDone />
       <Offline />

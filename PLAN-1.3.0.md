@@ -45,7 +45,9 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   code: `web/src/lib/swipePages.ts`. A mouse swipe's selected words are cleared as the next swipe starts (else
   that swipe dragged them).
   - Then **every page swiped to goes back** to the calendar after 2 quiet minutes (it was Chores' alone).
-  - Still to do for 3: the chalk dots showing where you are, a page list for view-only walls (console), the
+  - Then **the chalk dots**: after a swipe, a row of dots (the calendar, then each page) with this one lit, fading
+    after about 2 seconds; on the calendar too, swiped back to.
+  - Still to do for 3: a page list for view-only walls (console), the
     2 minutes set for each screen, and checking pages that scroll sideways.
 - **2026-11-26: what each screen does overnight** (first part of 4). In the board's existing overnight hours
   (⚙️ Settings → Photos & slideshow) each screen shows the slideshow (nothing picked: as before), the calendar

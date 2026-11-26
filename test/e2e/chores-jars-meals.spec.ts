@@ -111,6 +111,9 @@ test('swiping goes through the pinned pages and back, and stops at the last one'
     await page.waitForTimeout(800);
     await swipe(true);
     await expect(page).toHaveURL(/\/meals$/);
+    // the dots: the calendar, meals, pantry, with meals lit
+    await expect(page.locator('.swipeDots i')).toHaveCount(3);
+    await expect(page.locator('.swipeDots i').nth(1)).toHaveClass(/on/);
     await swipe(true);
     await expect(page).toHaveURL(/\/pantry$/);
     await swipe(true); // the last one: it doesn't go round
@@ -120,6 +123,7 @@ test('swiping goes through the pinned pages and back, and stops at the last one'
     await expect(page).toHaveURL(/\/meals$/);
     await swipe(false);
     await expect(page).toHaveURL(/\/edit$/);
+    await expect(page.locator('.swipeDots i').first()).toHaveClass(/on/); // back on the calendar
     await swipe(false); // the calendar: a swipe to the right goes nowhere
     await page.waitForTimeout(400);
     await expect(page).toHaveURL(/\/edit$/);

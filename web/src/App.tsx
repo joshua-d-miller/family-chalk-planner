@@ -63,7 +63,7 @@
 
  1.3.0    2026-11-26   joshua    The pages besides the board are downloaded
                         claude    when first opened, not by every wall;
-                                  swipes through the pinned pages.
+                                  swipes through the pinned pages, with dots.
 ===============================================================================
 */
 
@@ -76,7 +76,8 @@ import { PAGES, homeHref } from './routes.ts';
 import { navigate, useHere } from './lib/nav.ts';
 import { useHaSidebarHidden } from './lib/haSidebar.ts';
 import { Shell, usePins } from './ui/Shell.tsx';
-import { useSwipePages } from './lib/swipePages.ts';
+import { pagesAfter, swipedFrom, useSwipePages } from './lib/swipePages.ts';
+import { SwipeDots } from './ui/SwipeDots.tsx';
 import { Board } from './board/Board.tsx';
 import { Settings } from './pages/Settings.tsx';
 import { SignIn } from './ui/SignIn.tsx';
@@ -101,11 +102,12 @@ const LATER = {
 };
 // a page swiped to from the calendar: swipes go on through the pinned pages, or back (lib/swipePages.ts)
 function PageSwipes({ here }: { here: string }) {
-  useSwipePages(
-    here,
-    usePins().map(p => p.id)
-  );
-  return null;
+  const pins = usePins().map(p => p.id);
+  useSwipePages(here, pins);
+  const order = pagesAfter(pins);
+  return swipedFrom() && order.includes(here) ? (
+    <SwipeDots key={here} n={order.length + 1} at={order.indexOf(here) + 1} />
+  ) : null;
 }
 function usePagesAhead(w: Who | null) {
   const opens = !!w && (w.rank > RANK.view || !!kidOf(w)); // a view-only wall never opens them
