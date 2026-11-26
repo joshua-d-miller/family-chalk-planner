@@ -694,6 +694,7 @@ export const ES: Dict = {
   'The slideshow': 'La presentación de fotos',
   'The calendar, dimmed': 'El calendario, atenuado',
   'A black screen': 'Una pantalla negra',
+  'Turn the screen off (where it can)': 'Apagar la pantalla (donde se pueda)',
   'Nothing (the calendar as it is)': 'Nada (el calendario tal cual)',
   'Show the calendar': 'Mostrar el calendario',
   'This screen’s usual (fade)': 'Lo habitual en esta pantalla (se desvanecen)',

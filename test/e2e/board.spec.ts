@@ -343,10 +343,24 @@ test('overnight a screen can show the slideshow, dim the calendar, go black, or 
     await fam.reload();
     await expect(cover).toHaveClass(/dim/);
     expect(await call('api/offhours', { value: 'none' })).toBe(200);
-    await fam.reload();
+    await fam.goto(new URL('edit?wx=rain', fam.url()).href); // (rain: the weather's layer shows)
     await fam.waitForTimeout(800);
     await expect(cover).toHaveCount(0);
     await expect(fam.locator('#slides.on')).toHaveCount(0);
+    await expect(fam.locator('.slate .wx')).toHaveCount(1); // the weather's layer, while the calendar shows
+    // turn the screen off: Fully Kiosk does it (here a stand-in), and turns it on again once the hours are over
+    await fam.addInitScript(() => {
+      const w = window as unknown as { fully: unknown; screenWas?: string };
+      w.fully = { turnScreenOff: () => (w.screenWas = 'off'), turnScreenOn: () => (w.screenWas = 'on') };
+    });
+    expect(await call('api/offhours', { value: 'off' })).toBe(200);
+    await fam.reload();
+    await expect(cover).toHaveClass(/off/);
+    expect(await fam.evaluate(() => (window as unknown as { screenWas?: string }).screenWas)).toBe('off');
+    await expect(fam.locator('.slate .wx')).toHaveCount(0); // nothing moves under it (no weather)
+    expect(await call('api/offhours', { value: 'none' })).toBe(200); // (live: the hours are over for it)
+    await expect(cover).toHaveCount(0);
+    await expect.poll(() => fam.evaluate(() => (window as unknown as { screenWas?: string }).screenWas)).toBe('on');
   } finally {
     await call('api/offhours', { value: null }); // the slideshow, as the other tests expect
     await call('api/photos/settings', { night: was.night, from: was.from, to: was.to });

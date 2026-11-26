@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | wallScreen.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-21
- Updated:   2026-11-21
+ Updated:   2026-11-26
 
  Purpose:
      What a screen on the wall needs from the browser (a paired screen with
@@ -30,6 +30,10 @@
  -------   ----------   -------   --------------------------------------------
  1.2.0    2026-11-21   joshua    New file.
                         claude
+
+ 1.3.0    2026-11-26   joshua    letScreenSleep: overnight, Fully Kiosk
+                        claude    turns the screen off, or it isn't kept
+                                  awake.
 ===============================================================================
 */
 
@@ -63,11 +67,13 @@ function lockZoom(on: boolean) {
 interface WakeLock {
   release: () => Promise<void>;
 }
+let sleepy = false; // overnight, "turn the screen off": the lock let go, so the device's own sleep turns it off
+let setSleepy = (_on: boolean) => {};
 function keepAwake() {
   let lock: WakeLock | null = null;
   let gone = false;
   const ask = async () => {
-    if (gone || document.visibilityState !== 'visible' || lock) return;
+    if (gone || sleepy || document.visibilityState !== 'visible' || lock) return;
     try {
       const wl = (navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<WakeLock> } }).wakeLock;
       if (!wl) return;
@@ -78,6 +84,11 @@ function keepAwake() {
     }
   };
   const seen = () => void ask();
+  setSleepy = on => {
+    sleepy = on;
+    if (!on) void ask();
+    else if (lock) void lock.release().catch(() => {});
+  };
   void ask();
   document.addEventListener('visibilitychange', seen);
   return () => {
@@ -85,6 +96,21 @@ function keepAwake() {
     document.removeEventListener('visibilitychange', seen);
     void lock?.release().catch(() => {});
   };
+}
+
+// overnight, "turn the screen off": Fully Kiosk turns it off itself (and on again after); anywhere else the
+// screen is no longer kept awake, so it sleeps when the device's own setting says (black meanwhile)
+type Fully = { turnScreenOff?: (keepAlive?: boolean) => void; turnScreenOn?: () => void };
+export function letScreenSleep(on: boolean) {
+  const fully = (window as unknown as { fully?: Fully }).fully;
+  try {
+    if (on)
+      fully?.turnScreenOff?.(true); // (keepAlive: the page keeps running, to turn it on again)
+    else fully?.turnScreenOn?.();
+  } catch {
+    /* an older Fully Kiosk: black, and the device's own sleep */
+  }
+  setSleepy(on);
 }
 
 export function useWallScreen(on: boolean) {

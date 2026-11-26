@@ -102,7 +102,7 @@ export function useSlides(photos: Photos | null, wall: boolean, mode: OffMode = 
     wall && mode !== 'none' && (new URLSearchParams(location.search).has('slides') || nightNow(photos?.cfg));
   const asleep = night && Date.now() > peekUntil;
   const on = has && (manual || (asleep && mode === 'slides'));
-  const cover = !manual && asleep && (mode === 'dim' || mode === 'black') ? mode : null;
+  const cover = !manual && asleep && (mode === 'dim' || mode === 'black' || mode === 'off') ? mode : null;
   const since = useRef(0); // taps right after a change belong to it
   const mark = () => (since.current = Date.now());
   return {

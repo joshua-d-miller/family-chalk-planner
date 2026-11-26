@@ -71,6 +71,7 @@ This is how the board is tested on every change: Chrome on Linux, full screen, o
    a minimal Debian with no desktop, a small `~/.xinitrc` with that command, started by auto-login, does the same.
 3. **Keep the screen on:** the board asks Chrome to keep it awake; turn off the desktop's own screen blanking too
    (Raspberry Pi: `sudo raspi-config` → Display Options → Screen Blanking → No).
+   To have it **go off overnight**, set the screen's overnight choice to **Turn the screen off** (admin console → 📺 Screens → 🌙 Overnight) and give the computer a short screen sleep (a minute or two) instead: the board keeps it awake the rest of the time. Keeping the screen awake works only over HTTPS or on `localhost`.
 4. **No mouse pointer on a touch screen:** install `unclutter` (`sudo apt install unclutter`) and start it next to
    the browser.
 

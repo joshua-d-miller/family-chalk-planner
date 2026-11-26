@@ -363,6 +363,9 @@
   cursor: default;
   background: #000;
 }
+.offCover.off {
+  background: #000;
+}
 .offCover.dim {
   background: rgba(0, 0, 0, 0.7);
 }

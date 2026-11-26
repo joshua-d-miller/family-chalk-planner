@@ -65,7 +65,7 @@
      And what it does in the board's overnight hours (nothing saved: the
      slideshow, as before):
        kv 'offhours'  { 'p:...' | 's:...': 'slides' | 'dim' | 'black' |
-           'none' }
+           'off' | 'none' }
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -659,7 +659,7 @@ export function setup({
   // nothing (the calendar stays as it is)
   screenSetting(
     'offhours',
-    v => ['slides', 'dim', 'black', 'none'].includes(v as string),
+    v => ['slides', 'dim', 'black', 'off', 'none'].includes(v as string),
     'Pick what it does overnight'
   );
   screenSetting('arrows', v => v === 'always' || v === 'fade' || v === 'never', 'Pick always, fade or never');

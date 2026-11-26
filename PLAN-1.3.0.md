@@ -51,8 +51,11 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   (⚙️ Settings → Photos & slideshow) each screen shows the slideshow (nothing picked: as before), the calendar
   dimmed, a black screen, or nothing; a tap shows the calendar for 5 minutes. ⚙️ Settings → This screen on a
   family screen, the admin console → 📺 Screens for any screen (the wall). Kept with `screenSetting('offhours')`.
-  - Still to do for 4: several windows on chosen days, the night clock, the Good morning card, really turning
-    the screen off (the ladder), the "asleep" switch that pauses the board's work under a black cover, and
+  - Then **Turn the screen off (where it can)**: Fully Kiosk's `turnScreenOff` (and on again after); elsewhere the
+    board stops keeping the screen awake, so the device's own sleep turns it off (black meanwhile). Under a black
+    or turned-off screen, the moving weather and GIFs stop (the "asleep" switch, for what moves).
+  - Still to do for 4: several windows on chosen days, the night clock, the Good morning card, Home Assistant
+    and FreeKiosk turning the screen off, pausing the slideshow's own timers and photo checks, and
     moving the overnight times out of the photo settings into an Off hours section (with the old ones moved
     over).
 - **Timers and loops (part of 1):** checked all 17. Each is slow or stops by itself; the one fast one (250 ms)

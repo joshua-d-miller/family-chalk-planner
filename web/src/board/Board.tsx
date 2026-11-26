@@ -138,7 +138,8 @@
                                   wall. The month arrows can fade or go;
                                   a tap on the month's name picks a month;
                                   a swipe goes to the first pinned page;
-                                  overnight it can dim or go black.
+                                  overnight it can dim, go black or turn the
+                                  screen off, and nothing moves under it.
 ===============================================================================
 */
 
@@ -171,6 +172,7 @@ import { later } from '../lib/later.tsx';
 import { MonthPicker } from './MonthPicker.tsx';
 import { ARROWS_FADE_MS, arrowsDefault, useMyArrows } from '../lib/arrows.ts';
 import { useOffHours } from '../lib/offHours.ts';
+import { letScreenSleep } from '../lib/wallScreen.ts';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
 import { FAB_BAND, Strip } from './Strip.tsx';
@@ -601,6 +603,12 @@ export function Board({
     return { ...d, events: [...d.events, ...o.events.filter(e => !seen.has(key(e)))] };
   }, [month.data, other.data, otherYm]);
   const slides = useSlides(photos, !edit || family, useOffHours());
+  const asleep = slides.cover === 'black' || slides.cover === 'off'; // nothing to see: nothing moves
+  useEffect(() => {
+    if (slides.cover !== 'off') return;
+    letScreenSleep(true);
+    return () => letScreenSleep(false);
+  }, [slides.cover]);
   const [day, setDay] = useState<string | null>(null);
   const closeDay = useCallback(() => setDay(null), []);
   // ----------------------- //
@@ -1023,11 +1031,19 @@ export function Board({
               dockRef={edit && shell.dock ? setDockEl : undefined}
             />
           )}
-          {!boardFit.low && <WeatherMotion wall={!edit} />}
+          {!boardFit.low && !asleep && <WeatherMotion wall={!edit} />}
           {behind.length > 0 && (
-            <Art items={behind} bg={sf.lum} res={res} gifsPlay={!boardFit.low} under layer={artLayer} h={slateH} />
+            <Art
+              items={behind}
+              bg={sf.lum}
+              res={res}
+              gifsPlay={!boardFit.low && !asleep}
+              under
+              layer={artLayer}
+              h={slateH}
+            />
           )}
-          <Art items={front} bg={sf.lum} res={res} gifsPlay={!boardFit.low} layer={artLayer} h={slateH} />
+          <Art items={front} bg={sf.lum} res={res} gifsPlay={!boardFit.low && !asleep} layer={artLayer} h={slateH} />
           {edit && drawing && (
             <DrawLayer
               art={view}
