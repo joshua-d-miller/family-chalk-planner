@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Shared | i18n-es.ts
 ===============================================================================
- Version:   1.2.7
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-21
- Updated:   2026-11-23
+ Updated:   2026-11-26
 
  Purpose:
      The board in Spanish: each piece of English on the screens and in the
@@ -32,6 +32,9 @@
 
  1.2.7    2026-11-23   joshua    An answer from the board that didn't come
                         claude    through whole.
+
+ 1.3.0    2026-11-26   joshua    The month arrows' setting.
+                        claude
 ===============================================================================
 */
 
@@ -686,6 +689,11 @@ export const ES: Dict = {
   'Count down in sleeps (“3 sleeps!”) instead of days': 'Contar en noches (“¡3 noches!”) en lugar de días',
   'Say a timer’s name out loud when it’s done': 'Decir en voz alta el nombre de un temporizador cuando termine',
   'Hide the − / + / Fit buttons on the calendar': 'Ocultar los botones − / + / Ajustar del calendario',
+  'The month arrows': 'Las flechas del mes',
+  'This screen’s usual (fade)': 'Lo habitual en esta pantalla (se desvanecen)',
+  'This screen’s usual (always there)': 'Lo habitual en esta pantalla (siempre visibles)',
+  'Always there': 'Siempre visibles',
+  'Fade when nobody’s touching the screen': 'Se desvanecen cuando nadie toca la pantalla',
   'Starts on': 'Empieza el',
   'The week starts on': 'La semana empieza el',
   'Today (and the next 6 days)': 'Hoy (y los próximos 6 días)',
@@ -929,6 +937,7 @@ export const ES: Dict = {
   'Pick what the week shows': 'Elige lo que muestra la semana',
   'On or off': 'Encendido o apagado',
   'Show or hide them': 'Mostrarlos u ocultarlos',
+  'Pick always or fade': 'Elige siempre visibles o que se desvanezcan',
   'That list isn’t on the board': 'Esa lista no está en el tablero',
   'Home Assistant didn’t take it:': 'Home Assistant no lo aceptó:',
   'Only in the Home Assistant app': 'Solo en la app de Home Assistant',

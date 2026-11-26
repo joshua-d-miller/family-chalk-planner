@@ -31,6 +31,18 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   - The wall's main file went from 180 KB to 128 KB compressed (555 KB to 396 KB uncompressed), 29% less.
   - Still to split: Settings (wired into the page shell).
   - The Home Assistant browser tests need a real Home Assistant, so they run in CI only.
+- **2026-11-26: the month arrows can fade** (part of 2). On a family screen they fade after 10 quiet seconds
+  and come back with any tap; ⚙️ Settings → This screen → The month arrows: Always there / Fade. Kept per
+  screen with a new helper in `server/favorites.ts` (`screenSetting`: read, set, and the console's for any
+  screen), which the next per-screen settings (swipe pages, off hours, board style) can use. The test fixture
+  keeps its family screen at Always there, so a slow test can still tap the arrows.
+  - Still to do for 2: **Never**, which waits for the month picker, so every month stays reachable; the
+    console's control for a screen's arrows (the routes exist: `/api/devices/arrows`).
+- **Timers and loops (part of 1):** checked all 17. Each is slow or stops by itself; the one fast one (250 ms)
+  runs only while a timer counts down. Nothing to fix until off hours, which needs one "asleep" switch that the
+  slideshow, weather, GIFs, Split View, title photos and Notes rotation respect while the screen is black. A
+  **low-power screen** setting already exists (`boardfit` `low`: no moving weather, GIFs or fades, plainer
+  chalk), and the chalk look must respect it.
 - **Testing here:** `CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/real/chrome-linux64/chrome npx playwright test
   --trace off`, because the project's Playwright doesn't match the browser installed in this container.
 

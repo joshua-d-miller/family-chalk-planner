@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | access.ts
 ===============================================================================
- Version:   1.2.1
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-22
+ Updated:   2026-11-26
 
  Purpose:
      Who may do what.
@@ -108,6 +108,9 @@
 
  1.2.1    2026-11-22   joshua    /notescol: a screen's own Notes column.
                         claude
+
+ 1.3.0    2026-11-26   joshua    /arrows: a screen's month arrows, always or
+                        claude    fading.
 ===============================================================================
 */
 
@@ -701,6 +704,7 @@ export function setup(
     '/sleeps', // its countdowns in sleeps or days
     '/weekfrom', // its 🗓️ Week from today or from the board's first day
     '/nozoom', // whether it shows the − / + / Fit buttons
+    '/arrows', // its month arrows: always, or fading when nobody's touching it
     '/weekview', // its 🗓️ Week: Split View, and what's under the week
     '/boardfit', // fill the screen, and the wooden frame
     '/lang', // its language

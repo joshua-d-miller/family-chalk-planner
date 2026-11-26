@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Settings.tsx
 ===============================================================================
- Version:   1.2.7
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-23
+ Updated:   2026-11-26
 
  Purpose:
      ⚙️ Settings on the board. Admins also get the calendar (Google
@@ -66,6 +66,9 @@
 
  1.2.7    2026-11-23   joshua    The photos read safely when the board's
                         claude    answer didn't come through whole.
+
+ 1.3.0    2026-11-26   joshua    This screen: the month arrows, always there
+                        claude    or fading.
 ===============================================================================
 */
 
@@ -89,6 +92,7 @@ import { setSleeps, useSleeps } from '../lib/countdowns.ts';
 import { SPACES, setWeekFrom, setWeekView, useWeekFrom, useWeekView } from '../lib/weekFrom.ts';
 import type { WeekView } from '../lib/weekFrom.ts';
 import { setHideZoom, useHideZoom } from '../lib/zoomControls.ts';
+import { arrowsDefault, setArrows, useMyArrows } from '../lib/arrows.ts';
 import { setBoardFit, useBoardFit } from '../lib/boardFit.ts';
 import { LANGUAGES, setLanguage, useLanguage } from '../lib/lang.ts';
 import type { Lang } from '../lib/lang.ts';
@@ -876,6 +880,7 @@ function ThisScreen() {
   const [speak, setSpeak] = useState(speaksHere());
   const sleeps = useSleeps();
   const hideZoom = useHideZoom();
+  const myArrows = useMyArrows();
   const signedIn = !!shell.who?.user;
   const fit = useBoardFit();
   const lang = useLanguage();
@@ -1012,6 +1017,19 @@ function ThisScreen() {
           />
           <span className="t">Hide the − / + / Fit buttons on the calendar</span>
         </label>
+      )}
+      {/* (only a screen that edits has the arrows: a wall doesn't) */}
+      {(shell.who?.rank || 0) >= RANK.family && (
+        <Segs
+          label="The month arrows"
+          value={myArrows || 'default'}
+          options={[
+            ['default', `This screen’s usual (${arrowsDefault(shell.who) === 'fade' ? 'fade' : 'always there'})`],
+            ['always', 'Always there'],
+            ['fade', 'Fade when nobody’s touching the screen']
+          ]}
+          onChange={v => void setArrows(v === 'default' ? null : v)}
+        />
       )}
     </Card>
   );

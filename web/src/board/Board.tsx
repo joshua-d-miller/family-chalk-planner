@@ -165,6 +165,7 @@ import { boardScaleStyle } from '../lib/zoomFit.ts';
 import { WeatherMotion } from './Weather.tsx';
 import { Slideshow, useSlides } from './Slideshow.tsx';
 import { later } from '../lib/later.tsx';
+import { ARROWS_FADE_MS, arrowsDefault, useMyArrows } from '../lib/arrows.ts';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
 import { FAB_BAND, Strip } from './Strip.tsx';
@@ -323,6 +324,19 @@ export function Board({
     if (edit) for (const part of Object.values(EDITING)) part.fetch(); // ready before the first tap
   }, [edit]);
   const hideZoom = useHideZoom(); // ⚙️ Settings → This screen: no − / + / Fit buttons
+  // the month arrows: always there, or fading when nobody's touching the screen (back with any tap)
+  const arrows = useMyArrows() ?? arrowsDefault(who);
+  const [quiet, setQuiet] = useState(false);
+  const quietT = useRef(0);
+  const wake = useCallback(() => {
+    setQuiet(false);
+    clearTimeout(quietT.current);
+    if (arrows === 'fade') quietT.current = window.setTimeout(() => setQuiet(true), ARROWS_FADE_MS);
+  }, [arrows]);
+  useEffect(() => {
+    wake();
+    return () => clearTimeout(quietT.current);
+  }, [wake]);
   const today = useLive<{ today: string; ym: string; weekStart?: number; time24: boolean }>('api/today', [
     'calendar'
   ]).data;
@@ -927,7 +941,10 @@ export function Board({
         ...(pad ? {} : { backgroundImage: bg }),
         ...(shell.navH ? { bottom: 'auto', height: visibleHeight() - shell.navH } : {})
       }}
-      onPointerDown={e => (swipe.current = e.isPrimary ? [e.clientX, e.clientY] : null)}
+      onPointerDown={e => {
+        swipe.current = e.isPrimary ? [e.clientX, e.clientY] : null;
+        wake();
+      }}
       onPointerUp={tap}
       {...touchHandlers}
     >
@@ -965,7 +982,7 @@ export function Board({
               border={border}
               onDay={onDay}
               onEvent={onEvent}
-              nav={edit ? { prev: () => go(-1), next: () => go(1) } : undefined}
+              nav={edit ? { prev: () => go(-1), next: () => go(1), faded: arrows === 'fade' && quiet } : undefined}
               // a tap on the month's name reloads, on a screen that edits (not the wall; not while drawing)
               onTitle={edit && !drawing ? () => location.reload() : undefined}
               week={week}

@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | fixtures.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-26
 
  Purpose:
      A real board for the browser tests: the server with a fake calendar,
@@ -30,6 +30,9 @@
 
  1.2.0    2026-11-21   joshua    menuStyle (this screen's menu, from ⚙️
                         claude    Settings → This screen) and longPress.
+
+ 1.3.0    2026-11-26   joshua    The family screen keeps its month arrows
+                        claude    (they fade after 10 quiet seconds).
 ===============================================================================
 */
 
@@ -166,7 +169,16 @@ async function startBoard(workerIndex: number) {
     const ok = await admin.post('/api/devices/approve', { code, name, role });
     if (!ok.ok) throw new Error('approve failed: ' + (await ok.text()));
     const s = await fetch(url + '/api/pair/status', { headers: { cookie: pairCookie } });
-    return s.headers.getSetCookie()[0].split(';')[0];
+    const cookie = s.headers.getSetCookie()[0].split(';')[0];
+    // a family screen's month arrows fade after 10 quiet seconds: kept there, so a slow test can still tap them
+    // (the test of the fading turns it on for itself)
+    if (role === 'family')
+      await fetch(url + '/api/arrows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Chalk': '1', cookie },
+        body: JSON.stringify({ value: 'always' })
+      });
+    return cookie;
   }
   return {
     url,

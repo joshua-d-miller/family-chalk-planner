@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   1.2.7
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-23
+ Updated:   2026-11-26
 
  Purpose:
      The board itself: this month on the tablet, moving between months,
@@ -52,6 +52,9 @@
 
  1.2.7    2026-11-23   joshua    An answer that's cut short doesn't crash
                         claude    the screen.
+
+ 1.3.0    2026-11-26   joshua    The month arrows fading on a family screen.
+                        claude
 ===============================================================================
 */
 
@@ -265,6 +268,41 @@ test('⚙️ Settings → This screen hides the − / + / Fit buttons, and bring
   await page.goto(page.url().replace(/settings$/, 'edit'));
   await expect(page.locator('.zoom')).toBeVisible();
   expect(page.errors).toEqual([]);
+});
+
+test('the month arrows: on a family screen they fade when nobody touches it, and a tap brings them back', async ({
+  as
+}) => {
+  const fam = await as('family');
+  const next = fam.locator('#next');
+  const arrows = (value: string | null) =>
+    fam.evaluate(
+      v =>
+        fetch('api/arrows', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify({ value: v })
+        }).then(r => r.status),
+      value
+    );
+  try {
+    expect(await arrows(null)).toBe(200); // the family screen's usual: fading (the tests keep it always there)
+    await expect(next).not.toHaveClass(/faded/);
+    await expect(next).toHaveClass(/faded/, { timeout: 14_000 }); // quiet for 10 s
+    // a tap anywhere brings them back
+    await fam.mouse.click(600, 400);
+    await expect(next).not.toHaveClass(/faded/);
+    expect(await arrows('sideways')).toBe(400);
+    // ⚙️ Settings → This screen: always there
+    expect(await arrows('always')).toBe(200);
+    await fam.waitForTimeout(11_000);
+    await expect(next).not.toHaveClass(/faded/);
+  } finally {
+    await arrows('always'); // (as the other tests expect it)
+  }
+  // a wall has no arrows at all
+  const wall = await as('wall');
+  await expect(wall.locator('#next')).toHaveCount(0);
 });
 
 test('a tap on the month’s name reloads a screen that edits, but not the wall', async ({ as }) => {

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Month.tsx
 ===============================================================================
- Version:   1.2.1
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-22
+ Updated:   2026-11-26
 
  Purpose:
      The month: its name, the weekdays, and a box per day with its events,
@@ -75,6 +75,9 @@
 
  1.2.1    2026-11-22   joshua    A wider calendar with the Notes column
                         claude    off (its border too).
+
+ 1.3.0    2026-11-26   joshua    The month arrows can fade when nobody's
+                        claude    touching the screen.
 ===============================================================================
 */
 
@@ -242,7 +245,7 @@ export function Month({
   bg: number;
   today?: { shape: string; color: string };
   border?: Border | null;
-  nav?: { prev: () => void; next: () => void };
+  nav?: { prev: () => void; next: () => void; faded?: boolean }; // faded: nobody's touched the screen for a while
   onTitle?: () => void; // a tap on the month's name (a screen that edits: reload the board)
   week?: string | null; // just this week (its first day), in the whole height
   under?: ReactNode; // Split View: the week as a band across the top, and this under it
@@ -410,7 +413,11 @@ export function Month({
         onClick={onTitle && (e => (e.target as Element).closest?.('#monthName') && onTitle())}
       >
         {/* the arrows only where they work (not on a wall) */}
-        {nav ? <NavBtn dir="prev" onClick={nav.prev} /> : <span className="navgap" aria-hidden="true" />}
+        {nav ? (
+          <NavBtn dir="prev" onClick={nav.prev} faded={nav.faded} />
+        ) : (
+          <span className="navgap" aria-hidden="true" />
+        )}
         {title ?? (
           <h1 id="monthName">
             <span className="mn" data-text={MONTHS[g.m - 1]}>
@@ -419,7 +426,11 @@ export function Month({
             {g.y !== Number(data.today.slice(0, 4)) && <small>{g.y}</small>}
           </h1>
         )}
-        {nav ? <NavBtn dir="next" onClick={nav.next} /> : <span className="navgap" aria-hidden="true" />}
+        {nav ? (
+          <NavBtn dir="next" onClick={nav.next} faded={nav.faded} />
+        ) : (
+          <span className="navgap" aria-hidden="true" />
+        )}
       </div>
       <div
         className={'calbody' + (border ? ' bordered' : '') + (under ? ' band' : '')}
@@ -451,10 +462,11 @@ export function Month({
 // -------------- //
 // | The arrows | //
 // -------------- //
-const NavBtn = ({ dir, onClick }: { dir: 'prev' | 'next'; onClick?: () => void }) => (
+// faded: hidden until the next tap anywhere, and not tappable meanwhile (that first tap only brings them back)
+const NavBtn = ({ dir, onClick, faded }: { dir: 'prev' | 'next'; onClick?: () => void; faded?: boolean }) => (
   <button
     type="button"
-    className="nav"
+    className={'nav' + (faded ? ' faded' : '')}
     id={dir}
     aria-label={dir === 'prev' ? 'Previous month' : 'Next month'}
     onClick={onClick}
