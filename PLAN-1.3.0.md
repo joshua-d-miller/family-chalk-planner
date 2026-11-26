@@ -39,6 +39,14 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   - Then the **month picker** (a tap on the month's name: year ‹ ›, 12 months, This month, ↻ Start the board
     again) and **None** for the arrows. The week keeps its arrows, and a tap on its title still reloads.
   - Still to do for 2: the console's control for a screen's arrows (the routes exist: `/api/devices/arrows`).
+- **2026-11-26: swiping between pages** (part of 3). From the calendar a swipe to the left goes to the first
+  pinned page (Chores when nothing's pinned), on through the pins, and a swipe to the right goes back, the last
+  one to the calendar; it doesn't go round. A page opened from the menu doesn't swipe (as Chores before). Shared
+  code: `web/src/lib/swipePages.ts`. A mouse swipe's selected words are cleared as the next swipe starts (else
+  that swipe dragged them).
+  - Still to do for 3: the chalk dots showing where you are, a page list for view-only walls (console), the
+    return-to-calendar time for every page (Chores has its own 2 minutes), and checking pages that scroll
+    sideways.
 - **Timers and loops (part of 1):** checked all 17. Each is slow or stops by itself; the one fast one (250 ms)
   runs only while a timer counts down. Nothing to fix until off hours, which needs one "asleep" switch that the
   slideshow, weather, GIFs, Split View, title photos and Notes rotation respect while the screen is black. A

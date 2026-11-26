@@ -62,7 +62,8 @@
                                   showed the wall instead).
 
  1.3.0    2026-11-26   joshua    The pages besides the board are downloaded
-                        claude    when first opened, not by every wall.
+                        claude    when first opened, not by every wall;
+                                  swipes through the pinned pages.
 ===============================================================================
 */
 
@@ -74,7 +75,8 @@ import { RANK, kidOf, useWho } from './lib/who.ts';
 import { PAGES, homeHref } from './routes.ts';
 import { navigate, useHere } from './lib/nav.ts';
 import { useHaSidebarHidden } from './lib/haSidebar.ts';
-import { Shell } from './ui/Shell.tsx';
+import { Shell, usePins } from './ui/Shell.tsx';
+import { useSwipePages } from './lib/swipePages.ts';
 import { Board } from './board/Board.tsx';
 import { Settings } from './pages/Settings.tsx';
 import { SignIn } from './ui/SignIn.tsx';
@@ -97,6 +99,14 @@ const LATER = {
   reminders: later(() => import('./pages/Reminders.tsx').then(m => m.Reminders)),
   timers: later(() => import('./pages/Timers.tsx').then(m => m.Timers))
 };
+// a page swiped to from the calendar: swipes go on through the pinned pages, or back (lib/swipePages.ts)
+function PageSwipes({ here }: { here: string }) {
+  useSwipePages(
+    here,
+    usePins().map(p => p.id)
+  );
+  return null;
+}
 function usePagesAhead(w: Who | null) {
   const opens = !!w && (w.rank > RANK.view || !!kidOf(w)); // a view-only wall never opens them
   useEffect(() => {
@@ -186,6 +196,7 @@ export function App() {
   return (
     <Shell who={w} here={here}>
       <View key={here} who={w} />
+      <PageSwipes here={here} />
     </Shell>
   );
 }

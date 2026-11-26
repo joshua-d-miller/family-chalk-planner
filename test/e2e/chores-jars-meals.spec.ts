@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | chores-jars-meals.spec.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-26
 
  Purpose:
      Chores (tablet, phone, kid's tablet, wall), reward jars and the meal
@@ -29,10 +29,14 @@
 
  1.2.0    2026-11-21   joshua    The big jar from the Notes column: ★ Reward
                         claude    empties only that jar.
+
+ 1.3.0    2026-11-26   joshua    Swiping through the pinned pages and back.
+                        claude
 ===============================================================================
 */
 
 import { test, expect } from './fixtures.ts';
+import type { Page } from '@playwright/test';
 
 const names = { dad: 'Josh', mom: 'Tarin', kid1: 'Theo', kid2: 'Nora' };
 async function exampleChores(board) {
@@ -47,9 +51,30 @@ const doneOf = async (board, title) => {
   return c.each ? c.doneEach : c.done;
 };
 
+// this screen's (or person's) pinned pages: read, and set (they also hold its ★ pictures)
+const pinsOf = (page: Page): Promise<string[]> =>
+  page.evaluate(() =>
+    fetch('api/favorites')
+      .then(r => r.json())
+      .then(d => d.items || [])
+  );
+const setPins = (page: Page, items: string[]) =>
+  page.evaluate(
+    v =>
+      fetch('api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+        body: JSON.stringify({ items: v })
+      }).then(r => r.status),
+    items
+  );
+
 test('chores from the tablet: swipe across the board, tick one off, back to the calendar', async ({ as, board }) => {
   await exampleChores(board);
   const page = await as('tablet');
+  const before = await pinsOf(page);
+  await setPins(page, []); // nothing pinned: a swipe goes to Chores
+  await page.reload();
   const b = (await page.locator('.slate').boundingBox())!;
   await page.mouse.move(b.x + 800, b.y + 300);
   await page.mouse.down();
@@ -65,6 +90,41 @@ test('chores from the tablet: swipe across the board, tick one off, back to the 
   await expect(page.locator('.chitem', { hasText: 'Fold laundry' })).toContainText('0 of 3');
   await page.locator('#tabbar a', { hasText: 'Calendar' }).click(); // a tablet: the tab bar
   await expect(page).toHaveURL(/\/edit$/);
+  await setPins(page, before);
+});
+
+test('swiping goes through the pinned pages and back, and stops at the last one', async ({ as }) => {
+  const page = await as('tablet');
+  const before = await pinsOf(page);
+  const swipe = async (left: boolean) => {
+    const at = { x: 590, y: 420 };
+    await page.mouse.move(at.x + (left ? 200 : -200), at.y);
+    await page.mouse.down();
+    await page.mouse.move(at.x, at.y + 4, { steps: 6 });
+    await page.mouse.move(at.x + (left ? -200 : 200), at.y + 8, { steps: 6 });
+    await page.mouse.up();
+  };
+  try {
+    expect(await setPins(page, ['meals', 'pantry'])).toBe(200);
+    await page.reload();
+    await page.waitForTimeout(800);
+    await swipe(true);
+    await expect(page).toHaveURL(/\/meals$/);
+    await swipe(true);
+    await expect(page).toHaveURL(/\/pantry$/);
+    await swipe(true); // the last one: it doesn't go round
+    await page.waitForTimeout(400);
+    await expect(page).toHaveURL(/\/pantry$/);
+    await swipe(false);
+    await expect(page).toHaveURL(/\/meals$/);
+    await swipe(false);
+    await expect(page).toHaveURL(/\/edit$/);
+    await swipe(false); // the calendar: a swipe to the right goes nowhere
+    await page.waitForTimeout(400);
+    await expect(page).toHaveURL(/\/edit$/);
+  } finally {
+    await setPins(page, before); // (the tablet is shared by the other tests)
+  }
 });
 
 test('change the chores: add one for the kids, each their own', async ({ as, board }) => {

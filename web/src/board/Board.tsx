@@ -136,7 +136,8 @@
                         claude    drawing tools are downloaded on their own,
                                   ahead on a screen that edits, never by a
                                   wall. The month arrows can fade or go;
-                                  a tap on the month's name picks a month.
+                                  a tap on the month's name picks a month;
+                                  a swipe goes to the first pinned page.
 ===============================================================================
 */
 
@@ -173,7 +174,8 @@ import type { BoardEvent } from './Month.tsx';
 import { FAB_BAND, Strip } from './Strip.tsx';
 import { navigate } from '../lib/nav.ts';
 import { homeHref } from '../routes.ts';
-import { useBarZoom, useShell, visibleHeight } from '../ui/Shell.tsx';
+import { useBarZoom, usePins, useShell, visibleHeight } from '../ui/Shell.tsx';
+import { isSwipe, swipeOffBoard } from '../lib/swipePages.ts';
 import { DrawLayer, firstPen, isPosca, recolor, touches } from './draw/Draw.tsx';
 import type { Pen } from './draw/Draw.tsx';
 import type { Stamp } from './draw/Library.tsx';
@@ -607,8 +609,9 @@ export function Board({
   const lastTap = useRef(0);
   const single = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastDouble = useRef(0);
-  // a swipe across the board (not while drawing) goes to the chores, as on the current board
+  // a swipe to the left across the board (not while drawing) goes to the first pinned page (Chores if none)
   const swipe = useRef<[number, number] | null>(null);
+  const pins = usePins().map(p => p.id);
   const tap = (e: PointerEvent) => {
     setTouched(Date.now());
     const s0 = swipe.current;
@@ -616,13 +619,8 @@ export function Board({
     if (s0 && !drawing && !editing && !day && !slides.on) {
       const dx = e.clientX - s0[0];
       const dy = e.clientY - s0[1];
-      if (Math.abs(dx) > 120 && Math.abs(dy) < Math.abs(dx) / 2) {
-        try {
-          sessionStorage.setItem('chalkFromBoard', weekly ? 'week' : edit ? 'edit' : './');
-        } catch {
-          /* fine: no way back but the menu */
-        }
-        navigate('chores');
+      if (isSwipe(dx, dy) && dx < 0) {
+        swipeOffBoard(weekly ? 'week' : edit ? 'edit' : './', pins);
         return;
       }
     }
