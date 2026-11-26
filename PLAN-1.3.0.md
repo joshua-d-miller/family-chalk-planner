@@ -69,6 +69,17 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
 - **Testing here:** `CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/real/chrome-linux64/chrome npx playwright test
   --trace off`, because the project's Playwright doesn't match the browser installed in this container.
 
+## To check on the runners (real screens), once built
+- **Fully Kiosk (the Apolosign):** Turn the screen off really switches it off overnight, and back on when the hours
+  end.
+- **Chrome on a Pi or a mini PC with a short screen sleep:** the screen goes to sleep overnight and stays awake
+  in the daytime. Over plain `http://` it can't be kept awake: that screen should say so.
+- **Touch:** the fading arrows (the first tap only brings them back), the month picker, swiping through the
+  pinned pages and back, and the 7 day buttons in Settings on a phone (they may wrap onto two lines).
+- **Older wall browsers (Chrome 100, Safari 15, Firefox 100):** pages and editors load on their own, with no blank
+  moment when one opens.
+- **The Home Assistant add-on:** its own browser tests (they need a real Home Assistant).
+
 ---
 
 ## Beta 1: foundations and screens
