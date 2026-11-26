@@ -65,6 +65,11 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   - Then **Good morning**: when the overnight hours end, the first tap shows today's events and the weather in
     the day's card for 30 seconds; a clear layer takes that tap, so it opens nothing else. (The first routine on
     it comes with routines, in beta 3.)
+  - Then **a fresh start once a night**: a screen nobody's signed in on that's been up 20 hours reloads while
+    it's asleep (not dimmed), only while it can reach the board (never into an error page). Reconnecting after
+    the board restarts was already handled (the live connection retries, and a new version reloads).
+  - Burn-in shift: left out for now. Wall tablets are LCD, the night clock already moves, and shifting the
+    whole board by a pixel or two would blur its lines (it's laid out on the screen's own pixels).
   - Still to do for 4: the Good morning card, Home Assistant
     and FreeKiosk turning the screen off, pausing the slideshow's own timers and photo checks, and
     moving the overnight times out of the photo settings into an Off hours section (with the old ones moved

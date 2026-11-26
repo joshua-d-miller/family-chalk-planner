@@ -141,7 +141,8 @@
                                   overnight it can dim, go black or turn the
                                   screen off, and nothing moves under it;
                                   it tells the console what it shows now;
-                                  the first tap after it says good morning.
+                                  the first tap after it says good morning;
+                                  a wall starts again fresh once a night.
 ===============================================================================
 */
 
@@ -197,6 +198,8 @@ import { monthVals, themeCss } from './theme.ts';
 import type { Theme } from './theme.ts';
 import './board.css';
 import './edit.css';
+
+const FRESH_AFTER = 20 * 3600e3; // up this long: starts again fresh, once a night
 
 // what only editing uses, downloaded on its own (a wall never needs it); fetched ahead on a screen that edits
 const tools = () => import('./draw/Tools.tsx');
@@ -617,6 +620,23 @@ export function Board({
     if (wasNight.current && !slides.night) setMorning('next');
     wasNight.current = slides.night;
   }, [slides.night]);
+  // a wall that's been up all day starts again fresh once a night, while asleep and while the board can be
+  // reached (a screen that stays up for weeks gathers whatever builds up in a browser; never into an error page)
+  const online = useOnline();
+  const reachable = useRef(online);
+  reachable.current = online;
+  const resting = slides.on || (!!slides.cover && slides.cover !== 'dim'); // (dimmed: the calendar still shows)
+  const wallNow = !!who?.device && !who?.user;
+  useEffect(() => {
+    if (!wallNow || !resting) return;
+    const t = setInterval(
+      () => {
+        if (performance.now() > FRESH_AFTER && reachable.current) location.reload();
+      },
+      10 * 60 * 1000
+    );
+    return () => clearInterval(t);
+  }, [wallNow, resting]);
   // a paired screen tells the admin console what it shows now, and whether it's kept awake
   const shows = slides.on ? 'slides' : slides.cover || 'calendar';
   const paired = !!who?.device;

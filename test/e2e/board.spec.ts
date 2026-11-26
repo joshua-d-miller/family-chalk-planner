@@ -405,6 +405,44 @@ test('a screen tells the admin console what it shows now, and whether it’s kep
   await expect(admin.locator('.nbot', { hasText: '📡 Now:' }).first()).toBeVisible();
 });
 
+test('a wall that’s been up all day starts again fresh once a night, while asleep', async ({ as }) => {
+  const fam = await as('family');
+  const call = (url: string, body: unknown) =>
+    fam.evaluate(
+      ([u, b]) =>
+        fetch(u as string, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify(b)
+        }).then(r => r.status),
+      [url, body] as const
+    );
+  const was = await fam.evaluate(() =>
+    fetch('api/photos')
+      .then(r => r.json())
+      .then(d => d.cfg)
+  );
+  // overnight hours that last nearly all day (from an hour ago until a minute before that)
+  const [from, to] = await fam.evaluate(() =>
+    [-60, -61].map(m => new Date(Date.now() + m * 60e3).toTimeString().slice(0, 5))
+  );
+  try {
+    await call('api/photos/settings', { night: true, from, to });
+    await call('api/offhours', { value: 'black' });
+    await fam.clock.install();
+    await fam.reload();
+    await expect(fam.locator('.offCover.black')).toBeVisible();
+    await fam.evaluate(() => ((window as unknown as { stay: number }).stay = 1));
+    await fam.clock.fastForward('19:00:00');
+    expect(await fam.evaluate(() => (window as unknown as { stay?: number }).stay)).toBe(1); // not yet
+    await Promise.all([fam.waitForEvent('load'), fam.clock.fastForward('02:00:00')]);
+    expect(await fam.evaluate(() => (window as unknown as { stay?: number }).stay)).toBeUndefined();
+  } finally {
+    await call('api/offhours', { value: null });
+    await call('api/photos/settings', { night: was.night, from: was.from, to: was.to });
+  }
+});
+
 test('a tap on the month’s name picks any month on a screen that edits (or starts it again), not on the wall', async ({
   as
 }) => {
