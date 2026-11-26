@@ -335,10 +335,20 @@ test('overnight a screen can show the slideshow, dim the calendar, go black, or 
     expect(await call('api/offhours', { value: 'sideways' })).toBe(400);
     expect(await call('api/offhours', { value: 'black' })).toBe(200);
     await fam.reload();
-    const cover = fam.locator('.offCover');
+    const cover = fam.locator('.offCover:not(.wake)'); // (.wake: the clear layer for the first tap after)
     await expect(cover).toHaveClass(/black/);
     await cover.click(); // a tap: the calendar for 5 minutes
     await expect(cover).toHaveCount(0);
+    // the overnight hours end: the first tap says good morning, with today's events (and nothing else opens)
+    await call('api/photos/settings', { night: false });
+    await expect(cover).toHaveCount(0);
+    await fam.locator('.offCover.wake').click();
+    await expect(fam.locator('#dayView .hello')).toContainText('Good morning!');
+    await expect(fam.locator('#eventSheet, #monthPicker')).toHaveCount(0);
+    await fam.locator('#dayView').getByRole('button', { name: 'Close' }).click();
+    await expect(fam.locator('#dayView')).toHaveCount(0);
+    await expect(fam.locator('.offCover.wake')).toHaveCount(0);
+    await call('api/photos/settings', { night: true, from, to });
     expect(await call('api/offhours', { value: 'clock' })).toBe(200);
     await fam.reload();
     await expect(cover).toHaveClass(/clock/);

@@ -94,6 +94,7 @@ export function useSlides(photos: Photos | null, wall: boolean, mode: OffMode = 
   return {
     on,
     cover,
+    night, // the overnight hours (for this screen: not when it does nothing then)
     // a tap on the slideshow: leave it (at night, for 5 minutes)
     tapSlides: useCallback(() => {
       if (Date.now() - since.current < 1500) return;

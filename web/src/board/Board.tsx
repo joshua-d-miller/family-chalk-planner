@@ -140,7 +140,8 @@
                                   a swipe goes to the first pinned page;
                                   overnight it can dim, go black or turn the
                                   screen off, and nothing moves under it;
-                                  it tells the console what it shows now.
+                                  it tells the console what it shows now;
+                                  the first tap after it says good morning.
 ===============================================================================
 */
 
@@ -535,7 +536,10 @@ export function Board({
         }
       }
     : {};
-  const extras = useLive<{ bins: Bins }>('api/extras', ['extras']).data;
+  const extras = useLive<{
+    bins: Bins;
+    weather: { now: { temp: number }; today: { hi: number; lo: number } } | null;
+  }>('api/extras', ['extras']).data;
   // the Notes column: this screen (or the board) can leave it off on the month or the week, and the
   // calendar takes its room
   const notesOn = useNotesCol(week ? 'week' : 'month').on;
@@ -605,6 +609,14 @@ export function Board({
   }, [month.data, other.data, otherYm]);
   const slides = useSlides(photos, !edit || family, useOffHours());
   const asleep = !!slides.cover && slides.cover !== 'dim'; // black, off or the night clock: nothing else moves
+  // the first tap after the overnight hours: good morning, today's events and the weather, for 30 seconds
+  // (until then a clear layer over the board takes that tap, so it doesn't also open a day or an event)
+  const [morning, setMorning] = useState<'next' | 'open' | null>(null);
+  const wasNight = useRef(false);
+  useEffect(() => {
+    if (wasNight.current && !slides.night) setMorning('next');
+    wasNight.current = slides.night;
+  }, [slides.night]);
   // a paired screen tells the admin console what it shows now, and whether it's kept awake
   const shows = slides.on ? 'slides' : slides.cover || 'calendar';
   const paired = !!who?.device;
@@ -1272,6 +1284,22 @@ export function Board({
             Fit
           </button>
         </div>
+      )}
+      {morning === 'next' && !slides.on && !slides.cover && (
+        <button type="button" className="offCover wake" aria-label="Show today" onClick={() => setMorning('open')} />
+      )}
+      {morning === 'open' && m && today && (
+        <DayView
+          date={today.today}
+          events={m.events}
+          cake={m.cake}
+          hello={
+            extras?.weather
+              ? `${extras.weather.now.temp}° now · ${extras.weather.today.hi}° / ${extras.weather.today.lo}° today`
+              : ''
+          }
+          onClose={() => setMorning(null)}
+        />
       )}
       {day && m && (
         <DayView

@@ -396,6 +396,9 @@
   font-size: min(4.5vw, 7vh);
   margin-top: 0.4em;
 }
+.offCover.wake {
+  background: transparent;
+}
 .offCover.dim {
   background: rgba(0, 0, 0, 0.7);
 }

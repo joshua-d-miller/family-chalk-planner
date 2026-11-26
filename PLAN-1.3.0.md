@@ -62,6 +62,9 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   - Then **📡 Now** in the admin console → 📺 Screens: each paired screen says what it shows (the calendar, the
     slideshow, the night clock…) and whether it's kept awake (kept, refused: needs HTTPS, no way to ask, or let
     sleep for the night), when that changes and every 10 minutes. Kept in memory only.
+  - Then **Good morning**: when the overnight hours end, the first tap shows today's events and the weather in
+    the day's card for 30 seconds; a clear layer takes that tap, so it opens nothing else. (The first routine on
+    it comes with routines, in beta 3.)
   - Still to do for 4: the Good morning card, Home Assistant
     and FreeKiosk turning the screen off, pausing the slideshow's own timers and photo checks, and
     moving the overnight times out of the photo settings into an Off hours section (with the old ones moved

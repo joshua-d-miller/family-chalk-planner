@@ -836,3 +836,12 @@ body.boardpage {
   font-family: var(--emoji), sans-serif;
   box-shadow: inset 0 0 0 2px rgba(185, 141, 88, 0.55);
 }
+
+/* the first tap after the overnight hours */
+#dayView .hello {
+  margin: 0 0 12px;
+  font-size: 1.15em;
+}
+#dayView .hello b {
+  color: var(--yellow, #f2d479);
+}
