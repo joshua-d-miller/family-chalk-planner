@@ -62,6 +62,10 @@
      the screen, or none (a tap on the month's name picks any month;
      nothing saved: fading on a family screen, else always):
        kv 'arrows'  { 'p:...' | 's:...': 'always' | 'fade' | 'never' }
+     And what it does in the board's overnight hours (nothing saved: the
+     slideshow, as before):
+       kv 'offhours'  { 'p:...' | 's:...': 'slides' | 'dim' | 'black' |
+           'none' }
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -110,7 +114,8 @@
 
  1.3.0    2026-11-26   joshua    One helper for a setting kept per screen
                         claude    (and the console's for any screen); the
-                                  month arrows, always or fading.
+                                  month arrows, always or fading; what a
+                                  screen does overnight.
 ===============================================================================
 */
 
@@ -650,6 +655,13 @@ export function setup({
   };
 
   // the month arrows: always there, or fading when nobody's touching the screen (the default on a family screen)
+  // what it does in the board's overnight hours: the slideshow (nothing saved), a dimmed or black screen, or
+  // nothing (the calendar stays as it is)
+  screenSetting(
+    'offhours',
+    v => ['slides', 'dim', 'black', 'none'].includes(v as string),
+    'Pick what it does overnight'
+  );
   screenSetting('arrows', v => v === 'always' || v === 'fade' || v === 'never', 'Pick always, fade or never');
 
   // ------------------------------ //

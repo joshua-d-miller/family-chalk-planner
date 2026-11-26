@@ -110,7 +110,8 @@
                         claude
 
  1.3.0    2026-11-26   joshua    /arrows: a screen's month arrows, always or
-                        claude    fading.
+                        claude    fading. /offhours: what a screen does
+                                  overnight.
 ===============================================================================
 */
 
@@ -705,6 +706,7 @@ export function setup(
     '/weekfrom', // its 🗓️ Week from today or from the board's first day
     '/nozoom', // whether it shows the − / + / Fit buttons
     '/arrows', // its month arrows: always, or fading when nobody's touching it
+    '/offhours', // what it does overnight: the slideshow, dimmed, black or nothing
     '/weekview', // its 🗓️ Week: Split View, and what's under the week
     '/boardfit', // fill the screen, and the wooden frame
     '/lang', // its language

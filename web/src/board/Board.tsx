@@ -137,7 +137,8 @@
                                   ahead on a screen that edits, never by a
                                   wall. The month arrows can fade or go;
                                   a tap on the month's name picks a month;
-                                  a swipe goes to the first pinned page.
+                                  a swipe goes to the first pinned page;
+                                  overnight it can dim or go black.
 ===============================================================================
 */
 
@@ -169,6 +170,7 @@ import { Slideshow, useSlides } from './Slideshow.tsx';
 import { later } from '../lib/later.tsx';
 import { MonthPicker } from './MonthPicker.tsx';
 import { ARROWS_FADE_MS, arrowsDefault, useMyArrows } from '../lib/arrows.ts';
+import { useOffHours } from '../lib/offHours.ts';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
 import { FAB_BAND, Strip } from './Strip.tsx';
@@ -598,7 +600,7 @@ export function Board({
     const seen = new Set(d.events.map(key));
     return { ...d, events: [...d.events, ...o.events.filter(e => !seen.has(key(e)))] };
   }, [month.data, other.data, otherYm]);
-  const slides = useSlides(photos, !edit || family);
+  const slides = useSlides(photos, !edit || family, useOffHours());
   const [day, setDay] = useState<string | null>(null);
   const closeDay = useCallback(() => setDay(null), []);
   // ----------------------- //
@@ -1213,6 +1215,15 @@ export function Board({
       </div>
       {(!edit || family || slides.on) && photos && (
         <Slideshow photos={photos} on={slides.on} time24={!!today?.time24} onTap={slides.tapSlides} />
+      )}
+      {/* overnight on a screen that dims or goes black: a tap shows the calendar for 5 minutes */}
+      {slides.cover && (
+        <button
+          type="button"
+          className={'offCover ' + slides.cover}
+          aria-label="Show the calendar"
+          onClick={slides.tapSlides}
+        />
       )}
       <ReminderAlert time24={!!today?.time24} />
       <TimerDone />

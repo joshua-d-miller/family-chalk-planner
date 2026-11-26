@@ -53,8 +53,9 @@
  1.2.7    2026-11-23   joshua    An answer that's cut short doesn't crash
                         claude    the screen.
 
- 1.3.0    2026-11-26   joshua    The month arrows fading on a family screen.
-                        claude
+ 1.3.0    2026-11-26   joshua    The month arrows fading on a family screen;
+                        claude    the month picker; what a screen does
+                                  overnight.
 ===============================================================================
 */
 
@@ -306,6 +307,50 @@ test('the month arrows: on a family screen they fade when nobody touches it, and
   // a wall has no arrows at all
   const wall = await as('wall');
   await expect(wall.locator('#next')).toHaveCount(0);
+});
+
+test('overnight a screen can show the slideshow, dim the calendar, go black, or do nothing', async ({ as }) => {
+  const fam = await as('family');
+  const call = (url: string, body: unknown) =>
+    fam.evaluate(
+      ([u, b]) =>
+        fetch(u as string, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify(b)
+        }).then(r => r.status),
+      [url, body] as const
+    );
+  const was = await fam.evaluate(() =>
+    fetch('api/photos')
+      .then(r => r.json())
+      .then(d => d.cfg)
+  );
+  // overnight hours from an hour ago to an hour from now (the screen's clock)
+  const [from, to] = await fam.evaluate(() =>
+    [-1, 1].map(h => new Date(Date.now() + h * 3600e3).toTimeString().slice(0, 5))
+  );
+  try {
+    expect(await call('api/photos/settings', { night: true, from, to })).toBe(200);
+    expect(await call('api/offhours', { value: 'sideways' })).toBe(400);
+    expect(await call('api/offhours', { value: 'black' })).toBe(200);
+    await fam.reload();
+    const cover = fam.locator('.offCover');
+    await expect(cover).toHaveClass(/black/);
+    await cover.click(); // a tap: the calendar for 5 minutes
+    await expect(cover).toHaveCount(0);
+    expect(await call('api/offhours', { value: 'dim' })).toBe(200);
+    await fam.reload();
+    await expect(cover).toHaveClass(/dim/);
+    expect(await call('api/offhours', { value: 'none' })).toBe(200);
+    await fam.reload();
+    await fam.waitForTimeout(800);
+    await expect(cover).toHaveCount(0);
+    await expect(fam.locator('#slides.on')).toHaveCount(0);
+  } finally {
+    await call('api/offhours', { value: null }); // the slideshow, as the other tests expect
+    await call('api/photos/settings', { night: was.night, from: was.from, to: was.to });
+  }
 });
 
 test('a tap on the month’s name picks any month on a screen that edits (or starts it again), not on the wall', async ({

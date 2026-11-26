@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Slideshow.tsx
 ===============================================================================
- Version:   1.2.7
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-23
+ Updated:   2026-11-26
 
  Purpose:
      The overnight slideshow on the wall: a photo, or a collage of 2-3,
@@ -46,6 +46,9 @@
 
  1.2.7    2026-11-23   joshua    The photos read safely when the board's
                         claude    answer didn't come through whole.
+
+ 1.3.0    2026-11-26   joshua    Overnight a screen can dim the calendar,
+                        claude    go black or do nothing instead.
 ===============================================================================
 */
 
@@ -60,6 +63,7 @@ import { CountdownCard } from './Countdown.tsx';
 import { useCountdowns, useSleeps } from '../lib/countdowns.ts';
 import { locale } from '../../../shared/i18n.ts';
 import type { Photo, PhotoCfg, Photos } from './photos.ts';
+import type { OffMode } from '../lib/offHours.ts';
 import './slides.css';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -83,8 +87,9 @@ export function nightNow(cfg: PhotoCfg | undefined, d = new Date()) {
 // ---------------------------- //
 // | When the slideshow shows | //
 // ---------------------------- //
-// Whether the slideshow is showing, and the taps that change it             //
-export function useSlides(photos: Photos | null, wall: boolean) {
+// Whether the slideshow is showing, and the taps that change it. Overnight  //
+// a screen can instead dim the calendar or go black (cover), or do nothing  //
+export function useSlides(photos: Photos | null, wall: boolean, mode: OffMode = 'slides') {
   const has = !!photos?.photos?.length;
   const [manual, setManual] = useState(false); // the photo frame, turned on by a double tap
   const [peekUntil, setPeekUntil] = useState(0); // a tap at night: the calendar for a while
@@ -93,12 +98,16 @@ export function useSlides(photos: Photos | null, wall: boolean) {
     const t = setInterval(() => tick(n => n + 1), 30 * 1000);
     return () => clearInterval(t);
   }, []);
-  const night = wall && has && (new URLSearchParams(location.search).has('slides') || nightNow(photos?.cfg));
-  const on = has && (manual || (night && Date.now() > peekUntil));
+  const night =
+    wall && mode !== 'none' && (new URLSearchParams(location.search).has('slides') || nightNow(photos?.cfg));
+  const asleep = night && Date.now() > peekUntil;
+  const on = has && (manual || (asleep && mode === 'slides'));
+  const cover = !manual && asleep && (mode === 'dim' || mode === 'black') ? mode : null;
   const since = useRef(0); // taps right after a change belong to it
   const mark = () => (since.current = Date.now());
   return {
     on,
+    cover,
     // a tap on the slideshow: leave it (at night, for 5 minutes)
     tapSlides: useCallback(() => {
       if (Date.now() - since.current < 1500) return;

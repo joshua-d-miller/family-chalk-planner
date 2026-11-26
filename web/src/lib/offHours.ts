@@ -1,0 +1,48 @@
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Helpers | offHours.ts
+===============================================================================
+ Version:   1.3.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-26
+ Updated:   2026-11-26
+
+ Purpose:
+     What this screen does in the board's overnight hours (⚙️ Settings →
+     Photos & slideshow: on, and when): the slideshow (nothing picked, as
+     before), the calendar dimmed, a black screen, or nothing. A tap shows
+     the calendar for 5 minutes, as with the slideshow. Kept on the board
+     (kv 'offhours') per screen; the admin console sets the wall's.
+
+ Used by:
+     web/src/board/Board.tsx
+     web/src/pages/Settings.tsx
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 1.3.0     2026-11-26   joshua    New file.
+                        claude
+===============================================================================
+*/
+
+import { post } from './api.ts';
+import { tellThisScreen, useLive } from './live.ts';
+
+export type OffMode = 'slides' | 'dim' | 'black' | 'none';
+export const OFF_MODES: [OffMode, string][] = [
+  ['slides', 'The slideshow'],
+  ['dim', 'The calendar, dimmed'],
+  ['black', 'A black screen'],
+  ['none', 'Nothing (the calendar as it is)']
+];
+
+// what this screen picked (the slideshow when it hasn't)
+export function useOffHours(): OffMode {
+  return useLive<{ mine: OffMode | null }>('api/offhours', ['offhours']).data?.mine || 'slides';
+}
+export async function setOffHours(value: OffMode) {
+  await post('api/offhours', { value: value === 'slides' ? null : value });
+  tellThisScreen('offhours');
+}

@@ -47,6 +47,14 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   - Still to do for 3: the chalk dots showing where you are, a page list for view-only walls (console), the
     return-to-calendar time for every page (Chores has its own 2 minutes), and checking pages that scroll
     sideways.
+- **2026-11-26: what each screen does overnight** (first part of 4). In the board's existing overnight hours
+  (⚙️ Settings → Photos & slideshow) each screen shows the slideshow (nothing picked: as before), the calendar
+  dimmed, a black screen, or nothing; a tap shows the calendar for 5 minutes. ⚙️ Settings → This screen on a
+  family screen, the admin console → 📺 Screens for any screen (the wall). Kept with `screenSetting('offhours')`.
+  - Still to do for 4: several windows on chosen days, the night clock, the Good morning card, really turning
+    the screen off (the ladder), the "asleep" switch that pauses the board's work under a black cover, and
+    moving the overnight times out of the photo settings into an Off hours section (with the old ones moved
+    over).
 - **Timers and loops (part of 1):** checked all 17. Each is slow or stops by itself; the one fast one (250 ms)
   runs only while a timer counts down. Nothing to fix until off hours, which needs one "asleep" switch that the
   slideshow, weather, GIFs, Split View, title photos and Notes rotation respect while the screen is black. A

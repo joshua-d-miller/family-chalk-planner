@@ -98,6 +98,7 @@ When a stamp, clipart, words or a drawing blanks out events, the board asks once
 - **📷 Photos** on the cork at the bottom (tablet and family screens): the quick way to turn the photos beside this month's name off (room to draw there) or back on. Photos you picked are remembered for when you turn them back on.
 - **Photos there:** up to four polaroids, framed on people's faces. One changes every 40 seconds. They skip any spot that has a drawing on it, and never show the same photo twice at once.
 - **Slideshow overnight:** start and end times (default 9 PM–6 AM), **brightness** (Dim 30% / Medium 50% / Bright 70% / Full), and **new photo every** 10 s–1 min.
+- **What a screen does overnight:** the slideshow (the usual), **the calendar, dimmed**, **a black screen**, or **nothing**. A family screen picks in ⚙️ Settings → This screen → **Overnight, this screen shows**; the wall's is in the admin console → 📺 Screens → 🌙 Overnight. A tap shows the calendar for 5 minutes, as with the slideshow. (A black screen still has its backlight on: turning the screen itself off is coming.)
 - **▶ Preview slideshow** plays it on the tablet (tap to close).
 - The top line shows how many photos the board has and when it last checked (or a ⚠ if something's wrong).
 

@@ -68,7 +68,7 @@
                         claude    answer didn't come through whole.
 
  1.3.0    2026-11-26   joshua    This screen: the month arrows, always there
-                        claude    or fading.
+                        claude    or fading; what it does overnight.
 ===============================================================================
 */
 
@@ -93,6 +93,7 @@ import { SPACES, setWeekFrom, setWeekView, useWeekFrom, useWeekView } from '../l
 import type { WeekView } from '../lib/weekFrom.ts';
 import { setHideZoom, useHideZoom } from '../lib/zoomControls.ts';
 import { arrowsDefault, setArrows, useMyArrows } from '../lib/arrows.ts';
+import { OFF_MODES, setOffHours, useOffHours } from '../lib/offHours.ts';
 import { setBoardFit, useBoardFit } from '../lib/boardFit.ts';
 import { LANGUAGES, setLanguage, useLanguage } from '../lib/lang.ts';
 import type { Lang } from '../lib/lang.ts';
@@ -881,6 +882,7 @@ function ThisScreen() {
   const sleeps = useSleeps();
   const hideZoom = useHideZoom();
   const myArrows = useMyArrows();
+  const offHours = useOffHours();
   const signedIn = !!shell.who?.user;
   const fit = useBoardFit();
   const lang = useLanguage();
@@ -1017,6 +1019,15 @@ function ThisScreen() {
           />
           <span className="t">Hide the − / + / Fit buttons on the calendar</span>
         </label>
+      )}
+      {/* (a family screen has the overnight hours, like the wall; the wall's is set in the admin console) */}
+      {shell.who?.device?.role === 'family' && (
+        <Segs
+          label="Overnight, this screen shows"
+          value={offHours}
+          options={OFF_MODES}
+          onChange={v => void setOffHours(v)}
+        />
       )}
       {/* (only a screen that edits has the arrows: a wall doesn't) */}
       {(shell.who?.rank || 0) >= RANK.family && (
