@@ -21,6 +21,16 @@ https://claude.ai/artifact/ELWuftRLPTaEZ5muo7zQEJ.
 **Order:** three betas, each tried on our board and Colby's for a few days before the next. The full release
 comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out of this release.
 
+## Progress
+- **2026-11-26: walls download less** (part of 1). The Spanish dictionary loads only on Spanish screens, and
+  the pages besides the board (jars, meals, pantry, reminders, timers, chores) load on their own. Screens that
+  can open pages fetch them right after the board is up, so they open without a blank moment. A screen left
+  over from before an update reloads instead of failing.
+  - The wall's main file went from 180 KB to 147 KB compressed (555 KB to 459 KB uncompressed).
+  - Still to split: Settings (wired into the page shell), and the editor and drawing tools inside the board.
+- **Testing here:** `CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/real/chrome-linux64/chrome npx playwright test
+  --trace off`, because the project's Playwright doesn't match the browser installed in this container.
+
 ---
 
 ## Beta 1: foundations and screens
@@ -153,7 +163,7 @@ Built the way the mockups are: made once, kept, no live effects.
 
 ### 10. Doodles and decorations
 - **Doodle pictures:** flowers, bees, a heart, a star, a sun, a swirl, leaves, in her style, as a pack in the
-  picture library. They need a proper art pass (could Tarin draw a set to trace?).
+  picture library. We draw them (no tracing of Tarin's), with a proper art pass.
 - **Decorations:**
   - A ribbon banner behind the month.
   - A doodle frame around an event that spans days.
@@ -196,8 +206,7 @@ Built the way the mockups are: made once, kept, no live effects.
 ---
 
 ## Alongside the release (not board code)
-- **The demo:** in the browser, with sample data and no server. Blocked until we know what the site is built on
-  and its domain.
+- **The demo:** in the browser, with sample data and no server, on GitHub Pages next to the docs.
 - **Docs on the site,** with a "Try it" button.
 - **Screenshots:** extend `test/docs-shots.ts` (it already makes the getting-started screenshots) to take the
   README's and the user guide's from the demo each release.
@@ -208,8 +217,6 @@ Built the way the mockups are: made once, kept, no live effects.
 ---
 
 ## Decisions still open
-1. **The site** for the demo and docs: what it's built on, and its domain.
-2. **FreeKiosk:** can it turn the screen off itself, or does that go through Home Assistant?
-3. **Fonts:** which of the board's 63 fonts come closest to Tarin's lettering?
-4. **Doodle art:** drawn by Tarin and traced, or drawn by us?
-5. **Size:** if it runs long, beta 3 (kids and family) can ship as 1.3.1 without holding up the rest.
+1. **FreeKiosk:** can it turn the screen off itself, or does that go through Home Assistant?
+2. **Fonts:** which of the board's 63 fonts come closest to Tarin's lettering?
+3. **Size:** if it runs long, beta 3 (kids and family) can ship as 1.3.1 without holding up the rest.

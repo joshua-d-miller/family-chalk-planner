@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | App.tsx
 ===============================================================================
- Version:   1.1.1
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-18
+ Updated:   2026-11-26
 
  Purpose:
      Which page this is, and whether this screen may see it (else: sign
@@ -60,10 +60,14 @@
  1.1.1    2026-11-18   joshua    A family screen opens the board to edit even
                         claude    when someone is also signed in on it (it
                                   showed the wall instead).
+
+ 1.3.0    2026-11-26   joshua    The pages besides the board are downloaded
+                        claude    when first opened, not by every wall.
 ===============================================================================
 */
 
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
+import type { ComponentType } from 'react';
 import { paintSurface, surfaceOf } from './lib/surface.ts';
 import { RANK, kidOf, useWho } from './lib/who.ts';
 import { PAGES, homeHref } from './routes.ts';
@@ -71,13 +75,7 @@ import { navigate, useHere } from './lib/nav.ts';
 import { useHaSidebarHidden } from './lib/haSidebar.ts';
 import { Shell } from './ui/Shell.tsx';
 import { Board } from './board/Board.tsx';
-import { Chores } from './pages/Chores.tsx';
-import { Jars } from './pages/Jars.tsx';
-import { Meals } from './pages/Meals.tsx';
-import { Pantry } from './pages/Pantry.tsx';
-import { Reminders } from './pages/Reminders.tsx';
 import { Settings } from './pages/Settings.tsx';
-import { Timers } from './pages/Timers.tsx';
 import { SignIn } from './ui/SignIn.tsx';
 import { Pair } from './ui/Pair.tsx';
 import type { Who } from './lib/who.ts';
@@ -86,17 +84,45 @@ import type { Who } from './lib/who.ts';
 // ------------- //
 // | The pages | //
 // ------------- //
-const VIEWS: Record<string, (p: { who: Who | null }) => React.JSX.Element> = {
+// The pages besides the board are downloaded on their own, so a wall (which //
+// only ever shows the board) doesn't load them; a screen that can open them //
+// fetches them as soon as it's up, so a page opens without a blank moment   //
+type Page = ComponentType<{ who: Who | null }>;
+const CODE: Record<string, () => Promise<Page>> = {
+  chores: () => import('./pages/Chores.tsx').then(m => m.Chores),
+  jars: () => import('./pages/Jars.tsx').then(m => m.Jars),
+  meals: () => import('./pages/Meals.tsx').then(m => m.Meals),
+  pantry: () => import('./pages/Pantry.tsx').then(m => m.Pantry),
+  reminders: () => import('./pages/Reminders.tsx').then(m => m.Reminders),
+  timers: () => import('./pages/Timers.tsx').then(m => m.Timers)
+};
+const ready: Record<string, Page> = {};
+const fetchPage = (id: string) => CODE[id]().then(c => (ready[id] = c));
+// once its code is here a page shows straight away (lazy() would still wait a moment, with no page and no cork)
+const later = (id: string): Page => {
+  const Waiting = lazy(() => fetchPage(id).then(c => ({ default: c })));
+  return p => {
+    const Shown = ready[id] || Waiting;
+    return <Shown {...p} />;
+  };
+};
+function usePagesAhead(w: Who | null) {
+  const opens = !!w && (w.rank > RANK.view || !!kidOf(w)); // a view-only wall never opens them
+  useEffect(() => {
+    if (opens) for (const id of Object.keys(CODE)) fetchPage(id).catch(() => {}); // (tried again when opened)
+  }, [opens]);
+}
+const VIEWS: Record<string, Page> = {
   board: Board,
   edit: p => <Board {...p} edit />,
   // the week: changes it where this screen may change the calendar
   week: p => <Board {...p} edit={(p.who?.rank || 0) >= RANK.family && !kidOf(p.who)} weekly />,
-  chores: Chores,
-  meals: Meals,
-  reminders: Reminders,
-  timers: Timers,
-  pantry: Pantry,
-  jars: Jars,
+  chores: later('chores'),
+  meals: later('meals'),
+  reminders: later('reminders'),
+  timers: later('timers'),
+  pantry: later('pantry'),
+  jars: later('jars'),
   settings: Settings
 };
 
@@ -125,6 +151,7 @@ export function App() {
   const here = useHere();
   const who = useWho();
   useHaSidebarHidden(!!who.data?.ha?.inside); // inside Home Assistant: the board takes the whole width
+  usePagesAhead(who.data);
   const def = PAGES.find(p => p.id === here);
   const View = VIEWS[here];
   useEffect(() => {
@@ -172,7 +199,9 @@ export function App() {
   }
   return (
     <Shell who={w} here={here}>
-      <View key={here} who={w} />
+      <Suspense fallback={null}>
+        <View key={here} who={w} />
+      </Suspense>
     </Shell>
   );
 }

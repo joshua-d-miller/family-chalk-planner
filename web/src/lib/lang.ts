@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | lang.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-21
- Updated:   2026-11-21
+ Updated:   2026-11-26
 
  Purpose:
      This screen's language: the board's (⚙️ Board in the admin console),
@@ -24,11 +24,13 @@
  -------   ----------   -------   --------------------------------------------
  1.2.0    2026-11-21   joshua    New file.
                         claude
+
+ 1.3.0    2026-11-26   joshua    The Spanish dictionary is downloaded only by
+                        claude    a screen that speaks Spanish.
 ===============================================================================
 */
 
 import { language, startTranslating } from '../../../shared/i18n.ts';
-import { ES } from '../../../shared/i18n-es.ts';
 import { post, url } from './api.ts';
 import { subscribe, useLive } from './live.ts';
 
@@ -54,9 +56,15 @@ const remember = (l: Lang) => {
   }
 };
 
-// before the board is drawn: the language this browser remembers, then the board's say
-export function startLanguage() {
-  if (remembered() === 'es') startTranslating(ES, 'es');
+// before the board is drawn: the language this browser remembers, then the board's say. The dictionary
+// is only downloaded by a screen that speaks Spanish (it's the biggest part of the screens' code)
+export async function startLanguage() {
+  if (remembered() === 'es')
+    try {
+      startTranslating((await import('../../../shared/i18n-es.ts')).ES, 'es');
+    } catch {
+      /* couldn't be fetched (offline): English until the next load */
+    }
   const check = () =>
     fetch(url('api/lang'), { credentials: 'same-origin' })
       .then(r => (r.ok ? r.json() : null))
