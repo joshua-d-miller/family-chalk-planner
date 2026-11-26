@@ -222,6 +222,10 @@ Built the way the mockups are: made once, kept, no live effects.
 
 ## Alongside the release (not board code)
 - **The demo:** in the browser, with sample data and no server, on GitHub Pages next to the docs.
+  - **Each visitor has their own copy, and a reload resets it.** Nothing is sent anywhere or shared, so there's
+    nothing to abuse, overload or pay for.
+  - Off in the demo, with a short "Works on your own board" note: GIF links, searching the web for pictures,
+    weather, calendar and photo connections, signing in, pairing and the admin console.
 - **Docs on the site,** with a "Try it" button.
 - **Screenshots:** extend `test/docs-shots.ts` (it already makes the getting-started screenshots) to take the
   README's and the user guide's from the demo each release.
