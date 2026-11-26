@@ -21,6 +21,17 @@ https://claude.ai/artifact/ELWuftRLPTaEZ5muo7zQEJ.
 **Order:** three betas, each tried on our board and Colby's for a few days before the next. The full release
 comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out of this release.
 
+## Saturday: start here
+- **Betas 1 and 2 are combined** (decided 2026-11-26): one beta with the screens work and the chalk look.
+  Kids and family stay a later beta (or 1.3.1).
+- **Next, in order:** the board styles and the grain (6 below), then picture looks (7), lettering (8), flight
+  paths (9), doodles (10). The mockups are linked at the top.
+- **Left over from the screens work:** Home Assistant / FreeKiosk turning the screen off; a page list for walls
+  in the console; the 2 quiet minutes set for each screen; Firefox + Safari tests and a speed budget in CI;
+  `?perf`; the design checks (5).
+- **Everything so far is on `claude/funny-hamilton-ajxqcw`**, each step tested (code checks, server tests, all
+  browser tests). No pull request yet.
+
 ## Progress
 - **2026-11-26: walls download less** (part of 1). The Spanish dictionary loads only on Spanish screens, and
   the pages besides the board (jars, meals, pantry, reminders, timers, chores) load on their own. Screens that
