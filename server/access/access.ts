@@ -111,7 +111,8 @@
 
  1.3.0    2026-11-26   joshua    /arrows: a screen's month arrows, always or
                         claude    fading. /offhours: what a screen does
-                                  overnight.
+                                  overnight. /screen-status: what a screen
+                                  shows now, for the console.
 ===============================================================================
 */
 
@@ -746,7 +747,7 @@ export function setup(
         ? RANK.view
         : FAMILY_POSTS.has(req.path)
           ? RANK.family
-          : req.path === '/screen-error'
+          : req.path === '/screen-error' || req.path === '/screen-status'
             ? RANK.view
             : RANK.editor;
     const have = rankOf(req);
@@ -787,6 +788,26 @@ export function setup(
     );
     res.json({ ok: true });
   });
+
+  // --------------------------- //
+  // | What a screen is doing  | //
+  // --------------------------- //
+  // A paired screen says what it shows now (the calendar, or what it does   //
+  // overnight) and whether it's kept awake; the admin console's 📺 Screens  //
+  // shows it. Only the latest, in memory: it's how things are, not a log.  //
+  const SHOWS = ['calendar', 'slides', 'dim', 'clock', 'black', 'off'];
+  const AWAKE = ['kept', 'refused', 'none', 'sleeping'];
+  const screenNow = new Map<string, { shows: string; awake: string; at: number }>();
+  app.post('/api/screen-status', (req, res) => {
+    const d = deviceOf(req);
+    if (!d) return res.status(401).json({ error: 'Pair this screen first', pair: true });
+    if (tooMany('screenstatus:' + d.id, 60, 15 * 60e3)) return res.status(429).json({ error: 'Too many reports' });
+    const b = req.body || {};
+    if (!SHOWS.includes(b.shows) || !AWAKE.includes(b.awake)) return res.status(400).json({ error: 'Unknown status' });
+    screenNow.set(d.id, { shows: b.shows, awake: b.awake, at: Date.now() });
+    res.json({ ok: true });
+  });
+  app.get('/api/devices/status', (_req, res) => res.json({ status: Object.fromEntries(screenNow) }));
 
   // ------------- //
   // | Who am I? | //

@@ -139,7 +139,8 @@
                                   a tap on the month's name picks a month;
                                   a swipe goes to the first pinned page;
                                   overnight it can dim, go black or turn the
-                                  screen off, and nothing moves under it.
+                                  screen off, and nothing moves under it;
+                                  it tells the console what it shows now.
 ===============================================================================
 */
 
@@ -172,7 +173,7 @@ import { later } from '../lib/later.tsx';
 import { MonthPicker } from './MonthPicker.tsx';
 import { ARROWS_FADE_MS, arrowsDefault, useMyArrows } from '../lib/arrows.ts';
 import { useOffHours } from '../lib/offHours.ts';
-import { letScreenSleep } from '../lib/wallScreen.ts';
+import { awakeNow, letScreenSleep } from '../lib/wallScreen.ts';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
 import { FAB_BAND, Strip } from './Strip.tsx';
@@ -604,6 +605,19 @@ export function Board({
   }, [month.data, other.data, otherYm]);
   const slides = useSlides(photos, !edit || family, useOffHours());
   const asleep = !!slides.cover && slides.cover !== 'dim'; // black, off or the night clock: nothing else moves
+  // a paired screen tells the admin console what it shows now, and whether it's kept awake
+  const shows = slides.on ? 'slides' : slides.cover || 'calendar';
+  const paired = !!who?.device;
+  useEffect(() => {
+    if (!paired) return;
+    const tell = () => void post('api/screen-status', { shows, awake: awakeNow() }).catch(() => {});
+    const first = setTimeout(tell, 3000); // (once asking to stay awake has had its answer)
+    const t = setInterval(tell, 10 * 60 * 1000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(t);
+    };
+  }, [shows, paired]);
   useEffect(() => {
     if (slides.cover !== 'off') return;
     letScreenSleep(true);

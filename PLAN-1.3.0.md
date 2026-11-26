@@ -59,6 +59,9 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
     settings without days mean every day, as before.
   - Then **a night clock**: a sixth overnight choice, big and dim with the date, moved a little every 10
     minutes (burn-in); nothing else moves under it. (Tomorrow's first event on it: later, if wanted.)
+  - Then **📡 Now** in the admin console → 📺 Screens: each paired screen says what it shows (the calendar, the
+    slideshow, the night clock…) and whether it's kept awake (kept, refused: needs HTTPS, no way to ask, or let
+    sleep for the night), when that changes and every 10 minutes. Kept in memory only.
   - Still to do for 4: the Good morning card, Home Assistant
     and FreeKiosk turning the screen off, pausing the slideshow's own timers and photo checks, and
     moving the overnight times out of the photo settings into an Off hours section (with the old ones moved

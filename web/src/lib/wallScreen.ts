@@ -33,7 +33,8 @@
 
  1.3.0    2026-11-26   joshua    letScreenSleep: overnight, Fully Kiosk
                         claude    turns the screen off, or it isn't kept
-                                  awake.
+                                  awake. awakeNow: whether it is, for the
+                                  admin console.
 ===============================================================================
 */
 
@@ -67,6 +68,10 @@ function lockZoom(on: boolean) {
 interface WakeLock {
   release: () => Promise<void>;
 }
+// whether this screen is kept awake: held, refused (not HTTPS, say), no way to ask, or let sleep overnight
+export type Awake = 'kept' | 'refused' | 'none' | 'sleeping';
+let awake: Awake = 'none';
+export const awakeNow = (): Awake => (sleepy ? 'sleeping' : awake);
 let sleepy = false; // overnight, "turn the screen off": the lock let go, so the device's own sleep turns it off
 let setSleepy = (_on: boolean) => {};
 function keepAwake() {
@@ -76,11 +81,13 @@ function keepAwake() {
     if (gone || sleepy || document.visibilityState !== 'visible' || lock) return;
     try {
       const wl = (navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<WakeLock> } }).wakeLock;
-      if (!wl) return;
+      if (!wl) return void (awake = 'none');
       lock = await wl.request('screen');
+      awake = 'kept';
       (lock as unknown as EventTarget).addEventListener?.('release', () => (lock = null));
     } catch {
       lock = null; // (not allowed here: the kiosk app's own setting keeps it awake)
+      awake = 'refused';
     }
   };
   const seen = () => void ask();

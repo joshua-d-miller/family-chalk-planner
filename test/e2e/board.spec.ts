@@ -371,6 +371,30 @@ test('overnight a screen can show the slideshow, dim the calendar, go black, or 
   }
 });
 
+test('a screen tells the admin console what it shows now, and whether it’s kept awake', async ({ as, board }) => {
+  const wall = await as('wall');
+  const status = async () => (await (await board.admin.api('/api/devices/status')).json()).status;
+  await expect
+    .poll(
+      async () => Object.values(await status()).some((s: unknown) => (s as { shows: string }).shows === 'calendar'),
+      {
+        timeout: 10_000
+      }
+    )
+    .toBe(true);
+  const bad = await wall.evaluate(() =>
+    fetch('api/screen-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+      body: JSON.stringify({ shows: 'fireworks', awake: 'kept' })
+    }).then(r => r.status)
+  );
+  expect(bad).toBe(400);
+  const admin = await as('admin', { path: '/admin' });
+  await admin.locator('[data-t="screens"]').click();
+  await expect(admin.locator('.nbot', { hasText: '📡 Now:' }).first()).toBeVisible();
+});
+
 test('a tap on the month’s name picks any month on a screen that edits (or starts it again), not on the wall', async ({
   as
 }) => {
