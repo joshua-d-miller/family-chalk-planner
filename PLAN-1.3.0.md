@@ -70,6 +70,8 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
     the board restarts was already handled (the live connection retries, and a new version reloads).
   - Burn-in shift: left out for now. Wall tablets are LCD, the night clock already moves, and shifting the
     whole board by a pixel or two would blur its lines (it's laid out on the screen's own pixels).
+  - Then **🌙 Overnight hours** got its own section in ⚙️ Settings (on or off, the times, the days, more
+    times, and where each screen picks what it does then). Same saved settings, so nothing to move over.
   - Still to do for 4: the Good morning card, Home Assistant
     and FreeKiosk turning the screen off, pausing the slideshow's own timers and photo checks, and
     moving the overnight times out of the photo settings into an Off hours section (with the old ones moved

@@ -271,7 +271,7 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
     .toBe(true);
   await hol.click();
   await expect(hol).toHaveAttribute('aria-pressed', 'true');
-  await page.getByLabel('Show photos overnight on the wall (a slideshow)').check();
+  await page.getByLabel('Overnight hours on the wall and family screens').check();
   await page.getByLabel('With the temperature').check();
   await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.showTemp).toBe(true);
   // the overnight hours: on chosen days, and another time (weekdays while everyone's out)
@@ -298,7 +298,7 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
     .poll(async () => (await (await board.admin.api('/api/extras')).json()).notes.pages)
     .toEqual(['info', 'meals', 'reminders']);
   // put things back for the other tests (the night slideshow would cover the screens)
-  await page.getByLabel('Show photos overnight on the wall (a slideshow)').uncheck();
+  await page.getByLabel('Overnight hours on the wall and family screens').uncheck();
   await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.night).toBe(false);
   await page
     .locator('#notes-month')
@@ -377,6 +377,7 @@ test('⚙️ Settings on a computer: a card over the board, its parts down the s
     '🎉 Holidays',
     '🎂 Birthdays',
     '📷 Photos',
+    '🌙 Overnight hours',
     '🗑️ Trash',
     '🗒️ Notes column',
     '🗓️ Week',
@@ -384,10 +385,11 @@ test('⚙️ Settings on a computer: a card over the board, its parts down the s
   ]);
   await expect(card.getByRole('tabpanel')).toContainText('Showing “Family”');
   // a switch and a slider save
-  await card.locator('#setTab-photos').click();
-  const night = card.getByRole('tabpanel').getByRole('checkbox', { name: /overnight/ });
+  await card.locator('#setTab-hours').click(); // 🌙 Overnight hours: on
+  const night = card.getByRole('tabpanel').getByRole('checkbox', { name: /Overnight hours/ });
   await night.click();
   await expect(night).toBeChecked();
+  await card.locator('#setTab-photos').click(); // the slideshow's look
   const every = card.getByRole('slider', { name: 'Next photo every' });
   await every.fill('45');
   await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.every).toBe(45);
@@ -419,6 +421,7 @@ test('a family screen: everything but the calendar and trash day (Month title an
     '🎉 Holidays',
     '🎂 Birthdays',
     '📷 Photos',
+    '🌙 Overnight hours',
     '🗒️ Notes column',
     '🗓️ Week',
     '🖥️ This screen'

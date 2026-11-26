@@ -70,7 +70,8 @@
  1.3.0    2026-11-26   joshua    This screen: the month arrows, always there
                         claude    or fading; what it does overnight. The
                                   overnight hours on chosen days, and more
-                                  than one time.
+                                  than one time, in 🌙 Overnight hours of
+                                  their own.
 ===============================================================================
 */
 
@@ -109,7 +110,8 @@ import './settings.css';
 // Each part, and who sees it: the calendar and trash day only the admin;   //
 // the board's parts, 🗓️ Week and 🖥️ This screen every screen with a menu   //
 // (a family screen too).                                                    //
-export type SectionId = 'calendar' | 'holidays' | 'birthdays' | 'photos' | 'trash' | 'notes' | 'week' | 'screen';
+export type SectionId =
+  'calendar' | 'holidays' | 'birthdays' | 'photos' | 'hours' | 'trash' | 'notes' | 'week' | 'screen';
 interface Section {
   id: SectionId;
   icon: string;
@@ -126,6 +128,7 @@ export const SECTIONS: Section[] = [
   { id: 'holidays', icon: '🎉', title: 'Holidays', show: editor, El: () => <Holidays /> },
   { id: 'birthdays', icon: '🎂', title: 'Birthdays', show: editor, El: () => <Birthdays /> },
   { id: 'photos', icon: '📷', title: 'Photos', show: editor, El: () => <Photos /> },
+  { id: 'hours', icon: '🌙', title: 'Overnight hours', show: editor, El: () => <Photos part="hours" /> },
   { id: 'trash', icon: '🗑️', title: 'Trash', show: isAdmin, El: () => <Trash /> },
   { id: 'notes', icon: '🗒️', title: 'Notes column', show: editor, El: () => <RightColumn /> },
   { id: 'week', icon: '🗓️', title: 'Week', show: screen, El: () => <WeekPart /> },
@@ -589,7 +592,7 @@ function DayChips({ label, days, onChange }: { label: string; days?: number[]; o
     </div>
   );
 }
-function Photos() {
+function Photos({ part = 'photos' }: { part?: 'photos' | 'hours' }) {
   const p = useLive<{ enabled: boolean; kind: string; cfg: PhotoCfg; photos: unknown[]; error: string | null }>(
     'api/photos',
     ['photos']
@@ -618,6 +621,58 @@ function Photos() {
       <span className="t">{label}</span>
     </label>
   );
+  if (part === 'hours')
+    return (
+      <Card title="Overnight hours">
+        {box('night', 'Overnight hours on the wall and family screens')}
+        {c.night && (
+          <>
+            <div className="row">
+              <Field label="From" type="time" value={c.from} onChange={e => set({ from: e.target.value })} />
+              <Field label="Until" type="time" value={c.to} onChange={e => set({ to: e.target.value })} />
+            </div>
+            <DayChips label="On" days={c.days} onChange={days => set({ days })} />
+            {(c.more || []).map((w, i) => {
+              const change = (patch: Partial<typeof w>) =>
+                set({ more: (c.more || []).map((x, j) => (j === i ? { ...x, ...patch } : x)) });
+              return (
+                <div className="moreHours" key={i}>
+                  <div className="row">
+                    <Field label="From" type="time" value={w.from} onChange={e => change({ from: e.target.value })} />
+                    <Field label="Until" type="time" value={w.to} onChange={e => change({ to: e.target.value })} />
+                    <button
+                      type="button"
+                      className="btn"
+                      aria-label={`Remove the time from ${w.from} until ${w.to}`}
+                      onClick={() => set({ more: (c.more || []).filter((_, j) => j !== i) })}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <DayChips label="On" days={w.days} onChange={days => change({ days })} />
+                </div>
+              );
+            })}
+            {(c.more || []).length < 3 && (
+              <button
+                type="button"
+                className="btn"
+                id="addHours"
+                onClick={() =>
+                  set({ more: [...(c.more || []), { from: '09:00', to: '15:00', days: [1, 2, 3, 4, 5] }] })
+                }
+              >
+                + Add another time (weekdays while everyone's out, say)
+              </button>
+            )}
+          </>
+        )}
+        <p className="dim small">
+          What each screen does then (the slideshow, a night clock, dimmed, black, turned off or nothing): ⚙️ Settings →
+          This screen on a family screen, or the admin console → 📺 Screens for any screen.
+        </p>
+      </Card>
+    );
   return (
     <Card title="Photos and the slideshow">
       <p className="dim small">
@@ -626,47 +681,6 @@ function Photos() {
           : 'No photo album yet: the admin console sets it up (⚙️ Board → Photos).'}
         {p.data.error && <span className="err"> {p.data.error}</span>}
       </p>
-      {box('night', 'Show photos overnight on the wall (a slideshow)')}
-      {c.night && (
-        <>
-          <div className="row">
-            <Field label="From" type="time" value={c.from} onChange={e => set({ from: e.target.value })} />
-            <Field label="Until" type="time" value={c.to} onChange={e => set({ to: e.target.value })} />
-          </div>
-          <DayChips label="On" days={c.days} onChange={days => set({ days })} />
-          {(c.more || []).map((w, i) => {
-            const change = (patch: Partial<typeof w>) =>
-              set({ more: (c.more || []).map((x, j) => (j === i ? { ...x, ...patch } : x)) });
-            return (
-              <div className="moreHours" key={i}>
-                <div className="row">
-                  <Field label="From" type="time" value={w.from} onChange={e => change({ from: e.target.value })} />
-                  <Field label="Until" type="time" value={w.to} onChange={e => change({ to: e.target.value })} />
-                  <button
-                    type="button"
-                    className="btn"
-                    aria-label={`Remove the time from ${w.from} until ${w.to}`}
-                    onClick={() => set({ more: (c.more || []).filter((_, j) => j !== i) })}
-                  >
-                    ✕
-                  </button>
-                </div>
-                <DayChips label="On" days={w.days} onChange={days => change({ days })} />
-              </div>
-            );
-          })}
-          {(c.more || []).length < 3 && (
-            <button
-              type="button"
-              className="btn"
-              id="addHours"
-              onClick={() => set({ more: [...(c.more || []), { from: '09:00', to: '15:00', days: [1, 2, 3, 4, 5] }] })}
-            >
-              + Add another time (weekdays while everyone's out, say)
-            </button>
-          )}
-        </>
-      )}
       {c.night && (
         <div className="slides2">
           <label className="slide">

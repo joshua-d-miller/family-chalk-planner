@@ -9,7 +9,7 @@
 
  Purpose:
      What this screen does in the board's overnight hours (⚙️ Settings →
-     Photos & slideshow: on, and when): the slideshow (nothing picked, as
+     🌙 Overnight hours: on, and when): the slideshow (nothing picked, as
      before), the calendar dimmed, a night clock, a black screen, the screen
      turned off
      (lib/wallScreen.ts: Fully Kiosk, else the device's own sleep, black

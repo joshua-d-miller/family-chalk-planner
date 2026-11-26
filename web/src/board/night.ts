@@ -8,8 +8,8 @@
  Updated:   2026-11-26
 
  Purpose:
-     Whether it's the board's overnight hours now (⚙️ Settings → Photos and
-     the slideshow): the first window (from, until, on its days) or any of
+     Whether it's the board's overnight hours now (⚙️ Settings → 🌙
+     Overnight hours): the first window (from, until, on its days) or any of
      up to 3 more. A window past midnight belongs to the day it starts: Fri
      21:00 to 06:00 is Friday night and Saturday's early morning. No days
      saved: every day (as before 1.3.0).

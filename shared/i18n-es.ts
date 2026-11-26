@@ -619,7 +619,10 @@ export const ES: Dict = {
   'Google Photos': 'Google Fotos',
   'No photo album yet: the admin console sets it up (⚙️ Board → Photos).':
     'Todavía no hay álbum de fotos: se configura en la consola de administración (⚙️ Tablero → Fotos).',
-  'Show photos overnight on the wall (a slideshow)': 'Mostrar fotos de noche en la pared (una presentación)',
+  'Overnight hours on the wall and family screens': 'Horas de noche en la pared y las pantallas familiares',
+  'Overnight hours': 'Horas de noche',
+  'What each screen does then (the slideshow, a night clock, dimmed, black, turned off or nothing): ⚙️ Settings → This screen on a family screen, or the admin console → 📺 Screens for any screen.':
+    'Lo que hace cada pantalla entonces (la presentación, un reloj de noche, atenuada, negra, apagada o nada): ⚙️ Ajustes → Esta pantalla en una pantalla familiar, o la consola de administración → 📺 Pantallas para cualquier pantalla.',
   "+ Add another time (weekdays while everyone's out, say)":
     '+ Añadir otro horario (entre semana mientras no hay nadie, por ejemplo)',
   'Remove the time from {0} until {1}': 'Quitar el horario de {0} a {1}',
