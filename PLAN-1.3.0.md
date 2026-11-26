@@ -26,8 +26,11 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   the pages besides the board (jars, meals, pantry, reminders, timers, chores) load on their own. Screens that
   can open pages fetch them right after the board is up, so they open without a blank moment. A screen left
   over from before an update reloads instead of failing.
-  - The wall's main file went from 180 KB to 147 KB compressed (555 KB to 459 KB uncompressed).
-  - Still to split: Settings (wired into the page shell), and the editor and drawing tools inside the board.
+  - Then the board's editors, picture library and drawing tools (`web/src/lib/later.tsx` loads a part on its
+    own, and shows it straight away once it's here; a screen that edits fetches them ahead).
+  - The wall's main file went from 180 KB to 128 KB compressed (555 KB to 396 KB uncompressed), 29% less.
+  - Still to split: Settings (wired into the page shell).
+  - The Home Assistant browser tests need a real Home Assistant, so they run in CI only.
 - **Testing here:** `CHROMIUM_PATH=/opt/pw-browsers/chromium-1243/real/chrome-linux64/chrome npx playwright test
   --trace off`, because the project's Playwright doesn't match the browser installed in this container.
 

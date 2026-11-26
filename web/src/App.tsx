@@ -66,8 +66,9 @@
 ===============================================================================
 */
 
-import { Suspense, lazy, useEffect } from 'react';
+import { useEffect } from 'react';
 import type { ComponentType } from 'react';
+import { later } from './lib/later.tsx';
 import { paintSurface, surfaceOf } from './lib/surface.ts';
 import { RANK, kidOf, useWho } from './lib/who.ts';
 import { PAGES, homeHref } from './routes.ts';
@@ -88,28 +89,18 @@ import type { Who } from './lib/who.ts';
 // only ever shows the board) doesn't load them; a screen that can open them //
 // fetches them as soon as it's up, so a page opens without a blank moment   //
 type Page = ComponentType<{ who: Who | null }>;
-const CODE: Record<string, () => Promise<Page>> = {
-  chores: () => import('./pages/Chores.tsx').then(m => m.Chores),
-  jars: () => import('./pages/Jars.tsx').then(m => m.Jars),
-  meals: () => import('./pages/Meals.tsx').then(m => m.Meals),
-  pantry: () => import('./pages/Pantry.tsx').then(m => m.Pantry),
-  reminders: () => import('./pages/Reminders.tsx').then(m => m.Reminders),
-  timers: () => import('./pages/Timers.tsx').then(m => m.Timers)
-};
-const ready: Record<string, Page> = {};
-const fetchPage = (id: string) => CODE[id]().then(c => (ready[id] = c));
-// once its code is here a page shows straight away (lazy() would still wait a moment, with no page and no cork)
-const later = (id: string): Page => {
-  const Waiting = lazy(() => fetchPage(id).then(c => ({ default: c })));
-  return p => {
-    const Shown = ready[id] || Waiting;
-    return <Shown {...p} />;
-  };
+const LATER = {
+  chores: later(() => import('./pages/Chores.tsx').then(m => m.Chores)),
+  jars: later(() => import('./pages/Jars.tsx').then(m => m.Jars)),
+  meals: later(() => import('./pages/Meals.tsx').then(m => m.Meals)),
+  pantry: later(() => import('./pages/Pantry.tsx').then(m => m.Pantry)),
+  reminders: later(() => import('./pages/Reminders.tsx').then(m => m.Reminders)),
+  timers: later(() => import('./pages/Timers.tsx').then(m => m.Timers))
 };
 function usePagesAhead(w: Who | null) {
   const opens = !!w && (w.rank > RANK.view || !!kidOf(w)); // a view-only wall never opens them
   useEffect(() => {
-    if (opens) for (const id of Object.keys(CODE)) fetchPage(id).catch(() => {}); // (tried again when opened)
+    if (opens) for (const p of Object.values(LATER)) p.fetch();
   }, [opens]);
 }
 const VIEWS: Record<string, Page> = {
@@ -117,12 +108,7 @@ const VIEWS: Record<string, Page> = {
   edit: p => <Board {...p} edit />,
   // the week: changes it where this screen may change the calendar
   week: p => <Board {...p} edit={(p.who?.rank || 0) >= RANK.family && !kidOf(p.who)} weekly />,
-  chores: later('chores'),
-  meals: later('meals'),
-  reminders: later('reminders'),
-  timers: later('timers'),
-  pantry: later('pantry'),
-  jars: later('jars'),
+  ...LATER,
   settings: Settings
 };
 
@@ -199,9 +185,7 @@ export function App() {
   }
   return (
     <Shell who={w} here={here}>
-      <Suspense fallback={null}>
-        <View key={here} who={w} />
-      </Suspense>
+      <View key={here} who={w} />
     </Shell>
   );
 }

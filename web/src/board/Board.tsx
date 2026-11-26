@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   1.2.7
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-23
+ Updated:   2026-11-26
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -131,6 +131,11 @@
 
  1.2.7    2026-11-23   joshua    The photos read safely when the board's
                         claude    answer didn't come through whole.
+
+ 1.3.0    2026-11-26   joshua    The editors, the picture library and the
+                        claude    drawing tools are downloaded on their own,
+                                  ahead on a screen that edits, never by a
+                                  wall.
 ===============================================================================
 */
 
@@ -159,12 +164,7 @@ import { useNotesCol } from '../lib/notesCol.ts';
 import { boardScaleStyle } from '../lib/zoomFit.ts';
 import { WeatherMotion } from './Weather.tsx';
 import { Slideshow, useSlides } from './Slideshow.tsx';
-import { EventEditor } from './EventEditor.tsx';
-import { BorderEditor } from './editors/BorderEditor.tsx';
-import { StyleEditor } from './editors/StyleEditor.tsx';
-import { TitleEditor } from './editors/TitleEditor.tsx';
-import { PhotosEditor } from './editors/PhotosEditor.tsx';
-import { NotesEditor } from './editors/NotesEditor.tsx';
+import { later } from '../lib/later.tsx';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
 import { FAB_BAND, Strip } from './Strip.tsx';
@@ -173,9 +173,7 @@ import { homeHref } from '../routes.ts';
 import { useBarZoom, useShell, visibleHeight } from '../ui/Shell.tsx';
 import { DrawLayer, firstPen, isPosca, recolor, touches } from './draw/Draw.tsx';
 import type { Pen } from './draw/Draw.tsx';
-import { Library } from './draw/Library.tsx';
 import type { Stamp } from './draw/Library.tsx';
-import { RecolorSheet, SaveStampSheet, TextSheet, Tools } from './draw/Tools.tsx';
 import { useArt } from './draw/useArt.ts';
 import { coveredBy, writingOn } from './cover.ts';
 import type { Writing } from './cover.ts';
@@ -188,6 +186,24 @@ import { monthVals, themeCss } from './theme.ts';
 import type { Theme } from './theme.ts';
 import './board.css';
 import './edit.css';
+
+// what only editing uses, downloaded on its own (a wall never needs it); fetched ahead on a screen that edits
+const tools = () => import('./draw/Tools.tsx');
+const EDITING = {
+  EventEditor: later(() => import('./EventEditor.tsx').then(m => m.EventEditor)),
+  BorderEditor: later(() => import('./editors/BorderEditor.tsx').then(m => m.BorderEditor)),
+  StyleEditor: later(() => import('./editors/StyleEditor.tsx').then(m => m.StyleEditor)),
+  TitleEditor: later(() => import('./editors/TitleEditor.tsx').then(m => m.TitleEditor)),
+  PhotosEditor: later(() => import('./editors/PhotosEditor.tsx').then(m => m.PhotosEditor)),
+  NotesEditor: later(() => import('./editors/NotesEditor.tsx').then(m => m.NotesEditor)),
+  Library: later(() => import('./draw/Library.tsx').then(m => m.Library)),
+  Tools: later(() => tools().then(m => m.Tools)),
+  TextSheet: later(() => tools().then(m => m.TextSheet)),
+  RecolorSheet: later(() => tools().then(m => m.RecolorSheet)),
+  SaveStampSheet: later(() => tools().then(m => m.SaveStampSheet))
+};
+const { EventEditor, BorderEditor, StyleEditor, TitleEditor, PhotosEditor, NotesEditor, Library } = EDITING;
+const { Tools, TextSheet, RecolorSheet, SaveStampSheet } = EDITING;
 
 const W = 1252;
 const CORK = 50; // the strip under the board on a tablet
@@ -303,6 +319,9 @@ export function Board({
   // adds events, frameless, with the wall's photo frame and slideshow; the  //
   // month's title and the board's look are set from a tablet                //
   const family = edit && !who?.user && who?.device?.role === 'family';
+  useEffect(() => {
+    if (edit) for (const part of Object.values(EDITING)) part.fetch(); // ready before the first tap
+  }, [edit]);
   const hideZoom = useHideZoom(); // ⚙️ Settings → This screen: no − / + / Fit buttons
   const today = useLive<{ today: string; ym: string; weekStart?: number; time24: boolean }>('api/today', [
     'calendar'
