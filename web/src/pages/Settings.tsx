@@ -1026,7 +1026,8 @@ function ThisScreen() {
           options={[
             ['default', `This screen’s usual (${arrowsDefault(shell.who) === 'fade' ? 'fade' : 'always there'})`],
             ['always', 'Always there'],
-            ['fade', 'Fade when nobody’s touching the screen']
+            ['fade', 'Fade when nobody’s touching the screen'],
+            ['never', 'None (tap the month’s name to pick a month)']
           ]}
           onChange={v => void setArrows(v === 'default' ? null : v)}
         />

@@ -36,8 +36,9 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   screen with a new helper in `server/favorites.ts` (`screenSetting`: read, set, and the console's for any
   screen), which the next per-screen settings (swipe pages, off hours, board style) can use. The test fixture
   keeps its family screen at Always there, so a slow test can still tap the arrows.
-  - Still to do for 2: **Never**, which waits for the month picker, so every month stays reachable; the
-    console's control for a screen's arrows (the routes exist: `/api/devices/arrows`).
+  - Then the **month picker** (a tap on the month's name: year ‹ ›, 12 months, This month, ↻ Start the board
+    again) and **None** for the arrows. The week keeps its arrows, and a tap on its title still reloads.
+  - Still to do for 2: the console's control for a screen's arrows (the routes exist: `/api/devices/arrows`).
 - **Timers and loops (part of 1):** checked all 17. Each is slow or stops by itself; the one fast one (250 ms)
   runs only while a timer counts down. Nothing to fix until off hours, which needs one "asleep" switch that the
   slideshow, weather, GIFs, Split View, title photos and Notes rotation respect while the screen is black. A

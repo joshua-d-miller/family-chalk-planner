@@ -135,7 +135,8 @@
  1.3.0    2026-11-26   joshua    The editors, the picture library and the
                         claude    drawing tools are downloaded on their own,
                                   ahead on a screen that edits, never by a
-                                  wall.
+                                  wall. The month arrows can fade or go;
+                                  a tap on the month's name picks a month.
 ===============================================================================
 */
 
@@ -165,6 +166,7 @@ import { boardScaleStyle } from '../lib/zoomFit.ts';
 import { WeatherMotion } from './Weather.tsx';
 import { Slideshow, useSlides } from './Slideshow.tsx';
 import { later } from '../lib/later.tsx';
+import { MonthPicker } from './MonthPicker.tsx';
 import { ARROWS_FADE_MS, arrowsDefault, useMyArrows } from '../lib/arrows.ts';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
@@ -298,6 +300,7 @@ type Editing =
   | { k: 'stamp' }
   | { k: 'photos' }
   | { k: 'notes' }
+  | { k: 'months' }
   | null;
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -982,9 +985,13 @@ export function Board({
               border={border}
               onDay={onDay}
               onEvent={onEvent}
-              nav={edit ? { prev: () => go(-1), next: () => go(1), faded: arrows === 'fade' && quiet } : undefined}
-              // a tap on the month's name reloads, on a screen that edits (not the wall; not while drawing)
-              onTitle={edit && !drawing ? () => location.reload() : undefined}
+              nav={
+                edit && (arrows !== 'never' || week)
+                  ? { prev: () => go(-1), next: () => go(1), faded: arrows === 'fade' && quiet }
+                  : undefined
+              }
+              // a tap on the month's name, on a screen that edits (not the wall; not while drawing): go to any month
+              onTitle={edit && !drawing ? () => (week ? location.reload() : setEditing({ k: 'months' })) : undefined}
               week={week}
               under={split ? <Split view={weekView} edit={edit} drawing={drawing} time24={!!today?.time24} /> : null}
               title={
@@ -1316,6 +1323,17 @@ export function Board({
         />
       )}
       {editing?.k === 'notes' && <NotesEditor view={week ? 'week' : 'month'} onClose={closeEditor} />}
+      {editing?.k === 'months' && shown && today && (
+        <MonthPicker
+          shown={shown}
+          today={today.ym}
+          onPick={to => {
+            setYm(to === today.ym ? null : to);
+            closeEditor();
+          }}
+          onClose={closeEditor}
+        />
+      )}
       {editing?.k === 'photos' && shown && (
         <PhotosEditor ym={shown} monthName={monthName} meta={mm} photos={photos} onClose={closeEditor} />
       )}

@@ -347,3 +347,31 @@
   font-family: monospace;
   font-size: 0.75em;
 }
+
+/* the month picker (a tap on the month's name) */
+.mpYear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  font-size: 1.3em;
+}
+.mpMonths {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 14px 0;
+}
+.mpMonths .seg {
+  min-height: 48px;
+}
+.mpMonths .seg.now:not(.on) {
+  outline: 2px dashed currentColor;
+  outline-offset: -4px;
+}
+.mpMore {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}

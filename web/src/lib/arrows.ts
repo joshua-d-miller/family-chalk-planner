@@ -11,7 +11,8 @@
      The month (and week) arrows on this screen: always there, or fading
      when nobody's touching the screen, coming back with any tap. Set in
      ⚙️ Settings → This screen, kept on the board (kv 'arrows') per person
-     or screen. Nothing picked: fading on a family screen (a shared touch
+     or screen; or none, where a tap on the month's name picks the month
+     (the week keeps its arrows). Nothing picked: fading on a family screen (a shared touch
      screen, where they're mostly in the way), always anywhere else.
 
  Used by:
@@ -31,7 +32,7 @@ import { post } from './api.ts';
 import { tellThisScreen, useLive } from './live.ts';
 import type { Who } from './who.ts';
 
-export type Arrows = 'always' | 'fade';
+export type Arrows = 'always' | 'fade' | 'never'; // never: the month's name picks the month (the week keeps them)
 export const ARROWS_FADE_MS = 10_000; // quiet this long, and they fade
 
 export const arrowsDefault = (w: Who | null): Arrows => (!w?.user && w?.device?.role === 'family' ? 'fade' : 'always');

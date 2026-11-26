@@ -6,7 +6,9 @@ The wall display only shows the board; everything is edited from a tablet or pho
 
 **Getting around.** On a family touch screen the cork at the bottom is on every page: **☰ Menu** (every page and Settings), **📅 Calendar**, and up to 3 pages pinned with 📌 in the menu (they wear a big push pin); the page you're on has a pink ring. On the calendar, **✏️ Edit the calendar** slides out the tools (**✏️ Draw**, **🔤 Month title**, **🖼️ Border**, **📷 Photos**, **🗒️ Notes**, **🎨 Style**) until **✕ Done**, and **+ Add event** is always there. On a phone or tablet the pages are in the tab bar at the bottom (📅 Calendar, your pins and **More**), and the cork under the board has the tools. Zoom with **− / + / Fit** at the top right (or pinch). Everything saved shows on the wall within a second or two.
 
-**The month arrows** on a family screen fade after 10 seconds when nobody's touching it, and come back with any tap (that first tap only brings them back). On a tablet they're always there. Change it for a screen in **⚙️ Settings → This screen → The month arrows**: **Always there** or **Fade when nobody’s touching the screen**.
+**The month arrows** on a family screen fade after 10 seconds when nobody's touching it, and come back with any tap (that first tap only brings them back). On a tablet they're always there. Change it for a screen in **⚙️ Settings → This screen → The month arrows**: **Always there**, **Fade when nobody’s touching the screen**, or **None**.
+
+**Any month in two taps:** on a screen that edits, tap the **month’s name**: pick the year with ‹ ›, then the month; **This month** comes back to today's, and **↻ Start the board again** reloads the board (what that tap used to do).
 
 ### More than one calendar
 The admin can add **more calendars from the same account** (kids' activities, work) and **read-only calendar links** (school, a sports team) in the admin console → ⚙️ Board. Each shows in its own color. Events from the extra calendars can be changed like any other; new events go to the main calendar. Events from links are read-only: tapping one shows that day with the calendar's name.

@@ -59,8 +59,9 @@
      board):
        kv 'nozoom'  { 'p:...' | 's:...': true }
      And its month arrows: always there, or fading when nobody's touching
-     the screen (nothing saved: fading on a family screen, else always):
-       kv 'arrows'  { 'p:...' | 's:...': 'always' | 'fade' }
+     the screen, or none (a tap on the month's name picks any month;
+     nothing saved: fading on a family screen, else always):
+       kv 'arrows'  { 'p:...' | 's:...': 'always' | 'fade' | 'never' }
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -649,7 +650,7 @@ export function setup({
   };
 
   // the month arrows: always there, or fading when nobody's touching the screen (the default on a family screen)
-  screenSetting('arrows', v => v === 'always' || v === 'fade', 'Pick always or fade');
+  screenSetting('arrows', v => v === 'always' || v === 'fade' || v === 'never', 'Pick always, fade or never');
 
   // ------------------------------ //
   // | The − / + / Fit buttons | //

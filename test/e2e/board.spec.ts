@@ -297,6 +297,9 @@ test('the month arrows: on a family screen they fade when nobody touches it, and
     expect(await arrows('always')).toBe(200);
     await fam.waitForTimeout(11_000);
     await expect(next).not.toHaveClass(/faded/);
+    // none: the month's name picks the month instead
+    expect(await arrows('never')).toBe(200);
+    await expect(next).toHaveCount(0);
   } finally {
     await arrows('always'); // (as the other tests expect it)
   }
@@ -305,16 +308,31 @@ test('the month arrows: on a family screen they fade when nobody touches it, and
   await expect(wall.locator('#next')).toHaveCount(0);
 });
 
-test('a tap on the month’s name reloads a screen that edits, but not the wall', async ({ as }) => {
+test('a tap on the month’s name picks any month on a screen that edits (or starts it again), not on the wall', async ({
+  as
+}) => {
   const fam = await as('family');
+  const name = await fam.locator('#monthName .mn').textContent();
+  await fam.locator('#monthName').click();
+  const pick = fam.locator('#monthPicker');
+  await expect(pick).toBeVisible();
+  await pick.getByRole('button', { name: 'Next year' }).click();
+  await pick.getByRole('button', { name: 'Mar', exact: true }).click();
+  await expect(pick).toHaveCount(0);
+  await expect(fam.locator('#monthName .mn')).toHaveText('March');
+  await expect(fam.locator('#monthName small')).toHaveText(String(new Date().getFullYear() + 1));
+  await fam.locator('#monthName').click();
+  await fam.locator('#monthPicker').getByRole('button', { name: 'This month' }).click();
+  await expect(fam.locator('#monthName .mn')).toHaveText(name!);
+  // ↻ Start the board again: what the tap used to do
   await fam.evaluate(() => ((window as unknown as { stay: number }).stay = 1));
-  await Promise.all([fam.waitForEvent('load'), fam.locator('#monthName').click()]);
+  await fam.locator('#monthName').click();
+  await Promise.all([fam.waitForEvent('load'), fam.locator('#mpReload').click()]);
   expect(await fam.evaluate(() => (window as unknown as { stay?: number }).stay)).toBeUndefined();
   const wall = await as('wall');
-  await wall.evaluate(() => ((window as unknown as { stay: number }).stay = 1));
   await wall.locator('#monthName').click();
   await wall.waitForTimeout(600);
-  expect(await wall.evaluate(() => (window as unknown as { stay?: number }).stay)).toBe(1);
+  await expect(wall.locator('#monthPicker')).toHaveCount(0);
 });
 
 test('every page has a ✕ back to the calendar, like the cards; a kid’s own Chores doesn’t', async ({ as, board }) => {
