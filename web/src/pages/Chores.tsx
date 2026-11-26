@@ -49,7 +49,8 @@
                                   another language.
 
  1.3.0    2026-11-26   joshua    Swipes through the pinned pages (lib/
-                        claude    swipePages.ts), not just back.
+                        claude    swipePages.ts), not just back; its 2
+                                  quiet minutes are swipePages.ts' now.
 ===============================================================================
 */
 
@@ -132,23 +133,9 @@ export function Chores({ who }: { who: Who | null }) {
     document.body.classList.add('chorespage');
     return () => document.body.classList.remove('chorespage');
   }, []);
-  // opened by a swipe on the board: 📅 Calendar goes back (a swipe too: swipePages.ts), and the wall goes back
-  // by itself after 2 quiet minutes
+  // opened by a swipe on the board: 📅 Calendar goes back (a swipe too, and 2 quiet minutes: swipePages.ts)
   const back = useMemo(swipedFrom, []);
   const goBack = () => backToBoard();
-  useEffect(() => {
-    if (!back) return;
-    let idle = setTimeout(goBack, 2 * 60 * 1000);
-    const down = () => {
-      clearTimeout(idle);
-      idle = setTimeout(goBack, 2 * 60 * 1000);
-    };
-    addEventListener('pointerdown', down);
-    return () => {
-      clearTimeout(idle);
-      removeEventListener('pointerdown', down);
-    };
-  }, [back]);
 
   const names = useMemo(() => Object.fromEntries((d?.people || []).map((p: Person) => [p.id, p.name])), [d]);
   const order = useMemo(() => Object.fromEntries((d?.people || []).map((p: Person, i: number) => [p.id, i])), [d]);

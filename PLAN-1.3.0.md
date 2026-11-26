@@ -44,9 +44,9 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   one to the calendar; it doesn't go round. A page opened from the menu doesn't swipe (as Chores before). Shared
   code: `web/src/lib/swipePages.ts`. A mouse swipe's selected words are cleared as the next swipe starts (else
   that swipe dragged them).
+  - Then **every page swiped to goes back** to the calendar after 2 quiet minutes (it was Chores' alone).
   - Still to do for 3: the chalk dots showing where you are, a page list for view-only walls (console), the
-    return-to-calendar time for every page (Chores has its own 2 minutes), and checking pages that scroll
-    sideways.
+    2 minutes set for each screen, and checking pages that scroll sideways.
 - **2026-11-26: what each screen does overnight** (first part of 4). In the board's existing overnight hours
   (⚙️ Settings → Photos & slideshow) each screen shows the slideshow (nothing picked: as before), the calendar
   dimmed, a black screen, or nothing; a tap shows the calendar for 5 minutes. ⚙️ Settings → This screen on a

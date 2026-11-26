@@ -13,7 +13,8 @@
      next swipe to the left to the next pin, and a swipe to the right back
      again, the last one back to the calendar. It doesn't go round from the
      end. A page opened from the menu keeps still: swipes only work once
-     you've swiped off the calendar.
+     you've swiped off the calendar. A page swiped to goes back to the
+     calendar after 2 quiet minutes.
 
  Used by:
      web/src/board/Board.tsx
@@ -32,6 +33,7 @@
 import { useEffect } from 'react';
 import { navigate } from './nav.ts';
 
+const BACK_AFTER = 2 * 60 * 1000;
 const KEY = 'chalkFromBoard'; // where the swiping started (the calendar's address on this screen)
 export const swipedFrom = () => {
   try {
@@ -74,7 +76,11 @@ export function useSwipePages(here: string, pins: string[]) {
     const i = order.indexOf(here);
     if (i < 0 || !swipedFrom()) return;
     let s: [number, number] | null = null;
+    // 2 quiet minutes: back to the calendar by itself (a shared screen isn't left on a page)
+    let idle = setTimeout(backToBoard, BACK_AFTER);
     const down = (e: PointerEvent) => {
+      clearTimeout(idle);
+      idle = setTimeout(backToBoard, BACK_AFTER);
       s = e.isPrimary ? [e.clientX, e.clientY] : null;
       // words a mouse swipe selected: the next swipe would drag them instead (and never end); not in a field
       if (!(e.target as Element).closest?.('input, textarea, [contenteditable]')) getSelection()?.removeAllRanges();
@@ -93,6 +99,7 @@ export function useSwipePages(here: string, pins: string[]) {
     addEventListener('pointerdown', down);
     addEventListener('pointerup', up);
     return () => {
+      clearTimeout(idle);
       removeEventListener('pointerdown', down);
       removeEventListener('pointerup', up);
     };

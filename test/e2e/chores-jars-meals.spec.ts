@@ -31,7 +31,8 @@
                         claude    empties only that jar.
 
  1.3.0    2026-11-26   joshua    Swiping through the pinned pages and back.
-                        claude
+                        claude    A page swiped to goes back after 2 quiet
+                                  minutes.
 ===============================================================================
 */
 
@@ -124,6 +125,31 @@ test('swiping goes through the pinned pages and back, and stops at the last one'
     await expect(page).toHaveURL(/\/edit$/);
   } finally {
     await setPins(page, before); // (the tablet is shared by the other tests)
+  }
+});
+
+test('a page swiped to goes back to the calendar after 2 quiet minutes', async ({ as }) => {
+  const page = await as('tablet');
+  const before = await pinsOf(page);
+  try {
+    await setPins(page, []); // nothing pinned: a swipe goes to Chores
+    await page.clock.install();
+    await page.reload();
+    const b = (await page.locator('.slate').boundingBox())!;
+    await page.mouse.move(b.x + 800, b.y + 300);
+    await page.mouse.down();
+    await page.mouse.move(b.x + 600, b.y + 305, { steps: 6 });
+    await page.mouse.move(b.x + 400, b.y + 310, { steps: 6 });
+    await page.mouse.up();
+    await expect(page).toHaveURL(/\/chores$/);
+    await page.clock.fastForward('01:30');
+    await page.mouse.click(600, 120); // a tap: the 2 minutes start again
+    await page.clock.fastForward('01:30');
+    await expect(page).toHaveURL(/\/chores$/);
+    await page.clock.fastForward('00:40');
+    await expect(page).toHaveURL(/\/edit$/);
+  } finally {
+    await setPins(page, before);
   }
 });
 
