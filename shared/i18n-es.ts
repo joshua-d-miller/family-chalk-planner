@@ -1186,8 +1186,8 @@ export const ES: Dict = {
   Link: 'Enlace',
   'Add link': 'Agregar enlace',
   'More albums': 'Más álbumes',
-  "Up to 8 more, each with a name: they show on the board's 📷 Albums page, and ⚙️ Settings on the board can pick one for the photos by the month's name, the slideshow, a time overnight or a month. Paste an album's share link, or type the name of an album on the Immich server above (or favorites, all, thisday). Only these albums can ever be shown.":
-    'Hasta 8 más, cada uno con un nombre: aparecen en la página 📷 Álbumes del tablero, y ⚙️ Ajustes en el tablero puede elegir uno para las fotos junto al nombre del mes, la presentación, un horario de noche o un mes. Pega el enlace para compartir de un álbum, o escribe el nombre de un álbum del servidor Immich de arriba (o favorites, all, thisday). Solo estos álbumes se pueden mostrar.',
+  "Up to 8 more, each with a name: they show on the board's 📷 Albums page, and ⚙️ Settings on the board can pick one for the photos by the month's name, the slideshow, a time overnight or a month. Paste an album's share link, or type the name of an album on the Immich server above (or favorites, all, thisday, or person: and a name from Immich's People, like person:Nora). Only these albums can ever be shown.":
+    'Hasta 8 más, cada uno con un nombre: aparecen en la página 📷 Álbumes del tablero, y ⚙️ Ajustes en el tablero puede elegir uno para las fotos junto al nombre del mes, la presentación, un horario de noche o un mes. Pega el enlace para compartir de un álbum, o escribe el nombre de un álbum del servidor Immich de arriba (o favorites, all, thisday, o person: y un nombre de Personas en Immich, como person:Nora). Solo estos álbumes se pueden mostrar.',
   'Share link, or an Immich album': 'Enlace para compartir, o un álbum de Immich',
   'Add album': 'Agregar álbum',
   'Immich: {0}': 'Immich: {0}',

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Photos | immich.ts
 ===============================================================================
- Version:   1.2.8
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-24
+ Updated:   2026-11-28
 
  Purpose:
      Immich (a photo server many families run at home): an album,
@@ -36,6 +36,9 @@
 
                                   Immich requests go through safeFetch() (the
                                   name and every redirect checked).
+
+ 1.3.0    2026-11-28   joshua    person:<name or id>: every photo of someone
+                        claude    Immich knows.
 ===============================================================================
 */
 
@@ -50,7 +53,7 @@ import { checkedAddress, safeFetch } from '../address.ts';
 export interface ImmichSource {
   url: string; // the server, as you open Immich (http://192.168.1.50:2283)
   key?: string; // an API key (Account Settings → API Keys): album.read, asset.read, asset.view, person.read
-  album?: string; // an album's name or id, 'favorites', 'all' or 'thisday'; empty = Favorites, else recent
+  album?: string; // an album's name or id, 'favorites', 'all', 'thisday' or 'person:<name or id>'; empty = Favorites, else recent
   shareKey?: string; // or a share link's key, with no API key
 }
 export interface ImmichPhoto extends AlbumPhoto {
@@ -262,6 +265,7 @@ async function albumAssets(base: string, key: string | undefined, id: string, sh
 // | Reading the photos | //
 // ---------------------- //
 // An album by name, Favorites, everything, or a share link.                 //
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export async function readImmich(src: ImmichSource, today: string): Promise<ImmichPhoto[]> {
   if (src.shareKey) {
     const k = encodeURIComponent(src.shareKey);
@@ -299,11 +303,25 @@ export async function readImmich(src: ImmichSource, today: string): Promise<Immi
     const hits = onThisDay(all, today);
     return hits.length ? hits : all; // nothing from this day: recent photos, so the slideshow isn't empty
   }
+  // a person Immich knows ("person:Nora", or their id): every photo they're in
+  const person = /^person:\s*(.+)$/i.exec(want);
+  if (person) {
+    const who = person[1].trim();
+    let id = who;
+    if (!UUID.test(who)) {
+      const r = await request(src.url, src.key, '/api/people?withHidden=false&size=1000');
+      const people: any[] = Array.isArray(r?.people) ? r.people : Array.isArray(r) ? r : [];
+      const hit = people.find(p => String(p?.name || '').toLowerCase() === who.toLowerCase());
+      if (!hit) throw new Error(`Immich has nobody named “${who}” (name them in Immich's People first)`);
+      id = String(hit.id);
+    }
+    return photos(await search({ personIds: [id] }));
+  }
   if (['__favorites__', 'favorites'].includes(kind)) return photos(await search({ isFavorite: true }));
   if (['__all__', 'all'].includes(kind)) return photos(await search({}));
   if (want) {
     let id = want;
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(want)) {
+    if (!UUID.test(want)) {
       const hit = (await immichAlbums(src.url, src.key || '')).find(a => a.name.toLowerCase() === kind);
       if (!hit) throw new Error(`Immich album “${want}” not found`);
       id = hit.id;

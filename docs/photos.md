@@ -47,3 +47,16 @@ Under **⚙️ Board** → **Photos** → **Which photos, and copies on the boar
 | "album isn't shared by link" (iCloud) | Turn on **Public Website** for the album (step 1.3). |
 | "album not found" / "doesn't open a shared album" (Google) | The link was turned off, or it's a link to a single photo. Create the album link again. |
 | "sent something unexpected" | Google or Apple changed their album page. Check for a board update (`deploy/update.sh`). |
+
+## More albums
+The admin console → **⚙️ Board** → **Photos** → **More albums** adds up to 8 more, each with a name. Paste an
+album's share link (iCloud, Google Photos or an Immich share link), or, with Immich set up above, type one of:
+
+- an album's name, like `Grandkids`
+- `favorites`, `all` or `thisday` (photos from this date in other years)
+- `person:` and a name from Immich's **People**, like `person:Nora`: every photo they're in (name them in Immich
+  first)
+
+Then ⚙️ Settings on the board picks which album shows beside the month's name, in the slideshow, for a month of
+its own and for each time overnight, and the **📷 Albums** page shows them all. Only albums set up here can ever be
+shown.

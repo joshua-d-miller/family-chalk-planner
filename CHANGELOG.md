@@ -24,7 +24,8 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   (Chores when nothing's pinned), on through the others, and back to the right. Dots show where you are, and a
   page you swiped to goes back to the calendar after 2 quiet minutes.
 - **New: more photo albums.** Admin console → ⚙️ Board → Photos → **More albums**: up to 8 more, each a shared
-  album's link or an album on your Immich server (or Favorites, or "on this day"). Only albums set up there can
+  album's link or an album on your Immich server (or Favorites, "on this day", or **a person** Immich knows:
+  `person:Nora`). Only albums set up there can
   ever be shown.
 - **New: which album shows where.** ⚙️ Settings → Photos picks the album beside the month's name and the one in
   the slideshow; a month can have one of its own (Christmas in December), and each overnight time can pick its

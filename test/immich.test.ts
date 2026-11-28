@@ -118,7 +118,9 @@ test('more albums: each kept on its own, shown by ?album=, only the ones the adm
     values: {
       MORE_ALBUMS: JSON.stringify([
         { id: 'trip', name: 'Our trip', immich: 'trip' },
-        { id: 'faves', name: 'Favorites', immich: 'favorites' }
+        { id: 'faves', name: 'Favorites', immich: 'favorites' },
+        { id: 'nora', name: 'Nora', immich: 'person:Nora' },
+        { id: 'nobody', name: 'Nobody', immich: 'person:Zed' }
       ])
     }
   });
@@ -132,9 +134,17 @@ test('more albums: each kept on its own, shown by ?album=, only the ones the adm
     [
       ['', 'Photos'],
       ['trip', 'Our trip'],
-      ['faves', 'Favorites']
+      ['faves', 'Favorites'],
+      ['nora', 'Nora'],
+      ['nobody', 'Nobody']
     ]
   );
+  // a person Immich knows: every photo they're in; someone it doesn't: an error that says so
+  const nora = await (await ed.api('/api/photos?album=nora')).json();
+  assert.equal(nora.photos.length, 1);
+  const nobody = await (await ed.api('/api/photos?album=nobody')).json();
+  assert.equal(nobody.photos.length, 0);
+  assert.match(nobody.error, /nobody named “Zed”/);
   const trip = await (await ed.api('/api/photos?album=trip')).json();
   assert.ok(trip.photos.length > 0);
   assert.ok(

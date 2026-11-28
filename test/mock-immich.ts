@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | mock-immich.ts
 ===============================================================================
- Version:   1.2.8
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-24
+ Updated:   2026-11-28
 
  Purpose:
      Stand-in for an Immich server (the calls the board makes), for tests.
@@ -27,6 +27,9 @@
 
  1.2.8    2026-11-24   joshua    Whole pictures from
                         claude    test/sample-pictures.ts.
+
+ 1.3.0    2026-11-28   joshua    People: Nora, and her photos.
+                        claude
 ===============================================================================
 */
 
@@ -116,8 +119,10 @@ export function start(port: number): Promise<http.Server & { calls: string[] }> 
           isTrashed: BIG.map(() => false),
           visibility: BIG.map(() => 'timeline')
         });
+      if (u.pathname === '/api/people') return json(200, { people: [{ id: 'p-nora', name: 'Nora' }], total: 1 });
       if (u.pathname === '/api/search/metadata') {
         const q = JSON.parse(body || '{}');
+        if (q.personIds) return json(200, { assets: { items: q.personIds.includes('p-nora') ? [kids[0]] : [] } });
         return json(200, { assets: { items: q.isFavorite ? favorites : [...kids, ...trip] } });
       }
       if (u.pathname === '/api/shared-links/me' && shared) return json(200, { assets: trip });
