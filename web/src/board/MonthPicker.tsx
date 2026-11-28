@@ -5,7 +5,7 @@
  Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-26
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      A tap on the month's name, on a screen that edits: any month of any
@@ -29,6 +29,12 @@ import { useState } from 'react';
 import { Sheet } from '../ui/Sheet.tsx';
 import { MONTHS } from './Month.tsx';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------- //
+// | The month picker | //
+// -------------------- //
+// A tap on the month's name: the year, its 12 months, This month, and Start //
+// the board again (what that tap used to do).                               //
 export function MonthPicker({
   shown,
   today,

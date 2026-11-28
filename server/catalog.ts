@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | catalog.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-14
- Updated:   2026-11-14
+ Updated:   2026-11-28
 
  Purpose:
      Every picture the board has, in one list Pictures can search: the
@@ -41,6 +41,9 @@
                         claude    their own words; its two or three drawings
                                   of one thing ("apple", "apple-2") as one
                                   answer with its looks.
+
+ 1.3.0    2026-11-28   joshua    Doodles in the order a subject's looks are
+                        claude    offered (after Garland & trims).
 ===============================================================================
 */
 

@@ -71,7 +71,8 @@
                         claude    or fading; what it does overnight. The
                                   overnight hours on chosen days, and more
                                   than one time, in 🌙 Overnight hours of
-                                  their own.
+                                  their own. How soon a page swiped to goes
+                                  back to the calendar.
 
  1.3.0    2026-11-28   joshua    Which album shows beside the month's name,
                         claude    in the slideshow, a month and a time.
@@ -100,6 +101,7 @@ import { SPACES, setWeekFrom, setWeekView, useWeekFrom, useWeekView } from '../l
 import type { WeekView } from '../lib/weekFrom.ts';
 import { setHideZoom, useHideZoom } from '../lib/zoomControls.ts';
 import { arrowsDefault, setArrows, useMyArrows } from '../lib/arrows.ts';
+import { BACK_AFTER, setBackAfter, useBackAfter } from '../lib/swipePages.ts';
 import { OFF_MODES, setOffHours, useOffHours } from '../lib/offHours.ts';
 import { setBoardFit, useBoardFit } from '../lib/boardFit.ts';
 import { LANGUAGES, setLanguage, useLanguage } from '../lib/lang.ts';
@@ -1038,6 +1040,7 @@ function ThisScreen() {
   const hideZoom = useHideZoom();
   const myArrows = useMyArrows();
   const offHours = useOffHours();
+  const backAfter = useBackAfter();
   const signedIn = !!shell.who?.user;
   const fit = useBoardFit();
   const lang = useLanguage();
@@ -1198,6 +1201,12 @@ function ThisScreen() {
           onChange={v => void setArrows(v === 'default' ? null : v)}
         />
       )}
+      <Segs
+        label="A page swiped to goes back to the calendar after (quiet minutes)"
+        value={String(backAfter)}
+        options={BACK_AFTER.map(m => [String(m), m ? `${m} min` : 'Never'])}
+        onChange={v => void setBackAfter(+v === 2 ? null : +v)}
+      />
     </Card>
   );
 }

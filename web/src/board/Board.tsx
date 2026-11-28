@@ -146,7 +146,9 @@
                                   the dots, swiped back to; the chalk look.
 
  1.3.0    2026-11-28   joshua    The polaroids and the slideshow from the
-                        claude    album picked for them.
+                        claude    album picked for them. Screen care: a paired
+                                  screen's board moves a pixel every 15
+                                  minutes.
 ===============================================================================
 */
 
@@ -207,6 +209,8 @@ import './board.css';
 import './edit.css';
 
 const FRESH_AFTER = 20 * 3600e3; // up this long: starts again fresh, once a night
+// where the board sits, in turn (screen care): a pixel each way round a little square
+const NUDGES = ['0 0', '1px 0', '1px 1px', '0 1px', '-1px 1px', '-1px 0', '-1px -1px', '0 -1px', '1px -1px'];
 
 // what only editing uses, downloaded on its own (a wall never needs it); fetched ahead on a screen that edits
 const tools = () => import('./draw/Tools.tsx');
@@ -656,6 +660,7 @@ export function Board({
   reachable.current = online;
   const resting = slides.on || (!!slides.cover && slides.cover !== 'dim'); // (dimmed: the calendar still shows)
   const wallNow = !!who?.device && !who?.user;
+  const paired = !!who?.device;
   useEffect(() => {
     if (!wallNow || !resting) return;
     const t = setInterval(
@@ -666,9 +671,16 @@ export function Board({
     );
     return () => clearInterval(t);
   }, [wallNow, resting]);
+  // screen care on a paired screen: the whole board moves a pixel every 15 minutes, round a small square and
+  // back, so nothing stays on the same pixels all day (burn-in on an always-on screen)
+  const [nudge, setNudge] = useState(0);
+  useEffect(() => {
+    if (!paired) return;
+    const t = setInterval(() => setNudge(n => (n + 1) % NUDGES.length), 15 * 60 * 1000);
+    return () => clearInterval(t);
+  }, [paired]);
   // a paired screen tells the admin console what it shows now, and whether it's kept awake
   const shows = slides.on ? 'slides' : slides.cover || 'calendar';
-  const paired = !!who?.device;
   useEffect(() => {
     if (!paired) return;
     const tell = () => void post('api/screen-status', { shows, awake: awakeNow() }).catch(() => {});
@@ -1039,6 +1051,7 @@ export function Board({
         className={edit ? 'edit' : ''}
         style={{
           ...boardScaleStyle(fit.scale, zoom.z, zoom.x, zoom.y),
+          ...(nudge ? { translate: NUDGES[nudge] } : {}),
           padding: pad,
           width: W + 2 * pad,
           height: bh + 2 * pad,

@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | smoke.test.ts
 ===============================================================================
- Version:   1.2.8
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-24
+ Updated:   2026-11-28
 
  Purpose:
      End-to-end smoke test: real server + mock CalDAV + mock photo album,
@@ -89,6 +89,9 @@
 
                                   Its board's setup code comes from the
                                   board's log (test/helpers.ts watchLog()).
+
+ 1.3.0    2026-11-28   joshua    The Doodles set: unpacked, 29 pictures.
+                        claude
 ===============================================================================
 */
 

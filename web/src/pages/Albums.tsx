@@ -34,6 +34,12 @@ import { Slideshow } from '../board/Slideshow.tsx';
 import { Page } from '../ui/Page.tsx';
 import './albums.css';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------ //
+// | 📷 Albums | //
+// ------------ //
+// Each album the board has, to show on this screen or hide; only in the     //
+// menu when there's more than one.                                          //
 export function Albums({ who }: { who: Who | null }) {
   const albums = useAlbums();
   const [playing, setPlaying] = useState<string | null>(null);

@@ -94,6 +94,12 @@ This is how the board is tested on every change: Chrome on Linux, full screen, o
 
 - **Low-power screen** (⚙️ Settings → This screen, or the admin console → 📺 Screens for the wall) turns off
   everything that moves and draws the chalk plainer.
+- **`?perf`:** add it to the screen's address (`http://board.local:3002/?perf`) for a small box in the corner:
+  frames a second (60 is smooth), how many milliseconds of each second went to work that held the screen up
+  ("busy": near 0 when nothing changes), memory (Chrome only) and how much is on the board. Take it off again
+  after.
+- **Screen care:** a paired screen moves the whole board by a pixel every 15 minutes, so nothing burns in on a
+  screen that's on all day.
 - On Android, update **Android System WebView** and turn hardware acceleration on in the kiosk app.
 - To see what's slow, record a profile on the screen itself: in the kiosk app, turn on *WebView contents debugging*
   (Fully Kiosk: Advanced Web Settings), connect the screen to a computer by USB, open `chrome://inspect` in Chrome

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Tools.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      The drawing tools on the strip, and the cards they open: writing,

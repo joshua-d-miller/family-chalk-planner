@@ -38,6 +38,12 @@ const hm = (s: string) => {
   const m = /^(\d\d):(\d\d)$/.exec(s || '');
   return m ? +m[1] * 60 + +m[2] : null;
 };
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | Is it overnight now? | //
+// ------------------------ //
+// A window belongs to the day it starts, even when it runs past midnight;   //
+// with chosen days, only those days.                                        //
 function inWindow(w: NightWindow, d: Date) {
   const f = hm(w.from);
   const t = hm(w.to);

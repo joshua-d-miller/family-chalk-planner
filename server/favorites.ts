@@ -4,7 +4,7 @@
 ===============================================================================
  Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      Favorites: the few things each person (and each family screen) uses
@@ -66,6 +66,11 @@
      slideshow, as before):
        kv 'offhours'  { 'p:...' | 's:...': 'slides' | 'dim' | 'clock' |
            'black' | 'off' | 'none' }
+     And how long a page swiped to stays before going back to the
+     calendar, in quiet minutes (nothing saved: 2; 0: it stays):
+       kv 'backafter'  { 'p:...' | 's:...': 0 | 1 | 2 | 5 | 10 }
+     The admin console sets any screen's pinned pages too (a wall has no
+     menu to pin them with): GET / POST /api/devices/favorites.
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -115,7 +120,9 @@
  1.3.0    2026-11-26   joshua    One helper for a setting kept per screen
                         claude    (and the console's for any screen); the
                                   month arrows, always or fading; what a
-                                  screen does overnight.
+                                  screen does overnight. How soon a page goes
+                                  back to the calendar; the console sets any
+                                  screen's pinned pages (a wall's).
 ===============================================================================
 */
 
@@ -190,6 +197,25 @@ export function setup({
     map[k] = items;
     kv.set('favorites', map);
     res.json({ items, saved: true });
+  });
+  // any screen's, from the admin console (/api/devices is the admin's alone)
+  app.get('/api/devices/favorites', (_req, res) => {
+    const out: Record<string, string[]> = {};
+    for (const [k, v] of Object.entries(all())) if (k.startsWith('s:')) out[k.slice(2)] = v;
+    res.json({ screens: out });
+  });
+  app.post('/api/devices/favorites', (req, res) => {
+    const id = String(req.body?.id || '');
+    const sent = req.body?.items;
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    if (!Array.isArray(sent)) return res.status(400).json({ error: 'bad favorites' });
+    const items = [...new Set(sent.filter(isItem))].slice(0, MAX);
+    const map = all();
+    if (items.length) map['s:' + id] = items;
+    else delete map['s:' + id];
+    kv.set('favorites', map);
+    broadcast('favorites', {});
+    res.json({ items });
   });
 
   // ----------------------- //
@@ -663,6 +689,8 @@ export function setup({
     'Pick what it does overnight'
   );
   screenSetting('arrows', v => v === 'always' || v === 'fade' || v === 'never', 'Pick always, fade or never');
+  // how many quiet minutes a page swiped to stays before going back to the calendar (0: it stays)
+  screenSetting('backafter', v => [0, 1, 2, 5, 10].includes(v as number), 'Pick 0, 1, 2, 5 or 10 minutes');
 
   // ------------------------------ //
   // | The − / + / Fit buttons | //

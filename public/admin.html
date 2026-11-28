@@ -1254,6 +1254,42 @@ button:disabled{opacity:.5;cursor:default}
     });
     return box;
   }
+  // its month arrows, how soon a page swiped to goes back to the calendar, and the pages it swipes to (a
+  // wall has no menu to pin them with)
+  var arrows = {}, backafter = {}, screenPins = {};
+  function pickLine(x, label, path, now, opts) {
+    var box = el('div', 'nbot');
+    box.appendChild(el('span', 'dim', label));
+    var sel = el('select'); sel.setAttribute('aria-label', label.replace(/:$/, '') + ' on ' + x.name);
+    opts.forEach(function (o) { var op = el('option', null, o[1]); op.value = o[0]; sel.appendChild(op); });
+    sel.value = now == null ? '' : String(now);
+    sel.addEventListener('change', function () {
+      var v = sel.value === '' ? null : /^\d+$/.test(sel.value) ? +sel.value : sel.value;
+      api('api/devices/' + path, { id: x.id, value: v }).catch(function (e) { $('dvErr').textContent = e.message; });
+    });
+    box.appendChild(sel);
+    return box;
+  }
+  var SWIPE_PAGES = [['chores', '🧹 Chores'], ['meals', '🍽️ Meal plan'], ['reminders', '🔔 Reminders'], ['timers', '⏲️ Timers'], ['pantry', '🥫 Pantry'], ['jars', '🫙 Reward jars'], ['albums', '📷 Albums']];
+  function pagesLine(x) {
+    var box = el('div', 'nbot');
+    box.appendChild(el('span', 'dim', '👉 Swipes to (up to 3, in order):'));
+    var mine = (screenPins[x.id] || []).slice();
+    SWIPE_PAGES.forEach(function (p) {
+      var lab = el('label', 'tick'), cb = el('input');
+      cb.type = 'checkbox'; cb.checked = mine.indexOf(p[0]) >= 0;
+      cb.setAttribute('aria-label', p[1] + ' on ' + x.name);
+      cb.addEventListener('change', function () {
+        var i = mine.indexOf(p[0]);
+        if (cb.checked && i < 0) { if (mine.length >= 3) { cb.checked = false; $('dvErr').textContent = 'At most 3 pages'; return; } mine.push(p[0]); }
+        if (!cb.checked && i >= 0) mine.splice(i, 1);
+        api('api/devices/favorites', { id: x.id, items: mine }).then(function (r) { screenPins[x.id] = r.items; }).catch(function (e) { $('dvErr').textContent = e.message; });
+      });
+      lab.appendChild(cb); lab.appendChild(document.createTextNode(' ' + p[1])); box.appendChild(lab);
+    });
+    if (!mine.length) box.appendChild(el('span', 'dim', '(none: a swipe goes to Chores)'));
+    return box;
+  }
   // what it does in the overnight hours: the slideshow, the calendar dimmed, black, or nothing
   var offhours = {};
   function offLine(x) {
@@ -1272,7 +1308,7 @@ button:disabled{opacity:.5;cursor:default}
   }
   function loadScreens() {
     var bottoms = {}, cols = {}, boardNotes = null, sleeps = {}, weekfrom = {}, weekview = {}, boardfit = {};
-    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/notes-col').then(function (b) { cols = b.cols || {}; }, function () {}); }).then(function () { return api('api/extras').then(function (e) { boardNotes = e.notes; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices/weekfrom').then(function (b) { weekfrom = b.weekfrom || {}; }, function () {}); }).then(function () { return api('api/devices/weekview').then(function (b) { weekview = b.weekview || {}; }, function () {}); }).then(function () { return api('api/devices/boardfit').then(function (b) { boardfit = b.boardfit || {}; }, function () {}); }).then(function () { return api('api/devices/lang').then(function (b) { screenLangs = b.lang || {}; boardLang = b.board || 'en'; }, function () {}); }).then(function () { return api('api/devices/offhours').then(function (b) { offhours = b.screens || {}; }, function () {}); }).then(function () { return api('api/devices/status').then(function (b) { screenNow = b.status || {}; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
+    return loadChorePeople().then(function () { return api('api/devices/notes-bottom').then(function (b) { bottoms = b.bottoms || {}; }, function () {}); }).then(function () { return api('api/devices/notes-col').then(function (b) { cols = b.cols || {}; }, function () {}); }).then(function () { return api('api/extras').then(function (e) { boardNotes = e.notes; }, function () {}); }).then(function () { return api('api/devices/sleeps').then(function (b) { sleeps = b.sleeps || {}; }, function () {}); }).then(function () { return api('api/devices/weekfrom').then(function (b) { weekfrom = b.weekfrom || {}; }, function () {}); }).then(function () { return api('api/devices/weekview').then(function (b) { weekview = b.weekview || {}; }, function () {}); }).then(function () { return api('api/devices/boardfit').then(function (b) { boardfit = b.boardfit || {}; }, function () {}); }).then(function () { return api('api/devices/lang').then(function (b) { screenLangs = b.lang || {}; boardLang = b.board || 'en'; }, function () {}); }).then(function () { return api('api/devices/offhours').then(function (b) { offhours = b.screens || {}; }, function () {}); }).then(function () { return api('api/devices/arrows').then(function (b) { arrows = b.screens || {}; }, function () {}); }).then(function () { return api('api/devices/backafter').then(function (b) { backafter = b.screens || {}; }, function () {}); }).then(function () { return api('api/devices/favorites').then(function (b) { screenPins = b.screens || {}; }, function () {}); }).then(function () { return api('api/devices/status').then(function (b) { screenNow = b.status || {}; }, function () {}); }).then(function () { return api('api/devices'); }).then(function (d) {
       var w = $('dvWaiting'); w.innerHTML = '';
       d.waiting.forEach(function (p) { w.appendChild(el('p', 'dim', '⏳ ' + p.agent + ' is showing a code (' + ago(p.created) + ') - type it above.')); });
       var list = $('dvList'); list.innerHTML = '';
@@ -1301,6 +1337,11 @@ button:disabled{opacity:.5;cursor:default}
         if (!/^kid:/.test(x.role)) it.appendChild(fitLine(x, boardfit[x.id] || null));
         it.appendChild(langLine(x));
         it.appendChild(offLine(x));
+        if (!/^kid:/.test(x.role)) {
+          it.appendChild(pickLine(x, '◀ ▶ Month arrows:', 'arrows', arrows[x.id], [['', x.role === 'family' ? 'Usual (fade)' : 'Usual (always there)'], ['always', 'Always there'], ['fade', 'Fade when nobody’s touching it'], ['never', 'None (tap the month’s name)']]));
+          it.appendChild(pagesLine(x));
+          it.appendChild(pickLine(x, '↩ Back to the calendar:', 'backafter', backafter[x.id], [['', 'After 2 quiet minutes (usual)'], ['1', 'After 1 quiet minute'], ['5', 'After 5 quiet minutes'], ['10', 'After 10 quiet minutes'], ['0', 'Never (the page stays)']]));
+        }
         it.appendChild(nowLine(x));
         list.appendChild(it);
       });

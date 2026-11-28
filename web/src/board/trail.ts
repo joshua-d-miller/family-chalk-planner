@@ -29,6 +29,12 @@
 
 import { seeded } from '../lib/chalk.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | Laying down a path | //
+// ---------------------- //
+// Each mark (a dash, a dot, a heart) placed along the line by how far along //
+// it is, its length and gap each a little different.                        //
 export const DASHES = ['dash', 'dots', 'dashdot', 'hearts'];
 const f1 = (v: number) => (Math.round(v * 10) / 10).toString();
 
@@ -93,6 +99,11 @@ export function trail(p: number[], w: number, style: string, seed: number): { li
   return { line, fill };
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------- //
+// | Where it ends | //
+// ----------------- //
+// Where a picture riding on the path lands, and which way it faces there.   //
 // where the line ends, and which way it's going there (a picture riding on it faces that way)
 export function endOf(p: number[]): { x: number; y: number; deg: number } {
   const n = p.length;

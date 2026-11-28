@@ -32,9 +32,15 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   Kids and family stay a later beta (or 1.3.1).
 - **Built (2026-11-28):** the board styles and the grain (6 below), picture looks (7), lettering (8), flight
   paths (9), doodles (10). Next: the pull request to `main`; merging it (version 1.3.0) publishes the release.
-- **Left over from the screens work:** Home Assistant / FreeKiosk turning the screen off; a page list for walls
-  in the console; the 2 quiet minutes set for each screen; Firefox + Safari tests and a speed budget in CI;
-  `?perf`; the design checks (5).
+- **Left over from the screens work, done 2026-11-28:** the console's page list for walls, its month arrows and
+  how soon pages go back (`/api/devices/favorites`, `backafter`); the quiet minutes for each screen (⚙️ Settings);
+  a speed budget (test/e2e/speed.spec.ts: the wall's code under 480 KB, about 430 now, with no editor code);
+  `?perf` (web/src/ui/perf.ts); screen care (a pixel's move every 15 minutes).
+- **Moved to 1.3.1 (they need what this container doesn't have):** Firefox and WebKit tests (their browsers
+  can't be installed here, so CI couldn't be checked before merging); Home Assistant and FreeKiosk turning the
+  screen off (needs a real Home Assistant and a FreeKiosk tablet; Fully Kiosk and the device's own sleep work
+  now); a processor-use budget (needs a steady machine to measure; `?perf`'s "busy" on the wall is the check
+  for now); the design pass at 1440p, 4K and on the Apolosign (needs those screens).
 - **Everything so far is on `claude/funny-hamilton-ajxqcw`**, each step tested (code checks, server tests, all
   browser tests). The left-over items above move to 1.3.1 unless they're done before the merge.
 

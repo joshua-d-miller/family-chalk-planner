@@ -5,7 +5,7 @@
  Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-26
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      Swiping between pages: from the calendar a swipe to the left goes to
@@ -28,13 +28,22 @@
  1.3.0     2026-11-26   joshua    New file (the swipe to Chores, from
                         claude    Board.tsx, now through the pinned pages);
                                   2 quiet minutes back; the dots coming back.
+                                  The quiet minutes set for each screen.
 ===============================================================================
 */
 
 import { useEffect } from 'react';
+import { post } from './api.ts';
+import { tellThisScreen, useLive } from './live.ts';
 import { navigate } from './nav.ts';
 
-const BACK_AFTER = 2 * 60 * 1000;
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ---------------------- //
+// | Where a swipe goes | //
+// ---------------------- //
+// From the calendar through the pinned pages, one at a time, and back;      //
+// never round. A page opened from the menu doesn't swipe.                   //
+export const BACK_AFTER = [0, 1, 2, 5, 10]; // the quiet minutes a screen can pick (0: the page stays)
 const DOTS = 'chalkDots';
 const KEY = 'chalkFromBoard'; // where the swiping started (the calendar's address on this screen)
 export const swipedFrom = () => {
@@ -67,6 +76,12 @@ export function swipeOffBoard(home: string, pins: string[]) {
   remember(home);
   navigate(pagesAfter(pins)[0]);
 }
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | Back to the calendar | //
+// ------------------------ //
+// After a swipe back, or 2 quiet minutes on a page; the calendar then shows //
+// its chalk dots once.                                                      //
 // back to the calendar the swiping started from (also 📅 Calendar on a page it opened); dots: how many the
 // calendar shows as it comes back (after a swipe, not after the 2 quiet minutes)
 export function backToBoard(dots = 0) {
@@ -90,19 +105,34 @@ export function backDots() {
   }
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | On a page | //
+// ------------- //
+// A page swiped to listens for the next swipe, and goes back to the        //
+// calendar after the quiet minutes this screen picked (2 unless it did).   //
+export function useBackAfter(): number {
+  return useLive<{ mine: number | null }>('api/backafter', ['backafter']).data?.mine ?? 2;
+}
+export async function setBackAfter(value: number | null) {
+  await post('api/backafter', { value });
+  tellThisScreen('backafter');
+}
 // a page: swipes go on through the pages, or back
 export function useSwipePages(here: string, pins: string[]) {
   const key = pins.join();
+  const mins = useBackAfter();
   useEffect(() => {
     const order = pagesAfter(key ? key.split(',') : []);
     const i = order.indexOf(here);
     if (i < 0 || !swipedFrom()) return;
     let s: [number, number] | null = null;
-    // 2 quiet minutes: back to the calendar by itself (a shared screen isn't left on a page)
-    let idle = setTimeout(() => backToBoard(), BACK_AFTER);
+    // quiet a while: back to the calendar by itself (a shared screen isn't left on a page)
+    const wait = () => (mins ? setTimeout(() => backToBoard(), mins * 60e3) : undefined);
+    let idle = wait();
     const down = (e: PointerEvent) => {
       clearTimeout(idle);
-      idle = setTimeout(() => backToBoard(), BACK_AFTER);
+      idle = wait();
       // a drag in a field, on a slider or in an open card is that, not a swipe
       const busy = (e.target as Element).closest?.(
         'input, textarea, select, [contenteditable], [role="slider"], [role="dialog"]'
@@ -129,5 +159,5 @@ export function useSwipePages(here: string, pins: string[]) {
       removeEventListener('pointerdown', down);
       removeEventListener('pointerup', up);
     };
-  }, [here, key]);
+  }, [here, key, mins]);
 }

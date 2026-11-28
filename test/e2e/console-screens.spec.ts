@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | console-screens.spec.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-17
- Updated:   2026-11-17
+ Updated:   2026-11-28
 
  Purpose:
      The admin console's 📺 Screens tab: a paired screen's list of roles
@@ -19,6 +19,9 @@
  -------   ----------   -------   --------------------------------------------
  1.1.0    2026-11-17   joshua    New file (only View only and Family showed
                         claude    while Chores had nobody in it).
+
+ 1.3.0    2026-11-28   joshua    A wall's pages to swipe to, its month
+                        claude    arrows and how soon a page goes back.
 ===============================================================================
 */
 
@@ -83,4 +86,52 @@ test('📺 Screens: a screen’s own Notes column on the month and the week, its
   await month.locator('select').selectOption('');
   await expect.poll(cols).toBe(null);
   expect(page.errors).toEqual([]);
+});
+
+test('📺 Screens: a wall’s pages to swipe to, its month arrows and how soon a page goes back', async ({
+  as,
+  board
+}) => {
+  const devs = (await (await board.admin.api('/api/devices')).json()).devices as {
+    id: string;
+    role: string;
+    name: string;
+  }[];
+  const { id, name } = devs.find(d => d.role === 'view')!;
+  const page = await as('admin', { path: '/admin' });
+  const pages = page.getByRole('checkbox', { name: '🍽️ Meal plan on ' + name });
+  if (!(await pages.isVisible())) await page.getByText('📺 Screens', { exact: false }).first().click();
+  const of = async (what: string) => (await (await board.admin.api('/api/devices/' + what)).json()).screens[id];
+  try {
+    await pages.check();
+    await expect.poll(() => of('favorites')).toEqual(['meals']);
+    await page.getByRole('combobox', { name: '◀ ▶ Month arrows on ' + name }).selectOption('never');
+    await expect.poll(() => of('arrows')).toBe('never');
+    await page.getByRole('combobox', { name: '↩ Back to the calendar on ' + name }).selectOption('0');
+    await expect.poll(() => of('backafter')).toBe(0);
+    // the wall: a swipe goes to the meal plan
+    const wall = await as('wall');
+    const b = (await wall.locator('.slate').boundingBox())!;
+    await wall.mouse.move(b.x + 800, b.y + 300);
+    await wall.mouse.down();
+    await wall.mouse.move(b.x + 600, b.y + 305, { steps: 6 });
+    await wall.mouse.move(b.x + 400, b.y + 310, { steps: 6 });
+    await wall.mouse.up();
+    await expect(wall).toHaveURL(/\/meals$/);
+    // a screen can't set any screen's: that's the console's alone
+    const tried = await wall.evaluate(async i => {
+      const r = await fetch('api/devices/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+        body: JSON.stringify({ id: i, items: ['jars'] })
+      });
+      return r.status;
+    }, id);
+    expect(tried).toBe(403);
+    expect(page.errors).toEqual([]);
+  } finally {
+    await board.admin.post('/api/devices/favorites', { id, items: [] });
+    await board.admin.post('/api/devices/arrows', { id, value: null });
+    await board.admin.post('/api/devices/backafter', { id, value: null });
+  }
 });

@@ -4,7 +4,7 @@
 ===============================================================================
  Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      Where the screens start: the fonts, the shared styles, and the App,
@@ -29,7 +29,7 @@
 
  1.3.0    2026-11-26   joshua    Pages' code downloaded when they're opened:
                         claude    one from before an update starts the screen
-                                  again with the new version.
+                                  again with the new version. ?perf.
 ===============================================================================
 */
 
@@ -54,6 +54,9 @@ addEventListener('vite:preloadError', e => {
   e.preventDefault();
   location.reload();
 });
+
+// ?perf: how this screen is keeping up (ui/perf.ts; downloaded only then)
+if (new URLSearchParams(location.search).has('perf')) void import('./ui/perf.ts').then(m => m.showPerf());
 
 // the board's language (or this screen's), before it's drawn
 void startLanguage().then(() =>

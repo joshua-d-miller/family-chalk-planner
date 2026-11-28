@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | console-photos.spec.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-17
  Updated:   2026-11-28

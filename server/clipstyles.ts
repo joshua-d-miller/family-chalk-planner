@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | clipstyles.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-14
+ Updated:   2026-11-28
 
  Purpose:
      More picture sets for Pictures, each in its own style (Streamline,

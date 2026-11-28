@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Tests | immich.test.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Updated:   2026-11-28
 

@@ -22,7 +22,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   ↻ Start the board again is there now too (what that tap used to do).
 - **New: swipe through your pinned pages.** From the calendar a swipe to the left goes to the first pinned page
   (Chores when nothing's pinned), on through the others, and back to the right. Dots show where you are, and a
-  page you swiped to goes back to the calendar after 2 quiet minutes.
+  page you swiped to goes back to the calendar after 2 quiet minutes (or 1, 5, 10 or never: ⚙️ Settings → This
+  screen). The admin console → 📺 Screens picks any screen's pages to swipe to (the wall's too), its month arrows
+  and how soon its pages go back.
 - **New: more photo albums.** Admin console → ⚙️ Board → Photos → **More albums**: up to 8 more, each a shared
   album's link or an album on your Immich server (or Favorites, "on this day", or **a person** Immich knows:
   `person:Nora`). Only albums set up there can
@@ -57,6 +59,10 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   is tipped a little and bobs up or down, the way chalk writing does.
 - **Quicker on the wall:** a wall downloads about 30% less when it starts. The editors, the pages and the Spanish
   words load only on the screens that use them, ahead of time where they do, so nothing waits when you tap.
+- **Screen care:** a paired screen moves the whole board by a pixel every 15 minutes, round a small square, so
+  nothing stays on the same pixels all day.
+- **For checking a slow screen:** add `?perf` to its address for a small box with its frames a second, how busy
+  it is, its memory and how much it draws. A test now keeps the wall's download under a limit.
 - **Steadier:** a screen that's been up all day starts again fresh once a night while it's asleep (only while it
   can reach the board), and one left open from before an update loads the new version instead of failing.
 

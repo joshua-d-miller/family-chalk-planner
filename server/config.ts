@@ -2,7 +2,7 @@
 ===============================================================================
  Family Chalk Planner | Server | config.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
  Updated:   2026-11-28

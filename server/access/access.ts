@@ -5,7 +5,7 @@
  Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      Who may do what.
@@ -119,7 +119,8 @@
  1.3.0    2026-11-26   joshua    /arrows: a screen's month arrows, always or
                         claude    fading. /offhours: what a screen does
                                   overnight. /screen-status: what a screen
-                                  shows now, for the console.
+                                  shows now, for the console. /backafter: how
+                                  soon a page goes back to the calendar.
 ===============================================================================
 */
 
@@ -729,6 +730,7 @@ export function setup(
     '/nozoom', // whether it shows the − / + / Fit buttons
     '/arrows', // its month arrows: always, or fading when nobody's touching it
     '/offhours', // what it does overnight: the slideshow, dimmed, black or nothing
+    '/backafter', // how soon a page swiped to goes back to the calendar
     '/weekview', // its 🗓️ Week: Split View, and what's under the week
     '/boardfit', // fill the screen, and the wooden frame
     '/lang', // its language

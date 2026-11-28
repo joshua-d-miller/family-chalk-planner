@@ -5,7 +5,7 @@
  Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-26
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      What this screen does in the board's overnight hours (⚙️ Settings →
@@ -33,6 +33,12 @@
 import { post } from './api.ts';
 import { tellThisScreen, useLive } from './live.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// -------------------------------- //
+// | What a screen does overnight | //
+// -------------------------------- //
+// Each screen's own choice (screenSetting 'offhours' on the server); none   //
+// chosen: the slideshow, as before.                                         //
 export type OffMode = 'slides' | 'dim' | 'clock' | 'black' | 'off' | 'none';
 export const OFF_MODES: [OffMode, string][] = [
   ['slides', 'The slideshow'],

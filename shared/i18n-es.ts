@@ -5,7 +5,7 @@
  Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-21
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      The board in Spanish: each piece of English on the screens and in the
@@ -490,6 +490,7 @@ export const ES: Dict = {
   '🥫 Pantry': '🥫 Despensa',
   '🫙 Reward jars': '🫙 Frascos de premios',
   '🧹 Chores': '🧹 Tareas',
+  '📷 Albums': '📷 Álbumes',
   '🔔 Reminders': '🔔 Recordatorios',
   'This week': 'Esta semana',
   'This month': 'Este mes',
@@ -716,6 +717,13 @@ export const ES: Dict = {
   Loose: 'Suelta',
   'Very loose': 'Muy suelta',
   Writing: 'Escritura',
+  'A page swiped to goes back to the calendar after (quiet minutes)':
+    'Una página a la que se deslizó vuelve al calendario tras (minutos sin tocar)',
+  Never: 'Nunca',
+  '1 min': '1 min',
+  '2 min': '2 min',
+  '5 min': '5 min',
+  '10 min': '10 min',
   'A ribbon banner behind it': 'Una cinta detrás',
   'Path: {0} (tap for the next)': 'Camino: {0} (toca para el siguiente)',
   Path: 'Camino',
@@ -1646,6 +1654,22 @@ export const ES: Dict = {
   'let sleep for the night': 'puede dormir por la noche',
   'Overnight:': 'Por la noche:',
   '🌙 Overnight:': '🌙 Por la noche:',
+  '◀ ▶ Month arrows:': '◀ ▶ Flechas del mes:',
+  '◀ ▶ Month arrows on {0}': '◀ ▶ Flechas del mes en {0}',
+  'Usual (fade)': 'Lo habitual (se desvanecen)',
+  'Usual (always there)': 'Lo habitual (siempre visibles)',
+  'Fade when nobody’s touching it': 'Se desvanecen cuando nadie la toca',
+  'None (tap the month’s name)': 'Ninguna (toca el nombre del mes)',
+  '👉 Swipes to (up to 3, in order):': '👉 Desliza a (hasta 3, en orden):',
+  '(none: a swipe goes to Chores)': '(ninguna: deslizar va a Tareas)',
+  '↩ Back to the calendar:': '↩ Vuelve al calendario:',
+  '↩ Back to the calendar on {0}': '↩ Vuelve al calendario en {0}',
+  'After 2 quiet minutes (usual)': 'Tras 2 minutos sin tocar (lo habitual)',
+  'After 1 quiet minute': 'Tras 1 minuto sin tocar',
+  'After 5 quiet minutes': 'Tras 5 minutos sin tocar',
+  'After 10 quiet minutes': 'Tras 10 minutos sin tocar',
+  'Never (the page stays)': 'Nunca (la página se queda)',
+  'At most 3 pages': 'Como mucho 3 páginas',
   'Under the week, on the left on {0}': 'Debajo de la semana, a la izquierda en {0}',
   'Under the week, on the right on {0}': 'Debajo de la semana, a la derecha en {0}',
   'Sign-ins': 'Inicios de sesión',

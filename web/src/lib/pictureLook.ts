@@ -32,6 +32,11 @@
 import { useEffect, useState } from 'react';
 import { grainCanvas, seeded } from './chalk.ts';
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------- //
+// | The looks | //
+// ------------- //
+// The 🖍 choices for a picture, and how each look colors it in.              //
 // '' : the board style's; 'none': as it is
 export const LOOKS: [string, string][] = [
   ['', 'Board style’s'],
@@ -81,6 +86,13 @@ const canvasOf = (w: number, h: number) => {
   return c;
 };
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------ //
+// | Drawing a look | //
+// ------------------ //
+// Strokes that take their colors from the picture, outlines from where its  //
+// colors change, and the shape grown for a sticker's outline; all on        //
+// canvases the size the picture is shown.                                   //
 // colored in with strokes; each short piece takes the color under it, so colors change where the picture's do
 function colorIn(
   sd: Uint8ClampedArray,

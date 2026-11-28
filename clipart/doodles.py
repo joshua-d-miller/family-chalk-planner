@@ -46,9 +46,9 @@ def f(v):
 
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #
-# ----------------- #
-# | A chalk line  | #
-# ----------------- #
+# ---------------- #
+# | A chalk line | #
+# ---------------- #
 # A line through points, a little wobbly (the same every time: seeded by
 # its name), smoothed into curves; drawn twice, the second pass lighter and
 # a touch off, as chalk goes over itself.
@@ -162,9 +162,9 @@ def petal(p, cx, cy, ang, length, width, color, fill):
 
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #
-# -------------- #
+# --------------- #
 # | The doodles | #
-# -------------- #
+# --------------- #
 def daisy():
     p = Pic("daisy")
     for k in range(8):
@@ -412,6 +412,12 @@ def corner_hearts():
     return p.out()
 
 
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: #
+# ------------------ #
+# | Writing it out | #
+# ------------------ #
+# Each doodle by its name (served as dd-<name>), and the words it's found
+# by in Pictures' search.
 PICTURES = {
     "daisy": daisy,
     "flower": flower,

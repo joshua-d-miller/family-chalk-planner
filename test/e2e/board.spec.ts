@@ -4,7 +4,7 @@
 ===============================================================================
  Version:   1.3.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      The board itself: this month on the tablet, moving between months,
@@ -864,6 +864,35 @@ test('a picture’s look: colored in with chalk marker or stick chalk, made once
     expect(t.errors).toEqual([]);
   } finally {
     await board.admin.post('/api/art/delete', { ym, ids: pic.ids });
+  }
+});
+
+test('🖍 Look: each tap on a selected picture moves it to the next look, kept on the board', async ({ as, board }) => {
+  const { ym } = thisMonth();
+  await board.admin.post('/api/art/clear', { ym });
+  await board.admin.post('/api/art/bulk', {
+    ym,
+    items: [{ k: 'g', x: 300, y: 300, w: 120, h: 120, src: '/api/clip/birthday-cake.svg', mode: 'still' }]
+  });
+  const lookOf = async () =>
+    ((await (await board.admin.api(`/api/art?ym=${ym}`)).json()) as { k?: string; lk?: string }[]).find(
+      x => x.k === 'g'
+    )?.lk;
+  try {
+    const t = await as('tablet', { path: '/edit' });
+    await t.locator('#drawBtn').click();
+    const box = (await t.locator('.slate').boundingBox())!;
+    await t.locator('#selectBtn').click();
+    await t.mouse.click(box.x + (300 / 1252) * box.width, box.y + (300 / 642) * box.height);
+    await expect(t.locator('#lookBtn')).toContainText('Board style’s');
+    await t.locator('#lookBtn').click();
+    await expect.poll(lookOf).toBe('none');
+    await t.locator('#lookBtn').click();
+    await expect.poll(lookOf).toBe('marker');
+    await expect(t.locator('#lookBtn')).toContainText('Chalk marker');
+    expect(t.errors).toEqual([]);
+  } finally {
+    await board.admin.post('/api/art/clear', { ym });
   }
 });
 

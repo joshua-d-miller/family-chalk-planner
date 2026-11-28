@@ -4,7 +4,7 @@
 ===============================================================================
  Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      Chores (tablet, phone, kid's tablet, wall), reward jars and the meal
@@ -32,7 +32,8 @@
 
  1.3.0    2026-11-26   joshua    Swiping through the pinned pages and back.
                         claude    A page swiped to goes back after 2 quiet
-                                  minutes.
+                                  minutes, or stays when the screen says
+                                  Never.
 ===============================================================================
 */
 
@@ -171,6 +172,40 @@ test('a page swiped to goes back to the calendar after 2 quiet minutes', async (
     await page.clock.fastForward('00:40');
     await expect(page).toHaveURL(/\/edit$/);
   } finally {
+    await setPins(page, before);
+  }
+});
+
+test('a page swiped to stays when this screen says Never (⚙️ Settings → This screen)', async ({ as }) => {
+  const page = await as('tablet');
+  const before = await pinsOf(page);
+  const backAfter = (v: number | null) =>
+    page.evaluate(
+      v =>
+        fetch('api/backafter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify({ value: v })
+        }).then(r => r.status),
+      v
+    );
+  try {
+    await setPins(page, []);
+    expect(await backAfter(7)).toBe(400); // only the choices on offer
+    expect(await backAfter(0)).toBe(200);
+    await page.clock.install();
+    await page.reload();
+    const b = (await page.locator('.slate').boundingBox())!;
+    await page.mouse.move(b.x + 800, b.y + 300);
+    await page.mouse.down();
+    await page.mouse.move(b.x + 600, b.y + 305, { steps: 6 });
+    await page.mouse.move(b.x + 400, b.y + 310, { steps: 6 });
+    await page.mouse.up();
+    await expect(page).toHaveURL(/\/chores$/);
+    await page.clock.fastForward('10:00');
+    await expect(page).toHaveURL(/\/chores$/);
+  } finally {
+    await backAfter(null);
     await setPins(page, before);
   }
 });
