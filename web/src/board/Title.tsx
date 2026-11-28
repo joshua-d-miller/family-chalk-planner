@@ -33,7 +33,8 @@
                                   stays at /classic.
 
  1.3.0    2026-11-28   joshua    Lettering: a white outline like a sticker,
-                        claude    inline, a drop shadow or neon; streaks.
+                        claude    inline, a drop shadow or neon; streaks; a
+                                  ribbon banner behind it.
 ===============================================================================
 */
 
@@ -48,7 +49,7 @@ import { measure } from './geom.ts';
 // | The style | //
 // ------------- //
 // l: lettering, 'sticker' | 'inline' | 'shadow' | 'neon' (none: an outline, as before); s: marker streaks
-export type TitleStyle = { f: number; c: string; o: string | null; z: number; l?: string; s?: boolean };
+export type TitleStyle = { f: number; c: string; o: string | null; z: number; l?: string; s?: boolean; b?: boolean };
 export const DEFAULT_TITLE: TitleStyle = { f: 7, c: '#F6B3CB', o: '#F3A35E', z: 68 };
 
 const MAX_W = 520;
@@ -133,14 +134,16 @@ export function Title({
         (hand ? 'hand' + (dashed ? ' dashed' : '') : '') +
         (outline || lit || l ? '' : ' noout') +
         l +
-        (style.s && !hand ? ' streaks' : '')
+        (style.s && !hand ? ' streaks' : '') +
+        (style.b ? ' ribbon' : '')
       }
       style={
         {
           '--tout': outline || '#F3A35E',
           '--toutw': Math.max(3, style.z / 15) + 'px',
           '--tc': fill,
-          '--tboard': bg > 0.18 ? '#F4F1E8' : '#151617'
+          '--tboard': bg > 0.18 ? '#F4F1E8' : '#151617',
+          '--rib': style.o || '#F6B3CB'
         } as CSSProperties
       }
     >

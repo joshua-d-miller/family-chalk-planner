@@ -181,6 +181,14 @@
       ]
     },
     {
+      "id": "doodles",
+      "name": "Doodles",
+      "months": [],
+      "border": "",
+      "cover": ["dd-daisy", "dd-bee", "dd-heart", "dd-sparkles"],
+      "pictures": ["dd-daisy", "dd-flower", "dd-tulip", "dd-bee", "dd-heart", "dd-hearts", "dd-star", "dd-stars", "dd-sparkles", "dd-sun", "dd-cloud", "dd-swirl", "dd-leaf", "dd-fall-leaf", "dd-vine", "dd-circle", "dd-squiggle", "dd-underline", "dd-arrow", "dd-frame", "dd-frame-long", "dd-banner-pink", "dd-banner-blue", "dd-banner-yellow", "dd-corner-curl", "dd-corner-flowers", "dd-corner-leaves", "dd-corner-snow", "dd-corner-hearts"]
+    },
+    {
       "id": "birthday",
       "name": "Birthdays & parties",
       "months": [],

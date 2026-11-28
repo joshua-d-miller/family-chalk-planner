@@ -928,3 +928,47 @@ test('flight paths: a dotted line, and a picture that flies along its path to th
     await board.admin.post('/api/art/clear', { ym });
   }
 });
+
+test('doodles: their own pack in Pictures; and words written loosely, each letter tipped', async ({ as, board }) => {
+  const { ym } = thisMonth();
+  await board.admin.post('/api/art/clear', { ym });
+  try {
+    const t = await as('tablet', { path: '/edit' });
+    await t.locator('#drawBtn').click();
+    await t.locator('#stampsBtn').click();
+    const lib = t.locator('#libSheet');
+    await lib.locator('#pack-doodles').click();
+    await expect.poll(() => lib.locator('.ptile').count()).toBe(29);
+    await expect(lib.locator('.ptile .ctile img[src*="/api/clip/dd-bee"]')).toBeVisible();
+    await lib.locator('.ptile').last().scrollIntoViewIfNeeded();
+    await expect
+      .poll(() =>
+        lib.locator('.ptile img').evaluateAll(l => l.filter(i => (i as HTMLImageElement).naturalWidth > 0).length)
+      )
+      .toBe(29);
+    if (process.env.SHOTS) await t.screenshot({ path: process.env.SHOTS + '/doodles.png' });
+    await lib.locator('#picBack').click();
+    await t.keyboard.press('Escape');
+    // writing, very loose: kept with the words; the letters are tipped (neat ones aren't)
+    const box = (await t.locator('.slate').boundingBox())!;
+    await t.locator('#textBtn').click();
+    await t.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await t.locator('#tText').fill('Party!');
+    await t.locator('#textSheet').getByRole('radio', { name: 'Very loose' }).click();
+    await t.locator('#tSave').click();
+    const words = async () =>
+      ((await (await board.admin.api(`/api/art?ym=${ym}`)).json()) as { k?: string; n?: number }[]).find(
+        x => x.k === 't'
+      );
+    await expect.poll(async () => (await words())?.n).toBe(2);
+    await expect(t.locator('.slate > .artSvg text tspan[rotate]').first()).toBeAttached();
+    if (process.env.SHOTS) await t.locator('.slate').screenshot({ path: process.env.SHOTS + '/loose.png' });
+    // a neatness the board doesn't know is neat
+    await board.admin.post('/api/art', { ym, stroke: { k: 't', s: 'Hi', x: 100, y: 100, c: '#EDEAE0', n: 9 } });
+    const all = (await (await board.admin.api(`/api/art?ym=${ym}`)).json()) as { s?: string; n?: number }[];
+    expect(all.find(x => x.s === 'Hi')?.n).toBeUndefined();
+    expect(t.errors).toEqual([]);
+  } finally {
+    await board.admin.post('/api/art/clear', { ym });
+  }
+});

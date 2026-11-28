@@ -49,6 +49,12 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **New: flight paths.** ✏️ Draw → **Path** draws dashes, dots, dashes and dots, or little hearts, each laid down
   by hand. Select a picture and tap **✈ Add a path**: draw where it's been, and it lands at the end, facing the way
   it went. The two move together.
+- **New: Doodles.** A pack in ⭐ Pictures of chalk doodles drawn for the board: flowers, a bee, hearts, stars,
+  sparkles, a sun, swirls and leaves; a hand-drawn circle, a squiggle and an underline for big days; frames to
+  go round an event that spans days, ribbon banners, and corners for every season.
+- **New: a ribbon banner behind the month's name** (🔤 Month title), in the outline's color.
+- **New: writing from neat to loose.** When you write on the board, pick Neat, Loose or Very loose: each letter
+  is tipped a little and bobs up or down, the way chalk writing does.
 - **Quicker on the wall:** a wall downloads about 30% less when it starts. The editors, the pages and the Spanish
   words load only on the screens that use them, ahead of time where they do, so nothing waits when you tap.
 - **Steadier:** a screen that's been up all day starts again fresh once a night while it's asleep (only while it

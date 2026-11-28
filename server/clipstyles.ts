@@ -47,6 +47,9 @@
                                   pictures are its own or the emoji redrawn.
                                   Openclipart (clipart/openclipart.json.gz,
                                   packed), with each picture's own words.
+
+ 1.3.0    2026-11-28   joshua    Doodles (clipart/doodles.json): the board's
+                        claude    own chalk doodles.
 ===============================================================================
 */
 
@@ -95,6 +98,14 @@ export const STYLES: ClipStyle[] = [
     name: 'Garland & trims',
     pkg: '',
     file: path.join(import.meta.dirname, '..', 'clipart', 'garland.json'),
+    credit: 'Drawn for Family Chalk Planner (CC0)',
+    own: true
+  },
+  {
+    prefix: 'dd',
+    name: 'Doodles',
+    pkg: '',
+    file: path.join(import.meta.dirname, '..', 'clipart', 'doodles.json'),
     credit: 'Drawn for Family Chalk Planner (CC0)',
     own: true
   }

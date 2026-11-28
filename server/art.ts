@@ -61,7 +61,8 @@
                         claude
 
  1.3.0    2026-11-28   joshua    A picture's 🖍 Look (lk), one it knows;
-                        claude    a flight path's style (d).
+                        claude    a flight path's style (d); how neat words
+                                  are (n).
 ===============================================================================
 */
 
@@ -149,6 +150,7 @@ export function cleanItem(raw: unknown): ArtItem | null {
       f: Math.min(Math.max(Math.trunc(Number(it.f)) || 0, 0), BOARD_FONTS.length - 1),
       z: Math.min(Math.max(Math.round(Number(it.z)) || 40, 12), 120),
       ...(it.m ? { m: true } : {}),
+      ...(it.n === 1 || it.n === 2 ? { n: it.n } : {}),
       ...turn,
       ...group,
       ...cover

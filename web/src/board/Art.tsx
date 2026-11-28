@@ -58,7 +58,8 @@
                                   and light on a wall's memory.
 
  1.3.0    2026-11-28   joshua    A picture in its 🖍 Look (lib/pictureLook.ts),
-                        claude    or the board style's. Flight paths (d).
+                        claude    or the board style's. Flight paths (d); loose
+                                  writing (n).
 ===============================================================================
 */
 
@@ -66,6 +67,7 @@ import { fontShorthand } from '../../../shared/fonts.ts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { url } from '../lib/api.ts';
 import { useLook } from '../lib/pictureLook.ts';
+import { seeded } from '../lib/chalk.ts';
 import { readable } from './color.ts';
 import { trail } from './trail.ts';
 
@@ -84,6 +86,7 @@ export type ArtItem = {
   fc?: string; // fill of a closed line
   d?: string; // a flight path: dashes, dots, dashes and dots, or hearts (trail.ts)
   s?: string; // words
+  n?: number; // how neat the words are: none neat, 1 loose, 2 looser (each letter tipped and bobbing)
   f?: number;
   z?: number;
   x?: number;
@@ -115,6 +118,22 @@ function Picture({ it, src, look, res }: { it: ArtItem; src: string; look: strin
       }}
     />
   );
+}
+
+// words written loosely: each letter tipped a little and up or down (dy is from the letter before)
+function loose(line: string, n: number, z: number, seed: number) {
+  const r = seeded(seed * 7 + line.length);
+  const k = n * 0.5;
+  let last = 0;
+  const rot: string[] = [];
+  const dy: string[] = [];
+  for (let i = 0; i < [...line].length; i++) {
+    const off = (r() - 0.5) * z * 0.12 * k;
+    rot.push(((r() - 0.5) * 16 * k).toFixed(1));
+    dy.push((off - last).toFixed(1));
+    last = off;
+  }
+  return { rotate: rot.join(' '), dy: dy.join(' ') };
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -312,7 +331,7 @@ export function Art({
                   style={{ font: fontCss(it.f, it.z) }}
                 >
                   {ls.map((l, i) => (
-                    <tspan key={i} x={it.x} y={y0 + i * lh}>
+                    <tspan key={i} x={it.x} y={y0 + i * lh} {...(it.n ? loose(l, it.n, it.z || 40, it.id + i) : {})}>
                       {l}
                     </tspan>
                   ))}

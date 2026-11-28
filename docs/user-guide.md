@@ -16,6 +16,12 @@ The wall display only shows the board; everything is edited from a tablet or pho
 
 **Flight paths:** in the drawing tools, tap **Path** for a dashed line, again for dots, dashes and dots, hearts, and once more for a plain line again. To send a picture flying (a bee, a paper plane), select it and tap **✈ Add a path**, then draw where it's been: it lands at the end of the path, facing the way it went, and the two move together.
 
+**Doodles:** ⭐ Pictures has a **Doodles** pack of chalk doodles drawn for the board: flowers, a bee, hearts, stars and sparkles, a sun, swirls, leaves, a hand-drawn circle to put round a day, a squiggle or underline for an event, frames to go round an event that spans days (resize to fit), ribbon banners, and corners (curls, flowers, fall leaves, snow, hearts; turn one for the other corners).
+
+**Neat or loose writing:** when you write on the board, pick **Neat**, **Loose** or **Very loose**. Loose writing tips each letter a little and lets it bob, like writing by hand in chalk. (It suits print fonts best; joined-up script fonts can show small gaps.)
+
+**A ribbon behind the month's name:** 🔤 Month title → **A ribbon banner behind it**, in the outline's color.
+
 **Any month in two taps:** on a screen that edits, tap the **month’s name**: pick the year with ‹ ›, then the month; **This month** comes back to today's, and **↻ Start the board again** reloads the board (what that tap used to do).
 
 ### More than one calendar

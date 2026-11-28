@@ -29,8 +29,8 @@
  1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
                         claude    with changes.
 
- 1.3.0    2026-11-28   joshua    Lettering and marker streaks.
-                        claude
+ 1.3.0    2026-11-28   joshua    Lettering, marker streaks and a ribbon
+                        claude    banner.
 ===============================================================================
 */
 
@@ -136,6 +136,15 @@ export function TitleEditor({
               onChange={e => setT({ ...t, s: e.target.checked || undefined })}
             />{' '}
             Marker streaks
+          </label>
+          <label className="tick">
+            <input
+              type="checkbox"
+              id="titleRibbon"
+              checked={!!t.b}
+              onChange={e => setT({ ...t, b: e.target.checked || undefined })}
+            />{' '}
+            A ribbon banner behind it
           </label>
           <div className="sublbl">Size</div>
           <Segs value={String(t.z)} onChange={z => setT({ ...t, z: +z })} options={SIZES} label="Size" />

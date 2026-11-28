@@ -24,7 +24,7 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
 ## What 1.3.0 holds (decided 2026-11-28)
 - **All of it, as first planned:** the screens work (done), **the photos** (more albums, which album shows where,
   📷 Albums: done 2026-11-28), and **the chalk look** (beta 2 below: board styles, picture looks, lettering,
-  flight paths, doodles: next). 1.3.0 is released when the chalk look is done. Kids and family come after.
+  flight paths, doodles: done 2026-11-28). 1.3.0 is released when the chalk look is done. Kids and family come after.
 - **The demo** on the site comes with or right after it.
 
 ## Saturday: start here (before the release)
@@ -119,6 +119,13 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   path**: draw it, and the picture lands at its end, turned along it and kept upright, grouped with it (`g`).
   Spacing is set by the line's size (no separate gap setting). Riders: any picture (bee, plane, butterfly are in
   the library already). Tested: test/trail.test.ts and the browser test "flight paths".
+- **2026-11-28: doodles and decorations (10).** `clipart/doodles.py` draws 29 chalk doodles (`dd-`, the
+  "Doodles" set and pack, CC0, not traced): flowers, bee, hearts, stars, sparkles, sun, cloud, swirl, leaves, a
+  vine; circle, squiggle, underline, arrow (the small touches); two frames, three ribbon banners and five corners
+  (curl, spring, fall, winter, Valentine's). The month's name can have a ribbon banner behind it (`b`, CSS mask,
+  in the outline's color). Words can be written Neat, Loose or Very loose (`n`: each letter tipped and bobbing,
+  SVG `rotate`/`dy`). A frame round a multi-day event is a picture placed and sized by hand (not tied to the
+  event). Tested: smoke (the set), browser tests "doodles" and the title test (ribbon).
 - **Timers and loops (part of 1):** checked all 17. Each is slow or stops by itself; the one fast one (250 ms)
   runs only while a timer counts down. Nothing to fix until off hours, which needs one "asleep" switch that the
   slideshow, weather, GIFs, Split View, title photos and Notes rotation respect while the screen is black. A

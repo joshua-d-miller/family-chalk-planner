@@ -231,10 +231,10 @@ test('chalk drawings and holiday borders', async () => {
   }
   assert.deepEqual(
     styles.map(s => s.prefix),
-    ['se', 'no', 'om', 'tw', 'fx', 'eo', 'ip', 'mc', 'ic', 'oc', 'cp']
+    ['se', 'no', 'om', 'tw', 'fx', 'eo', 'ip', 'mc', 'ic', 'oc', 'cp', 'dd']
   );
   assert.ok(
-    styles.filter(s => !['cp', 'mc', 'ic'].includes(s.prefix)).every(s => s.count > 500),
+    styles.filter(s => !['cp', 'dd', 'mc', 'ic'].includes(s.prefix)).every(s => s.count > 500),
     'every style unpacked'
   );
   assert.ok(styles.find(s => s.prefix === 'mc')!.count > 400, 'weather');
@@ -248,6 +248,9 @@ test('chalk drawings and holiday borders', async () => {
   const garland = await (await api('/api/clip/cp-garland-lights.svg')).text();
   assert.match(garland, /width="256" height="\d+"/);
   assert.ok(Number(/height="(\d+)"/.exec(garland)![1]) < 100, 'long and thin');
+  // the chalk doodles
+  assert.equal(styles.find(s => s.prefix === 'dd')!.count, 29);
+  assert.equal((await api('/api/clip/dd-bee.svg')).status, 200);
   const noto = await (await api('/api/clip/list?style=no')).json();
   assert.ok(noto.includes('no-jack-o-lantern'));
   r = await api('/api/clip/no-jack-o-lantern.svg');

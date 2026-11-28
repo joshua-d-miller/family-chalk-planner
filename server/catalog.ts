@@ -71,7 +71,7 @@ export interface Found {
 }
 
 // the order a subject's looks are offered in (the first is the one shown)
-const LOOK_ORDER = ['', 'no', 'tw', 'se', 'eo', 'fx', 'om', 'oc', 'gi', 'cp', 'mc', 'ic', 'ip'];
+const LOOK_ORDER = ['', 'no', 'tw', 'se', 'eo', 'fx', 'om', 'oc', 'gi', 'cp', 'dd', 'mc', 'ic', 'ip'];
 const SKIN = /-(light|medium-light|medium|medium-dark|dark)$/;
 // emoji groups that are flags, symbols, letters (Emojibase: 8 symbols, 9 flags)
 const LOW_GROUPS = new Set([8, 9]);
