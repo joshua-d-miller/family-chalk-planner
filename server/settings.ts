@@ -195,6 +195,7 @@ export const FIELDS: Record<string, Field> = {
   IMMICH_URL: { type: 'url' },
   IMMICH_API_KEY: { type: 'secret' },
   IMMICH_ALBUM: { type: 'text', max: 200 },
+  IMMICH_VIDEOS: { type: 'enum', values: ['off', 'on'] }, // Immich's videos too, up to 2 minutes each
   // which of the album's photos: all of them, the ones picked in the console, or a few at random each day
   PHOTO_PICK: { type: 'enum', values: ['all', 'picked', 'random'] },
   PHOTO_RANDOM_COUNT: { type: 'num', min: 5, max: 1000 },

@@ -77,6 +77,8 @@
 
  1.3.0    2026-11-28   joshua    More albums (MORE_ALBUMS), each kept fresh
                         claude    on its own (makeSource); ?album= picks one.
+                                  Videos (Immich, videos on): a checked MP4
+                                  copy each, /api/photos/video/:id.
 ===============================================================================
 */
 
@@ -108,7 +110,10 @@ interface Photo {
   h: number;
   date: number;
   faces?: Face[];
+  video?: true; // a video (Immich, with videos on): its copy is <id>.mp4, its still picture <id>.jpg
+  secs?: number;
 }
+const VIDEO_BYTES = 150 * 1024 * 1024; // a bigger video is left out
 type AlbumPhotoLike = { id: string; url: string; w: number; h: number; date: number };
 type Source = AlbumPhotoLike & Partial<ImmichPhoto>; // a photo in the album, and where to get it
 // which photos, and how many copies are kept (admin console → ⚙️ Board → Photos)
@@ -168,6 +173,9 @@ type PhotoCfg = typeof CFG_DEFAULT & {
   months?: Record<string, string>;
 };
 
+// an Immich share link's source, with videos on or off
+const withVideos = (s: ImmichSource | null, videos?: boolean) => (s ? { ...s, videos: !!videos } : null);
+
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------- //
 // | Picture types | //
@@ -199,7 +207,7 @@ export function setup({
   broadcast: (event: string, data: unknown) => void;
   today: () => string;
   album: AlbumConfig; // url '' = no album
-  immich: { url: string; key: string; album: string }; // url and key set = Immich instead of the album link
+  immich: { url: string; key: string; album: string; videos?: boolean }; // url and key set = Immich instead of the album link
   cacheDir: string;
   faceDir: string;
   facePython: string;
@@ -217,7 +225,7 @@ export function setup({
   // (MORE_ALBUMS: 'photos:<id>', photo-albums/<id>/) work the same way.     //
   function makeSource(
     album: AlbumConfig,
-    immich: { url: string; key: string; album: string },
+    immich: { url: string; key: string; album: string; videos?: boolean },
     cacheDir: string,
     listKey: string,
     first: boolean // the board's own album: the console's picked photos are its
@@ -234,7 +242,9 @@ export function setup({
     // Where the photos come from: Immich (with a key), an Immich share link, Google Photos or iCloud
     const immichUrl = normalizeImmichUrl(immich.url);
     const immichSrc: ImmichSource | null =
-      immichUrl && immich.key ? { url: immichUrl, key: immich.key, album: immich.album } : immichShare(album.url);
+      immichUrl && immich.key
+        ? { url: immichUrl, key: immich.key, album: immich.album, videos: immich.videos }
+        : withVideos(immichShare(album.url), immich.videos);
     const kind = immichSrc ? (immichSrc.shareKey ? 'immich-share' : 'immich') : album.url ? albumKind(album) : 'none';
     const enabled = kind !== 'none';
     const google = kind === 'google';
@@ -357,6 +367,7 @@ export function setup({
       for (const { f } of copies.slice(choose.keepCount)) {
         fs.rmSync(path.join(cacheDir, f), { force: true });
         fs.rmSync(path.join(cacheDir, f.replace(/\.jpg$/, '.json')), { force: true });
+        fs.rmSync(path.join(cacheDir, f.replace(/\.jpg$/, '.mp4')), { force: true });
       }
     }
     // the album can't be reached (or can again): the screens show a small note
@@ -396,12 +407,52 @@ export function setup({
       }
       return p;
     }
+    // ------------------ //
+    // | A video's copy | //
+    // ------------------ //
+    // Streamed to a file (never all in memory: a Pi has little), from the   //
+    // Immich server only, at most VIDEO_BYTES, and only if it's an MP4.     //
+    async function keepVideo(a: Source): Promise<boolean> {
+      if (!a.video || !hostOk(a.video)) return false;
+      const file = fileOf(a.id, 'mp4');
+      if (fs.existsSync(file)) return true;
+      const part = file + '.part';
+      let out: fs.WriteStream | null = null;
+      try {
+        const r = await safeFetch(a.video, { headers: a.headers || {}, signal: AbortSignal.timeout(10 * 60e3) });
+        if (!r.ok || !r.body || +(r.headers.get('content-length') || 0) > VIDEO_BYTES) return false;
+        out = fs.createWriteStream(part);
+        const w = out;
+        let n = 0;
+        let head = Buffer.alloc(0);
+        for await (const chunk of r.body as unknown as AsyncIterable<Uint8Array>) {
+          n += chunk.length;
+          if (n > VIDEO_BYTES) throw new Error('too big');
+          if (head.length < 12) head = Buffer.concat([head, Buffer.from(chunk)]).subarray(0, 12);
+          if (!w.write(chunk)) await new Promise<void>(ok => w.once('drain', () => ok()));
+        }
+        await new Promise<void>((ok, bad) => w.end((e?: Error | null) => (e ? bad(e) : ok())));
+        if (head.subarray(4, 8).toString('latin1') !== 'ftyp') throw new Error('not an MP4');
+        fs.renameSync(part, file);
+        return true;
+      } catch {
+        out?.destroy();
+        fs.rmSync(part, { force: true });
+        return false;
+      }
+    }
+    const listed = ({ id, w, h, date, faces, video, secs }: Source): Photo => ({
+      id,
+      w,
+      h,
+      date,
+      ...(faces?.length ? { faces: faces as unknown as Face[] } : {}),
+      ...(video ? { video: true as const, ...(secs ? { secs } : {}) } : {})
+    });
     function keepFew(assets: Source[]) {
-      const list: Photo[] = assets.map(({ id, w, h, date, faces }) =>
-        faces?.length ? { id, w, h, date, faces: faces as unknown as Face[] } : { id, w, h, date }
-      );
+      const list: Photo[] = assets.map(listed);
       // copies of photos no longer chosen go; then only the newest few stay
-      const keep = new Set(list.map(p => `${p.id}.jpg`));
+      const keep = new Set(list.flatMap(p => [`${p.id}.jpg`, `${p.id}.mp4`]));
       for (const f of fs.readdirSync(cacheDir)) if (!keep.has(f)) fs.rmSync(path.join(cacheDir, f), { force: true });
       trimCopies();
       done(list);
@@ -442,7 +493,11 @@ export function setup({
           if (a.faces?.length && a.w && a.h)
             writeIfNew(fileOf(a.id, 'json'), JSON.stringify({ w: a.w, h: a.h, faces: a.faces }));
         }
-        const have = assets.filter(a => fs.existsSync(fileOf(a.id, 'jpg')));
+        for (const a of assets) if (a.video && fs.existsSync(fileOf(a.id, 'jpg'))) await keepVideo(a);
+        // (a video only once its copy is here too)
+        const have = assets.filter(
+          a => fs.existsSync(fileOf(a.id, 'jpg')) && (!a.video || fs.existsSync(fileOf(a.id, 'mp4')))
+        );
         const todo = have.filter(a => !fs.existsSync(fileOf(a.id, 'json'))).map(a => fileOf(a.id, 'jpg'));
         for (const r of await findFaces(todo)) {
           if (r.error || !r.w) continue;
@@ -451,16 +506,17 @@ export function setup({
             JSON.stringify({ w: r.w, h: r.h, faces: r.faces })
           );
         }
-        const list: Photo[] = have.map(({ id, w, h, date }) => {
+        const list: Photo[] = have.map(a => {
           let f: { w: number; h: number; faces: Face[] } | null = null;
           try {
-            f = JSON.parse(fs.readFileSync(fileOf(id, 'json'), 'utf8'));
+            f = JSON.parse(fs.readFileSync(fileOf(a.id, 'json'), 'utf8'));
           } catch {
             /* not checked for faces */
           }
-          return f ? { id, w: f.w, h: f.h, date, faces: f.faces } : { id, w, h, date };
+          const p = listed({ ...a, faces: undefined });
+          return f ? { ...p, w: f.w, h: f.h, faces: f.faces } : p;
         });
-        const keep = new Set(list.flatMap(p => [`${p.id}.jpg`, `${p.id}.json`]));
+        const keep = new Set(list.flatMap(p => [`${p.id}.jpg`, `${p.id}.json`, `${p.id}.mp4`]));
         for (const f of fs.readdirSync(cacheDir)) if (!keep.has(f)) fs.rmSync(path.join(cacheDir, f), { force: true }); // removed from the album
         done(list);
       } catch (e) {
@@ -474,7 +530,7 @@ export function setup({
       setTimeout(sync, 5000);
       setInterval(sync, 15 * 60 * 1000);
     }
-    return { state, sync, fetchOne, fileOf, lastCopy, setOffline, getImage, enabled, kind, few };
+    return { state, sync, fetchOne, fileOf, lastCopy, setOffline, getImage, keepVideo, enabled, kind, few };
   }
   const board = makeSource(album, immich, cacheDir, 'photos', true);
   // the admin's more albums: a shared album's link, or an album (or Favorites, or "on this day") on the Immich
@@ -486,7 +542,9 @@ export function setup({
         name: m.name,
         src: makeSource(
           m.url ? { ...album, url: m.url } : { url: '' },
-          m.immich !== undefined ? { ...immich, album: m.immich } : { url: '', key: '', album: '' },
+          m.immich !== undefined
+            ? { ...immich, album: m.immich }
+            : { url: '', key: '', album: '', videos: immich.videos },
           path.join(albumsDir, m.id),
           'photos:' + m.id,
           false
@@ -540,6 +598,24 @@ export function setup({
   // just the albums (the ☰ menu: whether there's a 📷 Albums page; the page's covers)
   app.get('/api/photos/albums', (_req, res) => {
     res.json({ albums: albumList() });
+  });
+
+  // a video's copy (a big album: fetched now if it isn't here); Range requests work, so it can be played
+  app.get('/api/photos/video/:id', async (req, res) => {
+    if (!/^[A-Za-z0-9_-]{1,80}$/.test(req.params.id)) return res.sendStatus(404);
+    const src = srcOf(req.query.album);
+    if (!src) return res.sendStatus(404);
+    const file = src.fileOf(req.params.id, 'mp4');
+    if (!fs.existsSync(file)) {
+      const a = src.few && src.state.all.find(x => x.id === req.params.id && x.video);
+      if (!a || !(await src.keepVideo(a))) return res.sendStatus(404);
+    }
+    res
+      .set('Cache-Control', src.few ? 'public, max-age=86400' : 'public, max-age=31536000, immutable')
+      .type('video/mp4');
+    res.sendFile(file, err => {
+      if (err && !res.headersSent) res.sendStatus(404);
+    });
   });
 
   app.get('/api/photos/img/:id', async (req, res) => {

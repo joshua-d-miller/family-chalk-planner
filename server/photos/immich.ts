@@ -38,7 +38,8 @@
                                   name and every redirect checked).
 
  1.3.0    2026-11-28   joshua    person:<name or id>: every photo of someone
-                        claude    Immich knows.
+                        claude    Immich knows. memories: today's. Videos
+                                  too (videos on), up to VIDEO_MAX seconds.
 ===============================================================================
 */
 
@@ -53,14 +54,23 @@ import { checkedAddress, safeFetch } from '../address.ts';
 export interface ImmichSource {
   url: string; // the server, as you open Immich (http://192.168.1.50:2283)
   key?: string; // an API key (Account Settings → API Keys): album.read, asset.read, asset.view, person.read
-  album?: string; // an album's name or id, 'favorites', 'all', 'thisday' or 'person:<name or id>'; empty = Favorites, else recent
+  album?: string; // an album's name or id, 'favorites', 'all', 'thisday', 'memories' or 'person:<name or id>'; empty = Favorites, else recent
   shareKey?: string; // or a share link's key, with no API key
+  videos?: boolean; // videos too (⚙️ Board → Photos → Videos), up to VIDEO_MAX seconds each
 }
 export interface ImmichPhoto extends AlbumPhoto {
   fallbackUrl: string; // the smaller copy, if the preview won't come
   headers: Record<string, string>;
   faces?: number[][]; // [x, y, w, h], 0-1
+  video?: string; // a video: where to get it (an MP4 Immich makes for playing); url is its still picture
+  secs?: number; // how long it is
 }
+export const VIDEO_MAX = 120; // seconds: a longer video is left out (the slideshow isn't a film)
+// "0:00:12.345678" (Immich's duration) -> seconds
+const secsOf = (d: unknown) => {
+  const m = /^(\d+):(\d\d):(\d\d(?:\.\d+)?)$/.exec(String(d || ''));
+  return m ? +m[1] * 3600 + +m[2] * 60 + +m[3] : 0;
+};
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ---------------------- //
@@ -158,14 +168,16 @@ export async function immichAlbums(base: string, key: string) {
 // | Immich photos -> board photos | //
 // --------------------------------- //
 // With the faces Immich found, for framing.                                 //
-export function toPhotos(assets: any[], base: string, key?: string, shareKey?: string): ImmichPhoto[] {
+export function toPhotos(assets: any[], base: string, key?: string, shareKey?: string, videos = false): ImmichPhoto[] {
   const out: ImmichPhoto[] = [];
   const seen = new Set<string>();
   for (const a of assets || []) {
     if (!a?.id || a.isTrashed || a.isArchived || seen.has(a.id)) continue;
     if (['archive', 'hidden', 'locked'].includes(String(a.visibility || '').toLowerCase())) continue; // (newer Immich)
-    if (String(a.type || '').toUpperCase() === 'VIDEO' || /video|mp4|quicktime/i.test(String(a.originalMimeType || '')))
-      continue;
+    const isVideo =
+      String(a.type || '').toUpperCase() === 'VIDEO' || /video|mp4|quicktime/i.test(String(a.originalMimeType || ''));
+    const secs = isVideo ? secsOf(a.duration) : 0;
+    if (isVideo && (!videos || secs > VIDEO_MAX)) continue;
     seen.add(a.id);
     const ex = a.exifInfo || {};
     let w = +ex.exifImageWidth || +a.width || 0;
@@ -202,7 +214,13 @@ export function toPhotos(assets: any[], base: string, key?: string, shareKey?: s
       w,
       h,
       date: Date.parse(a.localDateTime || a.fileCreatedAt || ex.dateTimeOriginal || a.createdAt || '') || 0,
-      ...(faces.length ? { faces } : {})
+      ...(faces.length ? { faces } : {}),
+      ...(isVideo
+        ? {
+            video: `${base}/api/assets/${encodeURIComponent(a.id)}/video/playback${shareKey ? '?' + new URLSearchParams({ key: shareKey }) : ''}`,
+            ...(secs ? { secs } : {})
+          }
+        : {})
     });
   }
   return out.sort((a, b) => b.date - a.date);
@@ -249,6 +267,7 @@ async function albumAssets(base: string, key: string | undefined, id: string, sh
       out.push({
         id: aid,
         type: c.isImage?.[i] === false ? 'VIDEO' : 'IMAGE',
+        duration: c.duration?.[i],
         fileCreatedAt: c.fileCreatedAt?.[i],
         width: Math.round(1000 * ratio),
         height: 1000,
@@ -272,7 +291,7 @@ export async function readImmich(src: ImmichSource, today: string): Promise<Immi
     const info = await request(src.url, undefined, `/api/shared-links/me?key=${k}`);
     let assets = info?.assets?.length ? info.assets : info?.album?.assets || [];
     if (!assets.length && info?.album?.id) assets = await albumAssets(src.url, undefined, info.album.id, src.shareKey);
-    return toPhotos(assets, src.url, undefined, src.shareKey);
+    return toPhotos(assets, src.url, undefined, src.shareKey, src.videos);
   }
   // a search, page after page (Immich 3.2+ hands back a cursor, older ones a page number)
   const search = async (extra: Record<string, unknown>) => {
@@ -282,7 +301,14 @@ export async function readImmich(src: ImmichSource, today: string): Promise<Immi
       const r = await request(src.url, src.key, '/api/search/metadata', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'IMAGE', size: 1000, withExif: true, withPeople: true, ...extra, ...more })
+        body: JSON.stringify({
+          ...(src.videos ? {} : { type: 'IMAGE' }),
+          size: 1000,
+          withExif: true,
+          withPeople: true,
+          ...extra,
+          ...more
+        })
       });
       const items = Array.isArray(r?.assets?.items) ? r.assets.items : Array.isArray(r) ? r : [];
       all.push(...items);
@@ -295,13 +321,31 @@ export async function readImmich(src: ImmichSource, today: string): Promise<Immi
     }
     return all;
   };
-  const photos = (assets: any[]) => toPhotos(assets, src.url, src.key);
+  const photos = (assets: any[]) => toPhotos(assets, src.url, src.key, undefined, src.videos);
   const want = (src.album || '').trim();
   const kind = want.toLowerCase();
   if (['__thisday__', 'thisday', 'on this day'].includes(kind)) {
     const all = photos(await search({}));
     const hits = onThisDay(all, today);
     return hits.length ? hits : all; // nothing from this day: recent photos, so the slideshow isn't empty
+  }
+  // Immich's memories for today ("on this day" years ago, and the like); none today: this day in other years
+  if (kind === 'memories') {
+    const now = Date.now();
+    const r = await request(
+      src.url,
+      src.key,
+      `/api/memories?for=${encodeURIComponent(new Date(today + 'T12:00:00').toISOString())}`
+    );
+    const list: any[] = Array.isArray(r) ? r : [];
+    const showing = list.filter(
+      m => !m?.isTrashed && (!m?.showAt || Date.parse(m.showAt) <= now) && (!m?.hideAt || Date.parse(m.hideAt) > now)
+    );
+    const hits = photos(showing.flatMap(m => (Array.isArray(m?.assets) ? m.assets : [])));
+    if (hits.length) return hits;
+    const all = photos(await search({}));
+    const day = onThisDay(all, today);
+    return day.length ? day : all;
   }
   // a person Immich knows ("person:Nora", or their id): every photo they're in
   const person = /^person:\s*(.+)$/i.exec(want);

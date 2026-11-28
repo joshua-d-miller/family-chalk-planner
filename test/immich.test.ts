@@ -184,6 +184,41 @@ test('more albums: each kept on its own, shown by ?album=, only the ones the adm
   board = await startServer(PORT, {}, board.data);
 });
 
+test('videos too (up to 2 minutes each), and Immich’s memories for today', async () => {
+  const s = await ed.post('/api/board-settings', {
+    values: {
+      IMMICH_ALBUM: 'kids',
+      IMMICH_VIDEOS: 'on',
+      MORE_ALBUMS: JSON.stringify([{ id: 'memories', name: 'Memories', immich: 'memories' }])
+    }
+  });
+  assert.equal(s.status, 200);
+  await board.exited;
+  board = await startServer(PORT, {}, board.data);
+  assert.ok(board.up, board.output());
+  const p = await synced();
+  const videos = p.photos.filter(x => x.video);
+  assert.equal(videos.length, 1, 'the 8-second one; the 5-minute one is left out');
+  assert.equal(videos[0].secs, 8.5);
+  const v = await ed.api('/api/photos/video/' + videos[0].id);
+  assert.equal(v.status, 200);
+  assert.equal(v.headers.get('content-type'), 'video/mp4');
+  const range = await ed.api(`/api/photos/video/${videos[0].id}`, { headers: { Range: 'bytes=0-3' } });
+  assert.equal(range.status, 206, 'a part of it, so it can be played');
+  assert.equal(
+    (await ed.api('/api/photos/video/' + p.photos.find(x => !x.video).id)).status,
+    404,
+    'a photo has no video'
+  );
+  assert.ok(im.calls.some(c => /\/video\/playback/.test(c)));
+  const mem = await (await ed.api('/api/photos?album=memories')).json();
+  assert.equal(mem.photos.length, 1, "today's memory: the trip photo");
+  // (photos only again, for the tests after)
+  await ed.post('/api/board-settings', { values: { IMMICH_VIDEOS: '', MORE_ALBUMS: '' } });
+  await board.exited;
+  board = await startServer(PORT, {}, board.data);
+});
+
 test('Favorites by default; an Immich share link needs no key', async () => {
   await ed.post('/api/board-settings', { values: { IMMICH_ALBUM: '' } });
   await board.exited;

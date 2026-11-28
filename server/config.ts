@@ -127,7 +127,12 @@ export function readConfig(env: NodeJS.ProcessEnv, appDir: string, dataDir: stri
     weatherUrl: env.WEATHER_URL || 'https://api.open-meteo.com',
     photos: {
       album: { url: (env.PHOTO_ALBUM_URL || '').trim(), googleHost: env.PHOTO_GOOGLE_HOST, ckHost: env.PHOTO_CK_HOST },
-      immich: { url: env.IMMICH_URL || '', key: env.IMMICH_API_KEY || '', album: env.IMMICH_ALBUM || '' },
+      immich: {
+        url: env.IMMICH_URL || '',
+        key: env.IMMICH_API_KEY || '',
+        album: env.IMMICH_ALBUM || '',
+        videos: env.IMMICH_VIDEOS === 'on' // videos too, up to 2 minutes each
+      },
       // more albums (⚙️ Board → Photos → More albums): [{ id, name, url } | { id, name, immich }]
       moreAlbums: jsonList<MoreAlbum>(env.MORE_ALBUMS),
       // which photos, and how many copies the board keeps (server/photos/photos.ts)

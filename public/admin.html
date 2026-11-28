@@ -359,8 +359,10 @@ button:disabled{opacity:.5;cursor:default}
         <label for="bfImAlbum">Which photos</label>
         <div class="row"><div><select id="bfImAlbum" data-k="IMMICH_ALBUM"><option value="">Favorites (else recent photos)</option><option value="favorites">Favorites</option><option value="all">Everything (most recent)</option><option value="thisday">On this day, other years</option></select></div><div style="flex:0 1 auto"><button id="bfImList">List my albums</button></div></div>
         <div class="err" id="bfImErr"></div>
+        <label for="bfImVideos">Videos</label>
+        <select id="bfImVideos" data-k="IMMICH_VIDEOS"><option value="">Photos only</option><option value="on">Videos too (up to 2 minutes each, in the slideshow)</option></select>
         <h3 style="margin:16px 0 0;font-size:17px">More albums</h3>
-        <p class="dim" style="margin:2px 0 0;font-size:14px">Up to 8 more, each with a name: they show on the board's 📷 Albums page, and ⚙️ Settings on the board can pick one for the photos by the month's name, the slideshow, a time overnight or a month. Paste an album's share link, or type the name of an album on the Immich server above (or favorites, all, thisday, or person: and a name from Immich's People, like person:Nora). Only these albums can ever be shown.</p>
+        <p class="dim" style="margin:2px 0 0;font-size:14px">Up to 8 more, each with a name: they show on the board's 📷 Albums page, and ⚙️ Settings on the board can pick one for the photos by the month's name, the slideshow, a time overnight or a month. Paste an album's share link, or type the name of an album on the Immich server above (or favorites, all, thisday, memories, or person: and a name from Immich's People, like person:Nora). Only these albums can ever be shown.</p>
         <div class="list" id="bfAlbums"></div>
         <div class="row">
           <div><label for="bfAlbName">Name</label><input id="bfAlbName" maxlength="40" placeholder="Summer 2025"></div>
