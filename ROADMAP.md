@@ -4,7 +4,8 @@ Plans for the next releases. Nothing here is built yet. The working plan for 1.3
 
 ## Where things went
 - **1.3.0: the screens, the photos and the chalk look**, as first planned. The screens work and the photos
-  (more albums, which album shows where, 📷 Albums) are built; the chalk look is next, then the release. Details:
+  (more albums, which album shows where, 📷 Albums) and the chalk look (board styles, picture looks, lettering,
+  flight paths, doodles) are built; the release is next. Details:
   [PLAN-1.3.0.md](PLAN-1.3.0.md).
 - **After 1.3.0:** the demo on the site, then kids & family.
 

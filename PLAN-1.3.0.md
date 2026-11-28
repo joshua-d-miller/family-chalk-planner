@@ -30,13 +30,13 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
 ## Saturday: start here (before the release)
 - **Betas 1 and 2 are combined** (decided 2026-11-26): one beta with the screens work and the chalk look.
   Kids and family stay a later beta (or 1.3.1).
-- **Next, in order:** the board styles and the grain (6 below), then picture looks (7), lettering (8), flight
-  paths (9), doodles (10). The mockups are linked at the top.
+- **Built (2026-11-28):** the board styles and the grain (6 below), picture looks (7), lettering (8), flight
+  paths (9), doodles (10). Next: the pull request to `main`; merging it (version 1.3.0) publishes the release.
 - **Left over from the screens work:** Home Assistant / FreeKiosk turning the screen off; a page list for walls
   in the console; the 2 quiet minutes set for each screen; Firefox + Safari tests and a speed budget in CI;
   `?perf`; the design checks (5).
 - **Everything so far is on `claude/funny-hamilton-ajxqcw`**, each step tested (code checks, server tests, all
-  browser tests). No pull request yet.
+  browser tests). The left-over items above move to 1.3.1 unless they're done before the merge.
 
 ## Progress
 - **2026-11-26: walls download less** (part of 1). The Spanish dictionary loads only on Spanish screens, and
@@ -147,6 +147,10 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
 - **A real Immich (Colby's):** more albums, `person:` and `memories` albums, and videos (Videos too): that they
   copy, play in the slideshow on the wall (H.264 MP4s play in Chrome, Fully Kiosk and Safari), and move on when
   they end. The tests used a stand-in Immich and a WebM clip.
+- **The chalk look on the Apolosign:** board styles (Stick chalk's grain and wear), picture looks (Stick chalk is
+  still a little blotchy: tune `STICK` in `web/src/lib/pictureLook.ts`), lettering and the ribbon, flight paths
+  drawn with a finger and a Pencil (dots on the thickest size may sit close), doodles at full size, and loose
+  writing in a script font. A wall with 30 pictures in looks shows no slowdown (`?perf`).
 
 ---
 
