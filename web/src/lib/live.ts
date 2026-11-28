@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | live.ts
 ===============================================================================
- Version:   1.1.1
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-18
+ Updated:   2026-11-28
 
  Purpose:
      Live updates: one connection to the board (/api/stream) for the whole
@@ -44,6 +44,9 @@
  1.1.1    2026-11-18   joshua    A screen that wakes up reads everything
                         claude    again (it may have missed a new day while
                                   asleep).
+
+ 1.3.0    2026-11-28   joshua    useLive('') fetches nothing.
+                        claude
 ===============================================================================
 */
 
@@ -141,6 +144,7 @@ export function useLive<T>(path: string, events: string[]) {
   const seq = useRef(0);
   const load = useCallback(() => {
     const n = ++seq.current;
+    if (!path) return void setData(null); // (no address: nothing to fetch, as for an album not needed now)
     get<T>(path).then(
       d => n === seq.current && (setData(d), setError(null)),
       e => n === seq.current && setError(e as ApiError)

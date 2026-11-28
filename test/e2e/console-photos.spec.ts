@@ -79,17 +79,18 @@ test('the console adds more albums: a share link or an Immich album, each with i
     await page.locator('#bfAlbWhat').fill(what);
     await page.locator('#bfAlbAdd').click();
   };
+  await expect(page.locator('#bfAlbums .item')).toHaveCount(1); // the test board's second album, Our trip
   await page.locator('#bfAlbAdd').click();
   await expect(page.locator('#bfAlbErr')).toContainText('Give it a name');
   await add('Summer trip', 'https://www.icloud.com/sharedalbum/#B0abc');
   await add('Summer trip', 'Grandkids');
-  await expect(page.locator('#bfAlbums .item')).toHaveCount(2);
+  await expect(page.locator('#bfAlbums .item')).toHaveCount(3);
   await expect(page.locator('#bfAlbums')).toContainText('Immich: Grandkids');
-  expect(JSON.parse(await page.locator('#bfAlbumsVal').inputValue())).toEqual([
+  expect(JSON.parse(await page.locator('#bfAlbumsVal').inputValue()).slice(1)).toEqual([
     { id: 'summer-trip', name: 'Summer trip', url: 'https://www.icloud.com/sharedalbum/#B0abc' },
     { id: 'summer-trip-2', name: 'Summer trip', immich: 'Grandkids' }
   ]);
-  await page.locator('#bfAlbums .item').first().getByRole('button', { name: 'Remove' }).click();
-  await expect(page.locator('#bfAlbums .item')).toHaveCount(1);
+  await page.locator('#bfAlbums .item').nth(1).getByRole('button', { name: 'Remove' }).click();
+  await expect(page.locator('#bfAlbums .item')).toHaveCount(2);
   expect(page.errors).toEqual([]);
 });

@@ -5,7 +5,7 @@
  Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-26
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      Whether it's the board's overnight hours now (⚙️ Settings → 🌙
@@ -24,10 +24,14 @@
  -------   ----------   -------   --------------------------------------------
  1.3.0     2026-11-26   joshua    New file (nightNow, from Slideshow.tsx),
                         claude    with days and more windows.
+
+ 1.3.0    2026-11-28   joshua    nightAlbum: the album the time showing now
+                        claude    asks for.
 ===============================================================================
 */
 
-export type NightWindow = { from: string; to: string; days?: number[] }; // days: 0 Sunday … 6 Saturday
+// days: 0 Sunday … 6 Saturday; album: the slideshow's then (a more album's id)
+export type NightWindow = { from: string; to: string; days?: number[]; album?: string };
 export type NightCfg = NightWindow & { night: boolean; more?: NightWindow[] };
 
 const hm = (s: string) => {
@@ -46,4 +50,11 @@ function inWindow(w: NightWindow, d: Date) {
 export function nightNow(cfg: NightCfg | undefined, d = new Date()) {
   if (!cfg?.night) return false;
   return inWindow(cfg, d) || (cfg.more || []).some(w => inWindow(w, d));
+}
+
+// the album the overnight time showing now asks for (none: the slideshow's usual)
+export function nightAlbum(cfg: NightCfg | undefined, d = new Date()) {
+  if (!cfg?.night) return undefined;
+  if (inWindow(cfg, d)) return cfg.album;
+  return (cfg.more || []).find(w => inWindow(w, d))?.album;
 }

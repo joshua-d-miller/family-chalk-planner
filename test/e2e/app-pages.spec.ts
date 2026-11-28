@@ -274,8 +274,17 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
   await page.getByLabel('Overnight hours on the wall and family screens').check();
   await page.getByLabel('With the temperature').check();
   await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.showTemp).toBe(true);
-  // the overnight hours: on chosen days, and another time (weekdays while everyone's out)
   const cfgNow = async () => (await (await board.admin.api('/api/photos')).json()).cfg;
+  // which album shows where: the slideshow from the second album, and December's of its own
+  await page.getByLabel('In the slideshow').selectOption('trip');
+  await expect.poll(async () => (await cfgNow()).slides).toBe('trip');
+  await page.locator('#addMonthAlbum').click();
+  await expect.poll(async () => (await cfgNow()).months).toEqual({ 12: 'trip' });
+  await page.getByRole('button', { name: 'No album of its own for December' }).click();
+  await expect.poll(async () => (await cfgNow()).months).toEqual({});
+  await page.getByLabel('In the slideshow').selectOption('');
+  await expect.poll(async () => (await cfgNow()).slides ?? '').toBe('');
+  // the overnight hours: on chosen days, and another time (weekdays while everyone's out)
   const sunday = page.getByRole('group', { name: 'On' }).first().getByRole('button', { name: 'Sunday' });
   await sunday.click();
   await expect.poll(async () => (await cfgNow()).days).toEqual([1, 2, 3, 4, 5, 6]);

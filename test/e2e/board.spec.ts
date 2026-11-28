@@ -408,6 +408,40 @@ test('a screen tells the admin console what it shows now, and whether it’s kep
   await expect(admin.locator('.nbot', { hasText: '📡 Now:' }).first()).toBeVisible();
 });
 
+test('the slideshow shows the album picked for it', async ({ as }) => {
+  const fam = await as('family');
+  const call = (url: string, body: unknown) =>
+    fam.evaluate(
+      ([u, b]) =>
+        fetch(u as string, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify(b)
+        }).then(r => r.status),
+      [url, body] as const
+    );
+  const was = await fam.evaluate(() =>
+    fetch('api/photos')
+      .then(r => r.json())
+      .then(d => d.cfg)
+  );
+  const [from, to] = await fam.evaluate(() =>
+    [-1, 1].map(h => new Date(Date.now() + h * 3600e3).toTimeString().slice(0, 5))
+  );
+  try {
+    await call('api/photos/settings', { night: true, from, to, slides: 'trip' });
+    await fam.goto(new URL('edit', fam.url()).href);
+    await expect(fam.locator('#slides.on')).toBeVisible();
+    await expect(fam.locator('#slides img').first()).toHaveAttribute('src', /\?album=trip$/);
+    // back to the board's own album
+    await call('api/photos/settings', { slides: '' });
+    await fam.reload();
+    await expect(fam.locator('#slides img').first()).not.toHaveAttribute('src', /album=/);
+  } finally {
+    await call('api/photos/settings', { night: was.night, from: was.from, to: was.to, slides: '' });
+  }
+});
+
 test('a wall that’s been up all day starts again fresh once a night, while asleep', async ({ as }) => {
   const fam = await as('family');
   const call = (url: string, body: unknown) =>

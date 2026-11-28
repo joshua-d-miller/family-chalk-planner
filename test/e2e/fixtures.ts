@@ -4,7 +4,7 @@
 ===============================================================================
  Version:   1.3.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      A real board for the browser tests: the server with a fake calendar,
@@ -36,6 +36,9 @@
 
  1.3.0    2026-11-26   joshua    The family screen keeps its month arrows
                         claude    (they fade after 10 quiet seconds).
+
+ 1.3.0    2026-11-28   joshua    A second album, Our trip.
+                        claude
 ===============================================================================
 */
 
@@ -111,6 +114,10 @@ async function startBoard(workerIndex: number) {
       CALDAV_CALENDAR: 'Family',
       PHOTO_ALBUM_URL: 'https://photos.icloud.com/shared/album/0d3TESTALBUMxyz',
       PHOTO_CK_HOST: `http://127.0.0.1:${album}`,
+      // a second album (the same stand-in serves it): the 📷 Albums page and each part's album
+      MORE_ALBUMS: JSON.stringify([
+        { id: 'trip', name: 'Our trip', url: 'https://photos.icloud.com/shared/album/0d3SECONDALBUMxyz' }
+      ]),
       LATITUDE: '40.79',
       LONGITUDE: '-77.86',
       WEATHER_URL: `http://127.0.0.1:${weather}`

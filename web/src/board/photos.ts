@@ -5,7 +5,7 @@
  Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      The family's photos (the shared album or Immich): framing them on the
@@ -36,6 +36,9 @@
 
  1.3.0    2026-11-26   joshua    The overnight hours' days and more times.
                         claude
+
+ 1.3.0    2026-11-28   joshua    Each photo can say its album; the photo
+                        claude    settings say which album shows where.
 ===============================================================================
 */
 
@@ -45,14 +48,20 @@ import { url } from '../lib/api.ts';
 // ---------- //
 // | Photos | //
 // ---------- //
-export type Photo = { id: string; w: number; h: number; date: number; faces?: number[][] };
+// album: one of the more albums (none: the board's own)
+export type Photo = { id: string; w: number; h: number; date: number; faces?: number[][]; album?: string };
 export type PhotoCfg = {
   frame: boolean;
   night: boolean;
   from: string;
   to: string;
   days?: number[]; // the overnight hours' days (0 Sunday … 6 Saturday; none saved: every day)
-  more?: { from: string; to: string; days?: number[] }[]; // up to 3 more windows
+  more?: { from: string; to: string; days?: number[]; album?: string }[]; // up to 3 more windows
+  // which album shows where (a more album's id; none: the board's own)
+  album?: string; // the first overnight time's slideshow
+  polaroids?: string;
+  slides?: string;
+  months?: Record<string, string>; // '1'…'12': a month of its own
   every: number;
   dim: number;
   showEvents: boolean;
@@ -66,9 +75,12 @@ export type Photos = {
   cfg: PhotoCfg;
   offline?: boolean; // a big album that can't be reached right now
   few?: boolean; // only the last few photos are kept on the board
+  albums?: Album[]; // every album there is (the board's own first, id '')
 };
+export type Album = { id: string; name: string; count: number; cover: string | null };
 
-export const photoSrc = (p: Photo) => url('api/photos/img/' + p.id);
+export const photoSrc = (p: Photo) =>
+  url('api/photos/img/' + p.id + (p.album ? '?album=' + encodeURIComponent(p.album) : ''));
 // a small picture for picking (a big album's aren't copied onto the board for it)
 export const thumbSrc = (p: Photo) => url('api/photos/thumb/' + p.id);
 

@@ -5,7 +5,7 @@
  Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      ⚙️ Settings on the board. Admins also get the calendar (Google
@@ -72,6 +72,9 @@
                                   overnight hours on chosen days, and more
                                   than one time, in 🌙 Overnight hours of
                                   their own.
+
+ 1.3.0    2026-11-28   joshua    Which album shows beside the month's name,
+                        claude    in the slideshow, a month and a time.
 ===============================================================================
 */
 
@@ -87,6 +90,7 @@ import { DAY_NAMES } from '../lib/today.ts';
 import { RANK } from '../lib/who.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn, Field, Pick, Segs } from '../ui/bits.tsx';
+import { MONTHS } from '../board/Month.tsx';
 import { LookFields } from '../ui/LookCard.tsx';
 import { CloseX } from '../ui/Sheet.tsx';
 import { useShell } from '../ui/Shell.tsx';
@@ -560,7 +564,12 @@ interface PhotoCfg {
   from: string;
   to: string;
   days?: number[]; // the overnight hours' days (none: every day)
-  more?: { from: string; to: string; days: number[] }[]; // up to 3 more windows
+  more?: { from: string; to: string; days: number[]; album?: string }[]; // up to 3 more windows
+  // which album shows where (a more album's id; none: the board's own)
+  album?: string; // the first overnight time's slideshow
+  polaroids?: string;
+  slides?: string;
+  months?: Record<string, string>; // '1'…'12'
   every: number;
   dim: number;
   showEvents: boolean;
@@ -593,10 +602,14 @@ function DayChips({ label, days, onChange }: { label: string; days?: number[]; o
   );
 }
 function Photos({ part = 'photos' }: { part?: 'photos' | 'hours' }) {
-  const p = useLive<{ enabled: boolean; kind: string; cfg: PhotoCfg; photos: unknown[]; error: string | null }>(
-    'api/photos',
-    ['photos']
-  );
+  const p = useLive<{
+    enabled: boolean;
+    kind: string;
+    cfg: PhotoCfg;
+    photos: unknown[];
+    error: string | null;
+    albums?: { id: string; name: string }[];
+  }>('api/photos', ['photos']);
   const sv = useSaved();
   const later = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   if (!p.data) return null;
@@ -611,6 +624,20 @@ function Photos({ part = 'photos' }: { part?: 'photos' | 'hours' }) {
     clearTimeout(later.current);
     later.current = setTimeout(() => sv.run(post('api/photos/settings', patch)), 400);
   };
+  // which album: only once there's more than one (admin console → ⚙️ Board → Photos → More albums)
+  const albums = p.data.albums || [];
+  const albumPick = (label: string, value: string | undefined, onChange: (v: string) => void) =>
+    albums.length > 1 && (
+      <Pick label={label} value={value || ''} onChange={e => onChange(e.target.value)}>
+        {albums.map(a => (
+          <option key={a.id} value={a.id}>
+            {a.id ? a.name : 'Photos (the board’s album)'}
+          </option>
+        ))}
+      </Pick>
+    );
+  const months = Object.entries(c.months || {}).sort((a, b) => +a[0] - +b[0]);
+  const setMonths = (m: Record<string, string>) => set({ months: m });
   const box = (k: keyof PhotoCfg, label: string) => (
     <label className="check">
       <input
@@ -632,6 +659,7 @@ function Photos({ part = 'photos' }: { part?: 'photos' | 'hours' }) {
               <Field label="Until" type="time" value={c.to} onChange={e => set({ to: e.target.value })} />
             </div>
             <DayChips label="On" days={c.days} onChange={days => set({ days })} />
+            {albumPick('Slideshow from', c.album, v => set({ album: v }))}
             {(c.more || []).map((w, i) => {
               const change = (patch: Partial<typeof w>) =>
                 set({ more: (c.more || []).map((x, j) => (j === i ? { ...x, ...patch } : x)) });
@@ -650,6 +678,7 @@ function Photos({ part = 'photos' }: { part?: 'photos' | 'hours' }) {
                     </button>
                   </div>
                   <DayChips label="On" days={w.days} onChange={days => change({ days })} />
+                  {albumPick('Slideshow from', w.album, v => change({ album: v || undefined }))}
                 </div>
               );
             })}
@@ -681,6 +710,57 @@ function Photos({ part = 'photos' }: { part?: 'photos' | 'hours' }) {
           : 'No photo album yet: the admin console sets it up (⚙️ Board → Photos).'}
         {p.data.error && <span className="err"> {p.data.error}</span>}
       </p>
+      {albumPick('Beside the month’s name', c.polaroids, v => set({ polaroids: v }))}
+      {albumPick('In the slideshow', c.slides, v => set({ slides: v }))}
+      {albums.length > 1 && (
+        <>
+          {months.map(([m, a]) => (
+            <div className="row" key={m}>
+              <Pick
+                label="A month of its own"
+                value={m}
+                onChange={e => {
+                  const next = { ...c.months };
+                  delete next[m];
+                  setMonths({ ...next, [e.target.value]: a });
+                }}
+              >
+                {MONTHS.map((n, i) => (
+                  <option key={n} value={String(i + 1)} disabled={i + 1 !== +m && !!c.months?.[String(i + 1)]}>
+                    {n}
+                  </option>
+                ))}
+              </Pick>
+              {albumPick('Shows', a, v => setMonths({ ...c.months, [m]: v }))}
+              <button
+                type="button"
+                className="btn"
+                aria-label={`No album of its own for ${MONTHS[+m - 1]}`}
+                onClick={() => {
+                  const next = { ...c.months };
+                  delete next[m];
+                  setMonths(next);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          {months.length < 12 && (
+            <button
+              type="button"
+              className="btn"
+              id="addMonthAlbum"
+              onClick={() => {
+                const free = [12, 10, 11, 1, 2, 3, 4, 5, 6, 7, 8, 9].find(n => !c.months?.[String(n)]);
+                setMonths({ ...c.months, [String(free)]: albums[1].id });
+              }}
+            >
+              + An album for a month (Christmas in December, say)
+            </button>
+          )}
+        </>
+      )}
       {c.night && (
         <div className="slides2">
           <label className="slide">

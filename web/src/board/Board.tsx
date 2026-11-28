@@ -5,7 +5,7 @@
  Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -144,6 +144,9 @@
                                   the first tap after it says good morning;
                                   a wall starts again fresh once a night;
                                   the dots, swiped back to.
+
+ 1.3.0    2026-11-28   joshua    The polaroids and the slideshow from the
+                        claude    album picked for them.
 ===============================================================================
 */
 
@@ -174,6 +177,7 @@ import { WeatherMotion } from './Weather.tsx';
 import { Slideshow, useSlides, NightClock } from './Slideshow.tsx';
 import { later } from '../lib/later.tsx';
 import { MonthPicker } from './MonthPicker.tsx';
+import { nightAlbum } from './night.ts';
 import { ARROWS_FADE_MS, arrowsDefault, useMyArrows } from '../lib/arrows.ts';
 import { useOffHours } from '../lib/offHours.ts';
 import { awakeNow, letScreenSleep } from '../lib/wallScreen.ts';
@@ -396,7 +400,19 @@ export function Board({
   ]);
   const metaLive = useLive<MonthMeta>(shown ? `api/meta?ym=${shown}` : 'api/today', ['meta']);
   const meta = metaLive.data;
-  const photos = useLive<Photos>('api/photos', ['photos']).data;
+  const photos = useLive<Photos>('api/photos', ['photos']).data; // the board's own album, and the photo settings
+  // which album shows where (⚙️ Settings → Photos): the time overnight's, else the month's, else the usual;
+  // only an album that's still there (else the board's own). Fetched only when it isn't the board's own
+  const pc = photos?.cfg;
+  const real = (a?: string) => (a && photos?.albums?.some(x => x.id === a) ? a : '');
+  const monthOf = (ym?: string | null) => (ym ? String(Number(ym.slice(5, 7))) : '');
+  const slidesAlbum = real(nightAlbum(pc)) || real(pc?.months?.[monthOf(today?.ym)]) || real(pc?.slides);
+  const polAlbum = real(pc?.months?.[monthOf(shown)]) || real(pc?.polaroids);
+  const albumAt = (a: string) => (a ? `api/photos?album=${encodeURIComponent(a)}` : '');
+  const slidesOwn = useLive<Photos>(albumAt(slidesAlbum), ['photos']).data;
+  const polOwn = useLive<Photos>(albumAt(polAlbum), ['photos']).data;
+  const slidePhotos = slidesAlbum ? slidesOwn : photos;
+  const polPhotos = polAlbum ? polOwn : photos;
   // the wooden frame: a tablet's, unless this screen leaves it off (🎨 Board style → Style: a screen in a
   // frame of its own); and whether the board fills the screen (⚙️ Settings → This screen)
   const boardFit = useBoardFit();
@@ -612,7 +628,7 @@ export function Board({
     const seen = new Set(d.events.map(key));
     return { ...d, events: [...d.events, ...o.events.filter(e => !seen.has(key(e)))] };
   }, [month.data, other.data, otherYm]);
-  const slides = useSlides(photos, !edit || family, useOffHours());
+  const slides = useSlides(slidePhotos, !edit || family, useOffHours());
   const asleep = !!slides.cover && slides.cover !== 'dim'; // black, off or the night clock: nothing else moves
   // the first tap after the overnight hours: good morning, today's events and the weather, for 30 seconds
   // (until then a clear layer over the board takes that tap, so it doesn't also open a day or an event)
@@ -989,7 +1005,7 @@ export function Board({
   // Select: the pieces picked over events can change their mind
   const selCover = selItems.length && selItems.every(x => x.cv) ? (selItems[0].cv as 'hide' | 'under') : null;
   const photosOn = mm?.side ? mm.side.mode === 'photos' : !!photos?.cfg?.frame;
-  const pool = photos?.photos && photosOn ? titlePool(photos.photos, mm?.side) : [];
+  const pool = polPhotos?.photos && photosOn ? titlePool(polPhotos.photos, mm?.side) : [];
   const monthName = m ? MONTHS[m.grid.m - 1] : '';
   // -------------------- //
   // | The board, drawn | //
@@ -1167,7 +1183,7 @@ export function Board({
                 ? () =>
                     setEditing({ k: 'event', ev: null, date: m.ym === m.today.slice(0, 7) ? m.today : m.ym + '-01' })
                 : undefined,
-              slides: photos?.photos?.length ? slides.doubleTap : undefined,
+              slides: slidePhotos?.photos?.length ? slides.doubleTap : undefined,
               week: () => navigate(weekly ? homeHref(who) : 'week'),
               weekly
             }}
@@ -1246,7 +1262,7 @@ export function Board({
                   </span>{' '}
                   Border
                 </button>
-                {!!photos?.photos?.length && (
+                {!!polPhotos?.photos?.length && (
                   <button type="button" className="pill" id="photosBtn" onClick={() => setEditing({ k: 'photos' })}>
                     <span className="ic" aria-hidden="true">
                       📷
@@ -1280,8 +1296,8 @@ export function Board({
           </Strip>
         )}
       </div>
-      {(!edit || family || slides.on) && photos && (
-        <Slideshow photos={photos} on={slides.on} time24={!!today?.time24} onTap={slides.tapSlides} />
+      {(!edit || family || slides.on) && slidePhotos && (
+        <Slideshow photos={slidePhotos} on={slides.on} time24={!!today?.time24} onTap={slides.tapSlides} />
       )}
       {/* overnight on a screen that dims or goes black: a tap shows the calendar for 5 minutes */}
       {slides.cover && (
@@ -1430,7 +1446,7 @@ export function Board({
         />
       )}
       {editing?.k === 'photos' && shown && (
-        <PhotosEditor ym={shown} monthName={monthName} meta={mm} photos={photos} onClose={closeEditor} />
+        <PhotosEditor ym={shown} monthName={monthName} meta={mm} photos={polPhotos} onClose={closeEditor} />
       )}
       {editing?.k === 'style' && shown && (
         <StyleEditor
