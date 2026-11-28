@@ -289,6 +289,14 @@ Built the way the mockups are: made once, kept, no live effects.
 
 ## Alongside the release (not board code)
 - **The demo:** in the browser, with sample data and no server, on GitHub Pages next to the docs.
+  - **Where:** www.joshua-d-miller.com/projects/family-chalk-planner/demo/ (repo
+    `joshua-d-miller/joshua-d-miller.github.io`, Eleventy, deploys from `master`). The planner's release attaches
+    a `demo.zip`; the site's Pages workflow downloads the latest at each build. Nothing built is committed there.
+  - **The site updates itself:** since 2026-11-28 (branch `claude/chalk-planner-latest` there) the project page's
+    version comes from the latest release at build time, and the site rebuilds every night.
+  - **How it's made:** record the real board's answers (with the test suite's sample calendar and album, and a
+    made-up family) plus its fonts, icons and some clip art; a small stand-in in the browser answers from them,
+    keeping what a visitor changes in memory (events, drawing, chores, meals, jars, settings).
   - **Each visitor has their own copy, and a reload resets it.** Nothing is sent anywhere or shared, so there's
     nothing to abuse, overload or pay for.
   - Off in the demo, with a short "Works on your own board" note: GIF links, searching the web for pictures,
