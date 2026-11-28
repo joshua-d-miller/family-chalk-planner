@@ -146,6 +146,28 @@ test('more albums: each kept on its own, shown by ?album=, only the ones the adm
   assert.equal((await ed.api(`/api/photos/img/${trip.photos[0].id}`)).status, 404, 'not one of the board album’s');
   assert.equal((await ed.api('/api/photos?album=nowhere')).status, 404);
   assert.equal(own.albums.find(a => a.id === 'trip').count, trip.photos.length);
+  assert.ok(
+    trip.photos.every(p => p.album === 'trip'),
+    'each says which album it’s from'
+  );
+  // which album shows where: only albums the admin set up
+  const cfg = await (
+    await ed.post('/api/photos/settings', {
+      slides: 'trip',
+      polaroids: 'nowhere',
+      months: { 12: 'faves' },
+      more: [{ from: '09:00', to: '15:00', days: [1, 2, 3, 4, 5], album: 'trip' }]
+    })
+  ).json();
+  assert.equal(cfg.slides, 'trip');
+  assert.equal(cfg.polaroids, undefined, 'not an album: what was saved stays');
+  assert.deepEqual(cfg.months, { 12: 'faves' });
+  assert.equal(cfg.more[0].album, 'trip');
+  const kept = await (
+    await ed.post('/api/photos/settings', { more: [{ from: '09:00', to: '15:00', days: [1], album: 'x' }] })
+  ).json();
+  assert.equal(kept.more[0].days.length, 5, 'a time with an unknown album: the times as they were');
+  await ed.post('/api/photos/settings', { slides: '', months: {}, more: [] });
   // (back to just the board's own album, for the tests after)
   await ed.post('/api/board-settings', { values: { MORE_ALBUMS: '' } });
   await board.exited;

@@ -155,9 +155,18 @@ const CFG_DEFAULT = {
   sidePanel: false,
   showCountdown: true // the next countdown on the slideshow (from 30 days out)
 };
-type NightWindow = { from: string; to: string; days: number[] };
-// days: the overnight hours' weekdays (none saved: every day, as before 1.3.0); more: up to 3 more windows
-type PhotoCfg = typeof CFG_DEFAULT & { days?: number[]; more?: NightWindow[] };
+type NightWindow = { from: string; to: string; days: number[]; album?: string };
+// days: the overnight hours' weekdays (none saved: every day, as before 1.3.0); more: up to 3 more windows.
+// Which album (a more album's id; none: the board's own): beside the month's name (polaroids), in the
+// slideshow (slides), for a month of its own (months: '1'…'12'), and for a time overnight (album)
+type PhotoCfg = typeof CFG_DEFAULT & {
+  days?: number[];
+  more?: NightWindow[];
+  album?: string;
+  polaroids?: string;
+  slides?: string;
+  months?: Record<string, string>;
+};
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------------- //
@@ -503,10 +512,11 @@ export function setup({
       const hits = onThisDay(photos, today());
       if (hits.length) photos = hits;
     }
+    const album = req.query.album ? String(req.query.album) : '';
     res.json({
       enabled,
       kind,
-      photos,
+      photos: album ? photos.map(p => ({ ...p, album })) : photos,
       cfg: cfg(),
       synced: state.synced,
       error: state.error,
@@ -581,18 +591,41 @@ export function setup({
       Array.isArray(v) && v.length && v.every(n => Number.isInteger(n) && n >= 0 && n <= 6)
         ? [...new Set(v as number[])].sort()
         : null;
-    const more = (v: unknown) =>
+    // an album: one the admin set up ('' or none: the board's own); anything else keeps what was saved
+    const albumOk = (v: unknown) => v === '' || (typeof v === 'string' && more.has(v));
+    const pickAlbum = (v: unknown, was: string | undefined) =>
+      v === undefined ? was : albumOk(v) ? (v as string) || undefined : was;
+    const monthsOk = (v: unknown) =>
+      !!v &&
+      typeof v === 'object' &&
+      !Array.isArray(v) &&
+      Object.entries(v).every(([m, a]) => /^(?:[1-9]|1[0-2])$/.test(m) && typeof a === 'string' && more.has(a));
+    const windows = (v: unknown) =>
       Array.isArray(v) && v.length <= 3
-        ? v.map(w => ({ from: hm(w?.from), to: hm(w?.to), days: days(w?.days) }))
+        ? v.map(w => ({
+            from: hm(w?.from),
+            to: hm(w?.to),
+            days: days(w?.days),
+            ...(w?.album !== undefined && w.album !== '' ? { album: w.album } : {}),
+            albumOk: w?.album === undefined || albumOk(w.album)
+          }))
         : null;
-    const extra = b.more === undefined ? null : more(b.more);
+    const extra = b.more === undefined ? null : windows(b.more);
     const next: PhotoCfg = {
       frame: b.frame === undefined ? cur.frame : !!b.frame,
       night: b.night === undefined ? cur.night : !!b.night,
       from: hm(b.from) || cur.from,
       to: hm(b.to) || cur.to,
       days: (b.days === undefined ? null : days(b.days)) || cur.days,
-      more: extra && extra.every(w => w.from && w.to && w.days) ? (extra as NightWindow[]) : cur.more,
+      more:
+        extra && extra.every(w => w.from && w.to && w.days && w.albumOk)
+          ? extra.map(({ albumOk: _, ...w }) => w as NightWindow)
+          : cur.more,
+      album: pickAlbum(b.album, cur.album),
+      polaroids: pickAlbum(b.polaroids, cur.polaroids),
+      slides: pickAlbum(b.slides, cur.slides),
+      months:
+        b.months === undefined ? cur.months : monthsOk(b.months) ? (b.months as Record<string, string>) : cur.months,
       // (⚙️ Settings has sliders: 5 to 120 seconds, in 5s; 10 to 100%, in 10s)
       every: Number.isInteger(+b.every) && +b.every >= 5 && +b.every <= 120 ? +b.every : cur.every,
       dim: Number.isInteger(+b.dim) && +b.dim >= 10 && +b.dim <= 100 ? +b.dim : cur.dim, // slideshow brightness, %
