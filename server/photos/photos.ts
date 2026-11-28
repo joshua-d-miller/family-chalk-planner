@@ -235,8 +235,8 @@ export function setup({
     // ------------------- //
     // | The face finder | //
     // ------------------- //
-    // Face/facefocus.py (OpenCV YuNet), if it's installed: where the faces    //
-    // are in each photo, so frames can be filled with people.                 //
+    // Face/facefocus.py (OpenCV YuNet), if it's installed: where the faces  //
+    // are in each photo, so frames can be filled with people.               //
     const faceReady = () => [facePython, faceScript, faceModel].every(f => fs.existsSync(f));
     function findFaces(files: string[]): Promise<FaceResult[]> {
       return new Promise(resolve => {
@@ -267,8 +267,8 @@ export function setup({
     // ----------------------- //
     // | Downloading a photo | //
     // ----------------------- //
-    // Only from the album service's own image hosts (Immich: the server that  //
-    // was set up)                                                             //
+    // Only from the album service's own image hosts (Immich: the server     //
+    // that was set up)                                                      //
     const hostOk = (u: string) => (immichSrc ? u.startsWith(immichSrc.url + '/') : imageHostOk(album, u));
     // JPEG or PNG (the wall can't show HEIC); Immich's previews can also be WebP
     const imageOk = (b: Buffer) => isJpegPng(b) || (!!immichSrc && isWebp(b));
@@ -309,8 +309,8 @@ export function setup({
     // ---------------- //
     // | Which photos | //
     // ---------------- //
-    // All of them, the ones picked in the console (all of them until some     //
-    // are), or a few at random: the same few all day, new ones each day.      //
+    // All of them, the ones picked in the console (all of them until some   //
+    // are), or a few at random: the same few all day, new ones each day.    //
     function chosen(all: Source[]): Source[] {
       if (choose.pick === 'picked' && first) {
         const picked = new Set(kv.get<string[]>('photoPicked') || []);
@@ -333,11 +333,11 @@ export function setup({
     // ----------------------------- //
     // | A big album: a few copies | //
     // ----------------------------- //
-    // The board lists every chosen photo but keeps copies of only the last    //
-    // few shown (enough for the slideshow's photos side by side); the rest    //
-    // are fetched from the album when a screen asks for them. Immich's own    //
-    // faces come along in the list (the face finder needs a copy, so it       //
-    // only runs when every photo is kept).                                    //
+    // The board lists every chosen photo but keeps copies of only the last  //
+    // few shown (enough for the slideshow's photos side by side); the rest  //
+    // are fetched from the album when a screen asks for them. Immich's own  //
+    // faces come along in the list (the face finder needs a copy, so it     //
+    // only runs when every photo is kept).                                  //
     const fetching = new Map<string, Promise<boolean>>();
     function trimCopies() {
       const copies = fs
@@ -412,8 +412,8 @@ export function setup({
     // --------------------------------- //
     // | Keeping the copies up to date | //
     // --------------------------------- //
-    // Every photo is copied into photo-cache/, so the wall never waits on the //
-    // album; the album is checked again every few hours.                      //
+    // Every photo is copied into its album's folder, so the wall never      //
+    // waits on the album; the album is checked again every few hours.       //
     async function sync() {
       if (!enabled || state.running) return;
       state.running = true;
