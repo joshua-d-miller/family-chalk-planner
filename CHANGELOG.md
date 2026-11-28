@@ -27,6 +27,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   album's link or an album on your Immich server (or Favorites, "on this day", or **a person** Immich knows:
   `person:Nora`). Only albums set up there can
   ever be shown.
+- **New: Immich videos and memories.** Admin console → ⚙️ Board → Photos → **Videos: Videos too**, and videos
+  (up to 2 minutes each) play in the slideshow, a slide of their own, without sound. A more album can be
+  `memories`: Immich's memories for today.
 - **New: which album shows where.** ⚙️ Settings → Photos picks the album beside the month's name and the one in
   the slideshow; a month can have one of its own (Christmas in December), and each overnight time can pick its
   own.

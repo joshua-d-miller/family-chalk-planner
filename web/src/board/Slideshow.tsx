@@ -50,7 +50,8 @@
  1.3.0    2026-11-26   joshua    Overnight a screen can dim the calendar,
                         claude    go black or do nothing instead. nightNow
                                   is in night.ts, with days and more times;
-                                  the night clock.
+                                  the night clock. Videos: a slide of their
+                                  own, playing, the next when one ends.
 ===============================================================================
 */
 
@@ -60,7 +61,7 @@ import type { RemindersView } from '../../../shared/lists.ts';
 import { useLive } from '../lib/live.ts';
 import { fmtTime } from '../lib/today.ts';
 import { isDone } from '../pages/Reminders.tsx';
-import { frameFor, photoSrc } from './photos.ts';
+import { frameFor, photoSrc, videoSrc } from './photos.ts';
 import { CountdownCard } from './Countdown.tsx';
 import { useCountdowns, useSleeps } from '../lib/countdowns.ts';
 import { locale } from '../../../shared/i18n.ts';
@@ -354,6 +355,48 @@ export function NightClock({ time24 }: { time24: boolean }) {
 // | The slideshow | //
 // ----------------- //
 type Slide = { key: number; tiles: Tile[]; corner: string; dx: number; dy: number };
+const VIDEO_ODDS = 0.25; // with photos too: about one slide in four is a video
+const VIDEO_MAX_S = 90; // then on to the next, however long it is
+
+// A video in the slideshow: muted (screens only play silent videos by
+// themselves), playing only while its slide shows, and on to the next
+// when it ends (or can't be played here)
+function SlideVideo({ p, on, onReady, onEnd }: { p: Photo; on: boolean; onReady: () => void; onEnd: () => void }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const over = useRef(false);
+  const end = () => {
+    if (over.current) return;
+    over.current = true;
+    onEnd();
+  };
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    if (!on) return void v.pause();
+    over.current = false;
+    v.currentTime = 0;
+    void v.play().catch(end);
+  }, [on]);
+  return (
+    <video
+      ref={ref}
+      className="fg"
+      src={videoSrc(p)}
+      poster={photoSrc(p)}
+      muted
+      playsInline
+      preload="auto"
+      style={{ objectFit: 'contain' }}
+      onLoadedData={onReady}
+      onError={() => {
+        onReady();
+        if (on) end();
+      }}
+      onEnded={end}
+      onTimeUpdate={e => e.currentTarget.currentTime > VIDEO_MAX_S && end()}
+    />
+  );
+}
 const SIDE_W = 380;
 
 export function Slideshow({
@@ -408,7 +451,16 @@ export function Slideshow({
   // forward: the one after (after going back), else a new slide
   const next = useCallback(() => {
     if (pos.current < hist.current.length - 1) return show(hist.current[++pos.current]);
-    const tiles = plan.current(photos.photos, innerWidth - (side ? SIDE_W : 0), innerHeight);
+    const W = innerWidth - (side ? SIDE_W : 0);
+    const H = innerHeight;
+    // a video: now and then, a slide of its own (collages are photos only)
+    const pics = photos.photos.filter(p => !p.video);
+    const vids = photos.photos.filter(p => p.video);
+    const v =
+      vids.length && (!pics.length || Math.random() < VIDEO_ODDS)
+        ? vids[Math.floor(Math.random() * vids.length)]
+        : null;
+    const tiles = v ? [{ x: 0, y: 0, w: W, h: H, p: v, fr: frameFor(v, W, H), whole: true }] : plan.current(pics, W, H);
     if (!tiles) return;
     hist.current.push(tiles);
     if (hist.current.length > 50) hist.current.shift();
@@ -448,12 +500,19 @@ export function Slideshow({
   const loaded = (key: number) => {
     if (loading.current?.key === key && --loading.current.left <= 0) reveal(key);
   };
+  // (a video's slide waits for the video to end instead)
+  const playingVideo = !!slides[cur]?.tiles.some(t => t.p.video);
+  const started = useRef(false); // the first slide once each time it comes on (not again as the slides change)
   useEffect(() => {
-    if (!on) return;
-    if (!kick) next(); // (after a swipe: its photos stay, and the clock starts again)
+    if (!on) return void (started.current = false);
+    if (!started.current) {
+      started.current = true;
+      if (!kick) next(); // (after a swipe: its photos stay, and the clock starts again)
+    }
+    if (playingVideo) return;
     const t = setInterval(next, (cfg.every || 20) * 1000);
     return () => clearInterval(t);
-  }, [on, next, cfg.every, kick]);
+  }, [on, next, cfg.every, kick, playingVideo]);
   useEffect(() => {
     if (!on) setKick(0); // the next time it comes on, it starts with new photos
   }, [on]);
@@ -503,22 +562,26 @@ export function Slideshow({
     >
       <div className="slarea" style={side ? { left: SIDE_W } : undefined}>
         {slides.map((s, i) => (
-          <div className={'sl' + (i === cur && s ? ' on' : '')} key={s ? s.key : 'none' + i}>
+          <div className={'sl' + (i === cur && s ? ' on' : '')} key={s ? s.key : 'none' + i} data-key={s?.key}>
             {s?.tiles.map((t, k) => (
               <div className="tile" key={k} style={{ left: t.x, top: t.y, width: t.w, height: t.h }}>
                 {t.whole && <img className="bg" alt="" src={photoSrc(t.p)} />}
-                <img
-                  className="fg"
-                  alt=""
-                  src={photoSrc(t.p)}
-                  style={
-                    t.whole
-                      ? { objectFit: 'contain', transformOrigin: '50% 50%' }
-                      : { objectPosition: t.fr.pos, transformOrigin: `${t.fr.ox.toFixed(1)}% ${t.fr.oy.toFixed(1)}%` }
-                  }
-                  onLoad={() => loaded(s.key)}
-                  onError={() => loaded(s.key)}
-                />
+                {t.p.video ? (
+                  <SlideVideo p={t.p} on={on && i === cur} onReady={() => loaded(s.key)} onEnd={next} />
+                ) : (
+                  <img
+                    className="fg"
+                    alt=""
+                    src={photoSrc(t.p)}
+                    style={
+                      t.whole
+                        ? { objectFit: 'contain', transformOrigin: '50% 50%' }
+                        : { objectPosition: t.fr.pos, transformOrigin: `${t.fr.ox.toFixed(1)}% ${t.fr.oy.toFixed(1)}%` }
+                    }
+                    onLoad={() => loaded(s.key)}
+                    onError={() => loaded(s.key)}
+                  />
+                )}
               </div>
             ))}
           </div>

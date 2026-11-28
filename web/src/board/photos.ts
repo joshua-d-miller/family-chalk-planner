@@ -39,6 +39,7 @@
 
  1.3.0    2026-11-28   joshua    Each photo can say its album; the photo
                         claude    settings say which album shows where.
+                                  videoSrc: a video's copy.
 ===============================================================================
 */
 
@@ -49,7 +50,16 @@ import { url } from '../lib/api.ts';
 // | Photos | //
 // ---------- //
 // album: one of the more albums (none: the board's own)
-export type Photo = { id: string; w: number; h: number; date: number; faces?: number[][]; album?: string };
+export type Photo = {
+  id: string;
+  w: number;
+  h: number;
+  date: number;
+  faces?: number[][];
+  album?: string;
+  video?: boolean; // a video (Immich, with videos on): photoSrc is its still picture, videoSrc the video
+  secs?: number;
+};
 export type PhotoCfg = {
   frame: boolean;
   night: boolean;
@@ -81,6 +91,8 @@ export type Album = { id: string; name: string; count: number; cover: string | n
 
 export const photoSrc = (p: Photo) =>
   url('api/photos/img/' + p.id + (p.album ? '?album=' + encodeURIComponent(p.album) : ''));
+export const videoSrc = (p: Photo) =>
+  url('api/photos/video/' + p.id + (p.album ? '?album=' + encodeURIComponent(p.album) : ''));
 // a small picture for picking (a big album's aren't copied onto the board for it)
 export const thumbSrc = (p: Photo) => url('api/photos/thumb/' + p.id);
 

@@ -54,9 +54,16 @@ album's share link (iCloud, Google Photos or an Immich share link), or, with Imm
 
 - an album's name, like `Grandkids`
 - `favorites`, `all` or `thisday` (photos from this date in other years)
+- `memories`: Immich's memories for today (else photos from this date in other years)
 - `person:` and a name from Immich's **People**, like `person:Nora`: every photo they're in (name them in Immich
   first)
 
 Then ⚙️ Settings on the board picks which album shows beside the month's name, in the slideshow, for a month of
 its own and for each time overnight, and the **📷 Albums** page shows them all. Only albums set up here can ever be
 shown.
+
+## Videos (Immich)
+With Immich, ⚙️ Board → Photos → **Videos: Videos too** brings its videos in as well, up to 2 minutes and 150 MB
+each. They play in the slideshow as a slide of their own, without sound, and the next slide comes when one ends;
+everywhere else a video shows as its still picture. Each is copied onto the board like a photo, so they take room:
+a big album may want **Copies on the board: only the last few shown**.

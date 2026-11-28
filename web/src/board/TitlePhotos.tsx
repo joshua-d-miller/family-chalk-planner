@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | TitlePhotos.tsx
 ===============================================================================
- Version:   0.14.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-28
 
  Purpose:
      Polaroids in the empty space either side of the month name, changing
@@ -31,6 +31,9 @@
 
  0.14.0    2026-11-07   joshua    Copes with a month saved by an older board.
                         claude
+
+ 1.3.0    2026-11-28   joshua    Videos aren't polaroids.
+                        claude
 ===============================================================================
 */
 
@@ -48,7 +51,8 @@ export type Side = { mode: 'photos' | 'art'; pick: 'random' | 'chosen'; ids: str
 type Spot = { x: number; y: number; w: number; h: number; r: number };
 
 // the polaroids' photos: the month's chosen ones (if any are still in the album), or all of them
-export function titlePool(list: Photo[], side: Side | null | undefined) {
+export function titlePool(all: Photo[], side: Side | null | undefined) {
+  const list = all.filter(p => !p.video); // (a polaroid is a photo: videos only play in the slideshow)
   if (side?.mode === 'photos' && side.pick === 'chosen') {
     const mine = (side.ids || []).map(id => list.find(p => p.id === id)).filter((p): p is Photo => !!p);
     if (mine.length) return mine;

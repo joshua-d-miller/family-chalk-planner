@@ -59,6 +59,7 @@
 ===============================================================================
 */
 
+import { readFileSync } from 'node:fs';
 import { test, expect, thisMonth, longPress } from './fixtures.ts';
 
 test('the tablet opens on this month, with weather, countdowns and no errors', async ({ as }) => {
@@ -439,6 +440,52 @@ test('the slideshow shows the album picked for it', async ({ as }) => {
     await expect(fam.locator('#slides img').first()).not.toHaveAttribute('src', /album=/);
   } finally {
     await call('api/photos/settings', { night: was.night, from: was.from, to: was.to, slides: '' });
+  }
+});
+
+test('a video in the slideshow: a slide of its own, playing, and the next one when it ends', async ({ as }) => {
+  const fam = await as('family');
+  const call = (url: string, body: unknown) =>
+    fam.evaluate(
+      ([u, b]) =>
+        fetch(u as string, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify(b)
+        }).then(r => r.status),
+      [url, body] as const
+    );
+  const was = await fam.evaluate(() =>
+    fetch('api/photos')
+      .then(r => r.json())
+      .then(d => d.cfg)
+  );
+  const [from, to] = await fam.evaluate(() =>
+    [-1, 1].map(h => new Date(Date.now() + h * 3600e3).toTimeString().slice(0, 5))
+  );
+  // (the test album has no videos: here every photo is one, and each plays a 1-second clip)
+  await fam.route('**/api/photos', async route => {
+    try {
+      const r = await route.fetch();
+      const d = await r.json();
+      d.photos = d.photos.map((p: object) => ({ ...p, video: true, secs: 1 }));
+      await route.fulfill({ response: r, json: d });
+    } catch {
+      /* (asked for by the page being left: nobody's waiting for it) */
+    }
+  });
+  await fam.route('**/api/photos/video/**', route =>
+    route.fulfill({ contentType: 'video/webm', body: readFileSync(new URL('./clip.webm', import.meta.url)) })
+  );
+  try {
+    await call('api/photos/settings', { night: true, from, to });
+    await fam.goto(new URL('edit', fam.url()).href);
+    const shown = fam.locator('#slides .sl.on');
+    await expect(shown.locator('video')).toHaveAttribute('src', /api\/photos\/video\//);
+    const first = await shown.getAttribute('data-key');
+    await expect.poll(() => shown.getAttribute('data-key'), { timeout: 8000 }).not.toBe(first); // it ended, and the next one came on its own
+  } finally {
+    await call('api/photos/settings', { night: was.night, from: was.from, to: was.to });
   }
 });
 
