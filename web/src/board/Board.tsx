@@ -617,11 +617,14 @@ export function Board({
   // the first tap after the overnight hours: good morning, today's events and the weather, for 30 seconds
   // (until then a clear layer over the board takes that tap, so it doesn't also open a day or an event)
   const [morning, setMorning] = useState<'next' | 'open' | null>(null);
+  // (only on a screen that was asleep as the hours ended: not one someone is using)
   const wasNight = useRef(false);
+  const wasAsleep = useRef(false);
   useEffect(() => {
-    if (wasNight.current && !slides.night) setMorning('next');
+    if (wasNight.current && !slides.night && wasAsleep.current) setMorning('next');
     wasNight.current = slides.night;
-  }, [slides.night]);
+    wasAsleep.current = slides.on || !!slides.cover;
+  });
   // a wall that's been up all day starts again fresh once a night, while asleep and while the board can be
   // reached (a screen that stays up for weeks gathers whatever builds up in a browser; never into an error page)
   const online = useOnline();

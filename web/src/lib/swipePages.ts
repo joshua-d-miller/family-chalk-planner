@@ -54,7 +54,11 @@ const remember = (home: string | null) => {
 };
 
 // the pages a swipe goes through after the calendar
-export const pagesAfter = (pins: string[]) => (pins.length ? pins : ['chores']);
+// (not 🗓️ Week: that's the calendar itself, with its own swipe and drawing)
+export const pagesAfter = (pins: string[]) => {
+  const pages = pins.filter(p => p !== 'week');
+  return pages.length ? pages : ['chores'];
+};
 // across, not up and down: at least 120 px, and at most half as much up or down
 export const isSwipe = (dx: number, dy: number) => Math.abs(dx) > 120 && Math.abs(dy) < Math.abs(dx) / 2;
 
@@ -99,7 +103,11 @@ export function useSwipePages(here: string, pins: string[]) {
     const down = (e: PointerEvent) => {
       clearTimeout(idle);
       idle = setTimeout(() => backToBoard(), BACK_AFTER);
-      s = e.isPrimary ? [e.clientX, e.clientY] : null;
+      // a drag in a field, on a slider or in an open card is that, not a swipe
+      const busy = (e.target as Element).closest?.(
+        'input, textarea, select, [contenteditable], [role="slider"], [role="dialog"]'
+      );
+      s = e.isPrimary && !busy ? [e.clientX, e.clientY] : null;
       // words a mouse swipe selected: the next swipe would drag them instead (and never end); not in a field
       if (!(e.target as Element).closest?.('input, textarea, [contenteditable]')) getSelection()?.removeAllRanges();
     };

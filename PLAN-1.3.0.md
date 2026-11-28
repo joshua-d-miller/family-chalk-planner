@@ -89,6 +89,11 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
     and FreeKiosk turning the screen off, pausing the slideshow's own timers and photo checks, and
     moving the overnight times out of the photo settings into an Off hours section (with the old ones moved
     over).
+- **2026-11-28: audit before the pull request.** Fixed: a pinned 🗓️ Week was in the swipe order, so its own
+  swipe and drawing clashed with the page swipe (Week is the calendar: it's left out now); a drag in a field,
+  on a slider or in an open card counted as a swipe (now ignored); Good morning armed on a screen someone was
+  using as the hours ended (now only on one that was asleep). Noted, not changed: the console's status list
+  keeps unpaired screens until the server restarts (only paired ones are shown).
 - **Timers and loops (part of 1):** checked all 17. Each is slow or stops by itself; the one fast one (250 ms)
   runs only while a timer counts down. Nothing to fix until off hours, which needs one "asleep" switch that the
   slideshow, weather, GIFs, Split View, title photos and Notes rotation respect while the screen is black. A

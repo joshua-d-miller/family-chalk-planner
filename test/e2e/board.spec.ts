@@ -339,7 +339,10 @@ test('overnight a screen can show the slideshow, dim the calendar, go black, or 
     await expect(cover).toHaveClass(/black/);
     await cover.click(); // a tap: the calendar for 5 minutes
     await expect(cover).toHaveCount(0);
-    // the overnight hours end: the first tap says good morning, with today's events (and nothing else opens)
+    // the overnight hours end on a screen that's asleep: the first tap says good morning, with today's events
+    // (and nothing else opens). (Someone using it then, as just above, isn't stopped by it.)
+    await fam.reload();
+    await expect(cover).toHaveClass(/black/);
     await call('api/photos/settings', { night: false });
     await expect(cover).toHaveCount(0);
     await fam.locator('.offCover.wake').click();

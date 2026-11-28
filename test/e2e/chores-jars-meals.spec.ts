@@ -132,6 +132,24 @@ test('swiping goes through the pinned pages and back, and stops at the last one'
   }
 });
 
+test('a pinned 🗓️ Week isn’t in the swipe: it’s the calendar itself', async ({ as }) => {
+  const page = await as('tablet');
+  const before = await pinsOf(page);
+  try {
+    await setPins(page, ['week', 'meals']);
+    await page.reload();
+    await page.waitForTimeout(800);
+    await page.mouse.move(790, 420);
+    await page.mouse.down();
+    await page.mouse.move(590, 424, { steps: 6 });
+    await page.mouse.move(390, 428, { steps: 6 });
+    await page.mouse.up();
+    await expect(page).toHaveURL(/\/meals$/);
+  } finally {
+    await setPins(page, before);
+  }
+});
+
 test('a page swiped to goes back to the calendar after 2 quiet minutes', async ({ as }) => {
   const page = await as('tablet');
   const before = await pinsOf(page);
