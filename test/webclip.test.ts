@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Tests | webclip.test.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-14
- Updated:   2026-11-14
+ Updated:   2026-11-24
 
  Purpose:
      Pictures' "From the web": public domain only, a search asked twice
@@ -19,13 +19,18 @@
  -------   ----------   -------   --------------------------------------------
  0.17.0    2026-11-14   joshua    New file.
                         claude
+
+ 1.2.8    2026-11-24   joshua    A kept picture is the board's own copy,
+                        claude    drawn again: the same 1 × 1 PNG.
 ===============================================================================
 */
 
 import test from 'node:test';
 import assert from 'node:assert';
 import fs from 'node:fs';
+import sharp from 'sharp';
 import { client, makeAdmin, startServer } from './helpers.ts';
+import { kindOf } from '../server/images.ts';
 import * as mock from './mock-openverse.ts';
 
 const PORT = 3989;
@@ -92,7 +97,11 @@ test('placing one: a family screen keeps a copy on the board; never one that isn
   assert.match(src, /^\/api\/media\/[a-z0-9]{16}\.png$/);
   const img = await fam.api(src);
   assert.equal(img.status, 200);
-  assert.deepEqual(Buffer.from(await img.arrayBuffer()), mock.PNG);
+  // the board's own copy, drawn again (server/images.ts): the same 1 × 1 PNG, not Openverse's bytes
+  const kept = Buffer.from(await img.arrayBuffer());
+  assert.equal(kindOf(kept), 'png');
+  const meta = await sharp(kept).metadata();
+  assert.deepEqual([meta.width, meta.height], [1, 1]);
   assert.equal((await fam.post('/api/clip/web/keep', { id: mock.NOT_PD })).status, 400);
   assert.equal((await fam.post('/api/clip/web/keep', { id: '../etc' })).status, 400);
 });

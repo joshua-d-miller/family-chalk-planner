@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | month.ts
 ===============================================================================
- Version:   1.1.2
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-20
+ Updated:   2026-11-24
 
  Purpose:
      Each month's own options: the typed title's style (or a hand-lettered
@@ -51,6 +51,9 @@
 
  1.1.2    2026-11-20   joshua    A month's own background (s, and img for a
                         claude    photo of your own).
+
+ 1.2.8    2026-11-24   joshua    Only a listed tweak's name is ever kept in
+                        claude    a month's look.
 ===============================================================================
 */
 
@@ -59,7 +62,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { isYm } from './dates.ts';
 import type { Kv } from './kv.ts';
 import { BOARD_FONTS } from '../shared/fonts.ts';
-import { SURFACES, okImg, okPreset, okTweak } from './theme.ts';
+import { SURFACES, TWEAKS, okImg, okPreset, okTweak } from './theme.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //
@@ -102,7 +105,9 @@ function cleanLook(v: unknown): Record<string, string> | undefined {
       if (SURFACES.includes(c) && (c !== 'photo' || okImg(raw.img))) out.s = c;
     } else if (k === 'img') {
       if (raw.s === 'photo' && okImg(c)) out.img = c;
-    } else if (k === 'p' ? okPreset(c) : okTweak(k, c)) out[k] = c;
+    } else if (k === 'p') {
+      if (okPreset(c)) out.p = c;
+    } else if (Object.hasOwn(TWEAKS, k) && okTweak(k, c)) out[k] = c; // only a listed tweak's name is ever kept
   }
   return Object.keys(out).length ? out : undefined;
 }

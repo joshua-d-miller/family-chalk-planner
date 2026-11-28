@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Tests | pictures.test.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-14
- Updated:   2026-11-14
+ Updated:   2026-11-24
 
  Purpose:
      Pictures: one search through every picture (a turkey is the bird, not
@@ -19,6 +19,10 @@
  -------   ----------   -------   --------------------------------------------
  0.17.0    2026-11-14   joshua    New file.
                         claude
+
+ 1.2.8    2026-11-24   joshua    Packs: the board lists every pack in the
+                        claude    file, and each is asked for by the id the
+                                  board gave.
 ===============================================================================
 */
 
@@ -112,8 +116,12 @@ test('chalk drawings: no weapons, the family-friendly ones in', async () => {
 
 test('packs: every picture in every pack is on the board; this month’s first', async () => {
   const all = loadPacks();
-  for (const p of all) {
-    const r = (await (await ed.api('/api/clip/pack/' + p.id)).json()) as { pictures: string[] };
+  // the board lists every pack in the file (each pack is then asked for by the id the board gave)
+  const listed = ((await (await ed.api('/api/clip/packs')).json()) as { packs: { id: string }[] }).packs.map(p => p.id);
+  assert.deepEqual([...listed].sort(), all.map(p => p.id).sort(), 'every pack is listed');
+  for (const id of listed) {
+    const p = all.find(x => x.id === id)!;
+    const r = (await (await ed.api('/api/clip/pack/' + id)).json()) as { pictures: string[] };
     const missing = p.pictures.filter(n => !r.pictures.includes(n));
     assert.deepEqual(missing, [], `${p.name}: pictures the board doesn't have`);
     for (const c of p.cover) assert.ok(r.pictures.includes(c) || missing.length === 0, `${p.name} cover ${c}`);

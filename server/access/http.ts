@@ -2,13 +2,14 @@
 ===============================================================================
  Family Chalk Planner | Server | Access | http.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-24
 
  Purpose:
-     Reading requests: cookies, and what kind of device sent it.
+     Reading requests: cookies, and what kind of device sent it; and what
+     was sent, made safe for one line of the server log.
 
  Used by:
      server/access/access.ts
@@ -25,6 +26,13 @@
                         colby
                                   Home-network sign-in: just a password for
                                   the board at home, off unless turned on.
+
+ 1.2.8    2026-11-24   joshua    parseCookies() makes its object in one go,
+                        claude    so a cookie named "__proto__" is just a
+                                  cookie.
+
+                                  oneLine(): something sent, ready for one
+                                  line of the log.
 ===============================================================================
 */
 
@@ -70,21 +78,36 @@ export function openedByIp(host: string | undefined) {
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------- //
+// | For the log | //
+// --------------- //
+// Something a screen or a person sent, ready for one line of the server     //
+// log: every line break taken out (and the other characters that start a    //
+// new line, or move the cursor back over one), so it can't start a log line //
+// that looks like the board's own. GitHub's code scanning (CodeQL)          //
+// recognizes this as making a value safe to log.                            //
+export const oneLine = (v: unknown) =>
+  // eslint-disable-next-line no-control-regex
+  String(v ?? '').replace(/[\r\n\u2028\u2029\u0000-\u0008\u000b-\u001f\u007f]/g, '');
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ----------- //
 // | Cookies | //
 // ----------- //
-export function parseCookies(h: string | undefined) {
-  const out: Record<string, string> = {};
+export function parseCookies(h: string | undefined): Record<string, string> {
+  // gathered as [name, value] pairs and made into an object in one go: a cookie named "__proto__"
+  // is then just a cookie by that name, never a change to how every object behaves
+  const pairs: [string, string][] = [];
   for (const part of String(h || '').split(';')) {
     const i = part.indexOf('=');
     if (i <= 0) continue;
     try {
-      out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+      pairs.push([part.slice(0, i).trim(), decodeURIComponent(part.slice(i + 1).trim())]);
     } catch {
       /* ignore a bad cookie */
     }
   }
-  return out;
+  return Object.fromEntries(pairs);
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

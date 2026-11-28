@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | access.test.ts
 ===============================================================================
- Version:   0.17.1
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-14
+ Updated:   2026-11-24
 
  Purpose:
      Who may do what: paired screens (view / family), people (editor /
@@ -51,6 +51,10 @@
  0.17.1    2026-11-14   joshua    Sign-in test: one authenticator code, made
                         claude    once (no flake when the 30 seconds roll
                                   over mid-test).
+
+ 1.2.8    2026-11-24   joshua    The setup code comes from the board's log,
+                        claude    and setup-code.txt is checked to hold the
+                                  same one.
 ===============================================================================
 */
 
@@ -63,7 +67,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { periods } from '../server/chores.ts';
-import { makeAdmin, client, totpNow, cookiesOf } from './helpers.ts';
+import { makeAdmin, client, totpNow, cookiesOf, watchLog, setupCodeOf } from './helpers.ts';
 import * as mockCaldav from './mock-caldav.ts';
 
 const PORT = 3996,
@@ -141,6 +145,7 @@ test.before(async () => {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
+  watchLog(data, server); // the setup code comes from its log, as a person reads it
   for (let i = 0; i < 50; i++) {
     try {
       if ((await fetch(base + '/api/whoami')).ok) break;
@@ -166,7 +171,9 @@ test('a fresh board: nothing readable, pages and health check still load', async
 });
 
 test('first admin: setup code + password + authenticator code; the code works once', async () => {
-  const code = fs.readFileSync(path.join(data, 'setup-code.txt'), 'utf8').trim();
+  // the code the board printed; setup-code.txt holds the same one, readable only by the board's own user
+  const code = await setupCodeOf(data);
+  assert.equal(fs.readFileSync(path.join(data, 'setup-code.txt'), 'utf8').trim(), code);
   assert.equal(fs.statSync(path.join(data, 'setup-code.txt')).mode & 0o777, 0o600);
   assert.equal(
     (await raw('/api/account/setup', { code: 'AAAA-AAAA', username: 'dad', password: 'long enough pass' })).status,
@@ -727,7 +734,7 @@ test('deploy/reset-admin.sh: everyone and every screen is removed, a new setup c
   const w = await (await fetch(base + '/api/whoami')).json();
   assert.deepEqual([w.setup, w.firstRun], [true, true]);
   assert.equal(fs.readFileSync(path.join(data, 'setup-code.txt'), 'utf8').trim(), code);
-  const again = await makeAdmin(base, data, 'dad', 'yet another password');
+  const again = await makeAdmin(base, data, 'dad', 'yet another password', code);
   assert.equal((await client(base, again.cookie).api('/api/devices')).status, 200);
   const log = (await (await client(base, again.cookie).api('/api/security')).json()).log;
   assert.ok(

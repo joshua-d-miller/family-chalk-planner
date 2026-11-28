@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | mock-gphotos.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-06
+ Updated:   2026-11-24
 
  Purpose:
      A stand-in for a Google Photos shared album (the page and the
@@ -21,15 +21,14 @@
  -------   ----------   -------   --------------------------------------------
  0.13.0    2026-11-06   joshua    Server and tests are all TypeScript (ES
                         claude    modules).
+
+ 1.2.8    2026-11-24   joshua    Whole pictures from
+                        claude    test/sample-pictures.ts.
 ===============================================================================
 */
 
 import http from 'node:http';
-const JPEG = Buffer.from(
-  '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/yQALCAABAAEBAREA/8wABgAQEAX/2gAIAQEAAD8A0s8g/9k=',
-  'base64'
-);
-const WEBP = Buffer.from('RIFF\0\0\0\0WEBPVP8 ', 'binary');
+import { JPEG, WEBP } from './sample-pictures.ts';
 const ID = 'AF1QipTESTALBUM',
   KEY = 'TESTKEY';
 function item(base, n, w, h, taken, extra = {}) {

@@ -1,0 +1,218 @@
+/*
+===============================================================================
+ Family Chalk Planner | Tests | images.test.ts
+===============================================================================
+ Version:   1.2.8
+ Author:    Joshua D. Miller, Claude
+ Updated:   2026-11-24
+
+ Purpose:
+     Pictures from elsewhere are drawn again before they're kept
+     (server/images.ts): the same picture comes out, still moving if it
+     moved, the right way up, and nothing hidden in the original comes
+     along (a second file tucked on the end, where a photo was taken).
+     Something that only looks like a picture is turned away. A board from
+     before 1.2.8 keeps its animated emoji list and still pictures without
+     the internet.
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 1.2.8     2026-11-24   joshua    New file.
+                        claude
+
+                                  A GIF whose frames have nearly the same
+                                  colors keeps every pixel.
+
+                                  An emoji's still in each size a screen can
+                                  ask for.
+===============================================================================
+*/
+
+import test from 'node:test';
+import assert from 'node:assert';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import sharp from 'sharp';
+import { client, makeAdmin, startServer } from './helpers.ts';
+import { kindOf, remade, svgAsPng } from '../server/images.ts';
+import { GIF, JPEG, PNG, WEBP } from './sample-pictures.ts';
+
+test('each kind comes out as the same kind of picture, the same size', async () => {
+  for (const [buf, kind] of [
+    [GIF, 'gif'],
+    [PNG, 'png'],
+    [JPEG, 'jpg'],
+    [WEBP, 'webp']
+  ] as const) {
+    const out = await remade(buf);
+    assert.ok(out, kind);
+    assert.equal(out.kind, kind);
+    assert.equal(kindOf(out.buf), kind);
+    const m = await sharp(out.buf).metadata();
+    assert.deepEqual([m.width, m.height], [2, 2], kind);
+  }
+});
+
+test('as sharp as before: a photo loses next to nothing; a GIF keeps every pixel', async () => {
+  // a picture with small text and colored lines (the hardest kind for JPEG), drawn again
+  const src = fs.readFileSync(path.join(import.meta.dirname, '..', 'docs', 'images', 'start-3b-calendar.jpg'));
+  const out = await remade(src);
+  assert.ok(out);
+  const a = await sharp(src).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const b = await sharp(out.buf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  assert.deepEqual([b.info.width, b.info.height], [a.info.width, a.info.height], 'the same size: never made smaller');
+  let se = 0;
+  for (let i = 0; i < a.data.length; i++) se += (a.data[i] - b.data[i]) ** 2;
+  const psnr = 10 * Math.log10((255 * 255) / (se / a.data.length));
+  assert.ok(psnr > 50, `${psnr.toFixed(1)} dB (above about 40 dB, a difference can't be seen)`);
+  // a moving GIF: every frame, every pixel the same
+  const frame = (c: string) =>
+    sharp({ create: { width: 40, height: 40, channels: 4, background: c } })
+      .composite([
+        { input: Buffer.from('<svg width="40" height="40"><circle cx="20" cy="20" r="14" fill="#fa0"/></svg>') }
+      ])
+      .png()
+      .toBuffer();
+  const gif = await sharp(await Promise.all(['#c33', '#3c3', '#33c'].map(frame)), { join: { animated: true } })
+    .gif()
+    .toBuffer();
+  const again = await remade(gif);
+  assert.ok(again);
+  assert.ok(
+    (await sharp(gif, { animated: true }).raw().toBuffer()).equals(
+      await sharp(again.buf, { animated: true }).raw().toBuffer()
+    )
+  );
+});
+
+test('a GIF whose frames have nearly the same colors keeps every pixel (no palette carried over)', async () => {
+  // each frame's colors differ from the first frame's by a step or two: an encoder that reuses the first
+  // frame's palette "when close enough" changes these pixels (it did, before 1.2.8's settings)
+  const W = 16;
+  const frame = (k: number) => {
+    const b = Buffer.alloc(W * W * 4);
+    for (let i = 0; i < W * W; i++) b.set([((i * 7) & 255) ^ k, ((i * 13) & 255) ^ (k ? 1 : 0), i & 255, 255], i * 4);
+    return sharp(b, { raw: { width: W, height: W, channels: 4 } })
+      .png()
+      .toBuffer();
+  };
+  const gif = await sharp(await Promise.all([0, 1, 2].map(frame)), { join: { animated: true } })
+    .gif({ reuse: false, interPaletteMaxError: 0, interFrameMaxError: 0, dither: 0 })
+    .toBuffer();
+  const out = await remade(gif);
+  assert.ok(out);
+  const px = (b: Buffer) => sharp(b, { animated: true }).raw().toBuffer();
+  assert.ok((await px(gif)).equals(await px(out.buf)));
+});
+
+test('nothing tucked on the end comes along', async () => {
+  const hidden = Buffer.from('<script>alert(1)</script> and a whole second file');
+  for (const buf of [GIF, PNG, JPEG]) {
+    const out = await remade(Buffer.concat([buf, hidden]));
+    assert.ok(out);
+    assert.equal(out.buf.includes(hidden), false);
+    assert.equal(out.buf.includes(Buffer.from('<script>')), false);
+  }
+});
+
+test('a photo: turned the right way up, and where it was taken is left behind', async () => {
+  // 4 wide × 2 tall, with a camera note saying "turn it a quarter" and a place it was taken
+  const photo = await sharp({ create: { width: 4, height: 2, channels: 3, background: '#3a6' } })
+    .jpeg()
+    .withMetadata({ orientation: 6 })
+    .withExif({ IFD3: { GPSLatitudeRef: 'N', GPSLatitude: '40/1 26/1 46/1' } })
+    .toBuffer();
+  const before = await sharp(photo).metadata();
+  assert.equal(before.orientation, 6);
+  assert.ok(before.exif);
+  const out = await remade(photo);
+  assert.ok(out);
+  const m = await sharp(out.buf).metadata();
+  assert.deepEqual([m.width, m.height], [2, 4], 'turned upright');
+  assert.equal(m.orientation, undefined);
+  assert.equal(m.exif, undefined, 'no camera notes, no place');
+});
+
+test('a GIF that moves still moves', async () => {
+  const frame = (c: string) =>
+    sharp({ create: { width: 2, height: 2, channels: 4, background: c } })
+      .png()
+      .toBuffer();
+  const animated = await sharp(await Promise.all(['#c33', '#3c3', '#33c'].map(frame)), { join: { animated: true } })
+    .gif({ loop: 0 })
+    .toBuffer();
+  assert.equal((await sharp(animated, { animated: true }).metadata()).pages, 3);
+  const out = await remade(animated);
+  assert.ok(out);
+  assert.equal((await sharp(out.buf, { animated: true }).metadata()).pages, 3, 'all three frames');
+});
+
+test('something that only looks like a picture is turned away', async () => {
+  assert.equal(await remade(Buffer.concat([Buffer.from('GIF89a'), Buffer.alloc(30)])), null);
+  assert.equal(await remade(Buffer.from('<svg onload="alert(1)"/>')), null, 'not a picture type it keeps');
+  assert.equal(await remade(Buffer.alloc(4)), null);
+});
+
+test('an emoji’s SVG drawing becomes a sharp 2048 × 2048 PNG, with nothing in it run', async () => {
+  const svg = Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><script>alert(1)</script><circle cx="5" cy="5" r="4" fill="red"/></svg>'
+  );
+  const png = await svgAsPng(svg);
+  assert.ok(png);
+  assert.equal(kindOf(png), 'png');
+  const m = await sharp(png).metadata();
+  assert.deepEqual([m.width, m.height], [2048, 2048]);
+  // drawn at that size, not a small picture made bigger: the circle's edge is about a pixel wide (a
+  // 512 picture stretched to 2048 has over 20,000 half-see-through pixels around it; this has under 4,000)
+  const alpha = await sharp(png).extractChannel(3).raw().toBuffer();
+  const soft = alpha.filter(v => v >= 32 && v <= 223).length;
+  const around = 2 * Math.PI * (2048 * 0.4); // the circle is 4 of 10 units across, of 2048
+  assert.ok(soft < around, `${soft} soft pixels around a ${Math.round(around)}-pixel edge`);
+  assert.equal(png.includes(Buffer.from('script')), false);
+  assert.equal(await svgAsPng(Buffer.from('not a drawing')), null);
+});
+
+test('a board from before 1.2.8: its animated emoji list and still pictures need no internet', async () => {
+  // what such a board kept in its data folder: Google's list, and an emoji's SVG still picture
+  const data = fs.mkdtempSync(path.join(os.tmpdir(), 'fcp-anim-'));
+  const cache = path.join(data, 'clipart-cache');
+  fs.mkdirSync(path.join(cache, 'anim'), { recursive: true });
+  fs.writeFileSync(
+    path.join(cache, 'noto-anim-api.json'),
+    JSON.stringify({ icons: [{ codepoint: '1f600', tags: [':grinning:'], categories: ['Smileys'], popularity: 5 }] })
+  );
+  fs.writeFileSync(
+    path.join(cache, 'anim', '1f600.svg'),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="gold"/></svg>'
+  );
+  const PORT = 3981;
+  const board = await startServer(PORT, {}, data);
+  try {
+    assert.ok(board.up, board.output());
+    const base = `http://127.0.0.1:${PORT}`;
+    const ed = client(base, (await makeAdmin(base, data)).cookie);
+    assert.deepEqual(await (await ed.api('/api/anim/list')).json(), [
+      { cp: '1f600', tags: 'grinning', cat: 'Smileys' }
+    ]);
+    // the still at the size a screen asks for (512 without one, the moving GIF's size; an odd one is 512 too)
+    for (const [ask, size] of [
+      ['', 512],
+      ['?px=256', 256],
+      ['?px=1024', 1024],
+      ['?px=2048', 2048],
+      ['?px=4000', 512]
+    ] as const) {
+      const still = await ed.api('/api/anim/1f600/svg' + ask);
+      assert.equal(still.status, 200, ask);
+      assert.equal(still.headers.get('content-type'), 'image/png');
+      const m = await sharp(Buffer.from(await still.arrayBuffer())).metadata();
+      assert.deepEqual([m.width, m.height], [size, size], ask);
+    }
+  } finally {
+    await board.stop();
+    fs.rmSync(data, { recursive: true, force: true });
+  }
+});

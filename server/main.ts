@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | main.ts (the start)
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-21
+ Updated:   2026-11-24
 
  Purpose:
      Family Chalk Planner: a chalkboard-style family wall calendar. This
@@ -76,11 +76,16 @@
 
  1.2.0    2026-11-21   joshua    The board's language, for favorites.ts's
                         claude    /api/lang.
+
+ 1.2.8    2026-11-24   joshua    A limit on requests a minute, counted for
+                        claude    each signed-in person, screen and Home
+                                  Assistant person.
 ===============================================================================
 */
 
 import path from 'node:path';
 import express from 'express';
+import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import pkg from '../package.json' with { type: 'json' };
 import { openDatabase, prepareDatabase } from './db.ts';
 import { migrate } from './migrations.ts';
@@ -215,6 +220,27 @@ watchDay(() => clock.today(), broadcast);
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.set('trust proxy', cfg.trustProxy);
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// --------------------- //
+// | The request limit | //
+// --------------------- //
+// A ceiling on requests a minute, so a stuck script or a busy device on the //
+// network can't wear the board down. Each signed-in person, paired screen   //
+// and Home Assistant person has a count of their own (checked first, so a   //
+// made-up cookie can't buy a fresh count); anyone else is counted by        //
+// address. Generous: a home's screens stay far below it. Sign-in, pairing   //
+// and setup codes keep their own, much tighter limits (server/access/).     //
+let limitKeyOf: (req: express.Request) => string | null = () => null; // set once access is ready, below
+app.use(
+  rateLimit({
+    windowMs: 60e3,
+    limit: 3000,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    keyGenerator: req => limitKeyOf(req) || ipKeyGenerator(req.ip || ''),
+    message: { error: 'Too many requests - wait a minute' }
+  })
+);
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------- //
@@ -232,6 +258,7 @@ const ha = ENV.SUPERVISOR_TOKEN
     })
   : null;
 const who = access.setup(app, { db, kv, dataDir: DATA_DIR, env: ENV, title: cfg.title, broadcast, ha });
+limitKeyOf = who.limitKeyOf;
 if (process.argv.includes('--reset-admin')) {
   // deploy/reset-admin.sh
   const code = who.resetAll();
@@ -373,7 +400,7 @@ registerCalendarRoutes({
 // -------------------- //
 // Each month's options, the art and stamps, the board style, meals, jars    //
 // and chores.                                                               //
-const pictures = clipart.setup({ app, cacheDir: path.join(DATA_DIR, 'clipart-cache') });
+const pictures = clipart.setup({ app, kv, cacheDir: path.join(DATA_DIR, 'clipart-cache') });
 packs.setup({ app, kv, broadcast, today: clock.today, pictureOk: pictures.pictureOk });
 const months = month.setup({ app, db, kv, broadcast, chalk: clipart.CHALK, pictureOk: pictures.pictureOk });
 art.setup({ app, db, month: months, broadcast });

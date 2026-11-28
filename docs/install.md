@@ -1,7 +1,7 @@
 # Installing Family Chalk Planner
 
 ## What you need
-- A small always-on Linux machine: Debian 12/13 or Ubuntu 22.04/24.04, amd64 or arm64 (a 32-bit Raspberry Pi OS works too, until April 2027: see [Node.js](#nodejs)). A Proxmox LXC with 1 CPU, 512 MB RAM and 4 GB of disk is plenty (plus ~250 MB for the optional face finder).
+- A small always-on Linux machine: Debian 12/13 or Ubuntu 22.04/24.04, amd64 or arm64 (a 32-bit Raspberry Pi OS works too, Bookworm or newer, until April 2027: see [Node.js](#nodejs)). A Proxmox LXC with 1 CPU, 512 MB RAM and 4 GB of disk is plenty (plus ~250 MB for the optional face finder).
 - A calendar reachable over CalDAV (iCloud, Nextcloud, Fastmail, Radicale…).
 - A screen for the wall (any browser in kiosk mode) and a tablet or phone for editing.
 
@@ -121,6 +121,11 @@ The board runs on Node.js, which the installer sets up from NodeSource:
   newer Node.js, and a 32-bit board stays on the last version that runs on 22. To keep getting updates, move to the
   **64-bit Raspberry Pi OS** (any Raspberry Pi 3, 4 or 5 can run it): install the board there and restore your backup
   (see [Backups](#backups)).
+- **From 1.2.8, a 32-bit Raspberry Pi OS needs Bookworm (or newer) to keep new pictures.** The board draws every
+  picture from elsewhere again before keeping it, and the image library that does it needs Bookworm on 32-bit ARM.
+  On an older one (Bullseye), the board still starts and shows everything it already has, but new uploads, links,
+  web pictures, album photos and animated emoji aren't kept, and the server log says why. Moving to the 64-bit
+  Raspberry Pi OS, or to Bookworm, fixes it. (`cat /etc/os-release` shows which one a board runs.)
 - Node.js installed some other way (not from NodeSource) is left as it is: on a 64-bit machine, install Node.js 26
   yourself ([nodejs.org](https://nodejs.org/)) to keep getting updates; a new install stops and asks for it.
 

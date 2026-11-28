@@ -31,6 +31,9 @@
  1.2.0    2026-11-21   joshua    menuStyle (this screen's menu, from ⚙️
                         claude    Settings → This screen) and longPress.
 
+ 1.2.8    2026-11-24   joshua    Each board's setup code comes from its log
+                        claude    (watchLog() in test/helpers.ts).
+
  1.3.0    2026-11-26   joshua    The family screen keeps its month arrows
                         claude    (they fade after 10 quiet seconds).
 ===============================================================================
@@ -43,7 +46,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { makeAdmin, client, totpNow, cookiesOf } from '../helpers.ts';
+import { makeAdmin, client, totpNow, cookiesOf, watchLog } from '../helpers.ts';
 import * as mockAlbum from '../mock-album.ts';
 import * as mockCaldav from '../mock-caldav.ts';
 
@@ -114,6 +117,7 @@ async function startBoard(workerIndex: number) {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
+  watchLog(data, proc); // the setup code comes from its log, as a person reads it
   let log = '';
   proc.stdout.on('data', d => {
     log += d;

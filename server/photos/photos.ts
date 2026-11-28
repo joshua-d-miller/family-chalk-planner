@@ -62,6 +62,16 @@
                         claude    and brightness (10 to 100%) take any value
                                   the sliders in ⚙️ Settings give.
 
+ 1.2.8    2026-11-24   joshua    Album photos are drawn again before they're
+                        claude    kept (server/images.ts), inside the cache
+                                  folder and written in one step.
+
+                                  Album photos are fetched with safeFetch()
+                                  (the name and every redirect checked).
+
+                                  A photo sync problem goes into the log
+                                  without line breaks (oneLine()).
+
  1.3.0    2026-11-26   joshua    The overnight hours on chosen days, and up
                         claude    to 3 more times.
 ===============================================================================
@@ -73,6 +83,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Express } from 'express';
 import type { Kv } from '../kv.ts';
+import { inside, writeIfNew, writeWhole } from '../files.ts';
+import { safeFetch } from '../address.ts';
+import { oneLine } from '../access/http.ts';
+import { remade } from '../images.ts';
 import { GP_UA, albumKind, imageHostOk, readAlbum } from './albums.ts';
 import type { AlbumConfig } from './albums.ts';
 import { immichAlbums, immichShare, normalizeImmichUrl, onThisDay, readImmich } from './immich.ts';
@@ -235,7 +249,8 @@ export function setup({
     headers: Record<string, string> = {},
     fallback?: string
   ): Promise<Buffer | null> {
-    const r = await fetch(url, {
+    // album servers (Immich on your network, Google, iCloud): the name and every redirect checked (server/address.ts)
+    const r = await safeFetch(url, {
       headers: google
         ? { ...GP_UA, Accept: 'image/jpeg,image/png' }
         : { Accept: 'image/jpeg,image/png,image/webp,image/*', ...headers },
@@ -248,7 +263,20 @@ export function setup({
     return null;
   }
 
-  const fileOf = (id: string, ext: string) => path.join(cacheDir, `${id}.${ext}`);
+  // a photo's copy (or its faces) in the cache folder: always inside it, whatever the album calls the photo
+  const fileOf = (id: string, ext: string) => {
+    const file = inside(cacheDir, `${id}.${ext}`);
+    if (!file) throw new Error('Not a photo the board keeps');
+    return file;
+  };
+  // a fetched photo, kept as the board's own copy (drawn again in the same type, server/images.ts: the
+  // wall shows JPEG, PNG and WebP alike) and written in one step
+  async function keepCopy(file: string, buf: Buffer) {
+    const pic = await remade(buf);
+    if (!pic) return false;
+    writeWhole(file, pic.buf);
+    return true;
+  }
 
   // ---------------- //
   // | Which photos | //
@@ -317,12 +345,10 @@ export function setup({
     let p = fetching.get(id);
     if (!p) {
       p = getImage(a.url, a.headers, a.fallbackUrl)
-        .then(buf => {
+        .then(async buf => {
           if (!buf) return false;
           fs.mkdirSync(cacheDir, { recursive: true });
-          const file = fileOf(id, 'jpg');
-          fs.writeFileSync(file + '.part', buf);
-          fs.renameSync(file + '.part', file);
+          if (!(await keepCopy(fileOf(id, 'jpg'), buf))) return false;
           trimCopies();
           setOffline(false);
           return true;
@@ -374,12 +400,10 @@ export function setup({
         const file = fileOf(a.id, 'jpg');
         if (fs.existsSync(file) || !hostOk(a.url) || (a.fallbackUrl && !hostOk(a.fallbackUrl))) continue;
         const buf = await getImage(a.url, a.headers, a.fallbackUrl);
-        if (!buf) continue;
-        fs.writeFileSync(file + '.part', buf);
-        fs.renameSync(file + '.part', file);
+        if (!buf || !(await keepCopy(file, buf))) continue;
         // Immich already found the faces
-        if (a.faces?.length && a.w && a.h && !fs.existsSync(fileOf(a.id, 'json')))
-          fs.writeFileSync(fileOf(a.id, 'json'), JSON.stringify({ w: a.w, h: a.h, faces: a.faces }));
+        if (a.faces?.length && a.w && a.h)
+          writeIfNew(fileOf(a.id, 'json'), JSON.stringify({ w: a.w, h: a.h, faces: a.faces }));
       }
       const have = assets.filter(a => fs.existsSync(fileOf(a.id, 'jpg')));
       const todo = have.filter(a => !fs.existsSync(fileOf(a.id, 'json'))).map(a => fileOf(a.id, 'jpg'));
@@ -404,7 +428,7 @@ export function setup({
       done(list);
     } catch (e) {
       state.error = (e as Error).message;
-      console.error('Photo sync:', state.error);
+      console.error('Photo sync:', oneLine(state.error)); // (the album's own words, never a fake log line)
     } finally {
       state.running = false;
     }

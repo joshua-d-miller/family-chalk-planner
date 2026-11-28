@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Calendar | google.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-24
 
  Purpose:
      Google Calendar: Google's CalDAV, with a Google sign-in (OAuth with
@@ -39,6 +39,10 @@
                                   Google: several calendars at once, read-only
                                   ones, and which calendar a new event goes
                                   in.
+
+ 1.2.8    2026-11-24   joshua    Google's sign-in answer page: plain text,
+                        claude    said so explicitly, without control
+                                  characters.
 ===============================================================================
 */
 
@@ -311,16 +315,21 @@ export function registerGoogleRoutes(
 
   // or Google comes back here by itself (GOOGLE_REDIRECT_URI pointing at the board)
   app.get('/oauth/google/callback', async (req, res) => {
+    // whatever comes back is shown as plain text, never as a page (so nothing in it can run), and
+    // only the first line of it, without control characters
+    const plain = (s: unknown) =>
+      String(s || '')
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\u0000-\u001f\u007f]/g, ' ')
+        .slice(0, 300);
+    res.set('Content-Type', 'text/plain; charset=utf-8');
     if (req.query.error)
-      return res.status(400).type('text').send(`Google said: ${req.query.error}. Go back to the tablet and try again.`);
+      return res.status(400).send(`Google said: ${plain(req.query.error)}. Go back to the tablet and try again.`);
     try {
       await finish(String(req.query.code || ''), String(req.query.state || ''));
       res.redirect('/edit#settings');
     } catch (e) {
-      res
-        .status(400)
-        .type('text')
-        .send(`${(e as Error).message}. Go back to the tablet and try again.`);
+      res.status(400).send(`${plain((e as Error).message)}. Go back to the tablet and try again.`);
     }
   });
 

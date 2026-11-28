@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | backup.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
- Updated:   2026-11-06
+ Updated:   2026-11-24
 
  Purpose:
      Nightly snapshot of the database (a consistent copy, taken while the
@@ -27,12 +27,17 @@
  -------   ----------   -------   --------------------------------------------
  0.13.0    2026-11-06   joshua    Live updates, nightly backup and the Notes
                         claude    extras in their own TypeScript modules.
+
+ 1.2.8    2026-11-24   joshua    The encryption key's backup copy is read
+                        claude    and written in one step each
+                                  (server/files.ts).
 ===============================================================================
 */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
+import { readIfThere, writeWhole } from './files.ts';
 
 const KEEP_SNAPSHOTS = 14;
 
@@ -64,13 +69,14 @@ export function setup({
   // database may need it.                                                   //
   function backupKey() {
     try {
-      if (!fs.existsSync(keyFile)) return;
-      const k = fs.readFileSync(keyFile);
-      if (fs.existsSync(keyBackup) && fs.readFileSync(keyBackup).equals(k)) return;
+      const k = readIfThere(keyFile);
+      if (!k) return;
+      const old = readIfThere(keyBackup);
+      if (old && old.equals(k)) return;
       fs.mkdirSync(backupDir, { recursive: true });
-      if (fs.existsSync(keyBackup))
-        fs.renameSync(keyBackup, path.join(backupDir, `secret.key.replaced-${today()}-${Date.now() % 1e6}`));
-      fs.writeFileSync(keyBackup, k, { mode: 0o600 });
+      // a different key there already: it's kept beside the new one, never lost (each written in one step)
+      if (old) writeWhole(path.join(backupDir, `secret.key.replaced-${today()}-${Date.now() % 1e6}`), old, 0o600);
+      writeWhole(keyBackup, k, 0o600);
       fs.chmodSync(keyBackup, 0o600);
       console.log(`Chalkboard: encryption key copied to ${keyBackup}`);
     } catch (e) {

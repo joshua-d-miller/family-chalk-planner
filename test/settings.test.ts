@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | settings.test.ts
 ===============================================================================
- Version:   0.16.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-11
+ Updated:   2026-11-24
 
  Purpose:
      Admin console → ⚙️ Board: settings saved in the database override
@@ -21,6 +21,9 @@
                         claude    starting the next (a slow machine left the
                                   old one on the port); shows what the board
                                   said if it stops on its own.
+
+ 1.2.8    2026-11-24   joshua    Its board's setup code comes from the
+                        claude    board's log (watchLog()).
 ===============================================================================
 */
 
@@ -32,7 +35,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { makeAdmin, client } from './helpers.ts';
+import { makeAdmin, client, watchLog } from './helpers.ts';
 import * as mockCaldav from './mock-caldav.ts';
 
 const PORT = 3996,
@@ -59,6 +62,7 @@ function start() {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
+  watchLog(data, server); // the setup code comes from its log, as a person reads it
   // what the board said, shown if it stops when a test didn't stop it (a crash), so CI shows why
   let said = '';
   const keep = (d: Buffer) => (said = (said + d).slice(-4000));

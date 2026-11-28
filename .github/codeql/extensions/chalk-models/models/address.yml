@@ -1,0 +1,10 @@
+# server/address.ts: checkedAddress() returns an address only once it has passed the board's one
+# address check (http(s) only, no password in it, never "any address", link-local, cloud-metadata or
+# multicast; public only for "Add from link"). Every fetch of a typed address uses what it returns,
+# so CodeQL counts that value as checked for server-side request forgery.
+extensions:
+  - addsTo:
+      pack: codeql/javascript-all
+      extensible: barrierModel
+    data:
+      - ['file:server/address.ts', 'Member[checkedAddress].ReturnValue', 'request-forgery']

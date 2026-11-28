@@ -109,6 +109,13 @@
  1.2.1    2026-11-22   joshua    /notescol: a screen's own Notes column.
                         claude
 
+ 1.2.8    2026-11-24   joshua    limitKeyOf(): who a request counts as for
+                        claude    the request limit, checked for real first.
+                                  A screen's crash report: its stack one
+                                  line per step, indented, each without
+                                  line breaks of its own (oneLine()), so it
+                                  can't start a fake log line.
+
  1.3.0    2026-11-26   joshua    /arrows: a screen's month arrows, always or
                         claude    fading. /offhours: what a screen does
                                   overnight. /screen-status: what a screen
@@ -121,7 +128,7 @@ import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import type { Express, Request, Response } from 'express';
 import type { Kv } from '../kv.ts';
-import { describe, openedByIp, parseCookies, privateAddress } from './http.ts';
+import { describe, oneLine, openedByIp, parseCookies, privateAddress } from './http.ts';
 import type { ReqLike } from './http.ts';
 import { fmtCode, normCode, randCode, randomKey, safeEq, sha } from './secrets.ts';
 import { haApp, ingressPath, ingressUser } from './ingress.ts';
@@ -358,6 +365,20 @@ export function setup(
     if (userOf(req)) return null;
     const m = /^kid:([a-z0-9]{1,16})$/.exec(deviceOf(req)?.role || '');
     return m ? m[1] : null;
+  };
+  // ---------------------------------------- //
+  // | Who counts against the request limit | //
+  // ---------------------------------------- //
+  // A signed-in person, a paired screen or a Home Assistant person, each    //
+  // checked for real first (server/main.ts → The request limit); null for   //
+  // anyone else, who is counted by address.                                 //
+  const limitKeyOf = (req: ReqLike) => {
+    const ha = ingressUser(req);
+    if (ha) return 'ha:' + ha.id;
+    const s = sessionOf(req, 'admin') || sessionOf(req, 'edit');
+    if (s) return 'user:' + s.user.id;
+    const d = deviceOf(req);
+    return d ? 'screen:' + d.id : null;
   };
   const whoOf = (req: ReqLike) => haOf(req)?.name || userOf(req)?.name || deviceOf(req)?.name || 'someone';
   function rankOf(req: ReqLike) {
@@ -783,8 +804,16 @@ export function setup(
         .slice(0, n);
     const where = clip(b.where, 80) || '?';
     audit(req, 'screen.error', { target: where, detail: clip(b.message, 300) || 'no details' });
+    // readable, but only the board starts a log line: the stack is cut into its lines, each without
+    // line breaks of its own (oneLine()), then put under the report one per line, indented
+    const stack = String(b.stack || '')
+      .slice(0, 2000)
+      .split(/\r?\n/)
+      .map(l => oneLine(l).trim())
+      .filter(Boolean);
     console.warn(
-      `Chalk Planner: a screen crashed on ${where}: ${clip(b.message, 300)}\n${String(b.stack || '').slice(0, 2000)}`
+      `Chalk Planner: a screen crashed on ${oneLine(where)}: ${oneLine(clip(b.message, 300))}` +
+        stack.map(l => '\n    ' + l).join('')
     );
     res.json({ ok: true });
   });
@@ -835,9 +864,9 @@ export function setup(
     });
   });
 
-  // ------------------------------------------- //
+  // -------------------------------------------- //
   // | Home Assistant's people, and their roles | //
-  // ------------------------------------------- //
+  // -------------------------------------------- //
   // The admin console's People, as the app: everyone with a Home Assistant  //
   // login, the role each has on the board (its admins are always admins),  //
   // and the role for anyone not set yet.                                    //
@@ -935,6 +964,7 @@ export function setup(
     rankOf,
     kidOf,
     whoOf,
+    limitKeyOf,
     resetAll,
     newSetupCode,
     cleanup,

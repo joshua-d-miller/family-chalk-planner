@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | settings.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-21
+ Updated:   2026-11-24
 
  Purpose:
      Board settings: all kept in the database and changed in the admin
@@ -53,13 +53,16 @@
 
  1.2.0    2026-11-21   joshua    LANGUAGE: the board's language (English or
                         claude    Spanish).
+
+ 1.2.8    2026-11-24   joshua    The settings key is made only if there's
+                        claude    none yet, in one step (server/files.ts).
 ===============================================================================
 */
 
-import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
+import { readIfThere, writeIfNew } from './files.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // -------------------- //
@@ -319,11 +322,11 @@ export function setup({
         .digest();
     if (process.env.SECRET_KEY) return (keyCache = derive(process.env.SECRET_KEY));
     const file = path.join(DATA_DIR, 'secret.key');
-    if (!fs.existsSync(file)) {
-      if (!create) throw new Error('no key');
-      fs.writeFileSync(file, crypto.randomBytes(32).toString('base64') + '\n', { mode: 0o600 });
-    }
-    return (keyCache = derive(fs.readFileSync(file, 'utf8').trim()));
+    // made in one step if there's none yet (never over one another start made at the same moment)
+    if (create) writeIfNew(file, crypto.randomBytes(32).toString('base64') + '\n', 0o600);
+    const key = readIfThere(file);
+    if (!key) throw new Error('no key');
+    return (keyCache = derive(key.toString('utf8').trim()));
   }
   // 'k1:' + base64(iv | tag | ciphertext)
   function seal(v: string) {

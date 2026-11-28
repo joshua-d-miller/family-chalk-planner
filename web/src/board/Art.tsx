@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Art.tsx
 ===============================================================================
- Version:   1.2.6
+ Version:   1.2.8
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-22
+ Updated:   2026-11-24
 
  Purpose:
      The art on a month: chalk and Posca lines, fills, words, clipart and
@@ -52,6 +52,10 @@
 
  1.2.6    2026-11-22   joshua    The art on a layer of its own over the
                         claude    calendar (layer), not painted in with it.
+
+ 1.2.8    2026-11-24   joshua    An animated emoji's still is asked for at
+                        claude    the size it's shown on this screen: sharp,
+                                  and light on a wall's memory.
 ===============================================================================
 */
 
@@ -193,6 +197,16 @@ function useGentle(items: ArtItem[], on: boolean) {
 // ------------------ //
 // Stored addresses are /api/...; shown relative to the board's address      //
 const src = (s?: string) => (s ? url(s) : '');
+// An animated emoji's still picture, asked for at the size it's shown on this screen (its longer side in
+// board pixels × res, the screen's pixels per board pixel): 256, 512, 1024 or 2048 across (server/clipart.ts).
+// Sharp on any screen, and a small emoji never holds a big picture in the screen's memory.
+const STILL = /^\/?api\/anim\/[0-9a-f_]{2,48}\/svg$/;
+const stillSrc = (s: string | undefined, w: number, h: number, res: number) => {
+  if (!s || !STILL.test(s)) return src(s);
+  const need = Math.max(w, h) * res;
+  const px = [256, 512, 1024].find(p => p >= need) || 2048;
+  return src(s) + '?px=' + px;
+};
 
 export function Art({
   items,
@@ -310,9 +324,11 @@ export function Art({
               key={it.id}
               alt=""
               decoding="async"
-              src={src(
-                gifsPlay && (it.mode === 'loop' || (it.mode === 'gentle' && playing.has(it.id))) ? it.src : it.still
-              )}
+              src={
+                gifsPlay && (it.mode === 'loop' || (it.mode === 'gentle' && playing.has(it.id)))
+                  ? src(it.src)
+                  : stillSrc(it.still, it.w || 0, it.h || 0, res)
+              }
               style={{
                 left: (it.x || 0) - (it.w || 0) / 2,
                 top: (it.y || 0) - (it.h || 0) / 2,

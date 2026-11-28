@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | Calendar | source.ts
 ===============================================================================
- Version:   1.0.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-14
+ Updated:   2026-11-24
 
  Purpose:
      The family's calendar: any CalDAV server (iCloud, Nextcloud,
@@ -44,6 +44,17 @@
  1.0.0     2026-11-14   joshua    Home Assistant's calendars, as the Home
                         claude    Assistant app: read, add, change and delete
                                   where each calendar allows it.
+
+ 1.2.8    2026-11-24   joshua    Every CalDAV address passes the one address
+                        claude    check (server/address.ts) before it's
+                                  fetched.
+
+                                  Every calendar request goes through
+                                  safeFetch() (the name and every redirect
+                                  checked).
+
+                                  A calendar problem goes into the log
+                                  without line breaks (oneLine()).
 ===============================================================================
 */
 
@@ -56,6 +67,8 @@ import type { Google } from './google.ts';
 import { applyEventChange, makeIcal } from './ical.ts';
 import type { BoardEvent, EventChange, EventRef } from './ical.ts';
 import type { HaCalendar, HaEvent, HaEventIn, HomeAssistant } from '../homeassistant.ts';
+import { checkedAddress, safeFetch } from '../address.ts';
+import { oneLine } from '../access/http.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //
@@ -96,8 +109,12 @@ const sameUrl = (u: string, base: string) => {
 // Every calendar on a CalDAV account: [{ name, url }] (also the console's   //
 // "Find my calendars")                                                      //
 export async function caldavCalendars(base: string, auth: string) {
-  const req = async (url: string, body: string, depth = '0') => {
-    const r = await fetch(url, {
+  // each address (the one typed, and the ones the server answers with) passes the one address check
+  // first (server/address.ts); iCloud's own per-account servers (p52-caldav.icloud.com…) pass
+  const req = async (address: string, body: string, depth = '0') => {
+    const url = checkedAddress(address);
+    if (!url) throw new Error('That isn’t a calendar server address');
+    const r = await safeFetch(url, {
       method: 'PROPFIND',
       headers: { Authorization: auth, 'Content-Type': 'application/xml; charset=utf-8', Depth: depth },
       body,
@@ -177,7 +194,7 @@ export function createCalendarSource(
   // | Talking to the calendar server | //
   // ---------------------------------- //
   async function dav(url: string, method: string, body: string, depth = '0') {
-    const r = await fetch(url, {
+    const r = await safeFetch(url, {
       method,
       headers: { Authorization: await authHeader(), 'Content-Type': 'application/xml; charset=utf-8', Depth: depth },
       body,
@@ -310,7 +327,7 @@ export function createCalendarSource(
       throw new Error(c.error);
     }
     try {
-      const r = await fetch(f.url, {
+      const r = await safeFetch(f.url, {
         headers: { 'User-Agent': 'FamilyChalkPlanner/1 (+calendar link)', Accept: 'text/calendar, */*' },
         signal: AbortSignal.timeout(20000)
       });
@@ -413,14 +430,15 @@ export function createCalendarSource(
     // noted in the server log once, not on every screen's every request
     const was = down;
     down = failed.length ? failed.join(' · ') : null;
-    if (down !== was) console.error(down ? `Chalkboard: calendar: ${down}` : 'Chalkboard: calendar: back');
+    // (what went wrong can hold the server's own words: never a line break, so never a fake log line)
+    if (down !== was) console.error(down ? `Chalkboard: calendar: ${oneLine(down)}` : 'Chalkboard: calendar: back');
     monthCache.set(ym, { at: Date.now(), events }); // (a minute, then it tries again)
     return events;
   }
 
-  // ------------------------------------- //
+  // ------------------------------------ //
   // | One calendar, and its saved copy | //
-  // ------------------------------------- //
+  // ------------------------------------ //
   // A calendar's events for a month: fetched and saved; when it can't be    //
   // reached, the copy saved last time (from before a restart too), or none. //
   async function kept(
@@ -593,7 +611,7 @@ export function createCalendarSource(
       lines.push(`DTSTART:${icsUtc(start)}`, `DTEND:${icsUtc(end)}`);
     }
     lines.push('END:VEVENT', 'END:VCALENDAR');
-    const r = await fetch(`${url}${uid}.ics`, {
+    const r = await safeFetch(`${url}${uid}.ics`, {
       method: 'PUT',
       headers: {
         Authorization: await authHeader(),
@@ -637,7 +655,10 @@ export function createCalendarSource(
     const url = new URL(ref.href, await findCalendar()).toString();
     if (!(await editableCalendars()).some(c => sameUrl(url, c)))
       throw new Error('That event isn’t in the family calendar');
-    const g = await fetch(url, { headers: { Authorization: await authHeader() }, signal: AbortSignal.timeout(20000) });
+    const g = await safeFetch(url, {
+      headers: { Authorization: await authHeader() },
+      signal: AbortSignal.timeout(20000)
+    });
     if (g.status === 404) {
       monthCache.clear();
       throw new Error('That event was already removed');
@@ -653,10 +674,10 @@ export function createCalendarSource(
     if (etag) headers['If-Match'] = etag;
     let r: Response;
     if ('del' in result) {
-      r = await fetch(url, { method: 'DELETE', headers, signal: AbortSignal.timeout(20000) });
+      r = await safeFetch(url, { method: 'DELETE', headers, signal: AbortSignal.timeout(20000) });
     } else {
       headers['Content-Type'] = 'text/calendar; charset=utf-8';
-      r = await fetch(url, { method: 'PUT', headers, body: result.text, signal: AbortSignal.timeout(20000) });
+      r = await safeFetch(url, { method: 'PUT', headers, body: result.text, signal: AbortSignal.timeout(20000) });
     }
     monthCache.clear();
     if (r.status === 412)

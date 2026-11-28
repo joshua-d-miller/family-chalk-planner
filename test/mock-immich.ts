@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | mock-immich.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-17
+ Updated:   2026-11-24
 
  Purpose:
      Stand-in for an Immich server (the calls the board makes), for tests.
@@ -24,20 +24,17 @@
                                   The big album acts like Immich 3: the album
                                   only counts its photos, which are on its
                                   timeline.
+
+ 1.2.8    2026-11-24   joshua    Whole pictures from
+                        claude    test/sample-pictures.ts.
 ===============================================================================
 */
 
 import http from 'node:http';
+import { JPEG, WEBP } from './sample-pictures.ts';
 
 export const KEY = 'KEY';
 export const SHARE = 'SHAREKEY0001';
-const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0xff, 0xd9]);
-const WEBP = Buffer.concat([
-  Buffer.from('RIFF'),
-  Buffer.from([20, 0, 0, 0]),
-  Buffer.from('WEBPVP8 '),
-  Buffer.alloc(12)
-]);
 
 const asset = (id: string, date: string, extra: Record<string, unknown> = {}) => ({
   id,

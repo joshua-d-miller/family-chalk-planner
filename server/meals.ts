@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | meals.ts
 ===============================================================================
- Version:   0.13.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-07
+ Updated:   2026-11-24
 
  Purpose:
      The meal plan: meals for the week, each on a day of the week or on
@@ -33,6 +33,9 @@
 
                                   Database migrations; chores, meals and jars
                                   in their own tables.
+
+ 1.2.8    2026-11-24   joshua    A meal far longer than 60 characters isn't
+                        claude    read for a [day] (keeps the pattern quick).
 ===============================================================================
 */
 
@@ -61,7 +64,8 @@ function cleanMeal(raw: unknown): Omit<Meal, 'id'> & { id?: string; hasDay: bool
   let t = String(it.t || '').trim();
   let day = String(it.day ?? '').toLowerCase() as MealDay;
   let hasDay = it.day !== undefined;
-  const m = /^\[(sun|mon|tue|wed|thu|fri|sat)\]\s*(.*)$/i.exec(t);
+  // a meal is cut to 60 characters below; one far longer than that isn't read for a [day] (keeps this quick)
+  const m = t.length <= 200 ? /^\[(sun|mon|tue|wed|thu|fri|sat)\]\s*(.*)$/i.exec(t) : null;
   if (m) {
     if (!day) day = m[1].toLowerCase() as MealDay;
     t = m[2].trim();

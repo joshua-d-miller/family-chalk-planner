@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | smoke.test.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-24
 
  Purpose:
      End-to-end smoke test: real server + mock CalDAV + mock photo album,
@@ -83,6 +83,12 @@
                         claude    the − / + / Fit buttons; Split View; the
                                   menu in the Notes column; filling the
                                   screen, and the wooden frame.
+
+ 1.2.8    2026-11-24   joshua    Whole pictures from test/sample-pictures.ts
+                        claude    for uploads.
+
+                                  Its board's setup code comes from the
+                                  board's log (test/helpers.ts watchLog()).
 ===============================================================================
 */
 
@@ -103,7 +109,8 @@ let server,
   album,
   data,
   cookie = '';
-import { pairAdmin, client } from './helpers.ts';
+import { pairAdmin, client, watchLog } from './helpers.ts';
+import { GIF, PNG } from './sample-pictures.ts';
 import * as mockAlbum from './mock-album.ts';
 import * as mockCaldav from './mock-caldav.ts';
 const { api, post } = client(base, () => cookie);
@@ -132,6 +139,7 @@ test.before(async () => {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
+  watchLog(data, server); // the setup code comes from its log, as a person reads it
   for (let i = 0; i < 50; i++) {
     try {
       if ((await fetch(base + '/api/whoami')).ok) break;
@@ -383,7 +391,7 @@ test('unused pictures are tidied up; ones in use are kept', async () => {
         await api('/api/media', {
           method: 'POST',
           headers: { 'Content-Type': 'image/gif' },
-          body: Buffer.concat([Buffer.from('GIF89a'), Buffer.alloc(30)])
+          body: GIF
         })
       ).json()
     ).src;
@@ -554,7 +562,7 @@ test('backgrounds: the new ones, and a photo of your own only with a photo the b
     await api('/api/media', {
       method: 'POST',
       headers: { 'Content-Type': 'image/png' },
-      body: Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(40)])
+      body: PNG
     })
   ).json();
   const t = await (await post('/api/theme', { p: 'classic', s: 'photo', img: up.src })).json();
