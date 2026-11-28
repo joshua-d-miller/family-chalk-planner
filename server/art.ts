@@ -60,8 +60,8 @@
  0.16.0    2026-11-11   joshua    Pictures and words can be turned (r).
                         claude
 
- 1.3.0    2026-11-28   joshua    A picture's 🖍 Look (lk), one it knows.
-                        claude
+ 1.3.0    2026-11-28   joshua    A picture's 🖍 Look (lk), one it knows;
+                        claude    a flight path's style (d).
 ===============================================================================
 */
 
@@ -96,6 +96,8 @@ export type ArtItem = Record<string, unknown>;
 // be drawn is refused.                                                      //
 // a picture's 🖍 Look: as it is, or drawn in chalk (web/src/lib/pictureLook.ts)
 const LOOKS = ['none', 'marker', 'shine', 'sticker', 'doodle', 'chalk'];
+// a flight path's style (web/src/board/trail.ts)
+const DASHES = ['dash', 'dots', 'dashdot', 'hearts'];
 export function cleanItem(raw: unknown): ArtItem | null {
   if (!raw || typeof raw !== 'object') return null;
   const it = raw as Record<string, unknown>;
@@ -160,6 +162,7 @@ export function cleanItem(raw: unknown): ArtItem | null {
     p: it.p.map(n => Math.round((Number(n) || 0) * 2) / 2),
     ...(it.m ? { m: true } : {}),
     ...(typeof it.fc === 'string' && HEX.test(it.fc) ? { fc: it.fc } : {}),
+    ...(DASHES.includes(it.d as string) ? { d: it.d } : {}),
     ...group,
     ...cover
   };

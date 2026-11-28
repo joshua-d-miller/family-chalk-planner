@@ -866,3 +866,65 @@ test('a picture’s look: colored in with chalk marker or stick chalk, made once
     await board.admin.post('/api/art/delete', { ym, ids: pic.ids });
   }
 });
+
+test('flight paths: a dotted line, and a picture that flies along its path to the end', async ({ as, board }) => {
+  const { ym } = thisMonth();
+  await board.admin.post('/api/art/clear', { ym });
+  await board.admin.post('/api/art/bulk', {
+    ym,
+    items: [{ k: 'g', x: 200, y: 200, w: 100, h: 100, src: '/api/clip/birthday-cake.svg', mode: 'still' }]
+  });
+  type It = { k?: string; d?: string; g?: string; x?: number; y?: number; r?: number; p?: number[] };
+  const artOf = async () => (await (await board.admin.api(`/api/art?ym=${ym}`)).json()) as It[];
+  try {
+    const t = await as('tablet', { path: '/edit' });
+    await t.locator('#drawBtn').click();
+    const box = (await t.locator('.slate').boundingBox())!;
+    const at = (x: number, y: number) => [box.x + (x / 1252) * box.width, box.y + (y / 642) * box.height] as const;
+    const line = async (pts: [number, number][]) => {
+      await t.mouse.move(...at(...pts[0]));
+      await t.mouse.down();
+      for (const p of pts.slice(1)) await t.mouse.move(...at(...p), { steps: 5 });
+      await t.mouse.up();
+    };
+    // Path: dashes, then dots
+    await t.locator('#dashBtn').click();
+    await t.locator('#dashBtn').click();
+    await expect(t.locator('#dashBtn')).toHaveText(/Dots/);
+    await line([
+      [400, 450],
+      [600, 470],
+      [800, 450]
+    ]);
+    await expect.poll(async () => (await artOf()).find(x => x.p)?.d).toBe('dots');
+    await expect(t.locator('.slate > .artSvg .trail path[fill]')).toHaveCount(1);
+    // the picture flies to where its path ends, turned to go that way (here: straight down)
+    await t.locator('#selectBtn').click();
+    await t.mouse.click(...at(200, 200));
+    await t.locator('#pathBtn').click();
+    await expect(t.locator('.pathHint')).toBeVisible();
+    await line([
+      [300, 100],
+      [700, 100],
+      [700, 300],
+      [700, 380]
+    ]);
+    await expect.poll(async () => (await artOf()).filter(x => x.p).length).toBe(2);
+    const all = await artOf();
+    const cake = all.find(x => x.k === 'g')!;
+    const path = all.filter(x => x.p).at(-1)!;
+    expect(Math.abs(cake.x! - 700)).toBeLessThan(6);
+    expect(Math.abs(cake.y! - 380)).toBeLessThan(6);
+    expect(cake.r).toBe(90);
+    expect(path.d).toBe('dots'); // the Path style already picked
+    expect(cake.g).toBeTruthy();
+    expect(path.g).toBe(cake.g);
+    // a style the board doesn't know is a plain line
+    await board.admin.post('/api/art', { ym, stroke: { c: '#F2D479', w: 4, p: [40, 20, 60, 40], d: 'zigzag' } });
+    await expect.poll(async () => (await artOf()).filter(x => x.p && !x.d).length).toBe(1);
+    if (process.env.SHOTS) await t.locator('#board').screenshot({ path: process.env.SHOTS + '/paths.png' });
+    expect(t.errors).toEqual([]);
+  } finally {
+    await board.admin.post('/api/art/clear', { ym });
+  }
+});

@@ -113,6 +113,12 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
 - **2026-11-28: lettering (8).** 🔤 Month title → Lettering (Outline as before, White outline with a gap, Inline,
   Drop shadow, Neon) and Marker streaks; CSS only (board.css), saved with the title (`l`, `s`). Big events'
   lettering: not done (they have their own large and extra-large writing).
+- **2026-11-28: flight paths (9).** ✏️ Draw → **Path** (each tap: Dashes, Dots, Dash dot, Hearts, off) draws a
+  stroke with `d` (checked on the server; an unknown one is a plain line). Drawn by `web/src/board/trail.ts`, mark
+  by mark with a little variation, as SVG (sharp, seeded by where the line starts). A selected picture's **✈ Add a
+  path**: draw it, and the picture lands at its end, turned along it and kept upright, grouped with it (`g`).
+  Spacing is set by the line's size (no separate gap setting). Riders: any picture (bee, plane, butterfly are in
+  the library already). Tested: test/trail.test.ts and the browser test "flight paths".
 - **Timers and loops (part of 1):** checked all 17. Each is slow or stops by itself; the one fast one (250 ms)
   runs only while a timer counts down. Nothing to fix until off hours, which needs one "asleep" switch that the
   slideshow, weather, GIFs, Split View, title photos and Notes rotation respect while the screen is black. A

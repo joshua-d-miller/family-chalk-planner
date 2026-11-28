@@ -58,7 +58,7 @@
                                   and light on a wall's memory.
 
  1.3.0    2026-11-28   joshua    A picture in its 🖍 Look (lib/pictureLook.ts),
-                        claude    or the board style's.
+                        claude    or the board style's. Flight paths (d).
 ===============================================================================
 */
 
@@ -67,6 +67,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { url } from '../lib/api.ts';
 import { useLook } from '../lib/pictureLook.ts';
 import { readable } from './color.ts';
+import { trail } from './trail.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------ //
@@ -81,6 +82,7 @@ export type ArtItem = {
   m?: boolean; // Posca (solid) instead of chalk
   e?: boolean; // eraser
   fc?: string; // fill of a closed line
+  d?: string; // a flight path: dashes, dots, dashes and dots, or hearts (trail.ts)
   s?: string; // words
   f?: number;
   z?: number;
@@ -324,6 +326,25 @@ export function Art({
               );
             }
             if (!it.p || it.p.length < 2) return null;
+            if (it.d) {
+              // seeded by where it starts, so it looks the same while drawn and once saved
+              const t = trail(it.p, it.w || 4, it.d, Math.floor(it.p[0] / 8) * 31 + Math.floor(it.p[1] / 8) + 1);
+              return (
+                <g key={it.id} data-id={it.id} className="trail">
+                  {t.line && (
+                    <path
+                      d={t.line}
+                      fill="none"
+                      stroke={p}
+                      strokeWidth={it.w}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+                  {t.fill && <path d={t.fill} fill={p} />}
+                </g>
+              );
+            }
             const d = strokePath(it.p);
             return (
               <g key={it.id} data-id={it.id}>

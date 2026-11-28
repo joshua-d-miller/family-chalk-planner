@@ -34,6 +34,9 @@
 
  1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
                         claude    with changes.
+
+ 1.3.0    2026-11-28   joshua    Path: dashes, dots, dashes and dots, hearts.
+                        claude
 ===============================================================================
 */
 
@@ -48,6 +51,9 @@ import { post } from '../../lib/api.ts';
 import { Thumb } from './Library.tsx';
 import { isPosca, SIZES, TEXT_SIZES } from './Draw.tsx';
 import type { Medium, Pen, Tool } from './Draw.tsx';
+import { DASHES } from '../trail.ts';
+
+const DASH_NAMES: Record<string, string> = { dash: 'Dashes', dots: 'Dots', dashdot: 'Dash dot', hearts: 'Hearts' };
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //
@@ -158,6 +164,19 @@ export function Tools({
           >
             <Ic d="M14.5 4.5l5 5L10 19l-5 1 1-5zM12 7l5 5" />
             Posca
+          </button>
+          <button
+            type="button"
+            className={'tool medium' + (pen.dash ? ' on' : '')}
+            id="dashBtn"
+            aria-label={`Path: ${pen.dash ? DASH_NAMES[pen.dash] : 'Off'} (tap for the next)`}
+            onClick={() => {
+              const next = ['', ...DASHES][(DASHES.indexOf(pen.dash || '') + 2) % (DASHES.length + 1)];
+              setPen({ ...pen, tool: 'pen', dash: next || undefined });
+            }}
+          >
+            <Ic d="M4 18c3-6 6-9 11-10M18 7h.01" dash />
+            {pen.dash ? DASH_NAMES[pen.dash] : 'Path'}
           </button>
         </>
       )}

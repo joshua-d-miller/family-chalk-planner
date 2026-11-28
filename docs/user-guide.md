@@ -14,6 +14,8 @@ The wall display only shows the board; everything is edited from a tablet or pho
 
 **A picture's look:** select a picture while decorating and tap **🖍** in its bar for the next look: **Board style's** (Chalk marker colors pictures in, Stick chalk draws them in chalk, Clean leaves them), **As is**, **Chalk marker** (colored in with marker strokes), **Marker + highlight**, **White outline** (like a sticker), **Colored outline** or **Stick chalk**. A moving GIF plays as it is.
 
+**Flight paths:** in the drawing tools, tap **Path** for a dashed line, again for dots, dashes and dots, hearts, and once more for a plain line again. To send a picture flying (a bee, a paper plane), select it and tap **✈ Add a path**, then draw where it's been: it lands at the end of the path, facing the way it went, and the two move together.
+
 **Any month in two taps:** on a screen that edits, tap the **month’s name**: pick the year with ‹ ›, then the month; **This month** comes back to today's, and **↻ Start the board again** reloads the board (what that tap used to do).
 
 ### More than one calendar
