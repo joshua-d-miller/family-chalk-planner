@@ -5,7 +5,7 @@
  Version:   1.2.8
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-24
+ Updated:   2026-11-28
 
  Purpose:
      Board settings: all kept in the database and changed in the admin
@@ -56,6 +56,9 @@
 
  1.2.8    2026-11-24   joshua    The settings key is made only if there's
                         claude    none yet, in one step (server/files.ts).
+
+ 1.3.0    2026-11-28   joshua    MORE_ALBUMS: up to 8 more albums, each a
+                        claude    link or an Immich album, kept private.
 ===============================================================================
 */
 
@@ -166,6 +169,28 @@ export const FIELDS: Record<string, Field> = {
   },
   // photos
   PHOTO_ALBUM_URL: { type: 'url', private: true },
+  // more albums, each with a name: a shared album's link, or which photos on the Immich server below
+  // (an album's name or id, favorites, all or thisday): [{ id, name, url } | { id, name, immich }]
+  MORE_ALBUMS: {
+    type: 'json',
+    private: true,
+    check: v =>
+      jsonList(
+        v,
+        a =>
+          typeof a.id === 'string' &&
+          /^[a-z0-9-]{1,20}$/.test(a.id) &&
+          isName(a.name, 40) &&
+          (a.url === undefined) !== (a.immich === undefined) &&
+          (a.url === undefined ||
+            (typeof a.url === 'string' && /^https?:\/\/[^\s"<>]+$/i.test(a.url) && a.url.length <= 1000)) &&
+          (a.immich === undefined || (typeof a.immich === 'string' && a.immich.length <= 200))
+      ) ??
+      // (jsonList passed: it's a list) each album its own id
+      (new Set((JSON.parse(v) as { id: string }[]).map(a => a.id)).size === JSON.parse(v).length
+        ? null
+        : 'Each album needs its own id')
+  },
   // or Immich (from Colby Way's board): the server's address, an API key, and which photos
   IMMICH_URL: { type: 'url' },
   IMMICH_API_KEY: { type: 'secret' },

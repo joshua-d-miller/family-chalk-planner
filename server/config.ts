@@ -5,7 +5,7 @@
  Version:   1.2.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      The board's settings, read once at start-up: the environment (.env),
@@ -32,12 +32,16 @@
 
  1.2.0    2026-11-21   joshua    language: the board's (LANGUAGE).
                         claude    
+
+ 1.3.0    2026-11-28   joshua    photos.moreAlbums.
+                        claude
 ===============================================================================
 */
 
 import path from 'node:path';
 import type { Country } from './holidays.ts';
 import type { CalendarConfig } from './calendar/source.ts';
+import type { MoreAlbum } from './photos/photos.ts';
 
 const num = <D>(v: string | undefined, d: D) => (v === undefined || v === '' || !Number.isFinite(+v) ? d : +v);
 
@@ -124,6 +128,8 @@ export function readConfig(env: NodeJS.ProcessEnv, appDir: string, dataDir: stri
     photos: {
       album: { url: (env.PHOTO_ALBUM_URL || '').trim(), googleHost: env.PHOTO_GOOGLE_HOST, ckHost: env.PHOTO_CK_HOST },
       immich: { url: env.IMMICH_URL || '', key: env.IMMICH_API_KEY || '', album: env.IMMICH_ALBUM || '' },
+      // more albums (⚙️ Board → Photos → More albums): [{ id, name, url } | { id, name, immich }]
+      moreAlbums: jsonList<MoreAlbum>(env.MORE_ALBUMS),
       // which photos, and how many copies the board keeps (server/photos/photos.ts)
       choose: {
         pick: (['picked', 'random'].includes(env.PHOTO_PICK || '') ? env.PHOTO_PICK : 'all') as

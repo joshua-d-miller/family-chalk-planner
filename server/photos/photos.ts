@@ -5,7 +5,7 @@
  Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      Photos: a shared album feeds the photos beside the month name and the
@@ -74,6 +74,9 @@
 
  1.3.0    2026-11-26   joshua    The overnight hours on chosen days, and up
                         claude    to 3 more times.
+
+ 1.3.0    2026-11-28   joshua    More albums (MORE_ALBUMS), each kept fresh
+                        claude    on its own (makeSource); ?album= picks one.
 ===============================================================================
 */
 
@@ -114,6 +117,13 @@ export interface PhotoChoice {
   randomCount: number; // pick 'random': how many a day
   keep: 'all' | 'few'; // a copy of every chosen photo, or only the last few shown
   keepCount: number; // keep 'few': how many copies
+}
+// one of the admin's more albums: a shared album's link, or which photos on the Immich server that's set up
+export interface MoreAlbum {
+  id: string;
+  name: string;
+  url?: string;
+  immich?: string; // an album's name or id, 'favorites', 'all' or 'thisday'
 }
 const CHOICE_DEFAULT: PhotoChoice = { pick: 'all', randomCount: 50, keep: 'all', keepCount: 5 };
 const MAX_PICKED = 5000;
@@ -171,7 +181,9 @@ export function setup({
   cacheDir,
   faceDir,
   facePython,
-  choose = CHOICE_DEFAULT
+  choose = CHOICE_DEFAULT,
+  moreAlbums = [],
+  albumsDir = path.join(path.dirname(cacheDir), 'photo-albums')
 }: {
   app: Express;
   kv: Kv;
@@ -183,267 +195,309 @@ export function setup({
   faceDir: string;
   facePython: string;
   choose?: PhotoChoice;
+  moreAlbums?: MoreAlbum[]; // ⚙️ Board → Photos → More albums (MORE_ALBUMS)
+  albumsDir?: string; // their copies, one folder each (not inside photo-cache/: its sync removes what isn't its own)
 }) {
-  const state = {
-    list: kv.get<Photo[]>('photos') || [],
-    all: [] as Source[], // every photo the album had when it was last read (for picking, and fetching)
-    synced: 0,
-    error: null as string | null,
-    running: false,
-    offline: false // a big album that can't be reached: its last copy is shown instead
-  };
-  const few = choose.keep === 'few';
   const cfg = (): PhotoCfg => ({ ...CFG_DEFAULT, ...(kv.get<Partial<PhotoCfg>>('photoCfg') || {}) });
-  // Where the photos come from: Immich (with a key), an Immich share link, Google Photos or iCloud
-  const immichUrl = normalizeImmichUrl(immich.url);
-  const immichSrc: ImmichSource | null =
-    immichUrl && immich.key ? { url: immichUrl, key: immich.key, album: immich.album } : immichShare(album.url);
-  const kind = immichSrc ? (immichSrc.shareKey ? 'immich-share' : 'immich') : album.url ? albumKind(album) : 'none';
-  const enabled = kind !== 'none';
-  const google = kind === 'google';
 
-  const faceScript = path.join(faceDir, 'facefocus.py');
-  const faceModel = path.join(faceDir, 'yunet.onnx');
-  // ------------------- //
-  // | The face finder | //
-  // ------------------- //
-  // Face/facefocus.py (OpenCV YuNet), if it's installed: where the faces    //
-  // are in each photo, so frames can be filled with people.                 //
-  const faceReady = () => [facePython, faceScript, faceModel].every(f => fs.existsSync(f));
-  function findFaces(files: string[]): Promise<FaceResult[]> {
-    return new Promise(resolve => {
-      if (!files.length || !faceReady()) return resolve([]);
-      execFile(
-        facePython,
-        [faceScript, faceModel, ...files],
-        { timeout: 10 * 60 * 1000, maxBuffer: 4 << 20 },
-        (err, stdout) => {
-          if (err && !stdout) console.error('Face finder:', err.message);
-          resolve(
-            String(stdout || '')
-              .split('\n')
-              .map(l => {
-                try {
-                  return JSON.parse(l) as FaceResult;
-                } catch {
-                  return null;
-                }
-              })
-              .filter(r => r !== null)
-          );
-        }
-      );
-    });
-  }
+  // ------------------------- //
+  // | One album, kept fresh | //
+  // ------------------------- //
+  // The board's own album (its list kept as 'photos', its copies in        //
+  // photo-cache/, as before 1.3.0) and each of the admin's more albums      //
+  // (MORE_ALBUMS: 'photos:<id>', photo-albums/<id>/) work the same way.     //
+  function makeSource(
+    album: AlbumConfig,
+    immich: { url: string; key: string; album: string },
+    cacheDir: string,
+    listKey: string,
+    first: boolean // the board's own album: the console's picked photos are its
+  ) {
+    const state = {
+      list: kv.get<Photo[]>(listKey) || [],
+      all: [] as Source[], // every photo the album had when it was last read (for picking, and fetching)
+      synced: 0,
+      error: null as string | null,
+      running: false,
+      offline: false // a big album that can't be reached: its last copy is shown instead
+    };
+    const few = choose.keep === 'few';
+    // Where the photos come from: Immich (with a key), an Immich share link, Google Photos or iCloud
+    const immichUrl = normalizeImmichUrl(immich.url);
+    const immichSrc: ImmichSource | null =
+      immichUrl && immich.key ? { url: immichUrl, key: immich.key, album: immich.album } : immichShare(album.url);
+    const kind = immichSrc ? (immichSrc.shareKey ? 'immich-share' : 'immich') : album.url ? albumKind(album) : 'none';
+    const enabled = kind !== 'none';
+    const google = kind === 'google';
 
-  // ----------------------- //
-  // | Downloading a photo | //
-  // ----------------------- //
-  // Only from the album service's own image hosts (Immich: the server that  //
-  // was set up)                                                             //
-  const hostOk = (u: string) => (immichSrc ? u.startsWith(immichSrc.url + '/') : imageHostOk(album, u));
-  // JPEG or PNG (the wall can't show HEIC); Immich's previews can also be WebP
-  const imageOk = (b: Buffer) => isJpegPng(b) || (!!immichSrc && isWebp(b));
-  async function getImage(
-    url: string,
-    headers: Record<string, string> = {},
-    fallback?: string
-  ): Promise<Buffer | null> {
-    // album servers (Immich on your network, Google, iCloud): the name and every redirect checked (server/address.ts)
-    const r = await safeFetch(url, {
-      headers: google
-        ? { ...GP_UA, Accept: 'image/jpeg,image/png' }
-        : { Accept: 'image/jpeg,image/png,image/webp,image/*', ...headers },
-      signal: AbortSignal.timeout(60000)
-    });
-    const buf = r.ok ? Buffer.from(await r.arrayBuffer()) : null;
-    if (buf && imageOk(buf)) return buf;
-    if (buf && google && !url.endsWith('-rj')) return getImage(url + '-rj'); // ask Google for JPEG
-    if (fallback && fallback !== url) return getImage(fallback, headers);
-    return null;
-  }
-
-  // a photo's copy (or its faces) in the cache folder: always inside it, whatever the album calls the photo
-  const fileOf = (id: string, ext: string) => {
-    const file = inside(cacheDir, `${id}.${ext}`);
-    if (!file) throw new Error('Not a photo the board keeps');
-    return file;
-  };
-  // a fetched photo, kept as the board's own copy (drawn again in the same type, server/images.ts: the
-  // wall shows JPEG, PNG and WebP alike) and written in one step
-  async function keepCopy(file: string, buf: Buffer) {
-    const pic = await remade(buf);
-    if (!pic) return false;
-    writeWhole(file, pic.buf);
-    return true;
-  }
-
-  // ---------------- //
-  // | Which photos | //
-  // ---------------- //
-  // All of them, the ones picked in the console (all of them until some     //
-  // are), or a few at random: the same few all day, new ones each day.      //
-  function chosen(all: Source[]): Source[] {
-    if (choose.pick === 'picked') {
-      const picked = new Set(kv.get<string[]>('photoPicked') || []);
-      const hits = all.filter(a => picked.has(a.id));
-      return hits.length ? hits : all;
+    const faceScript = path.join(faceDir, 'facefocus.py');
+    const faceModel = path.join(faceDir, 'yunet.onnx');
+    // ------------------- //
+    // | The face finder | //
+    // ------------------- //
+    // Face/facefocus.py (OpenCV YuNet), if it's installed: where the faces    //
+    // are in each photo, so frames can be filled with people.                 //
+    const faceReady = () => [facePython, faceScript, faceModel].every(f => fs.existsSync(f));
+    function findFaces(files: string[]): Promise<FaceResult[]> {
+      return new Promise(resolve => {
+        if (!files.length || !faceReady()) return resolve([]);
+        execFile(
+          facePython,
+          [faceScript, faceModel, ...files],
+          { timeout: 10 * 60 * 1000, maxBuffer: 4 << 20 },
+          (err, stdout) => {
+            if (err && !stdout) console.error('Face finder:', err.message);
+            resolve(
+              String(stdout || '')
+                .split('\n')
+                .map(l => {
+                  try {
+                    return JSON.parse(l) as FaceResult;
+                  } catch {
+                    return null;
+                  }
+                })
+                .filter(r => r !== null)
+            );
+          }
+        );
+      });
     }
-    if (choose.pick === 'random') {
-      const day = today();
-      const rank = new Map(
-        all.map(a => [a.id, crypto.createHash('sha1').update(`${day}|${a.id}`).digest('hex')] as const)
-      );
-      return [...all]
-        .sort((a, b) => (rank.get(a.id)! < rank.get(b.id)! ? -1 : 1))
-        .slice(0, choose.randomCount)
-        .sort((a, b) => b.date - a.date);
-    }
-    return all;
-  }
 
-  // ----------------------------- //
-  // | A big album: a few copies | //
-  // ----------------------------- //
-  // The board lists every chosen photo but keeps copies of only the last    //
-  // few shown (enough for the slideshow's photos side by side); the rest    //
-  // are fetched from the album when a screen asks for them. Immich's own    //
-  // faces come along in the list (the face finder needs a copy, so it       //
-  // only runs when every photo is kept).                                    //
-  const fetching = new Map<string, Promise<boolean>>();
-  function trimCopies() {
-    const copies = fs
-      .readdirSync(cacheDir)
-      .filter(f => f.endsWith('.jpg'))
-      .map(f => ({ f, t: fs.statSync(path.join(cacheDir, f)).mtimeMs }))
-      .sort((a, b) => b.t - a.t);
-    for (const { f } of copies.slice(choose.keepCount)) {
-      fs.rmSync(path.join(cacheDir, f), { force: true });
-      fs.rmSync(path.join(cacheDir, f.replace(/\.jpg$/, '.json')), { force: true });
+    // ----------------------- //
+    // | Downloading a photo | //
+    // ----------------------- //
+    // Only from the album service's own image hosts (Immich: the server that  //
+    // was set up)                                                             //
+    const hostOk = (u: string) => (immichSrc ? u.startsWith(immichSrc.url + '/') : imageHostOk(album, u));
+    // JPEG or PNG (the wall can't show HEIC); Immich's previews can also be WebP
+    const imageOk = (b: Buffer) => isJpegPng(b) || (!!immichSrc && isWebp(b));
+    async function getImage(
+      url: string,
+      headers: Record<string, string> = {},
+      fallback?: string
+    ): Promise<Buffer | null> {
+      // album servers (Immich on your network, Google, iCloud): the name and every redirect checked (server/address.ts)
+      const r = await safeFetch(url, {
+        headers: google
+          ? { ...GP_UA, Accept: 'image/jpeg,image/png' }
+          : { Accept: 'image/jpeg,image/png,image/webp,image/*', ...headers },
+        signal: AbortSignal.timeout(60000)
+      });
+      const buf = r.ok ? Buffer.from(await r.arrayBuffer()) : null;
+      if (buf && imageOk(buf)) return buf;
+      if (buf && google && !url.endsWith('-rj')) return getImage(url + '-rj'); // ask Google for JPEG
+      if (fallback && fallback !== url) return getImage(fallback, headers);
+      return null;
     }
-  }
-  // the album can't be reached (or can again): the screens show a small note
-  function setOffline(v: boolean) {
-    if (state.offline === v) return;
-    state.offline = v;
-    broadcast('photos', {});
-  }
-  // the copy shown most recently, for when the album can't be reached
-  function lastCopy(): string | null {
-    const copies = fs.existsSync(cacheDir)
-      ? fs
-          .readdirSync(cacheDir)
-          .filter(f => f.endsWith('.jpg'))
-          .map(f => ({ f, t: fs.statSync(path.join(cacheDir, f)).mtimeMs }))
-          .sort((a, b) => b.t - a.t)
-      : [];
-    return copies.length ? path.join(cacheDir, copies[0].f) : null;
-  }
-  function fetchOne(id: string): Promise<boolean> {
-    const a = state.all.find(x => x.id === id);
-    if (!a) return Promise.resolve(false);
-    let p = fetching.get(id);
-    if (!p) {
-      p = getImage(a.url, a.headers, a.fallbackUrl)
-        .then(async buf => {
-          if (!buf) return false;
-          fs.mkdirSync(cacheDir, { recursive: true });
-          if (!(await keepCopy(fileOf(id, 'jpg'), buf))) return false;
-          trimCopies();
-          setOffline(false);
-          return true;
-        })
-        .catch(() => false)
-        .finally(() => fetching.delete(id));
-      fetching.set(id, p);
+
+    // a photo's copy (or its faces) in the cache folder: always inside it, whatever the album calls the photo
+    const fileOf = (id: string, ext: string) => {
+      const file = inside(cacheDir, `${id}.${ext}`);
+      if (!file) throw new Error('Not a photo the board keeps');
+      return file;
+    };
+    // a fetched photo, kept as the board's own copy (drawn again in the same type, server/images.ts: the
+    // wall shows JPEG, PNG and WebP alike) and written in one step
+    async function keepCopy(file: string, buf: Buffer) {
+      const pic = await remade(buf);
+      if (!pic) return false;
+      writeWhole(file, pic.buf);
+      return true;
     }
-    return p;
-  }
-  function keepFew(assets: Source[]) {
-    const list: Photo[] = assets.map(({ id, w, h, date, faces }) =>
-      faces?.length ? { id, w, h, date, faces: faces as unknown as Face[] } : { id, w, h, date }
-    );
-    // copies of photos no longer chosen go; then only the newest few stay
-    const keep = new Set(list.map(p => `${p.id}.jpg`));
-    for (const f of fs.readdirSync(cacheDir)) if (!keep.has(f)) fs.rmSync(path.join(cacheDir, f), { force: true });
-    trimCopies();
-    done(list);
-  }
-  // the new list: saved, and the screens told if it changed
-  function done(list: Photo[]) {
-    const changed = JSON.stringify(list) !== JSON.stringify(state.list);
-    state.list = list;
-    state.synced = Date.now();
-    state.error = null;
-    if (changed) {
-      kv.set('photos', list);
+
+    // ---------------- //
+    // | Which photos | //
+    // ---------------- //
+    // All of them, the ones picked in the console (all of them until some     //
+    // are), or a few at random: the same few all day, new ones each day.      //
+    function chosen(all: Source[]): Source[] {
+      if (choose.pick === 'picked' && first) {
+        const picked = new Set(kv.get<string[]>('photoPicked') || []);
+        const hits = all.filter(a => picked.has(a.id));
+        return hits.length ? hits : all;
+      }
+      if (choose.pick === 'random') {
+        const day = today();
+        const rank = new Map(
+          all.map(a => [a.id, crypto.createHash('sha1').update(`${day}|${a.id}`).digest('hex')] as const)
+        );
+        return [...all]
+          .sort((a, b) => (rank.get(a.id)! < rank.get(b.id)! ? -1 : 1))
+          .slice(0, choose.randomCount)
+          .sort((a, b) => b.date - a.date);
+      }
+      return all;
+    }
+
+    // ----------------------------- //
+    // | A big album: a few copies | //
+    // ----------------------------- //
+    // The board lists every chosen photo but keeps copies of only the last    //
+    // few shown (enough for the slideshow's photos side by side); the rest    //
+    // are fetched from the album when a screen asks for them. Immich's own    //
+    // faces come along in the list (the face finder needs a copy, so it       //
+    // only runs when every photo is kept).                                    //
+    const fetching = new Map<string, Promise<boolean>>();
+    function trimCopies() {
+      const copies = fs
+        .readdirSync(cacheDir)
+        .filter(f => f.endsWith('.jpg'))
+        .map(f => ({ f, t: fs.statSync(path.join(cacheDir, f)).mtimeMs }))
+        .sort((a, b) => b.t - a.t);
+      for (const { f } of copies.slice(choose.keepCount)) {
+        fs.rmSync(path.join(cacheDir, f), { force: true });
+        fs.rmSync(path.join(cacheDir, f.replace(/\.jpg$/, '.json')), { force: true });
+      }
+    }
+    // the album can't be reached (or can again): the screens show a small note
+    function setOffline(v: boolean) {
+      if (state.offline === v) return;
+      state.offline = v;
       broadcast('photos', {});
     }
-  }
-
-  // --------------------------------- //
-  // | Keeping the copies up to date | //
-  // --------------------------------- //
-  // Every photo is copied into photo-cache/, so the wall never waits on the //
-  // album; the album is checked again every few hours.                      //
-  async function sync() {
-    if (!enabled || state.running) return;
-    state.running = true;
-    try {
-      const read: Source[] = immichSrc ? await readImmich(immichSrc, today()) : await readAlbum(album);
-      // only photos from the album service's own hosts are ever fetched
-      state.all = read.filter(a => hostOk(a.url) && (!a.fallbackUrl || hostOk(a.fallbackUrl)));
-      const assets = chosen(state.all);
-      fs.mkdirSync(cacheDir, { recursive: true });
-      if (few) return keepFew(assets);
-      for (const a of assets) {
-        const file = fileOf(a.id, 'jpg');
-        if (fs.existsSync(file) || !hostOk(a.url) || (a.fallbackUrl && !hostOk(a.fallbackUrl))) continue;
-        const buf = await getImage(a.url, a.headers, a.fallbackUrl);
-        if (!buf || !(await keepCopy(file, buf))) continue;
-        // Immich already found the faces
-        if (a.faces?.length && a.w && a.h)
-          writeIfNew(fileOf(a.id, 'json'), JSON.stringify({ w: a.w, h: a.h, faces: a.faces }));
-      }
-      const have = assets.filter(a => fs.existsSync(fileOf(a.id, 'jpg')));
-      const todo = have.filter(a => !fs.existsSync(fileOf(a.id, 'json'))).map(a => fileOf(a.id, 'jpg'));
-      for (const r of await findFaces(todo)) {
-        if (r.error || !r.w) continue;
-        fs.writeFileSync(
-          fileOf(path.basename(r.file, '.jpg'), 'json'),
-          JSON.stringify({ w: r.w, h: r.h, faces: r.faces })
-        );
-      }
-      const list: Photo[] = have.map(({ id, w, h, date }) => {
-        let f: { w: number; h: number; faces: Face[] } | null = null;
-        try {
-          f = JSON.parse(fs.readFileSync(fileOf(id, 'json'), 'utf8'));
-        } catch {
-          /* not checked for faces */
-        }
-        return f ? { id, w: f.w, h: f.h, date, faces: f.faces } : { id, w, h, date };
-      });
-      const keep = new Set(list.flatMap(p => [`${p.id}.jpg`, `${p.id}.json`]));
-      for (const f of fs.readdirSync(cacheDir)) if (!keep.has(f)) fs.rmSync(path.join(cacheDir, f), { force: true }); // removed from the album
-      done(list);
-    } catch (e) {
-      state.error = (e as Error).message;
-      console.error('Photo sync:', oneLine(state.error)); // (the album's own words, never a fake log line)
-    } finally {
-      state.running = false;
+    // the copy shown most recently, for when the album can't be reached
+    function lastCopy(): string | null {
+      const copies = fs.existsSync(cacheDir)
+        ? fs
+            .readdirSync(cacheDir)
+            .filter(f => f.endsWith('.jpg'))
+            .map(f => ({ f, t: fs.statSync(path.join(cacheDir, f)).mtimeMs }))
+            .sort((a, b) => b.t - a.t)
+        : [];
+      return copies.length ? path.join(cacheDir, copies[0].f) : null;
     }
+    function fetchOne(id: string): Promise<boolean> {
+      const a = state.all.find(x => x.id === id);
+      if (!a) return Promise.resolve(false);
+      let p = fetching.get(id);
+      if (!p) {
+        p = getImage(a.url, a.headers, a.fallbackUrl)
+          .then(async buf => {
+            if (!buf) return false;
+            fs.mkdirSync(cacheDir, { recursive: true });
+            if (!(await keepCopy(fileOf(id, 'jpg'), buf))) return false;
+            trimCopies();
+            setOffline(false);
+            return true;
+          })
+          .catch(() => false)
+          .finally(() => fetching.delete(id));
+        fetching.set(id, p);
+      }
+      return p;
+    }
+    function keepFew(assets: Source[]) {
+      const list: Photo[] = assets.map(({ id, w, h, date, faces }) =>
+        faces?.length ? { id, w, h, date, faces: faces as unknown as Face[] } : { id, w, h, date }
+      );
+      // copies of photos no longer chosen go; then only the newest few stay
+      const keep = new Set(list.map(p => `${p.id}.jpg`));
+      for (const f of fs.readdirSync(cacheDir)) if (!keep.has(f)) fs.rmSync(path.join(cacheDir, f), { force: true });
+      trimCopies();
+      done(list);
+    }
+    // the new list: saved, and the screens told if it changed
+    function done(list: Photo[]) {
+      const changed = JSON.stringify(list) !== JSON.stringify(state.list);
+      state.list = list;
+      state.synced = Date.now();
+      state.error = null;
+      if (changed) {
+        kv.set(listKey, list);
+        broadcast('photos', {});
+      }
+    }
+
+    // --------------------------------- //
+    // | Keeping the copies up to date | //
+    // --------------------------------- //
+    // Every photo is copied into photo-cache/, so the wall never waits on the //
+    // album; the album is checked again every few hours.                      //
+    async function sync() {
+      if (!enabled || state.running) return;
+      state.running = true;
+      try {
+        const read: Source[] = immichSrc ? await readImmich(immichSrc, today()) : await readAlbum(album);
+        // only photos from the album service's own hosts are ever fetched
+        state.all = read.filter(a => hostOk(a.url) && (!a.fallbackUrl || hostOk(a.fallbackUrl)));
+        const assets = chosen(state.all);
+        fs.mkdirSync(cacheDir, { recursive: true });
+        if (few) return keepFew(assets);
+        for (const a of assets) {
+          const file = fileOf(a.id, 'jpg');
+          if (fs.existsSync(file) || !hostOk(a.url) || (a.fallbackUrl && !hostOk(a.fallbackUrl))) continue;
+          const buf = await getImage(a.url, a.headers, a.fallbackUrl);
+          if (!buf || !(await keepCopy(file, buf))) continue;
+          // Immich already found the faces
+          if (a.faces?.length && a.w && a.h)
+            writeIfNew(fileOf(a.id, 'json'), JSON.stringify({ w: a.w, h: a.h, faces: a.faces }));
+        }
+        const have = assets.filter(a => fs.existsSync(fileOf(a.id, 'jpg')));
+        const todo = have.filter(a => !fs.existsSync(fileOf(a.id, 'json'))).map(a => fileOf(a.id, 'jpg'));
+        for (const r of await findFaces(todo)) {
+          if (r.error || !r.w) continue;
+          fs.writeFileSync(
+            fileOf(path.basename(r.file, '.jpg'), 'json'),
+            JSON.stringify({ w: r.w, h: r.h, faces: r.faces })
+          );
+        }
+        const list: Photo[] = have.map(({ id, w, h, date }) => {
+          let f: { w: number; h: number; faces: Face[] } | null = null;
+          try {
+            f = JSON.parse(fs.readFileSync(fileOf(id, 'json'), 'utf8'));
+          } catch {
+            /* not checked for faces */
+          }
+          return f ? { id, w: f.w, h: f.h, date, faces: f.faces } : { id, w, h, date };
+        });
+        const keep = new Set(list.flatMap(p => [`${p.id}.jpg`, `${p.id}.json`]));
+        for (const f of fs.readdirSync(cacheDir)) if (!keep.has(f)) fs.rmSync(path.join(cacheDir, f), { force: true }); // removed from the album
+        done(list);
+      } catch (e) {
+        state.error = (e as Error).message;
+        console.error('Photo sync:', oneLine(state.error)); // (the album's own words, never a fake log line)
+      } finally {
+        state.running = false;
+      }
+    }
+    if (enabled) {
+      setTimeout(sync, 5000);
+      setInterval(sync, 15 * 60 * 1000);
+    }
+    return { state, sync, fetchOne, fileOf, lastCopy, setOffline, getImage, enabled, kind, few };
   }
-  if (enabled) {
-    setTimeout(sync, 5000);
-    setInterval(sync, 15 * 60 * 1000);
-  }
+  const board = makeSource(album, immich, cacheDir, 'photos', true);
+  // the admin's more albums: a shared album's link, or an album (or Favorites, or "on this day") on the Immich
+  // server that's set up. Only these can ever be shown: nobody can point the board at a photo source of their own
+  const more = new Map(
+    moreAlbums.map(m => [
+      m.id,
+      {
+        name: m.name,
+        src: makeSource(
+          m.url ? { ...album, url: m.url } : { url: '' },
+          m.immich !== undefined ? { ...immich, album: m.immich } : { url: '', key: '', album: '' },
+          path.join(albumsDir, m.id),
+          'photos:' + m.id,
+          false
+        )
+      }
+    ])
+  );
+  type Src = typeof board;
+  const srcOf = (q: unknown): Src | null => (!q ? board : more.get(String(q))?.src || null);
 
   // -------------- //
   // | The photos | //
   // -------------- //
   // ?thisDay=1: only photos taken on this date in earlier years, if there   //
   // are any                                                                 //
+  // ?album=<id>: one of the more albums (none: the board's own)            //
   app.get('/api/photos', (req, res) => {
+    const src = srcOf(req.query.album);
+    if (!src) return res.status(404).json({ error: 'No such album' });
+    const { state, enabled, kind, few } = src;
     let photos = state.list;
     if (req.query.thisDay === '1' || req.query.thisDay === 'true') {
       const hits = onThisDay(photos, today());
@@ -457,12 +511,25 @@ export function setup({
       synced: state.synced,
       error: state.error,
       offline: few && state.offline,
-      few // only the last few kept: pictures for picking come from /api/photos/thumb
+      few, // only the last few kept: pictures for picking come from /api/photos/thumb
+      // every album there is to show (the 📷 Albums page, and what each part of the board shows)
+      albums: [
+        { id: '', name: 'Photos', count: board.state.list.length, cover: board.state.list[0]?.id || null },
+        ...[...more].map(([id, m]) => ({
+          id,
+          name: m.name,
+          count: m.src.state.list.length,
+          cover: m.src.state.list[0]?.id || null
+        }))
+      ]
     });
   });
 
   app.get('/api/photos/img/:id', async (req, res) => {
     if (!/^[A-Za-z0-9_-]{1,80}$/.test(req.params.id)) return res.sendStatus(404);
+    const src = srcOf(req.query.album);
+    if (!src) return res.sendStatus(404);
+    const { state, few, fileOf, sync, fetchOne, setOffline, lastCopy } = src;
     let file = fileOf(req.params.id, 'jpg');
     let stand = false; // the last photo shown, standing in while the album can't be reached
     if (few) {
@@ -541,8 +608,8 @@ export function setup({
   });
 
   app.post('/api/photos/sync', async (_req, res) => {
-    await sync();
-    res.json({ photos: state.list.length, error: state.error });
+    await Promise.all([board, ...[...more.values()].map(m => m.src)].map(s => s.sync()));
+    res.json({ photos: board.state.list.length, error: board.state.error });
   });
 
   // ----------------- //
@@ -578,6 +645,7 @@ export function setup({
   // album as a small picture to tick. The small pictures come straight      //
   // from the album and aren't kept.                                         //
   app.get('/api/board-settings/photo-choices', async (_req, res) => {
+    const { state, enabled, sync } = board; // (the console picks from the board's own album)
     if (!enabled) return res.json({ enabled, photos: [], picked: [] });
     if (!state.all.length) await sync();
     const picked = new Set(kv.get<string[]>('photoPicked') || []);
@@ -591,6 +659,7 @@ export function setup({
   });
   // also for the board's own photo picker (📷 Photos I pick), so a big album's pictures aren't all copied
   app.get(['/api/board-settings/photo-thumb/:id', '/api/photos/thumb/:id'], async (req, res) => {
+    const { state, enabled, sync, getImage } = board;
     if (!state.all.length && enabled) await sync();
     const a = state.all.find(x => x.id === req.params.id);
     if (!a) return res.sendStatus(404);
@@ -612,8 +681,8 @@ export function setup({
     )
       return res.status(400).json({ error: `A list of up to ${MAX_PICKED} photos` });
     kv.set('photoPicked', [...new Set(ids as string[])]);
-    await sync();
-    res.json({ picked: ids.length, photos: state.list.length });
+    await board.sync();
+    res.json({ picked: ids.length, photos: board.state.list.length });
   });
 
   // ------------------------------------- //
@@ -621,13 +690,21 @@ export function setup({
   // ------------------------------------- //
   // The album read now, with the board's own settings.                      //
   async function check() {
+    const { state, enabled, sync } = board;
     if (!enabled) return { name: 'Photos', ok: null, detail: 'No photo album set up yet' };
     await sync();
     if (state.error) return { name: 'Photos', ok: false, detail: state.error };
+    // the more albums too: one that can't be read is named
+    const others = [...more.values()];
+    await Promise.all(others.map(m => m.src.sync()));
+    const bad = others.find(m => m.src.state.error);
+    if (bad) return { name: 'Photos', ok: false, detail: `${bad.name}: ${bad.src.state.error}` };
     return {
       name: 'Photos',
       ok: true,
-      detail: `Read the album: ${state.all.length} photos, ${state.list.length} shown on the board`
+      detail:
+        `Read the album: ${state.all.length} photos, ${state.list.length} shown on the board` +
+        (others.length ? ` (and ${others.length} more album${others.length > 1 ? 's' : ''})` : '')
     };
   }
   return { check };
