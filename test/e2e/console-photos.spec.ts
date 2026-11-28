@@ -5,7 +5,7 @@
  Version:   1.1.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-17
- Updated:   2026-11-17
+ Updated:   2026-11-28
 
  Purpose:
      The admin console's ⚙️ Board → Photos: which photos to show and how
@@ -17,6 +17,9 @@
  Version   Date         Author    Description
  -------   ----------   -------   --------------------------------------------
  1.1.0    2026-11-17   joshua    New file.
+                        claude
+
+ 1.3.0    2026-11-28   joshua    More albums in the console.
                         claude
 ===============================================================================
 */
@@ -66,4 +69,27 @@ test('the console picks which photos show, and how many copies are kept', async 
   await expect(page.locator('#bfPickCount')).toContainText('1 picked');
   const c = await (await board.admin.api('/api/board-settings/photo-choices')).json();
   expect(c.picked).toHaveLength(1);
+});
+
+test('the console adds more albums: a share link or an Immich album, each with its own id', async ({ as }) => {
+  const page = await as('admin', { path: '/admin' });
+  await page.locator('#tabs button[data-t="board"]').click();
+  const add = async (name: string, what: string) => {
+    await page.locator('#bfAlbName').fill(name);
+    await page.locator('#bfAlbWhat').fill(what);
+    await page.locator('#bfAlbAdd').click();
+  };
+  await page.locator('#bfAlbAdd').click();
+  await expect(page.locator('#bfAlbErr')).toContainText('Give it a name');
+  await add('Summer trip', 'https://www.icloud.com/sharedalbum/#B0abc');
+  await add('Summer trip', 'Grandkids');
+  await expect(page.locator('#bfAlbums .item')).toHaveCount(2);
+  await expect(page.locator('#bfAlbums')).toContainText('Immich: Grandkids');
+  expect(JSON.parse(await page.locator('#bfAlbumsVal').inputValue())).toEqual([
+    { id: 'summer-trip', name: 'Summer trip', url: 'https://www.icloud.com/sharedalbum/#B0abc' },
+    { id: 'summer-trip-2', name: 'Summer trip', immich: 'Grandkids' }
+  ]);
+  await page.locator('#bfAlbums .item').first().getByRole('button', { name: 'Remove' }).click();
+  await expect(page.locator('#bfAlbums .item')).toHaveCount(1);
+  expect(page.errors).toEqual([]);
 });

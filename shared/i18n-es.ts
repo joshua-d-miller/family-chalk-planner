@@ -1174,6 +1174,15 @@ export const ES: Dict = {
     'Calendarios de solo lectura desde un enlace (iCal, “.ics” o “webcal://”): el calendario de la escuela, un equipo deportivo, el enlace “publicar” de tu calendario del trabajo. Se revisan cada 15 minutos.',
   Link: 'Enlace',
   'Add link': 'Agregar enlace',
+  'More albums': 'Más álbumes',
+  "Up to 8 more, each with a name: they show on the board's 📷 Albums page, and ⚙️ Settings on the board can pick one for the photos by the month's name, the slideshow, a time overnight or a month. Paste an album's share link, or type the name of an album on the Immich server above (or favorites, all, thisday). Only these albums can ever be shown.":
+    'Hasta 8 más, cada uno con un nombre: aparecen en la página 📷 Álbumes del tablero, y ⚙️ Ajustes en el tablero puede elegir uno para las fotos junto al nombre del mes, la presentación, un horario de noche o un mes. Pega el enlace para compartir de un álbum, o escribe el nombre de un álbum del servidor Immich de arriba (o favorites, all, thisday). Solo estos álbumes se pueden mostrar.',
+  'Share link, or an Immich album': 'Enlace para compartir, o un álbum de Immich',
+  'Add album': 'Agregar álbum',
+  'Immich: {0}': 'Immich: {0}',
+  'Give it a name, and paste its share link or type an Immich album':
+    'Ponle un nombre, y pega su enlace para compartir o escribe un álbum de Immich',
+  'At most 8 more albums': 'Como mucho 8 álbumes más',
   'The share link of an iCloud Shared Album (with Public Website on) or a Google Photos shared album. Step-by-step: docs/photos.md.':
     'El enlace para compartir de un álbum compartido de iCloud (con Sitio web público activado) o de un álbum compartido de Google Fotos. Paso a paso: docs/photos.md.',
   'Album link': 'Enlace del álbum',
