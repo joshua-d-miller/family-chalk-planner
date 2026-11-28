@@ -105,6 +105,7 @@ body.boardpage {
   flex: 1;
   min-height: 0;
   display: grid;
+  position: relative;
   border-top: 1.5px solid var(--gold);
   border-left: 1.5px solid var(--gold);
 }
@@ -844,4 +845,13 @@ body.boardpage {
 }
 #dayView .hello b {
   color: var(--yellow, #f2d479);
+}
+
+/* 🎨 Board style → Chalk → Grid: by hand (lib/chalk.ts draws it) */
+.slate .handGrid {
+  position: absolute;
+  inset: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  pointer-events: none;
 }

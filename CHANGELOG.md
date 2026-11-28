@@ -37,6 +37,10 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   to stop. It shows once there's more than one album.
 - **New: 📡 Now in the admin console → 📺 Screens:** what each screen shows right now, and whether it's kept
   awake. A screen that *can't be kept awake here* needs HTTPS (or its kiosk app's own setting).
+- **New: the chalk look.** 🎨 Board style → **Chalk**: a **Chalk marker** board (bright and smooth, with a soft
+  gloss) or **Stick chalk**, where everything written catches the board's grain like real chalk; a grid drawn
+  **by hand**; and a board that looks **lightly** or **well used**, with eraser swipes and dust. Made once at the
+  screen's own resolution, so it stays sharp and never slows a wall down.
 - **Quicker on the wall:** a wall downloads about 30% less when it starts. The editors, the pages and the Spanish
   words load only on the screens that use them, ahead of time where they do, so nothing waits when you tap.
 - **Steadier:** a screen that's been up all day starts again fresh once a night while it's asleep (only while it

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | theme.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      The board's style ("theme"): a preset plus the family's tweaks
@@ -40,11 +40,15 @@
  1.2.0    2026-11-21   joshua    NEED is shared, for 🎨 Board style's
                         claude    contrast warning. A Colorblind-safe style
                                   (the Okabe–Ito colors).
+
+ 1.3.0    2026-11-28   joshua    The chalk look: a grid by hand, stick
+                        claude    chalk's grain over everything chalk.
 ===============================================================================
 */
 
 import { BOARD_FONTS, CLASSIC_FONT, fontStack } from '../../../shared/fonts.ts';
 import { lum, readable } from './color.ts';
+import { GRAIN_TILE } from '../lib/chalk.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------- //
@@ -83,7 +87,12 @@ const BASE: ThemeVals = {
   textC: '#EDEAE0',
   lineC: '#C9B47A',
   lineS: 'solid',
-  lineW: 'normal'
+  lineW: 'normal',
+  // the chalk look: as before until it's picked (lib/chalk.ts)
+  chalk: 'clean',
+  grid: 'printed',
+  grain: 'normal',
+  wear: 'clean'
 };
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -306,7 +315,21 @@ export function themeCss(v0: ThemeVals, bg: number) {
     `${S}.mh{${F('headF', 26)}color:${v.mealsC}}`,
     `${S}.meals .mh{${F('headF', 32)}}`,
     `${S}.nlist li,${S}.cd .ct{${F('textF', 0, true)}color:${v.textC}}`,
-    `${S}.info .lbl,${S}.cd b,${S}.njar span:first-child{${F('textF', 0, true).replace(/font-weight:\d+;/, '')}}`
+    `${S}.info .lbl,${S}.cd b,${S}.njar span:first-child{${F('textF', 0, true).replace(/font-weight:\d+;/, '')}}`,
+    // a grid by hand: the straight lines give way to chalk ones (Month.tsx draws them)
+    ...(v.grid === 'hand'
+      ? [
+          `${S}#grid{border-color:transparent}`,
+          `${S}.day{border-right-color:transparent;border-bottom-color:transparent}`
+        ]
+      : []),
+    // stick chalk: everything chalk catches the board's grain (--grain: the tile, set by the board)
+    ...(v.chalk === 'stick'
+      ? [
+          `${S}.cal,${S}.notes,${S}.artSvg{-webkit-mask-image:var(--grain);mask-image:var(--grain);` +
+            `-webkit-mask-size:${GRAIN_TILE}px;mask-size:${GRAIN_TILE}px}`
+        ]
+      : [])
   ].join('\n');
 }
 

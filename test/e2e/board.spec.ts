@@ -786,3 +786,44 @@ test('the art on a layer of its own over the calendar (not painted in with its l
     await board.admin.post('/api/art/delete', { ym, ids: [stroke.id, ...pic.ids] });
   }
 });
+
+test('the chalk look: stick chalk’s grain, a grid by hand, a used board; nothing else changes', async ({ as }) => {
+  const tab = await as('tablet');
+  const theme = await tab.evaluate(() => fetch('api/theme').then(r => r.json()));
+  const save = (o: Record<string, string>) =>
+    tab.evaluate(
+      t =>
+        fetch('api/theme', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify(t)
+        }).then(r => r.json()),
+      { ...theme, o: { ...(theme.o || {}), ...o } }
+    );
+  // before: as it always was
+  await expect(tab.locator('.handGrid')).toHaveCount(0);
+  expect(await tab.locator('.slate .cal').evaluate(e => getComputedStyle(e).maskImage || 'none')).toBe('none');
+  try {
+    const saved = await save({ chalk: 'stick', grid: 'hand', wear: 'well', grain: 'neon' });
+    expect(saved.o.chalk).toBe('stick');
+    expect(saved.o.grain).toBeUndefined(); // not a grain there is
+    await tab.reload();
+    await expect(tab.locator('.handGrid')).toHaveCount(1);
+    expect(await tab.locator('#slate').evaluate(e => e.style.getPropertyValue('--grain'))).toMatch(
+      /^url\(data:image\/png/
+    );
+    expect(await tab.locator('.slate .cal').evaluate(e => getComputedStyle(e).maskImage)).toMatch(/^url\(/);
+    if (process.env.SHOTS) await tab.locator('#board').screenshot({ path: process.env.SHOTS + '/chalk-stick.png' });
+  } finally {
+    await tab.evaluate(
+      t =>
+        fetch('api/theme', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify(t)
+        }),
+      theme
+    );
+  }
+  expect(tab.errors).toEqual([]);
+});

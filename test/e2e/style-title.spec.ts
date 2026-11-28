@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | style-title.spec.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      Board style (background, presets) and the month title card.
@@ -39,6 +39,9 @@
  1.2.0    2026-11-21   joshua    On this screen: the wooden frame and filling
                         claude    the screen. The hard-to-read warning;
                                   Colorblind-safe; your styles.
+
+ 1.3.0    2026-11-28   joshua    The Chalk tab.
+                        claude
 ===============================================================================
 */
 
@@ -192,7 +195,7 @@ test('board style: its parts on tabs, with Save and Cancel always in reach', asy
   await t.locator('#styleBtn').click();
   const card = t.locator('#styleSheet');
   const tabs = card.getByRole('tab');
-  await expect(tabs).toHaveText(['Style', 'Days', 'Events', 'Notes', 'Lines']);
+  await expect(tabs).toHaveText(['Style', 'Chalk', 'Days', 'Events', 'Notes', 'Lines']);
   await expect(card.getByRole('tab', { name: 'Style' })).toHaveAttribute('aria-selected', 'true');
   await expect(card.locator('.presets')).toBeVisible();
   await expect(card.locator('.threl')).toHaveCount(0); // the rows wait on their tabs

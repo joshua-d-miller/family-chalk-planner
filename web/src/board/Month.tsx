@@ -77,11 +77,13 @@
                         claude    off (its border too).
 
  1.3.0    2026-11-26   joshua    The month arrows can fade when nobody's
-                        claude    touching the screen.
+                        claude    touching the screen. The grid by hand.
 ===============================================================================
 */
 
+import { useLayoutEffect, useRef } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { handGrid } from '../lib/chalk.ts';
 import { clipSrc } from './clip.ts';
 import { CAL, CAL_WIDE, hash } from './geom.ts';
 import { TODAY_MARKS } from './theme.ts';
@@ -238,7 +240,8 @@ export function Month({
   week = null,
   under = null,
   height = 642,
-  wide = false
+  wide = false,
+  handGrid
 }: {
   data: MonthData;
   bins: Bins | null;
@@ -254,6 +257,7 @@ export function Month({
   onDay?: (date: string) => void;
   onEvent?: (ev: BoardEvent) => void;
   title?: ReactNode;
+  handGrid?: { color: string; res: number }; // the grid drawn by hand in chalk (🎨 Board style → Chalk)
 }) {
   const g = data.grid;
   // a week starts on its own first day (today, on a screen whose 🗓️ Week starts today)
@@ -450,12 +454,30 @@ export function Month({
           style={{ gridTemplateRows: `repeat(${nWeeks}, minmax(0, 1fr))` }}
         >
           {weeks}
+          {handGrid && <HandGrid rows={nWeeks} color={handGrid.color} res={handGrid.res} seed={g.y * 100 + g.m} />}
         </div>
         {border && <BorderLayer border={border} wide={wide} />}
       </div>
       {under && <div className="under">{under}</div>}
     </div>
   );
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ----------------------- //
+// | The grid, by hand | //
+// ----------------------- //
+// Chalk lines (lib/chalk.ts) on a layer over the days, drawn once for each  //
+// size, month and color; at even fractions of the box, so they meet the    //
+// days whatever its size on this screen                                    //
+function HandGrid({ rows, color, res, seed }: { rows: number; color: string; res: number; seed: number }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useLayoutEffect(() => {
+    const cv = ref.current;
+    const box = cv?.parentElement;
+    if (cv && box) handGrid(cv, box.offsetWidth, box.offsetHeight, 7, rows, color, res, seed);
+  }, [rows, color, res, seed]);
+  return <canvas ref={ref} className="handGrid" aria-hidden="true" />;
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

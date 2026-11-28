@@ -100,6 +100,11 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   on a slider or in an open card counted as a swipe (now ignored); Good morning armed on a screen someone was
   using as the hours ended (now only on one that was asleep). Noted, not changed: the console's status list
   keeps unpaired screens until the server restarts (only paired ones are shown).
+- **2026-11-28: board styles (6).** 🎨 Board style → Chalk: Clean / Chalk marker (gloss) / Stick chalk (the
+  grain, a CSS mask over the calendar, Notes and art, Light/Normal/Heavy), the grid Printed / By hand (chalk
+  lines on a layer), how used it looks (eraser swipes, faint ghosts, dust, in the background). All in
+  `web/src/lib/chalk.ts`, made once; off on a low-power screen. Board color and gloss strength as separate
+  choices: not done (the backgrounds already have colors; the marker board has one gloss).
 - **Timers and loops (part of 1):** checked all 17. Each is slow or stops by itself; the one fast one (250 ms)
   runs only while a timer counts down. Nothing to fix until off hours, which needs one "asleep" switch that the
   slideshow, weather, GIFs, Split View, title photos and Notes rotation respect while the screen is black. A

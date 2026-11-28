@@ -143,7 +143,7 @@
                                   it tells the console what it shows now;
                                   the first tap after it says good morning;
                                   a wall starts again fresh once a night;
-                                  the dots, swiped back to.
+                                  the dots, swiped back to; the chalk look.
 
  1.3.0    2026-11-28   joshua    The polaroids and the slideshow from the
                         claude    album picked for them.
@@ -180,6 +180,7 @@ import { MonthPicker } from './MonthPicker.tsx';
 import { nightAlbum } from './night.ts';
 import { ARROWS_FADE_MS, arrowsDefault, useMyArrows } from '../lib/arrows.ts';
 import { useOffHours } from '../lib/offHours.ts';
+import { grainTile } from '../lib/chalk.ts';
 import { awakeNow, letScreenSleep } from '../lib/wallScreen.ts';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
@@ -584,14 +585,6 @@ export function Board({
   const sf = surfaceOf(bgOf.s || 'slate');
   const season = theme?.z && shown ? seasonOf(+shown.slice(5, 7), false) : '';
   const photoBg = sf.id === 'photo' && bgOf.img ? bgOf.img : null; // a photo of your own
-  const bg = useMemo(() => {
-    if (photoBg) return photoBackground(apiUrl(photoBg));
-    try {
-      return paintSurface(sf, season, res);
-    } catch {
-      return 'none';
-    }
-  }, [sf, season, res, photoBg]);
   useEffect(() => {
     document.body.classList.add('boardpage');
     return () => document.body.classList.remove('boardpage');
@@ -618,6 +611,19 @@ export function Board({
   const monthLook = lookDraft || (meta && 'artPad' in meta ? meta.look : undefined);
   const tv = useMemo(() => monthVals(theme, monthLook), [theme, monthLook]);
   const css = useMemo(() => themeCss(tv, sf.lum), [tv, sf.lum]);
+  // the chalk look (lib/chalk.ts): a used board's wear in the background, stick chalk's grain; not on a
+  // low-power screen (plainer chalk there)
+  const wear = boardFit.low ? 0 : ({ light: 1, well: 2 } as Record<string, number>)[tv.wear] || 0;
+  const gloss = tv.chalk === 'marker';
+  const bg = useMemo(() => {
+    if (photoBg) return photoBackground(apiUrl(photoBg));
+    try {
+      return paintSurface(sf, season, res, wear, gloss);
+    } catch {
+      return 'none';
+    }
+  }, [sf, season, res, photoBg, wear, gloss]);
+  const grain = tv.chalk === 'stick' && !boardFit.low ? grainTile(res, tv.grain) : null;
   const m = useMemo(() => {
     const d = month.data && 'grid' in month.data ? month.data : null;
     const o = otherYm && other.data && 'grid' in other.data ? other.data : null;
@@ -1045,6 +1051,7 @@ export function Board({
           data-surface={sf.id}
           style={{
             ...(pad ? { backgroundImage: bg } : {}),
+            ...(grain ? { ['--grain' as string]: `url(${grain})` } : {}),
             ...(slateH !== SLATE_H ? { height: slateH, ['--slateH' as string]: slateH + 'px' } : {})
           }}
         >
@@ -1054,6 +1061,7 @@ export function Board({
               data={m}
               height={slateH}
               wide={!notesOn}
+              handGrid={tv.grid === 'hand' ? { color: tv.lineC, res } : undefined}
               bins={extras?.bins || null}
               bg={sf.lum}
               today={{ shape: tv.todayS, color: tv.todayC }}

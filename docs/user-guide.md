@@ -8,6 +8,8 @@ The wall display only shows the board; everything is edited from a tablet or pho
 
 **The month arrows** on a family screen fade after 10 seconds when nobody's touching it, and come back with any tap (that first tap only brings them back). On a tablet they're always there. Change it for a screen in **⚙️ Settings → This screen → The month arrows**: **Always there**, **Fade when nobody’s touching the screen**, or **None**.
 
+**The chalk look:** 🎨 Board style → **Chalk**. **Chalk:** Clean (as before), **Chalk marker** (bright and smooth on a glossy board) or **Stick chalk** (everything written catches the board's grain, as real chalk does); **Grain** sets how much. **Grid:** Printed (straight lines) or **By hand** in chalk. **How used it looks:** Clean, **Lightly used** or **Well used** (eraser swipes and dust on a chalkboard). A low-power screen keeps it plain.
+
 **Any month in two taps:** on a screen that edits, tap the **month’s name**: pick the year with ‹ ›, then the month; **This month** comes back to today's, and **↻ Start the board again** reloads the board (what that tap used to do).
 
 ### More than one calendar
