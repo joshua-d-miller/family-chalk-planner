@@ -105,6 +105,7 @@ body.boardpage {
   flex: 1;
   min-height: 0;
   display: grid;
+  position: relative;
   border-top: 1.5px solid var(--gold);
   border-left: 1.5px solid var(--gold);
 }
@@ -403,6 +404,17 @@ body.boardpage {
   justify-content: center;
   cursor: pointer;
   padding: 0;
+  transition: opacity 0.6s;
+}
+/* nobody's touched the screen for a while: out of sight until the next tap (or a keyboard reaches them) */
+.slate .nav.faded:not(:focus-visible) {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .slate .nav {
+    transition: none;
+  }
 }
 .slate .titlerow h1.noout .mn::before {
   display: none;
@@ -824,4 +836,93 @@ body.boardpage {
   font-size: 20px;
   font-family: var(--emoji), sans-serif;
   box-shadow: inset 0 0 0 2px rgba(185, 141, 88, 0.55);
+}
+
+/* the first tap after the overnight hours */
+#dayView .hello {
+  margin: 0 0 12px;
+  font-size: 1.15em;
+}
+#dayView .hello b {
+  color: var(--yellow, #f2d479);
+}
+
+/* 🎨 Board style → Chalk → Grid: by hand (lib/chalk.ts draws it) */
+.slate .handGrid {
+  position: absolute;
+  inset: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  pointer-events: none;
+}
+
+/* the month title's lettering (Title.tsx): a white outline like a sticker, with a little gap in the board's
+   color; inline (the letters fattened, a thin line of the board's color inside); a drop shadow; neon */
+.slate .titlerow h1.lt-sticker .mn::before {
+  color: #fff;
+  -webkit-text-stroke: calc(var(--toutw) * 2.2) #fff;
+}
+.slate .titlerow h1.lt-sticker .mn::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  color: var(--tc);
+  -webkit-text-stroke: calc(var(--toutw) * 0.9) var(--tboard);
+  pointer-events: none;
+}
+.slate .titlerow h1.lt-inline .mn::before {
+  color: var(--tc);
+  -webkit-text-stroke: calc(var(--toutw) * 1.6) var(--tc);
+}
+.slate .titlerow h1.lt-inline .mn {
+  -webkit-text-stroke: 1.6px var(--tboard);
+}
+.slate .titlerow h1.lt-shadow .mn::before {
+  color: rgba(0, 0, 0, 0.5);
+  -webkit-text-stroke: 0 transparent;
+  transform: translate(calc(var(--toutw) * 1.1), calc(var(--toutw) * 1.3));
+}
+.slate .titlerow h1.lt-neon .mn::before {
+  display: none;
+}
+.slate .titlerow h1.lt-neon .mn {
+  text-shadow:
+    0 0 6px var(--tc),
+    0 0 16px var(--tc),
+    0 0 30px var(--tc);
+}
+/* marker streaks across the letters, the way a chalk marker fills them in */
+.slate .titlerow h1.streaks .mn {
+  background-image:
+    repeating-linear-gradient(
+      32deg,
+      rgba(255, 255, 255, 0.17) 0 2.4px,
+      transparent 2.4px 5.2px,
+      rgba(0, 0, 0, 0.16) 5.2px 6.3px,
+      transparent 6.3px 9px
+    ),
+    linear-gradient(var(--tc), var(--tc));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+/* 🔤 Month title → a ribbon banner behind it: a chalk ribbon (its ends folded back) in the outline's color */
+.slate .titlerow h1.ribbon {
+  position: relative;
+  isolation: isolate;
+}
+.slate .titlerow h1.ribbon::before {
+  content: '';
+  position: absolute;
+  inset: 2% -46px 0;
+  z-index: -1;
+  background: var(--rib);
+  opacity: 0.5;
+  pointer-events: none;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 70' preserveAspectRatio='none'%3E%3Cpath d='M26 10Q120 0 214 10L214 60Q120 50 26 60Z M2 20L34 20 34 54 2 54 13 37Z M238 20L206 20 206 54 238 54 227 37Z'/%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 70' preserveAspectRatio='none'%3E%3Cpath d='M26 10Q120 0 214 10L214 60Q120 50 26 60Z M2 20L34 20 34 54 2 54 13 37Z M238 20L206 20 206 54 238 54 227 37Z'/%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
 }

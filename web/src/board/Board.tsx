@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Board.tsx
 ===============================================================================
- Version:   1.2.7
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-23
+ Updated:   2026-11-28
 
  Purpose:
      The board: the month, the art on it, and the right-hand column, on
@@ -131,6 +131,24 @@
 
  1.2.7    2026-11-23   joshua    The photos read safely when the board's
                         claude    answer didn't come through whole.
+
+ 1.3.0    2026-11-26   joshua    The editors, the picture library and the
+                        claude    drawing tools are downloaded on their own,
+                                  ahead on a screen that edits, never by a
+                                  wall. The month arrows can fade or go;
+                                  a tap on the month's name picks a month;
+                                  a swipe goes to the first pinned page;
+                                  overnight it can dim, go black or turn the
+                                  screen off, and nothing moves under it;
+                                  it tells the console what it shows now;
+                                  the first tap after it says good morning;
+                                  a wall starts again fresh once a night;
+                                  the dots, swiped back to; the chalk look.
+
+ 1.3.0    2026-11-28   joshua    The polaroids and the slideshow from the
+                        claude    album picked for them. Screen care: a paired
+                                  screen's board moves a pixel every 15
+                                  minutes.
 ===============================================================================
 */
 
@@ -158,24 +176,25 @@ import { Notes } from './Notes.tsx';
 import { useNotesCol } from '../lib/notesCol.ts';
 import { boardScaleStyle } from '../lib/zoomFit.ts';
 import { WeatherMotion } from './Weather.tsx';
-import { Slideshow, useSlides } from './Slideshow.tsx';
-import { EventEditor } from './EventEditor.tsx';
-import { BorderEditor } from './editors/BorderEditor.tsx';
-import { StyleEditor } from './editors/StyleEditor.tsx';
-import { TitleEditor } from './editors/TitleEditor.tsx';
-import { PhotosEditor } from './editors/PhotosEditor.tsx';
-import { NotesEditor } from './editors/NotesEditor.tsx';
+import { Slideshow, useSlides, NightClock } from './Slideshow.tsx';
+import { later } from '../lib/later.tsx';
+import { MonthPicker } from './MonthPicker.tsx';
+import { nightAlbum } from './night.ts';
+import { ARROWS_FADE_MS, arrowsDefault, useMyArrows } from '../lib/arrows.ts';
+import { useOffHours } from '../lib/offHours.ts';
+import { grainTile } from '../lib/chalk.ts';
+import { awakeNow, letScreenSleep } from '../lib/wallScreen.ts';
 import type { TitleDraft } from './editors/TitleEditor.tsx';
 import type { BoardEvent } from './Month.tsx';
 import { FAB_BAND, Strip } from './Strip.tsx';
 import { navigate } from '../lib/nav.ts';
 import { homeHref } from '../routes.ts';
-import { useBarZoom, useShell, visibleHeight } from '../ui/Shell.tsx';
+import { useBarZoom, usePins, useShell, visibleHeight } from '../ui/Shell.tsx';
+import { isSwipe, swipeOffBoard } from '../lib/swipePages.ts';
+import { BackDots } from '../ui/SwipeDots.tsx';
 import { DrawLayer, firstPen, isPosca, recolor, touches } from './draw/Draw.tsx';
 import type { Pen } from './draw/Draw.tsx';
-import { Library } from './draw/Library.tsx';
 import type { Stamp } from './draw/Library.tsx';
-import { RecolorSheet, SaveStampSheet, TextSheet, Tools } from './draw/Tools.tsx';
 import { useArt } from './draw/useArt.ts';
 import { coveredBy, writingOn } from './cover.ts';
 import type { Writing } from './cover.ts';
@@ -188,6 +207,28 @@ import { monthVals, themeCss } from './theme.ts';
 import type { Theme } from './theme.ts';
 import './board.css';
 import './edit.css';
+
+const FRESH_AFTER = 20 * 3600e3; // up this long: starts again fresh, once a night
+// where the board sits, in turn (screen care): a pixel each way round a little square
+const NUDGES = ['0 0', '1px 0', '1px 1px', '0 1px', '-1px 1px', '-1px 0', '-1px -1px', '0 -1px', '1px -1px'];
+
+// what only editing uses, downloaded on its own (a wall never needs it); fetched ahead on a screen that edits
+const tools = () => import('./draw/Tools.tsx');
+const EDITING = {
+  EventEditor: later(() => import('./EventEditor.tsx').then(m => m.EventEditor)),
+  BorderEditor: later(() => import('./editors/BorderEditor.tsx').then(m => m.BorderEditor)),
+  StyleEditor: later(() => import('./editors/StyleEditor.tsx').then(m => m.StyleEditor)),
+  TitleEditor: later(() => import('./editors/TitleEditor.tsx').then(m => m.TitleEditor)),
+  PhotosEditor: later(() => import('./editors/PhotosEditor.tsx').then(m => m.PhotosEditor)),
+  NotesEditor: later(() => import('./editors/NotesEditor.tsx').then(m => m.NotesEditor)),
+  Library: later(() => import('./draw/Library.tsx').then(m => m.Library)),
+  Tools: later(() => tools().then(m => m.Tools)),
+  TextSheet: later(() => tools().then(m => m.TextSheet)),
+  RecolorSheet: later(() => tools().then(m => m.RecolorSheet)),
+  SaveStampSheet: later(() => tools().then(m => m.SaveStampSheet))
+};
+const { EventEditor, BorderEditor, StyleEditor, TitleEditor, PhotosEditor, NotesEditor, Library } = EDITING;
+const { Tools, TextSheet, RecolorSheet, SaveStampSheet } = EDITING;
 
 const W = 1252;
 const CORK = 50; // the strip under the board on a tablet
@@ -281,6 +322,7 @@ type Editing =
   | { k: 'stamp' }
   | { k: 'photos' }
   | { k: 'notes' }
+  | { k: 'months' }
   | null;
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -303,7 +345,23 @@ export function Board({
   // adds events, frameless, with the wall's photo frame and slideshow; the  //
   // month's title and the board's look are set from a tablet                //
   const family = edit && !who?.user && who?.device?.role === 'family';
+  useEffect(() => {
+    if (edit) for (const part of Object.values(EDITING)) part.fetch(); // ready before the first tap
+  }, [edit]);
   const hideZoom = useHideZoom(); // ⚙️ Settings → This screen: no − / + / Fit buttons
+  // the month arrows: always there, or fading when nobody's touching the screen (back with any tap)
+  const arrows = useMyArrows() ?? arrowsDefault(who);
+  const [quiet, setQuiet] = useState(false);
+  const quietT = useRef(0);
+  const wake = useCallback(() => {
+    setQuiet(false);
+    clearTimeout(quietT.current);
+    if (arrows === 'fade') quietT.current = window.setTimeout(() => setQuiet(true), ARROWS_FADE_MS);
+  }, [arrows]);
+  useEffect(() => {
+    wake();
+    return () => clearTimeout(quietT.current);
+  }, [wake]);
   const today = useLive<{ today: string; ym: string; weekStart?: number; time24: boolean }>('api/today', [
     'calendar'
   ]).data;
@@ -347,7 +405,19 @@ export function Board({
   ]);
   const metaLive = useLive<MonthMeta>(shown ? `api/meta?ym=${shown}` : 'api/today', ['meta']);
   const meta = metaLive.data;
-  const photos = useLive<Photos>('api/photos', ['photos']).data;
+  const photos = useLive<Photos>('api/photos', ['photos']).data; // the board's own album, and the photo settings
+  // which album shows where (⚙️ Settings → Photos): the time overnight's, else the month's, else the usual;
+  // only an album that's still there (else the board's own). Fetched only when it isn't the board's own
+  const pc = photos?.cfg;
+  const real = (a?: string) => (a && photos?.albums?.some(x => x.id === a) ? a : '');
+  const monthOf = (ym?: string | null) => (ym ? String(Number(ym.slice(5, 7))) : '');
+  const slidesAlbum = real(nightAlbum(pc)) || real(pc?.months?.[monthOf(today?.ym)]) || real(pc?.slides);
+  const polAlbum = real(pc?.months?.[monthOf(shown)]) || real(pc?.polaroids);
+  const albumAt = (a: string) => (a ? `api/photos?album=${encodeURIComponent(a)}` : '');
+  const slidesOwn = useLive<Photos>(albumAt(slidesAlbum), ['photos']).data;
+  const polOwn = useLive<Photos>(albumAt(polAlbum), ['photos']).data;
+  const slidePhotos = slidesAlbum ? slidesOwn : photos;
+  const polPhotos = polAlbum ? polOwn : photos;
   // the wooden frame: a tablet's, unless this screen leaves it off (🎨 Board style → Style: a screen in a
   // frame of its own); and whether the board fills the screen (⚙️ Settings → This screen)
   const boardFit = useBoardFit();
@@ -492,7 +562,10 @@ export function Board({
         }
       }
     : {};
-  const extras = useLive<{ bins: Bins }>('api/extras', ['extras']).data;
+  const extras = useLive<{
+    bins: Bins;
+    weather: { now: { temp: number }; today: { hi: number; lo: number } } | null;
+  }>('api/extras', ['extras']).data;
   // the Notes column: this screen (or the board) can leave it off on the month or the week, and the
   // calendar takes its room
   const notesOn = useNotesCol(week ? 'week' : 'month').on;
@@ -516,14 +589,6 @@ export function Board({
   const sf = surfaceOf(bgOf.s || 'slate');
   const season = theme?.z && shown ? seasonOf(+shown.slice(5, 7), false) : '';
   const photoBg = sf.id === 'photo' && bgOf.img ? bgOf.img : null; // a photo of your own
-  const bg = useMemo(() => {
-    if (photoBg) return photoBackground(apiUrl(photoBg));
-    try {
-      return paintSurface(sf, season, res);
-    } catch {
-      return 'none';
-    }
-  }, [sf, season, res, photoBg]);
   useEffect(() => {
     document.body.classList.add('boardpage');
     return () => document.body.classList.remove('boardpage');
@@ -550,6 +615,21 @@ export function Board({
   const monthLook = lookDraft || (meta && 'artPad' in meta ? meta.look : undefined);
   const tv = useMemo(() => monthVals(theme, monthLook), [theme, monthLook]);
   const css = useMemo(() => themeCss(tv, sf.lum), [tv, sf.lum]);
+  // the chalk look (lib/chalk.ts): a used board's wear in the background, stick chalk's grain; not on a
+  // low-power screen (plainer chalk there)
+  const wear = boardFit.low ? 0 : ({ light: 1, well: 2 } as Record<string, number>)[tv.wear] || 0;
+  const gloss = tv.chalk === 'marker';
+  // pictures, unless each says otherwise: colored in with chalk marker, or in stick chalk, with the board
+  const picLook = tv.chalk === 'marker' ? 'marker' : tv.chalk === 'stick' ? 'chalk' : '';
+  const bg = useMemo(() => {
+    if (photoBg) return photoBackground(apiUrl(photoBg));
+    try {
+      return paintSurface(sf, season, res, wear, gloss);
+    } catch {
+      return 'none';
+    }
+  }, [sf, season, res, photoBg, wear, gloss]);
+  const grain = tv.chalk === 'stick' && !boardFit.low ? grainTile(res, tv.grain) : null;
   const m = useMemo(() => {
     const d = month.data && 'grid' in month.data ? month.data : null;
     const o = otherYm && other.data && 'grid' in other.data ? other.data : null;
@@ -560,7 +640,62 @@ export function Board({
     const seen = new Set(d.events.map(key));
     return { ...d, events: [...d.events, ...o.events.filter(e => !seen.has(key(e)))] };
   }, [month.data, other.data, otherYm]);
-  const slides = useSlides(photos, !edit || family);
+  const slides = useSlides(slidePhotos, !edit || family, useOffHours());
+  const asleep = !!slides.cover && slides.cover !== 'dim'; // black, off or the night clock: nothing else moves
+  // the first tap after the overnight hours: good morning, today's events and the weather, for 30 seconds
+  // (until then a clear layer over the board takes that tap, so it doesn't also open a day or an event)
+  const [morning, setMorning] = useState<'next' | 'open' | null>(null);
+  // (only on a screen that was asleep as the hours ended: not one someone is using)
+  const wasNight = useRef(false);
+  const wasAsleep = useRef(false);
+  useEffect(() => {
+    if (wasNight.current && !slides.night && wasAsleep.current) setMorning('next');
+    wasNight.current = slides.night;
+    wasAsleep.current = slides.on || !!slides.cover;
+  });
+  // a wall that's been up all day starts again fresh once a night, while asleep and while the board can be
+  // reached (a screen that stays up for weeks gathers whatever builds up in a browser; never into an error page)
+  const online = useOnline();
+  const reachable = useRef(online);
+  reachable.current = online;
+  const resting = slides.on || (!!slides.cover && slides.cover !== 'dim'); // (dimmed: the calendar still shows)
+  const wallNow = !!who?.device && !who?.user;
+  const paired = !!who?.device;
+  useEffect(() => {
+    if (!wallNow || !resting) return;
+    const t = setInterval(
+      () => {
+        if (performance.now() > FRESH_AFTER && reachable.current) location.reload();
+      },
+      10 * 60 * 1000
+    );
+    return () => clearInterval(t);
+  }, [wallNow, resting]);
+  // screen care on a paired screen: the whole board moves a pixel every 15 minutes, round a small square and
+  // back, so nothing stays on the same pixels all day (burn-in on an always-on screen)
+  const [nudge, setNudge] = useState(0);
+  useEffect(() => {
+    if (!paired) return;
+    const t = setInterval(() => setNudge(n => (n + 1) % NUDGES.length), 15 * 60 * 1000);
+    return () => clearInterval(t);
+  }, [paired]);
+  // a paired screen tells the admin console what it shows now, and whether it's kept awake
+  const shows = slides.on ? 'slides' : slides.cover || 'calendar';
+  useEffect(() => {
+    if (!paired) return;
+    const tell = () => void post('api/screen-status', { shows, awake: awakeNow() }).catch(() => {});
+    const first = setTimeout(tell, 3000); // (once asking to stay awake has had its answer)
+    const t = setInterval(tell, 10 * 60 * 1000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(t);
+    };
+  }, [shows, paired]);
+  useEffect(() => {
+    if (slides.cover !== 'off') return;
+    letScreenSleep(true);
+    return () => letScreenSleep(false);
+  }, [slides.cover]);
   const [day, setDay] = useState<string | null>(null);
   const closeDay = useCallback(() => setDay(null), []);
   // ----------------------- //
@@ -571,8 +706,9 @@ export function Board({
   const lastTap = useRef(0);
   const single = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastDouble = useRef(0);
-  // a swipe across the board (not while drawing) goes to the chores, as on the current board
+  // a swipe to the left across the board (not while drawing) goes to the first pinned page (Chores if none)
   const swipe = useRef<[number, number] | null>(null);
+  const pins = usePins().map(p => p.id);
   const tap = (e: PointerEvent) => {
     setTouched(Date.now());
     const s0 = swipe.current;
@@ -580,13 +716,8 @@ export function Board({
     if (s0 && !drawing && !editing && !day && !slides.on) {
       const dx = e.clientX - s0[0];
       const dy = e.clientY - s0[1];
-      if (Math.abs(dx) > 120 && Math.abs(dy) < Math.abs(dx) / 2) {
-        try {
-          sessionStorage.setItem('chalkFromBoard', weekly ? 'week' : edit ? 'edit' : './');
-        } catch {
-          /* fine: no way back but the menu */
-        }
-        navigate('chores');
+      if (isSwipe(dx, dy) && dx < 0) {
+        swipeOffBoard(weekly ? 'week' : edit ? 'edit' : './', pins);
         return;
       }
     }
@@ -894,7 +1025,7 @@ export function Board({
   // Select: the pieces picked over events can change their mind
   const selCover = selItems.length && selItems.every(x => x.cv) ? (selItems[0].cv as 'hide' | 'under') : null;
   const photosOn = mm?.side ? mm.side.mode === 'photos' : !!photos?.cfg?.frame;
-  const pool = photos?.photos && photosOn ? titlePool(photos.photos, mm?.side) : [];
+  const pool = polPhotos?.photos && photosOn ? titlePool(polPhotos.photos, mm?.side) : [];
   const monthName = m ? MONTHS[m.grid.m - 1] : '';
   // -------------------- //
   // | The board, drawn | //
@@ -908,7 +1039,10 @@ export function Board({
         ...(pad ? {} : { backgroundImage: bg }),
         ...(shell.navH ? { bottom: 'auto', height: visibleHeight() - shell.navH } : {})
       }}
-      onPointerDown={e => (swipe.current = e.isPrimary ? [e.clientX, e.clientY] : null)}
+      onPointerDown={e => {
+        swipe.current = e.isPrimary ? [e.clientX, e.clientY] : null;
+        wake();
+      }}
       onPointerUp={tap}
       {...touchHandlers}
     >
@@ -917,6 +1051,7 @@ export function Board({
         className={edit ? 'edit' : ''}
         style={{
           ...boardScaleStyle(fit.scale, zoom.z, zoom.x, zoom.y),
+          ...(nudge ? { translate: NUDGES[nudge] } : {}),
           padding: pad,
           width: W + 2 * pad,
           height: bh + 2 * pad,
@@ -931,6 +1066,7 @@ export function Board({
           data-surface={sf.id}
           style={{
             ...(pad ? { backgroundImage: bg } : {}),
+            ...(grain ? { ['--grain' as string]: `url(${grain})` } : {}),
             ...(slateH !== SLATE_H ? { height: slateH, ['--slateH' as string]: slateH + 'px' } : {})
           }}
         >
@@ -940,15 +1076,20 @@ export function Board({
               data={m}
               height={slateH}
               wide={!notesOn}
+              handGrid={tv.grid === 'hand' ? { color: tv.lineC, res } : undefined}
               bins={extras?.bins || null}
               bg={sf.lum}
               today={{ shape: tv.todayS, color: tv.todayC }}
               border={border}
               onDay={onDay}
               onEvent={onEvent}
-              nav={edit ? { prev: () => go(-1), next: () => go(1) } : undefined}
-              // a tap on the month's name reloads, on a screen that edits (not the wall; not while drawing)
-              onTitle={edit && !drawing ? () => location.reload() : undefined}
+              nav={
+                edit && (arrows !== 'never' || week)
+                  ? { prev: () => go(-1), next: () => go(1), faded: arrows === 'fade' && quiet }
+                  : undefined
+              }
+              // a tap on the month's name, on a screen that edits (not the wall; not while drawing): go to any month
+              onTitle={edit && !drawing ? () => (week ? location.reload() : setEditing({ k: 'months' })) : undefined}
               week={week}
               under={split ? <Split view={weekView} edit={edit} drawing={drawing} time24={!!today?.time24} /> : null}
               title={
@@ -980,11 +1121,30 @@ export function Board({
               dockRef={edit && shell.dock ? setDockEl : undefined}
             />
           )}
-          {!boardFit.low && <WeatherMotion wall={!edit} />}
+          {!boardFit.low && !asleep && <WeatherMotion wall={!edit} />}
           {behind.length > 0 && (
-            <Art items={behind} bg={sf.lum} res={res} gifsPlay={!boardFit.low} under layer={artLayer} h={slateH} />
+            <Art
+              items={behind}
+              bg={sf.lum}
+              res={res}
+              gifsPlay={!boardFit.low && !asleep}
+              look={picLook}
+              looks={!boardFit.low}
+              under
+              layer={artLayer}
+              h={slateH}
+            />
           )}
-          <Art items={front} bg={sf.lum} res={res} gifsPlay={!boardFit.low} layer={artLayer} h={slateH} />
+          <Art
+            items={front}
+            bg={sf.lum}
+            res={res}
+            gifsPlay={!boardFit.low && !asleep}
+            look={picLook}
+            looks={!boardFit.low}
+            layer={artLayer}
+            h={slateH}
+          />
           {edit && drawing && (
             <DrawLayer
               art={view}
@@ -1057,7 +1217,7 @@ export function Board({
                 ? () =>
                     setEditing({ k: 'event', ev: null, date: m.ym === m.today.slice(0, 7) ? m.today : m.ym + '-01' })
                 : undefined,
-              slides: photos?.photos?.length ? slides.doubleTap : undefined,
+              slides: slidePhotos?.photos?.length ? slides.doubleTap : undefined,
               week: () => navigate(weekly ? homeHref(who) : 'week'),
               weekly
             }}
@@ -1136,7 +1296,7 @@ export function Board({
                   </span>{' '}
                   Border
                 </button>
-                {!!photos?.photos?.length && (
+                {!!polPhotos?.photos?.length && (
                   <button type="button" className="pill" id="photosBtn" onClick={() => setEditing({ k: 'photos' })}>
                     <span className="ic" aria-hidden="true">
                       📷
@@ -1170,9 +1330,21 @@ export function Board({
           </Strip>
         )}
       </div>
-      {(!edit || family || slides.on) && photos && (
-        <Slideshow photos={photos} on={slides.on} time24={!!today?.time24} onTap={slides.tapSlides} />
+      {(!edit || family || slides.on) && slidePhotos && (
+        <Slideshow photos={slidePhotos} on={slides.on} time24={!!today?.time24} onTap={slides.tapSlides} />
       )}
+      {/* overnight on a screen that dims or goes black: a tap shows the calendar for 5 minutes */}
+      {slides.cover && (
+        <button
+          type="button"
+          className={'offCover ' + slides.cover}
+          aria-label="Show the calendar"
+          onClick={slides.tapSlides}
+        >
+          {slides.cover === 'clock' && <NightClock time24={!!today?.time24} />}
+        </button>
+      )}
+      <BackDots />
       <ReminderAlert time24={!!today?.time24} />
       <TimerDone />
       <Offline />
@@ -1188,6 +1360,22 @@ export function Board({
             Fit
           </button>
         </div>
+      )}
+      {morning === 'next' && !slides.on && !slides.cover && (
+        <button type="button" className="offCover wake" aria-label="Show today" onClick={() => setMorning('open')} />
+      )}
+      {morning === 'open' && m && today && (
+        <DayView
+          date={today.today}
+          events={m.events}
+          cake={m.cake}
+          hello={
+            extras?.weather
+              ? `${extras.weather.now.temp}° now · ${extras.weather.today.hi}° / ${extras.weather.today.lo}° today`
+              : ''
+          }
+          onClose={() => setMorning(null)}
+        />
       )}
       {day && m && (
         <DayView
@@ -1280,8 +1468,19 @@ export function Board({
         />
       )}
       {editing?.k === 'notes' && <NotesEditor view={week ? 'week' : 'month'} onClose={closeEditor} />}
+      {editing?.k === 'months' && shown && today && (
+        <MonthPicker
+          shown={shown}
+          today={today.ym}
+          onPick={to => {
+            setYm(to === today.ym ? null : to);
+            closeEditor();
+          }}
+          onClose={closeEditor}
+        />
+      )}
       {editing?.k === 'photos' && shown && (
-        <PhotosEditor ym={shown} monthName={monthName} meta={mm} photos={photos} onClose={closeEditor} />
+        <PhotosEditor ym={shown} monthName={monthName} meta={mm} photos={polPhotos} onClose={closeEditor} />
       )}
       {editing?.k === 'style' && shown && (
         <StyleEditor

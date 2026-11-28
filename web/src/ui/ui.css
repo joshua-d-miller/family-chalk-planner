@@ -460,3 +460,40 @@
   flex: 1 1 auto;
   font-weight: 700;
 }
+
+/* after a swipe between pages: which one this is, fading out */
+.swipeDots {
+  position: fixed;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 50;
+  pointer-events: none;
+  animation: swipeDots 2.4s forwards;
+}
+.swipeDots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(237, 234, 224, 0.35);
+}
+.swipeDots i.on {
+  background: #f1efe6;
+}
+@keyframes swipeDots {
+  0%,
+  65% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .swipeDots {
+    animation-timing-function: steps(1, end);
+  }
+}

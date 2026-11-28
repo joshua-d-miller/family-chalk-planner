@@ -4,6 +4,68 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.3.0 — Screens that look after themselves, and more albums
+- **New: what each screen does overnight.** In the overnight hours a screen can show the slideshow (as before), the
+  calendar dimmed, a big dim **night clock**, a black screen, **turn the screen off**, or do nothing. A family screen
+  picks in ⚙️ Settings → This screen; the wall's is in the admin console → 📺 Screens → 🌙 Overnight. A tap shows
+  the calendar for 5 minutes. Under a dark screen nothing else moves (no weather, no GIFs).
+- **New: turn the screen off.** In Fully Kiosk the screen really goes off, and comes back on when the overnight
+  hours end. Anywhere else the board stops keeping the screen awake, so the device's own screen sleep turns it
+  off (see the wall screens guide).
+- **New: 🌙 Overnight hours, a section of its own** in ⚙️ Settings, with the days they're for and up to 3 more
+  times (weekdays while everyone's out, say). A time past midnight belongs to the day it starts. Boards that
+  had overnight hours keep them, every day, as before.
+- **New: good morning.** When the overnight hours end, the first tap on a screen shows today's events and the
+  weather for 30 seconds.
+- **New: the month arrows can fade** when nobody's touching the screen (the usual on a family screen), stay, or
+  go: ⚙️ Settings → This screen → The month arrows. **Tap the month's name** to go to any month of any year;
+  ↻ Start the board again is there now too (what that tap used to do).
+- **New: swipe through your pinned pages.** From the calendar a swipe to the left goes to the first pinned page
+  (Chores when nothing's pinned), on through the others, and back to the right. Dots show where you are, and a
+  page you swiped to goes back to the calendar after 2 quiet minutes (or 1, 5, 10 or never: ⚙️ Settings → This
+  screen). The admin console → 📺 Screens picks any screen's pages to swipe to (the wall's too), its month arrows
+  and how soon its pages go back.
+- **New: more photo albums.** Admin console → ⚙️ Board → Photos → **More albums**: up to 8 more, each a shared
+  album's link or an album on your Immich server (or Favorites, "on this day", or **a person** Immich knows:
+  `person:Nora`). Only albums set up there can
+  ever be shown.
+- **New: Immich videos and memories.** Admin console → ⚙️ Board → Photos → **Videos: Videos too**, and videos
+  (up to 2 minutes each) play in the slideshow, a slide of their own, without sound. A more album can be
+  `memories`: Immich's memories for today.
+- **New: which album shows where.** ⚙️ Settings → Photos picks the album beside the month's name and the one in
+  the slideshow; a month can have one of its own (Christmas in December), and each overnight time can pick its
+  own.
+- **New: 📷 Albums**, a page with every album and its cover: tap one to play it full-screen, swipe for more, tap
+  to stop. It shows once there's more than one album.
+- **New: 📡 Now in the admin console → 📺 Screens:** what each screen shows right now, and whether it's kept
+  awake. A screen that *can't be kept awake here* needs HTTPS (or its kiosk app's own setting).
+- **New: the chalk look.** 🎨 Board style → **Chalk**: a **Chalk marker** board (bright and smooth, with a soft
+  gloss) or **Stick chalk**, where everything written catches the board's grain like real chalk; a grid drawn
+  **by hand**; and a board that looks **lightly** or **well used**, with eraser swipes and dust. Made once at the
+  screen's own resolution, so it stays sharp and never slows a wall down.
+- **New: lettering for the month's name.** 🔤 Month title → Lettering: a white outline like a sticker, inline, a
+  drop shadow or neon, and marker streaks across the letters.
+- **New: a look for each picture.** Select a picture and tap 🖍 for the next look: colored in with chalk marker
+  (with a highlight, or a white outline like a sticker), only its outline in its own colors, or stick chalk. The
+  board style picks the usual one. Each is drawn once, at the size it's shown, and kept.
+- **New: flight paths.** ✏️ Draw → **Path** draws dashes, dots, dashes and dots, or little hearts, each laid down
+  by hand. Select a picture and tap **✈ Add a path**: draw where it's been, and it lands at the end, facing the way
+  it went. The two move together.
+- **New: Doodles.** A pack in ⭐ Pictures of chalk doodles drawn for the board: flowers, a bee, hearts, stars,
+  sparkles, a sun, swirls and leaves; a hand-drawn circle, a squiggle and an underline for big days; frames to
+  go round an event that spans days, ribbon banners, and corners for every season.
+- **New: a ribbon banner behind the month's name** (🔤 Month title), in the outline's color.
+- **New: writing from neat to loose.** When you write on the board, pick Neat, Loose or Very loose: each letter
+  is tipped a little and bobs up or down, the way chalk writing does.
+- **Quicker on the wall:** a wall downloads about 30% less when it starts. The editors, the pages and the Spanish
+  words load only on the screens that use them, ahead of time where they do, so nothing waits when you tap.
+- **Screen care:** a paired screen moves the whole board by a pixel every 15 minutes, round a small square, so
+  nothing stays on the same pixels all day.
+- **For checking a slow screen:** add `?perf` to its address for a small box with its frames a second, how busy
+  it is, its memory and how much it draws. A test now keeps the wall's download under a limit.
+- **Steadier:** a screen that's been up all day starts again fresh once a night while it's asleep (only while it
+  can reach the board), and one left open from before an update loads the new version instead of failing.
+
 ## 1.2.8 — Safer pictures, links and limits
 A security check-up, from GitHub's code scanning: nothing you do on the board changes.
 - **Fixed:** "Add from link" could be pointed at the board's own computer or your home network with an address

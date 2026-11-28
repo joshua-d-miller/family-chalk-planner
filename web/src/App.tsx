@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | App.tsx
 ===============================================================================
- Version:   1.1.1
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-18
+ Updated:   2026-11-26
 
  Purpose:
      Which page this is, and whether this screen may see it (else: sign
@@ -60,24 +60,26 @@
  1.1.1    2026-11-18   joshua    A family screen opens the board to edit even
                         claude    when someone is also signed in on it (it
                                   showed the wall instead).
+
+ 1.3.0    2026-11-26   joshua    The pages besides the board are downloaded
+                        claude    when first opened, not by every wall;
+                                  swipes through the pinned pages, with dots.
 ===============================================================================
 */
 
 import { useEffect } from 'react';
+import type { ComponentType } from 'react';
+import { later } from './lib/later.tsx';
 import { paintSurface, surfaceOf } from './lib/surface.ts';
 import { RANK, kidOf, useWho } from './lib/who.ts';
 import { PAGES, homeHref } from './routes.ts';
 import { navigate, useHere } from './lib/nav.ts';
 import { useHaSidebarHidden } from './lib/haSidebar.ts';
-import { Shell } from './ui/Shell.tsx';
+import { Shell, usePins } from './ui/Shell.tsx';
+import { pagesAfter, swipedFrom, useSwipePages } from './lib/swipePages.ts';
+import { SwipeDots } from './ui/SwipeDots.tsx';
 import { Board } from './board/Board.tsx';
-import { Chores } from './pages/Chores.tsx';
-import { Jars } from './pages/Jars.tsx';
-import { Meals } from './pages/Meals.tsx';
-import { Pantry } from './pages/Pantry.tsx';
-import { Reminders } from './pages/Reminders.tsx';
 import { Settings } from './pages/Settings.tsx';
-import { Timers } from './pages/Timers.tsx';
 import { SignIn } from './ui/SignIn.tsx';
 import { Pair } from './ui/Pair.tsx';
 import type { Who } from './lib/who.ts';
@@ -86,17 +88,40 @@ import type { Who } from './lib/who.ts';
 // ------------- //
 // | The pages | //
 // ------------- //
-const VIEWS: Record<string, (p: { who: Who | null }) => React.JSX.Element> = {
+// The pages besides the board are downloaded on their own, so a wall (which //
+// only ever shows the board) doesn't load them; a screen that can open them //
+// fetches them as soon as it's up, so a page opens without a blank moment   //
+type Page = ComponentType<{ who: Who | null }>;
+const LATER = {
+  chores: later(() => import('./pages/Chores.tsx').then(m => m.Chores)),
+  jars: later(() => import('./pages/Jars.tsx').then(m => m.Jars)),
+  meals: later(() => import('./pages/Meals.tsx').then(m => m.Meals)),
+  pantry: later(() => import('./pages/Pantry.tsx').then(m => m.Pantry)),
+  reminders: later(() => import('./pages/Reminders.tsx').then(m => m.Reminders)),
+  timers: later(() => import('./pages/Timers.tsx').then(m => m.Timers)),
+  albums: later(() => import('./pages/Albums.tsx').then(m => m.Albums))
+};
+// a page swiped to from the calendar: swipes go on through the pinned pages, or back (lib/swipePages.ts)
+function PageSwipes({ here }: { here: string }) {
+  const pins = usePins().map(p => p.id);
+  useSwipePages(here, pins);
+  const order = pagesAfter(pins);
+  return swipedFrom() && order.includes(here) ? (
+    <SwipeDots key={here} n={order.length + 1} at={order.indexOf(here) + 1} />
+  ) : null;
+}
+function usePagesAhead(w: Who | null) {
+  const opens = !!w && (w.rank > RANK.view || !!kidOf(w)); // a view-only wall never opens them
+  useEffect(() => {
+    if (opens) for (const p of Object.values(LATER)) p.fetch();
+  }, [opens]);
+}
+const VIEWS: Record<string, Page> = {
   board: Board,
   edit: p => <Board {...p} edit />,
   // the week: changes it where this screen may change the calendar
   week: p => <Board {...p} edit={(p.who?.rank || 0) >= RANK.family && !kidOf(p.who)} weekly />,
-  chores: Chores,
-  meals: Meals,
-  reminders: Reminders,
-  timers: Timers,
-  pantry: Pantry,
-  jars: Jars,
+  ...LATER,
   settings: Settings
 };
 
@@ -125,6 +150,7 @@ export function App() {
   const here = useHere();
   const who = useWho();
   useHaSidebarHidden(!!who.data?.ha?.inside); // inside Home Assistant: the board takes the whole width
+  usePagesAhead(who.data);
   const def = PAGES.find(p => p.id === here);
   const View = VIEWS[here];
   useEffect(() => {
@@ -173,6 +199,7 @@ export function App() {
   return (
     <Shell who={w} here={here}>
       <View key={here} who={w} />
+      <PageSwipes here={here} />
     </Shell>
   );
 }

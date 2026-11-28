@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | app-pages.spec.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      The new screens (React): the meal plan, reminders, timers, the
@@ -68,6 +68,12 @@
                                   Swiping the slideshow. ⚙️ Settings as a card
                                   over the board. Pinning: a long press on a
                                   tile. A family screen's Settings.
+
+ 1.3.0    2026-11-26   joshua    The overnight hours on chosen days, and
+                        claude    another time.
+
+ 1.3.0    2026-11-28   joshua    📷 Albums.
+                        claude
 ===============================================================================
 */
 
@@ -268,9 +274,29 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
     .toBe(true);
   await hol.click();
   await expect(hol).toHaveAttribute('aria-pressed', 'true');
-  await page.getByLabel('Show photos overnight on the wall (a slideshow)').check();
+  await page.getByLabel('Overnight hours on the wall and family screens').check();
   await page.getByLabel('With the temperature').check();
   await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.showTemp).toBe(true);
+  const cfgNow = async () => (await (await board.admin.api('/api/photos')).json()).cfg;
+  // which album shows where: the slideshow from the second album, and December's of its own
+  await page.getByLabel('In the slideshow').selectOption('trip');
+  await expect.poll(async () => (await cfgNow()).slides).toBe('trip');
+  await page.locator('#addMonthAlbum').click();
+  await expect.poll(async () => (await cfgNow()).months).toEqual({ 12: 'trip' });
+  await page.getByRole('button', { name: 'No album of its own for December' }).click();
+  await expect.poll(async () => (await cfgNow()).months).toEqual({});
+  await page.getByLabel('In the slideshow').selectOption('');
+  await expect.poll(async () => (await cfgNow()).slides ?? '').toBe('');
+  // the overnight hours: on chosen days, and another time (weekdays while everyone's out)
+  const sunday = page.getByRole('group', { name: 'On' }).first().getByRole('button', { name: 'Sunday' });
+  await sunday.click();
+  await expect.poll(async () => (await cfgNow()).days).toEqual([1, 2, 3, 4, 5, 6]);
+  await page.locator('#addHours').click();
+  await expect.poll(async () => (await cfgNow()).more).toEqual([{ from: '09:00', to: '15:00', days: [1, 2, 3, 4, 5] }]);
+  await page.getByRole('button', { name: 'Remove the time from 09:00 until 15:00' }).click();
+  await expect.poll(async () => (await cfgNow()).more).toEqual([]);
+  await sunday.click(); // (every day again)
+  await expect.poll(async () => (await cfgNow()).days).toEqual([0, 1, 2, 3, 4, 5, 6]);
   await page.locator('#notesScope-board').click(); // (every screen's)
   await page
     .locator('#notes-month')
@@ -284,7 +310,7 @@ test('settings (new screen): hide a holiday and bring it back; the slideshow; th
     .poll(async () => (await (await board.admin.api('/api/extras')).json()).notes.pages)
     .toEqual(['info', 'meals', 'reminders']);
   // put things back for the other tests (the night slideshow would cover the screens)
-  await page.getByLabel('Show photos overnight on the wall (a slideshow)').uncheck();
+  await page.getByLabel('Overnight hours on the wall and family screens').uncheck();
   await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.night).toBe(false);
   await page
     .locator('#notes-month')
@@ -363,6 +389,7 @@ test('⚙️ Settings on a computer: a card over the board, its parts down the s
     '🎉 Holidays',
     '🎂 Birthdays',
     '📷 Photos',
+    '🌙 Overnight hours',
     '🗑️ Trash',
     '🗒️ Notes column',
     '🗓️ Week',
@@ -370,10 +397,11 @@ test('⚙️ Settings on a computer: a card over the board, its parts down the s
   ]);
   await expect(card.getByRole('tabpanel')).toContainText('Showing “Family”');
   // a switch and a slider save
-  await card.locator('#setTab-photos').click();
-  const night = card.getByRole('tabpanel').getByRole('checkbox', { name: /overnight/ });
+  await card.locator('#setTab-hours').click(); // 🌙 Overnight hours: on
+  const night = card.getByRole('tabpanel').getByRole('checkbox', { name: /Overnight hours/ });
   await night.click();
   await expect(night).toBeChecked();
+  await card.locator('#setTab-photos').click(); // the slideshow's look
   const every = card.getByRole('slider', { name: 'Next photo every' });
   await every.fill('45');
   await expect.poll(async () => (await (await board.admin.api('/api/photos')).json()).cfg.every).toBe(45);
@@ -405,6 +433,7 @@ test('a family screen: everything but the calendar and trash day (Month title an
     '🎉 Holidays',
     '🎂 Birthdays',
     '📷 Photos',
+    '🌙 Overnight hours',
     '🗒️ Notes column',
     '🗓️ Week',
     '🖥️ This screen'
@@ -648,6 +677,28 @@ test('the board (new screen, tablet): the month’s title, its border and the bo
   await t.locator('#titleSheet').getByRole('button', { name: 'Save' }).click();
   await expect.poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).title?.f).toBe(42);
   await expect.poll(() => t.evaluate(() => document.fonts.check("400 40px 'Creepster'"))).toBe(true); // served by the board
+  // lettering: a white outline like a sticker, with marker streaks
+  await t.locator('#titleBtn').click();
+  await t.locator('#titleSheet').getByRole('radio', { name: 'White outline' }).click();
+  await t.locator('#titleStreaks').check();
+  await t.locator('#titleRibbon').check();
+  await expect(t.locator('#monthName')).toHaveClass(/ribbon/);
+  await expect(t.locator('#monthName')).toHaveClass(/lt-sticker/);
+  await expect(t.locator('#monthName')).toHaveClass(/streaks/);
+  await t.locator('#titleSheet').getByRole('button', { name: 'Save' }).click();
+  await expect
+    .poll(async () => {
+      const ti = (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).title;
+      return [ti?.l, ti?.s, ti?.b];
+    })
+    .toEqual(['sticker', true, true]);
+  if (process.env.SHOTS) await t.locator('.titlerow').screenshot({ path: process.env.SHOTS + '/lettering.png' });
+  await t.locator('#titleBtn').click();
+  await t.locator('#titleSheet').getByRole('radio', { name: 'Outline', exact: true }).click();
+  await t.locator('#titleStreaks').uncheck();
+  await t.locator('#titleRibbon').uncheck();
+  await t.locator('#titleSheet').getByRole('button', { name: 'Save' }).click();
+  await expect.poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).title?.l).toBeUndefined();
   await t.locator('#borderBtn').click();
   await t
     .locator('#borderSheet')
@@ -844,4 +895,19 @@ test('board style: a style and colors just for this month', async ({ as, board }
   expect(theme.p).not.toBe('holiday');
   expect(theme.o?.lineC).toBeUndefined();
   await board.admin.post('/api/meta', { ym, look: null });
+});
+
+test('📷 Albums: every album with its cover; tap one to play it, tap again to stop', async ({ as }) => {
+  const page = await as('tablet', { path: '/albums' });
+  const tiles = page.locator('.albumTile');
+  await expect(tiles).toHaveCount(2);
+  await expect(tiles.nth(0)).toContainText('Photos');
+  await expect(tiles.nth(1)).toContainText('Our trip');
+  await expect(tiles.nth(1).locator('img')).toHaveAttribute('src', /\?album=trip$/);
+  await tiles.nth(1).click();
+  await expect(page.locator('#slides.on')).toBeVisible();
+  await expect(page.locator('#slides img').first()).toHaveAttribute('src', /\?album=trip$/);
+  await page.locator('#slides').click();
+  await expect(page.locator('#slides.on')).toHaveCount(0);
+  expect(page.errors).toEqual([]);
 });

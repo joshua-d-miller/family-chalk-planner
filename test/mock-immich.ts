@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | mock-immich.ts
 ===============================================================================
- Version:   1.2.8
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-24
+ Updated:   2026-11-28
 
  Purpose:
      Stand-in for an Immich server (the calls the board makes), for tests.
@@ -27,6 +27,9 @@
 
  1.2.8    2026-11-24   joshua    Whole pictures from
                         claude    test/sample-pictures.ts.
+
+ 1.3.0    2026-11-28   joshua    People: Nora, and her photos.
+                        claude    Videos to play, and today's memories.
 ===============================================================================
 */
 
@@ -62,8 +65,11 @@ const kids = [
     ]
   }),
   asset('a2', '2024-12-25T09:00:00Z'),
-  asset('v1', '2025-01-01T00:00:00Z', { type: 'VIDEO' })
+  asset('v1', '2025-01-01T00:00:00Z', { type: 'VIDEO', duration: '0:00:08.500000' }),
+  asset('v2', '2025-01-02T00:00:00Z', { type: 'VIDEO', duration: '0:05:00.000000' }) // too long for the board
 ];
+// a tiny MP4's first bytes (an "ftyp" box): enough to be taken for one
+const MP4 = Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from('ftypisom\0\0\x02\0isommp41', 'latin1')]);
 const trip = [asset('b1', '2023-06-01T12:00:00Z'), asset('b2', '2023-06-02T12:00:00Z', { isTrashed: true })];
 const favorites = [kids[1]];
 // a big album (20 photos, one a day in March 2024): for picking, a few at random, and a few copies
@@ -116,8 +122,25 @@ export function start(port: number): Promise<http.Server & { calls: string[] }> 
           isTrashed: BIG.map(() => false),
           visibility: BIG.map(() => 'timeline')
         });
+      if (u.pathname === '/api/people') return json(200, { people: [{ id: 'p-nora', name: 'Nora' }], total: 1 });
+      // today's memories: one, a trip photo from years ago
+      if (u.pathname === '/api/memories')
+        return json(200, [
+          {
+            id: 'm1',
+            type: 'on_this_day',
+            showAt: '2000-01-01T00:00:00Z',
+            hideAt: '2999-01-01T00:00:00Z',
+            assets: [trip[0]]
+          }
+        ]);
+      if (/^\/api\/assets\/\w+\/video\/playback$/.test(u.pathname)) {
+        res.writeHead(200, { 'Content-Type': 'video/mp4', 'Content-Length': String(MP4.length) });
+        return res.end(MP4);
+      }
       if (u.pathname === '/api/search/metadata') {
         const q = JSON.parse(body || '{}');
+        if (q.personIds) return json(200, { assets: { items: q.personIds.includes('p-nora') ? [kids[0]] : [] } });
         return json(200, { assets: { items: q.isFavorite ? favorites : [...kids, ...trip] } });
       }
       if (u.pathname === '/api/shared-links/me' && shared) return json(200, { assets: trip });

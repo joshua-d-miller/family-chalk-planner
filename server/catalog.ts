@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | catalog.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-14
- Updated:   2026-11-14
+ Updated:   2026-11-28
 
  Purpose:
      Every picture the board has, in one list Pictures can search: the
@@ -41,6 +41,9 @@
                         claude    their own words; its two or three drawings
                                   of one thing ("apple", "apple-2") as one
                                   answer with its looks.
+
+ 1.3.0    2026-11-28   joshua    Doodles in the order a subject's looks are
+                        claude    offered (after Garland & trims).
 ===============================================================================
 */
 
@@ -71,7 +74,7 @@ export interface Found {
 }
 
 // the order a subject's looks are offered in (the first is the one shown)
-const LOOK_ORDER = ['', 'no', 'tw', 'se', 'eo', 'fx', 'om', 'oc', 'gi', 'cp', 'mc', 'ic', 'ip'];
+const LOOK_ORDER = ['', 'no', 'tw', 'se', 'eo', 'fx', 'om', 'oc', 'gi', 'cp', 'dd', 'mc', 'ic', 'ip'];
 const SKIN = /-(light|medium-light|medium|medium-dark|dark)$/;
 // emoji groups that are flags, symbols, letters (Emojibase: 8 symbols, 9 flags)
 const LOW_GROUPS = new Set([8, 9]);

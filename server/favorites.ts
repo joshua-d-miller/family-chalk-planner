@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Server | favorites.ts
 ===============================================================================
- Version:   1.2.1
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-22
+ Updated:   2026-11-28
 
  Purpose:
      Favorites: the few things each person (and each family screen) uses
@@ -58,6 +58,19 @@
      only a screen someone is signed in on has them; from Colby Way's
      board):
        kv 'nozoom'  { 'p:...' | 's:...': true }
+     And its month arrows: always there, or fading when nobody's touching
+     the screen, or none (a tap on the month's name picks any month;
+     nothing saved: fading on a family screen, else always):
+       kv 'arrows'  { 'p:...' | 's:...': 'always' | 'fade' | 'never' }
+     And what it does in the board's overnight hours (nothing saved: the
+     slideshow, as before):
+       kv 'offhours'  { 'p:...' | 's:...': 'slides' | 'dim' | 'clock' |
+           'black' | 'off' | 'none' }
+     And how long a page swiped to stays before going back to the
+     calendar, in quiet minutes (nothing saved: 2; 0: it stays):
+       kv 'backafter'  { 'p:...' | 's:...': 0 | 1 | 2 | 5 | 10 }
+     The admin console sets any screen's pinned pages too (a wall has no
+     menu to pin them with): GET / POST /api/devices/favorites.
 ===============================================================================
  CHANGELOG
 ===============================================================================
@@ -103,6 +116,13 @@
 
  1.2.1    2026-11-22   joshua    Each screen's own Notes column on the
                         claude    month and the week (kv 'notescol').
+
+ 1.3.0    2026-11-26   joshua    One helper for a setting kept per screen
+                        claude    (and the console's for any screen); the
+                                  month arrows, always or fading; what a
+                                  screen does overnight. How soon a page goes
+                                  back to the calendar; the console sets any
+                                  screen's pinned pages (a wall's).
 ===============================================================================
 */
 
@@ -177,6 +197,25 @@ export function setup({
     map[k] = items;
     kv.set('favorites', map);
     res.json({ items, saved: true });
+  });
+  // any screen's, from the admin console (/api/devices is the admin's alone)
+  app.get('/api/devices/favorites', (_req, res) => {
+    const out: Record<string, string[]> = {};
+    for (const [k, v] of Object.entries(all())) if (k.startsWith('s:')) out[k.slice(2)] = v;
+    res.json({ screens: out });
+  });
+  app.post('/api/devices/favorites', (req, res) => {
+    const id = String(req.body?.id || '');
+    const sent = req.body?.items;
+    if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+    if (!Array.isArray(sent)) return res.status(400).json({ error: 'bad favorites' });
+    const items = [...new Set(sent.filter(isItem))].slice(0, MAX);
+    const map = all();
+    if (items.length) map['s:' + id] = items;
+    else delete map['s:' + id];
+    kv.set('favorites', map);
+    broadcast('favorites', {});
+    res.json({ items });
   });
 
   // ----------------------- //
@@ -596,6 +635,62 @@ export function setup({
     if (!(v === null || LANGS.includes(v))) return res.status(400).json({ error: 'Pick a language' });
     res.json({ mine: setLang('s:' + id, v) });
   });
+
+  // ------------------------------ //
+  // | A setting for each screen  | //
+  // ------------------------------ //
+  // Kept per person (or screen), like the ones above: GET /api/<name> is   //
+  // this screen's ({ mine }, null when it hasn't picked), POST sets it     //
+  // ({ value }, null to go back to the default); the admin console reads   //
+  // and sets any screen's at /api/devices/<name>. `ok` says what may be    //
+  // kept; anything else is refused with `error`.                           //
+  const screenSetting = (name: string, ok: (v: unknown) => boolean, error: string) => {
+    const read = () => kv.get<Record<string, unknown>>(name) || {};
+    const save = (k: string, v: unknown) => {
+      const map = read();
+      if (v === null) delete map[k];
+      else map[k] = v;
+      kv.set(name, map);
+      broadcast(name, {});
+      return map[k] ?? null;
+    };
+    const valid = (v: unknown) => v === null || ok(v);
+    app.get('/api/' + name, (req, res) => {
+      const k = whose(req);
+      res.json({ mine: (k && read()[k]) ?? null });
+    });
+    app.post('/api/' + name, (req, res) => {
+      const k = whose(req);
+      if (!k) return res.status(401).json({ error: 'Pair this screen or sign in first', pair: true });
+      const v = (req.body || {}).value;
+      if (!valid(v)) return res.status(400).json({ error });
+      res.json({ mine: save(k, v) });
+    });
+    app.get('/api/devices/' + name, (_req, res) => {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(read())) if (k.startsWith('s:')) out[k.slice(2)] = v;
+      res.json({ screens: out });
+    });
+    app.post('/api/devices/' + name, (req, res) => {
+      const id = String(req.body?.id || '');
+      const v = req.body?.value;
+      if (!/^[\w-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Screen not found' });
+      if (!valid(v)) return res.status(400).json({ error });
+      res.json({ mine: save('s:' + id, v) });
+    });
+  };
+
+  // the month arrows: always there, or fading when nobody's touching the screen (the default on a family screen)
+  // what it does in the board's overnight hours: the slideshow (nothing saved), a dimmed or black screen, or
+  // nothing (the calendar stays as it is)
+  screenSetting(
+    'offhours',
+    v => ['slides', 'dim', 'clock', 'black', 'off', 'none'].includes(v as string),
+    'Pick what it does overnight'
+  );
+  screenSetting('arrows', v => v === 'always' || v === 'fade' || v === 'never', 'Pick always, fade or never');
+  // how many quiet minutes a page swiped to stays before going back to the calendar (0: it stays)
+  screenSetting('backafter', v => [0, 1, 2, 5, 10].includes(v as number), 'Pick 0, 1, 2, 5 or 10 minutes');
 
   // ------------------------------ //
   // | The − / + / Fit buttons | //

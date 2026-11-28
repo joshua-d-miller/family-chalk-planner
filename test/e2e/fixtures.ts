@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | fixtures.ts
 ===============================================================================
- Version:   1.2.8
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-24
+ Updated:   2026-11-28
 
  Purpose:
      A real board for the browser tests: the server with a fake calendar,
@@ -33,6 +33,12 @@
 
  1.2.8    2026-11-24   joshua    Each board's setup code comes from its log
                         claude    (watchLog() in test/helpers.ts).
+
+ 1.3.0    2026-11-26   joshua    The family screen keeps its month arrows
+                        claude    (they fade after 10 quiet seconds).
+
+ 1.3.0    2026-11-28   joshua    A second album, Our trip.
+                        claude
 ===============================================================================
 */
 
@@ -108,6 +114,10 @@ async function startBoard(workerIndex: number) {
       CALDAV_CALENDAR: 'Family',
       PHOTO_ALBUM_URL: 'https://photos.icloud.com/shared/album/0d3TESTALBUMxyz',
       PHOTO_CK_HOST: `http://127.0.0.1:${album}`,
+      // a second album (the same stand-in serves it): the 📷 Albums page and each part's album
+      MORE_ALBUMS: JSON.stringify([
+        { id: 'trip', name: 'Our trip', url: 'https://photos.icloud.com/shared/album/0d3SECONDALBUMxyz' }
+      ]),
       LATITUDE: '40.79',
       LONGITUDE: '-77.86',
       WEATHER_URL: `http://127.0.0.1:${weather}`
@@ -170,7 +180,16 @@ async function startBoard(workerIndex: number) {
     const ok = await admin.post('/api/devices/approve', { code, name, role });
     if (!ok.ok) throw new Error('approve failed: ' + (await ok.text()));
     const s = await fetch(url + '/api/pair/status', { headers: { cookie: pairCookie } });
-    return s.headers.getSetCookie()[0].split(';')[0];
+    const cookie = s.headers.getSetCookie()[0].split(';')[0];
+    // a family screen's month arrows fade after 10 quiet seconds: kept there, so a slow test can still tap them
+    // (the test of the fading turns it on for itself)
+    if (role === 'family')
+      await fetch(url + '/api/arrows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Chalk': '1', cookie },
+        body: JSON.stringify({ value: 'always' })
+      });
+    return cookie;
   }
   return {
     url,

@@ -34,6 +34,8 @@ Third-party components (fetched or installed separately, not part of this reposi
   source is in its Openverse record.
 - The "Garland & trims" pictures (clipart/garland.json, drawn by clipart/garland.py): drawn for this
   project and given to the public domain (CC0).
+- The "Doodles" pictures (clipart/doodles.json, drawn by clipart/doodles.py): drawn for this project
+  (not traced from anyone's) and given to the public domain (CC0).
 - React (MIT, Meta Platforms) for the screens, built with Vite (MIT).
 - OpenCV (Apache-2.0) and the YuNet face detection model from opencv_zoo (MIT):
   optional face finder, installed by deploy/setup-face.sh.

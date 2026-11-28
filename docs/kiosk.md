@@ -71,6 +71,7 @@ This is how the board is tested on every change: Chrome on Linux, full screen, o
    a minimal Debian with no desktop, a small `~/.xinitrc` with that command, started by auto-login, does the same.
 3. **Keep the screen on:** the board asks Chrome to keep it awake; turn off the desktop's own screen blanking too
    (Raspberry Pi: `sudo raspi-config` → Display Options → Screen Blanking → No).
+   To have it **go off overnight**, set the screen's overnight choice to **Turn the screen off** (admin console → 📺 Screens → 🌙 Overnight) and give the computer a short screen sleep (a minute or two) instead: the board keeps it awake the rest of the time. Keeping the screen awake works only over HTTPS or on `localhost`.
 4. **No mouse pointer on a touch screen:** install `unclutter` (`sudo apt install unclutter`) and start it next to
    the browser.
 
@@ -93,6 +94,12 @@ This is how the board is tested on every change: Chrome on Linux, full screen, o
 
 - **Low-power screen** (⚙️ Settings → This screen, or the admin console → 📺 Screens for the wall) turns off
   everything that moves and draws the chalk plainer.
+- **`?perf`:** add it to the screen's address (`http://board.local:3002/?perf`) for a small box in the corner:
+  frames a second (60 is smooth), how many milliseconds of each second went to work that held the screen up
+  ("busy": near 0 when nothing changes), memory (Chrome only) and how much is on the board. Take it off again
+  after.
+- **Screen care:** a paired screen moves the whole board by a pixel every 15 minutes, so nothing burns in on a
+  screen that's on all day.
 - On Android, update **Android System WebView** and turn hardware acceleration on in the kiosk app.
 - To see what's slow, record a profile on the screen itself: in the kiosk app, turn on *WebView contents debugging*
   (Fully Kiosk: Advanced Web Settings), connect the screen to a computer by USB, open `chrome://inspect` in Chrome

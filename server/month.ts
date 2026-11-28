@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | month.ts
 ===============================================================================
- Version:   1.2.8
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-24
+ Updated:   2026-11-28
 
  Purpose:
      Each month's own options: the typed title's style (or a hand-lettered
@@ -54,6 +54,9 @@
 
  1.2.8    2026-11-24   joshua    Only a listed tweak's name is ever kept in
                         claude    a month's look.
+
+ 1.3.0    2026-11-28   joshua    A title's lettering (l), streaks (s) and
+                        claude    ribbon banner (b).
 ===============================================================================
 */
 
@@ -73,6 +76,9 @@ export interface TitleStyle {
   c: string; // color
   o: string | null; // outline color, or none
   z: number; // size: 56 / 68 / 80 / 90 (S M L XL)
+  l?: string; // lettering: 'sticker' | 'inline' | 'shadow' | 'neon' (none: an outline, as before)
+  s?: boolean; // marker streaks
+  b?: boolean; // a ribbon banner behind it
 }
 export interface Border {
   items: string[]; // up to 8 pictures, repeated around the edge
@@ -133,9 +139,14 @@ function cleanTitle(t: unknown): TitleStyle | null {
     f: Math.min(Math.max(Math.trunc(Number(v.f)) || 0, 0), BOARD_FONTS.length - 1),
     c: hex(v.c) || '#F6B3CB',
     o: hex(v.o),
-    z: [56, 68, 80, 90].includes(Number(v.z)) ? Number(v.z) : 68
+    z: [56, 68, 80, 90].includes(Number(v.z)) ? Number(v.z) : 68,
+    // lettering (1.3.0): the outline (none: as before), and marker streaks
+    ...(LETTERING.includes(v.l as string) ? { l: v.l as string } : {}),
+    ...(v.s === true ? { s: true } : {}),
+    ...(v.b === true ? { b: true } : {})
   };
 }
+const LETTERING = ['sticker', 'inline', 'shadow', 'neon'];
 function cleanSide(v: unknown): Side | undefined {
   if (!v || typeof v !== 'object') return undefined;
   const s = v as Record<string, unknown>;

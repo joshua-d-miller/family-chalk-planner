@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Draw.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      Drawing on the board (a tablet): chalk or Posca lines (Apple Pencil
@@ -36,6 +36,9 @@
 
  1.2.0    2026-11-21   joshua    As tall as the slate on a screen that fills
                         claude    itself.
+
+ 1.3.0    2026-11-28   joshua    🖍 Look on a picture: the next look with each
+                        claude    tap. Path lines, and ✈ Add a path.
 ===============================================================================
 */
 
@@ -47,6 +50,9 @@ import { hits, inRect, isClosedLine, unionBox, spin, xform } from '../geom.ts';
 import type { Box } from '../geom.ts';
 import { CHALK, POSCA } from '../../ui/Colors.tsx';
 import type { ArtEditor } from './useArt.ts';
+import { LOOKS } from '../../lib/pictureLook.ts';
+import { endOf } from '../trail.ts';
+import { newGroup } from './useArt.ts';
 import './draw.css';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -80,6 +86,7 @@ export interface Pen {
   medium: Medium;
   color: Record<Medium, string>;
   size: number; // index into SIZES
+  dash?: string; // a flight path: dashes, dots, … (trail.ts); none: a plain line
 }
 export const firstPen = (): Pen => ({
   tool: 'pen',
@@ -93,7 +100,7 @@ export const firstPen = (): Pen => ({
 // | Drawing on the board | //
 // ------------------------ //
 type Drag =
-  | { k: 'line'; item: ArtItem }
+  | { k: 'line'; item: ArtItem; ride?: number } // ride: the picture that flies along it to its end
   | { k: 'erase'; gone: Set<number>; last: [number, number]; at: [number, number] }
   | { k: 'band'; b: Box; x0: number; y0: number }
   | { k: 'move'; start: [number, number]; orig: ArtItem[]; moved: boolean }
@@ -135,6 +142,7 @@ export function DrawLayer({
   const [drag, setDrag] = useState<Drag>(null);
   const dragRef = useRef<Drag>(null);
   const lastPen = useRef(0);
+  const [pathFor, setPathFor] = useState<number | null>(null); // ✈ Add a path: the picture waiting for its path
   const go = (d: Drag) => {
     dragRef.current = d;
     setDrag(d);
@@ -161,6 +169,12 @@ export function DrawLayer({
     (e.target as Element).setPointerCapture?.(e.pointerId);
     const pt = toBoard(e);
     if (placing) return onPlace(pt);
+    if (pathFor !== null) {
+      const c = pen.color[pen.medium];
+      const item: ArtItem = { id: -1e9, c, w: SIZES[pen.size], d: pen.dash || 'dash', p: [pt[0], pt[1]] };
+      if (pen.medium === 'posca') item.m = true;
+      return go({ k: 'line', item, ride: pathFor });
+    }
     if (pen.tool === 'select') {
       if (
         selBox &&
@@ -195,6 +209,7 @@ export function DrawLayer({
     if (posca) w *= 1.3; // Posca tips lay down a fatter line
     const item: ArtItem = { id: -1e9, c: pen.color[pen.medium], w: Math.round(w * 10) / 10, p: [pt[0], pt[1]] };
     if (posca) item.m = true;
+    if (pen.dash) item.d = pen.dash;
     go({ k: 'line', item });
   }
 
@@ -212,7 +227,7 @@ export function DrawLayer({
     if (d.k === 'line') {
       const p = d.item.p!.slice();
       for (const ev of evs.length ? evs : [e]) p.push(...toBoard(ev));
-      go({ k: 'line', item: { ...d.item, p } });
+      go({ ...d, item: { ...d.item, p } });
     } else if (d.k === 'erase') {
       const [ax, ay] = d.last;
       const steps = Math.max(1, Math.ceil(Math.hypot(pt[0] - ax, pt[1] - ay) / 6));
@@ -272,7 +287,20 @@ export function DrawLayer({
       if (p.length < 4) p.push(p[0] + 0.5, p[1] + 0.5);
       const { id: _, ...line } = d.item;
       void _;
-      art.add({ ...line, p: p.map(v => Math.round(v * 10) / 10) } as ArtItem);
+      const pic = d.ride === undefined ? null : items.find(x => x.id === d.ride);
+      const pts = p.map(v => Math.round(v * 10) / 10);
+      if (pic) {
+        setPathFor(null);
+        if (pts.length < 8) return; // a tap, not a path
+        // the picture goes to the end, facing along it, never upside down; the two are kept together
+        const end = endOf(pts);
+        const r = Math.round(end.deg > 90 ? end.deg - 180 : end.deg < -90 ? end.deg + 180 : end.deg);
+        const g = pic.g || newGroup();
+        art.update([pic], [{ ...pic, x: Math.round(end.x), y: Math.round(end.y), r: r || undefined, g }]);
+        art.add({ ...line, p: pts, g } as ArtItem);
+        return;
+      }
+      art.add({ ...line, p: pts } as ArtItem);
     } else if (d.k === 'erase') {
       if (d.gone.size) art.remove(items.filter(x => d.gone.has(x.id)));
     } else if (d.k === 'band') {
@@ -316,7 +344,7 @@ export function DrawLayer({
       sel.map(o => spin(o, deg, cx, cy))
     );
   };
-  const barW = 500;
+  const barW = 560;
   return (
     <div
       ref={ref}
@@ -331,6 +359,14 @@ export function DrawLayer({
           if ((t as Touch & { touchType?: string }).touchType === 'stylus' && e.cancelable) e.preventDefault();
       }}
     >
+      {pathFor !== null && !drag && (
+        <div className="pathHint" role="status" onPointerDown={e => e.stopPropagation()}>
+          Draw its path, ending where it should land
+          <button type="button" onClick={() => setPathFor(null)}>
+            Cancel
+          </button>
+        </div>
+      )}
       {drag?.k === 'line' && <Art items={[{ ...drag.item, id: -1 }]} bg={bg} res={res} gifsPlay={false} />}
       <svg className="drawUi" width={W} height={h} viewBox={`0 0 ${W} ${h}`} aria-hidden="true">
         {drag?.k === 'erase' && <circle cx={drag.at[0]} cy={drag.at[1]} r={ERASE_R} className="ring" />}
@@ -393,6 +429,35 @@ export function DrawLayer({
             <button type="button" onClick={onRecolor}>
               🎨 Color
             </button>
+            {sel.every(it => it.k === 'g') && (
+              <button
+                type="button"
+                id="lookBtn"
+                aria-label={`Look: ${LOOKS.find(([v]) => v === (sel[0].lk || ''))?.[1] || ''} (tap for the next)`}
+                onClick={() => {
+                  const i = LOOKS.findIndex(([v]) => v === (sel[0].lk || ''));
+                  const next = LOOKS[(i + 1) % LOOKS.length][0];
+                  art.update(
+                    sel,
+                    sel.map(it => ({ ...it, lk: next || undefined }))
+                  );
+                }}
+              >
+                🖍 {LOOKS.find(([v]) => v === (sel[0].lk || ''))?.[1]}
+              </button>
+            )}
+            {sel.length === 1 && sel[0].k === 'g' && (
+              <button
+                type="button"
+                id="pathBtn"
+                onClick={() => {
+                  setPathFor(sel[0].id);
+                  setSelection([]);
+                }}
+              >
+                ✈ Add a path
+              </button>
+            )}
             <button type="button" aria-label="Make smaller" onClick={() => resize(1 / 1.2)}>
               −
             </button>

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | StyleEditor.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      🎨 Board style: the background, a preset, and her own tweaks to it
@@ -57,6 +57,9 @@
                                   with changes.
                                   Your styles' names stay as they were typed
                                   in another language.
+
+ 1.3.0    2026-11-28   joshua    🎨 Board style → Chalk: the chalk, the grid,
+                        claude    the grain, how used it looks.
 ===============================================================================
 */
 
@@ -346,6 +349,58 @@ const ROWS: { label: string; parts: Part[] }[] = [
       ['textC', 'color']
     ]
   },
+  // the chalk look (lib/chalk.ts)
+  {
+    label: 'Chalk',
+    parts: [
+      [
+        'chalk',
+        [
+          ['clean', 'Clean'],
+          ['marker', 'Chalk marker'],
+          ['stick', 'Stick chalk']
+        ]
+      ]
+    ]
+  },
+  {
+    label: 'Grid',
+    parts: [
+      [
+        'grid',
+        [
+          ['printed', 'Printed'],
+          ['hand', 'By hand']
+        ]
+      ]
+    ]
+  },
+  {
+    label: 'Grain (stick chalk)',
+    parts: [
+      [
+        'grain',
+        [
+          ['light', 'Light'],
+          ['normal', 'Normal'],
+          ['heavy', 'Heavy']
+        ]
+      ]
+    ]
+  },
+  {
+    label: 'How used it looks',
+    parts: [
+      [
+        'wear',
+        [
+          ['clean', 'Clean'],
+          ['light', 'Lightly used'],
+          ['well', 'Well used']
+        ]
+      ]
+    ]
+  },
   {
     label: 'Calendar lines',
     parts: [
@@ -374,15 +429,20 @@ const ROWS: { label: string; parts: Part[] }[] = [
 // | The tabs, and theirs | //
 // ------------------------ //
 // Which tab each row is on (Style has the background and the presets).      //
-type Tab = 'style' | 'days' | 'events' | 'notes' | 'lines';
+type Tab = 'style' | 'chalk' | 'days' | 'events' | 'notes' | 'lines';
 const TABS: [Tab, string][] = [
   ['style', 'Style'],
+  ['chalk', 'Chalk'],
   ['days', 'Days'],
   ['events', 'Events'],
   ['notes', 'Notes'],
   ['lines', 'Lines']
 ];
 const TAB_OF: Record<string, Tab> = {
+  Chalk: 'chalk',
+  Grid: 'chalk',
+  'Grain (stick chalk)': 'chalk',
+  'How used it looks': 'chalk',
   'Day numbers': 'days',
   'Number boxes': 'days',
   Today: 'days',

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Settings.tsx
 ===============================================================================
- Version:   1.2.7
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-23
+ Updated:   2026-11-28
 
  Purpose:
      ⚙️ Settings on the board. Admins also get the calendar (Google
@@ -66,6 +66,16 @@
 
  1.2.7    2026-11-23   joshua    The photos read safely when the board's
                         claude    answer didn't come through whole.
+
+ 1.3.0    2026-11-26   joshua    This screen: the month arrows, always there
+                        claude    or fading; what it does overnight. The
+                                  overnight hours on chosen days, and more
+                                  than one time, in 🌙 Overnight hours of
+                                  their own. How soon a page swiped to goes
+                                  back to the calendar.
+
+ 1.3.0    2026-11-28   joshua    Which album shows beside the month's name,
+                        claude    in the slideshow, a month and a time.
 ===============================================================================
 */
 
@@ -81,6 +91,7 @@ import { DAY_NAMES } from '../lib/today.ts';
 import { RANK } from '../lib/who.ts';
 import type { Who } from '../lib/who.ts';
 import { Btn, Field, Pick, Segs } from '../ui/bits.tsx';
+import { MONTHS } from '../board/Month.tsx';
 import { LookFields } from '../ui/LookCard.tsx';
 import { CloseX } from '../ui/Sheet.tsx';
 import { useShell } from '../ui/Shell.tsx';
@@ -89,6 +100,9 @@ import { setSleeps, useSleeps } from '../lib/countdowns.ts';
 import { SPACES, setWeekFrom, setWeekView, useWeekFrom, useWeekView } from '../lib/weekFrom.ts';
 import type { WeekView } from '../lib/weekFrom.ts';
 import { setHideZoom, useHideZoom } from '../lib/zoomControls.ts';
+import { arrowsDefault, setArrows, useMyArrows } from '../lib/arrows.ts';
+import { BACK_AFTER, setBackAfter, useBackAfter } from '../lib/swipePages.ts';
+import { OFF_MODES, setOffHours, useOffHours } from '../lib/offHours.ts';
 import { setBoardFit, useBoardFit } from '../lib/boardFit.ts';
 import { LANGUAGES, setLanguage, useLanguage } from '../lib/lang.ts';
 import type { Lang } from '../lib/lang.ts';
@@ -102,7 +116,8 @@ import './settings.css';
 // Each part, and who sees it: the calendar and trash day only the admin;   //
 // the board's parts, 🗓️ Week and 🖥️ This screen every screen with a menu   //
 // (a family screen too).                                                    //
-export type SectionId = 'calendar' | 'holidays' | 'birthdays' | 'photos' | 'trash' | 'notes' | 'week' | 'screen';
+export type SectionId =
+  'calendar' | 'holidays' | 'birthdays' | 'photos' | 'hours' | 'trash' | 'notes' | 'week' | 'screen';
 interface Section {
   id: SectionId;
   icon: string;
@@ -119,6 +134,7 @@ export const SECTIONS: Section[] = [
   { id: 'holidays', icon: '🎉', title: 'Holidays', show: editor, El: () => <Holidays /> },
   { id: 'birthdays', icon: '🎂', title: 'Birthdays', show: editor, El: () => <Birthdays /> },
   { id: 'photos', icon: '📷', title: 'Photos', show: editor, El: () => <Photos /> },
+  { id: 'hours', icon: '🌙', title: 'Overnight hours', show: editor, El: () => <Photos part="hours" /> },
   { id: 'trash', icon: '🗑️', title: 'Trash', show: isAdmin, El: () => <Trash /> },
   { id: 'notes', icon: '🗒️', title: 'Notes column', show: editor, El: () => <RightColumn /> },
   { id: 'week', icon: '🗓️', title: 'Week', show: screen, El: () => <WeekPart /> },
@@ -549,6 +565,13 @@ interface PhotoCfg {
   night: boolean;
   from: string;
   to: string;
+  days?: number[]; // the overnight hours' days (none: every day)
+  more?: { from: string; to: string; days: number[]; album?: string }[]; // up to 3 more windows
+  // which album shows where (a more album's id; none: the board's own)
+  album?: string; // the first overnight time's slideshow
+  polaroids?: string;
+  slides?: string;
+  months?: Record<string, string>; // '1'…'12'
   every: number;
   dim: number;
   showEvents: boolean;
@@ -557,11 +580,38 @@ interface PhotoCfg {
   sidePanel: boolean;
   showCountdown: boolean;
 }
-function Photos() {
-  const p = useLive<{ enabled: boolean; kind: string; cfg: PhotoCfg; photos: unknown[]; error: string | null }>(
-    'api/photos',
-    ['photos']
+// the days a time applies to: every day unless some are picked; at least one stays on
+function DayChips({ label, days, onChange }: { label: string; days?: number[]; onChange: (d: number[]) => void }) {
+  const on = days || [0, 1, 2, 3, 4, 5, 6];
+  return (
+    <div className="segs days" role="group" aria-label={label}>
+      {DAY_NAMES.map((n, i) => (
+        <button
+          key={n}
+          type="button"
+          aria-pressed={on.includes(i)}
+          aria-label={n}
+          className={'seg' + (on.includes(i) ? ' on' : '')}
+          onClick={() => {
+            const next = on.includes(i) ? on.filter(d => d !== i) : [...on, i].sort();
+            if (next.length) onChange(next);
+          }}
+        >
+          {n.slice(0, 3)}
+        </button>
+      ))}
+    </div>
   );
+}
+function Photos({ part = 'photos' }: { part?: 'photos' | 'hours' }) {
+  const p = useLive<{
+    enabled: boolean;
+    kind: string;
+    cfg: PhotoCfg;
+    photos: unknown[];
+    error: string | null;
+    albums?: { id: string; name: string }[];
+  }>('api/photos', ['photos']);
   const sv = useSaved();
   const later = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   if (!p.data) return null;
@@ -576,6 +626,20 @@ function Photos() {
     clearTimeout(later.current);
     later.current = setTimeout(() => sv.run(post('api/photos/settings', patch)), 400);
   };
+  // which album: only once there's more than one (admin console → ⚙️ Board → Photos → More albums)
+  const albums = p.data.albums || [];
+  const albumPick = (label: string, value: string | undefined, onChange: (v: string) => void) =>
+    albums.length > 1 && (
+      <Pick label={label} value={value || ''} onChange={e => onChange(e.target.value)}>
+        {albums.map(a => (
+          <option key={a.id} value={a.id}>
+            {a.id ? a.name : 'Photos (the board’s album)'}
+          </option>
+        ))}
+      </Pick>
+    );
+  const months = Object.entries(c.months || {}).sort((a, b) => +a[0] - +b[0]);
+  const setMonths = (m: Record<string, string>) => set({ months: m });
   const box = (k: keyof PhotoCfg, label: string) => (
     <label className="check">
       <input
@@ -586,6 +650,60 @@ function Photos() {
       <span className="t">{label}</span>
     </label>
   );
+  if (part === 'hours')
+    return (
+      <Card title="Overnight hours">
+        {box('night', 'Overnight hours on the wall and family screens')}
+        {c.night && (
+          <>
+            <div className="row">
+              <Field label="From" type="time" value={c.from} onChange={e => set({ from: e.target.value })} />
+              <Field label="Until" type="time" value={c.to} onChange={e => set({ to: e.target.value })} />
+            </div>
+            <DayChips label="On" days={c.days} onChange={days => set({ days })} />
+            {albumPick('Slideshow from', c.album, v => set({ album: v }))}
+            {(c.more || []).map((w, i) => {
+              const change = (patch: Partial<typeof w>) =>
+                set({ more: (c.more || []).map((x, j) => (j === i ? { ...x, ...patch } : x)) });
+              return (
+                <div className="moreHours" key={i}>
+                  <div className="row">
+                    <Field label="From" type="time" value={w.from} onChange={e => change({ from: e.target.value })} />
+                    <Field label="Until" type="time" value={w.to} onChange={e => change({ to: e.target.value })} />
+                    <button
+                      type="button"
+                      className="btn"
+                      aria-label={`Remove the time from ${w.from} until ${w.to}`}
+                      onClick={() => set({ more: (c.more || []).filter((_, j) => j !== i) })}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <DayChips label="On" days={w.days} onChange={days => change({ days })} />
+                  {albumPick('Slideshow from', w.album, v => change({ album: v || undefined }))}
+                </div>
+              );
+            })}
+            {(c.more || []).length < 3 && (
+              <button
+                type="button"
+                className="btn"
+                id="addHours"
+                onClick={() =>
+                  set({ more: [...(c.more || []), { from: '09:00', to: '15:00', days: [1, 2, 3, 4, 5] }] })
+                }
+              >
+                + Add another time (weekdays while everyone's out, say)
+              </button>
+            )}
+          </>
+        )}
+        <p className="dim small">
+          What each screen does then (the slideshow, a night clock, dimmed, black, turned off or nothing): ⚙️ Settings →
+          This screen on a family screen, or the admin console → 📺 Screens for any screen.
+        </p>
+      </Card>
+    );
   return (
     <Card title="Photos and the slideshow">
       <p className="dim small">
@@ -594,12 +712,56 @@ function Photos() {
           : 'No photo album yet: the admin console sets it up (⚙️ Board → Photos).'}
         {p.data.error && <span className="err"> {p.data.error}</span>}
       </p>
-      {box('night', 'Show photos overnight on the wall (a slideshow)')}
-      {c.night && (
-        <div className="row">
-          <Field label="From" type="time" value={c.from} onChange={e => set({ from: e.target.value })} />
-          <Field label="Until" type="time" value={c.to} onChange={e => set({ to: e.target.value })} />
-        </div>
+      {albumPick('Beside the month’s name', c.polaroids, v => set({ polaroids: v }))}
+      {albumPick('In the slideshow', c.slides, v => set({ slides: v }))}
+      {albums.length > 1 && (
+        <>
+          {months.map(([m, a]) => (
+            <div className="row" key={m}>
+              <Pick
+                label="A month of its own"
+                value={m}
+                onChange={e => {
+                  const next = { ...c.months };
+                  delete next[m];
+                  setMonths({ ...next, [e.target.value]: a });
+                }}
+              >
+                {MONTHS.map((n, i) => (
+                  <option key={n} value={String(i + 1)} disabled={i + 1 !== +m && !!c.months?.[String(i + 1)]}>
+                    {n}
+                  </option>
+                ))}
+              </Pick>
+              {albumPick('Shows', a, v => setMonths({ ...c.months, [m]: v }))}
+              <button
+                type="button"
+                className="btn"
+                aria-label={`No album of its own for ${MONTHS[+m - 1]}`}
+                onClick={() => {
+                  const next = { ...c.months };
+                  delete next[m];
+                  setMonths(next);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          {months.length < 12 && (
+            <button
+              type="button"
+              className="btn"
+              id="addMonthAlbum"
+              onClick={() => {
+                const free = [12, 10, 11, 1, 2, 3, 4, 5, 6, 7, 8, 9].find(n => !c.months?.[String(n)]);
+                setMonths({ ...c.months, [String(free)]: albums[1].id });
+              }}
+            >
+              + An album for a month (Christmas in December, say)
+            </button>
+          )}
+        </>
       )}
       {c.night && (
         <div className="slides2">
@@ -876,6 +1038,9 @@ function ThisScreen() {
   const [speak, setSpeak] = useState(speaksHere());
   const sleeps = useSleeps();
   const hideZoom = useHideZoom();
+  const myArrows = useMyArrows();
+  const offHours = useOffHours();
+  const backAfter = useBackAfter();
   const signedIn = !!shell.who?.user;
   const fit = useBoardFit();
   const lang = useLanguage();
@@ -1013,6 +1178,35 @@ function ThisScreen() {
           <span className="t">Hide the − / + / Fit buttons on the calendar</span>
         </label>
       )}
+      {/* (a family screen has the overnight hours, like the wall; the wall's is set in the admin console) */}
+      {shell.who?.device?.role === 'family' && (
+        <Segs
+          label="Overnight, this screen shows"
+          value={offHours}
+          options={OFF_MODES}
+          onChange={v => void setOffHours(v)}
+        />
+      )}
+      {/* (only a screen that edits has the arrows: a wall doesn't) */}
+      {(shell.who?.rank || 0) >= RANK.family && (
+        <Segs
+          label="The month arrows"
+          value={myArrows || 'default'}
+          options={[
+            ['default', `This screen’s usual (${arrowsDefault(shell.who) === 'fade' ? 'fade' : 'always there'})`],
+            ['always', 'Always there'],
+            ['fade', 'Fade when nobody’s touching the screen'],
+            ['never', 'None (tap the month’s name to pick a month)']
+          ]}
+          onChange={v => void setArrows(v === 'default' ? null : v)}
+        />
+      )}
+      <Segs
+        label="A page swiped to goes back to the calendar after (quiet minutes)"
+        value={String(backAfter)}
+        options={BACK_AFTER.map(m => [String(m), m ? `${m} min` : 'Never'])}
+        onChange={v => void setBackAfter(+v === 2 ? null : +v)}
+      />
     </Card>
   );
 }

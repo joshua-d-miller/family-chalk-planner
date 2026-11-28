@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | art.ts
 ===============================================================================
- Version:   0.16.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
- Updated:   2026-11-11
+ Updated:   2026-11-28
 
  Purpose:
      The art layer: chalk and Posca drawings, words, clipart, GIFs and
@@ -59,6 +59,10 @@
 
  0.16.0    2026-11-11   joshua    Pictures and words can be turned (r).
                         claude
+
+ 1.3.0    2026-11-28   joshua    A picture's 🖍 Look (lk), one it knows;
+                        claude    a flight path's style (d); how neat words
+                                  are (n).
 ===============================================================================
 */
 
@@ -91,6 +95,10 @@ export type ArtItem = Record<string, unknown>;
 // -------------------------------- //
 // Anything missing or odd falls back to something safe; anything that can't //
 // be drawn is refused.                                                      //
+// a picture's 🖍 Look: as it is, or drawn in chalk (web/src/lib/pictureLook.ts)
+const LOOKS = ['none', 'marker', 'shine', 'sticker', 'doodle', 'chalk'];
+// a flight path's style (web/src/board/trail.ts)
+const DASHES = ['dash', 'dots', 'dashdot', 'hearts'];
 export function cleanItem(raw: unknown): ArtItem | null {
   if (!raw || typeof raw !== 'object') return null;
   const it = raw as Record<string, unknown>;
@@ -121,6 +129,8 @@ export function cleanItem(raw: unknown): ArtItem | null {
       w: size(it.w),
       h: size(it.h),
       mode: ['gentle', 'loop', 'still'].includes(it.mode as string) ? it.mode : 'gentle',
+      // its 🖍 Look (web/src/lib/pictureLook.ts); none: the board style's
+      ...(LOOKS.includes(it.lk as string) ? { lk: it.lk } : {}),
       ...turn,
       ...group,
       ...cover
@@ -140,6 +150,7 @@ export function cleanItem(raw: unknown): ArtItem | null {
       f: Math.min(Math.max(Math.trunc(Number(it.f)) || 0, 0), BOARD_FONTS.length - 1),
       z: Math.min(Math.max(Math.round(Number(it.z)) || 40, 12), 120),
       ...(it.m ? { m: true } : {}),
+      ...(it.n === 1 || it.n === 2 ? { n: it.n } : {}),
       ...turn,
       ...group,
       ...cover
@@ -153,6 +164,7 @@ export function cleanItem(raw: unknown): ArtItem | null {
     p: it.p.map(n => Math.round((Number(n) || 0) * 2) / 2),
     ...(it.m ? { m: true } : {}),
     ...(typeof it.fc === 'string' && HEX.test(it.fc) ? { fc: it.fc } : {}),
+    ...(DASHES.includes(it.d as string) ? { d: it.d } : {}),
     ...group,
     ...cover
   };

@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | clipstyles.ts
 ===============================================================================
- Version:   0.17.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-14
+ Updated:   2026-11-28
 
  Purpose:
      More picture sets for Pictures, each in its own style (Streamline,
@@ -47,6 +47,9 @@
                                   pictures are its own or the emoji redrawn.
                                   Openclipart (clipart/openclipart.json.gz,
                                   packed), with each picture's own words.
+
+ 1.3.0    2026-11-28   joshua    Doodles (clipart/doodles.json): the board's
+                        claude    own chalk doodles.
 ===============================================================================
 */
 
@@ -95,6 +98,14 @@ export const STYLES: ClipStyle[] = [
     name: 'Garland & trims',
     pkg: '',
     file: path.join(import.meta.dirname, '..', 'clipart', 'garland.json'),
+    credit: 'Drawn for Family Chalk Planner (CC0)',
+    own: true
+  },
+  {
+    prefix: 'dd',
+    name: 'Doodles',
+    pkg: '',
+    file: path.join(import.meta.dirname, '..', 'clipart', 'doodles.json'),
     credit: 'Drawn for Family Chalk Planner (CC0)',
     own: true
   }

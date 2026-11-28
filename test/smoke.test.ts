@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | smoke.test.ts
 ===============================================================================
- Version:   1.2.8
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-24
+ Updated:   2026-11-28
 
  Purpose:
      End-to-end smoke test: real server + mock CalDAV + mock photo album,
@@ -89,6 +89,9 @@
 
                                   Its board's setup code comes from the
                                   board's log (test/helpers.ts watchLog()).
+
+ 1.3.0    2026-11-28   joshua    The Doodles set: unpacked, 29 pictures.
+                        claude
 ===============================================================================
 */
 
@@ -231,10 +234,10 @@ test('chalk drawings and holiday borders', async () => {
   }
   assert.deepEqual(
     styles.map(s => s.prefix),
-    ['se', 'no', 'om', 'tw', 'fx', 'eo', 'ip', 'mc', 'ic', 'oc', 'cp']
+    ['se', 'no', 'om', 'tw', 'fx', 'eo', 'ip', 'mc', 'ic', 'oc', 'cp', 'dd']
   );
   assert.ok(
-    styles.filter(s => !['cp', 'mc', 'ic'].includes(s.prefix)).every(s => s.count > 500),
+    styles.filter(s => !['cp', 'dd', 'mc', 'ic'].includes(s.prefix)).every(s => s.count > 500),
     'every style unpacked'
   );
   assert.ok(styles.find(s => s.prefix === 'mc')!.count > 400, 'weather');
@@ -248,6 +251,9 @@ test('chalk drawings and holiday borders', async () => {
   const garland = await (await api('/api/clip/cp-garland-lights.svg')).text();
   assert.match(garland, /width="256" height="\d+"/);
   assert.ok(Number(/height="(\d+)"/.exec(garland)![1]) < 100, 'long and thin');
+  // the chalk doodles
+  assert.equal(styles.find(s => s.prefix === 'dd')!.count, 29);
+  assert.equal((await api('/api/clip/dd-bee.svg')).status, 200);
   const noto = await (await api('/api/clip/list?style=no')).json();
   assert.ok(noto.includes('no-jack-o-lantern'));
   r = await api('/api/clip/no-jack-o-lantern.svg');

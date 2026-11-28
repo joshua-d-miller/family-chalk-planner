@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board editors | TitleEditor.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      ✎ Month title: typed (font, color, outline, size; for this month or
@@ -28,6 +28,9 @@
 
  1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
                         claude    with changes.
+
+ 1.3.0    2026-11-28   joshua    Lettering, marker streaks and a ribbon
+                        claude    banner.
 ===============================================================================
 */
 
@@ -40,6 +43,15 @@ import { Sheet, useChanged } from '../../ui/Sheet.tsx';
 import type { MonthMeta } from '../Board.tsx';
 import { DEFAULT_TITLE } from '../Title.tsx';
 import type { TitleStyle } from '../Title.tsx';
+
+// the title's lettering (board.css): none is an outline, as before
+const LETTERING: [string, string][] = [
+  ['', 'Outline'],
+  ['sticker', 'White outline'],
+  ['inline', 'Inline'],
+  ['shadow', 'Drop shadow'],
+  ['neon', 'Neon']
+];
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // ------------------- //
@@ -109,6 +121,31 @@ export function TitleEditor({
           <Colors value={t.c} onChange={c => c && setT({ ...t, c })} label="Title color" />
           <div className="sublbl">Outline</div>
           <Colors value={t.o} onChange={o => setT({ ...t, o })} none="No outline" label="Outline" />
+          <div className="sublbl">Lettering</div>
+          <Segs
+            value={t.l || ''}
+            onChange={l => setT({ ...t, l: l || undefined })}
+            options={LETTERING}
+            label="Lettering"
+          />
+          <label className="tick">
+            <input
+              type="checkbox"
+              id="titleStreaks"
+              checked={!!t.s}
+              onChange={e => setT({ ...t, s: e.target.checked || undefined })}
+            />{' '}
+            Marker streaks
+          </label>
+          <label className="tick">
+            <input
+              type="checkbox"
+              id="titleRibbon"
+              checked={!!t.b}
+              onChange={e => setT({ ...t, b: e.target.checked || undefined })}
+            />{' '}
+            A ribbon banner behind it
+          </label>
           <div className="sublbl">Size</div>
           <Segs value={String(t.z)} onChange={z => setT({ ...t, z: +z })} options={SIZES} label="Size" />
           <label className="tick">

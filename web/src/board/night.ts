@@ -1,0 +1,66 @@
+/*
+===============================================================================
+ Family Chalk Planner | Screens | Board | night.ts
+===============================================================================
+ Version:   1.3.0
+ Author:    Joshua D. Miller, Claude
+ Created:   2026-11-26
+ Updated:   2026-11-28
+
+ Purpose:
+     Whether it's the board's overnight hours now (⚙️ Settings → 🌙
+     Overnight hours): the first window (from, until, on its days) or any of
+     up to 3 more. A window past midnight belongs to the day it starts: Fri
+     21:00 to 06:00 is Friday night and Saturday's early morning. No days
+     saved: every day (as before 1.3.0).
+
+ Used by:
+     web/src/board/Slideshow.tsx
+     test/night.test.ts
+===============================================================================
+ CHANGELOG
+===============================================================================
+ Version   Date         Author    Description
+ -------   ----------   -------   --------------------------------------------
+ 1.3.0     2026-11-26   joshua    New file (nightNow, from Slideshow.tsx),
+                        claude    with days and more windows.
+
+ 1.3.0    2026-11-28   joshua    nightAlbum: the album the time showing now
+                        claude    asks for.
+===============================================================================
+*/
+
+// days: 0 Sunday … 6 Saturday; album: the slideshow's then (a more album's id)
+export type NightWindow = { from: string; to: string; days?: number[]; album?: string };
+export type NightCfg = NightWindow & { night: boolean; more?: NightWindow[] };
+
+const hm = (s: string) => {
+  const m = /^(\d\d):(\d\d)$/.exec(s || '');
+  return m ? +m[1] * 60 + +m[2] : null;
+};
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
+// ------------------------ //
+// | Is it overnight now? | //
+// ------------------------ //
+// A window belongs to the day it starts, even when it runs past midnight;   //
+// with chosen days, only those days.                                        //
+function inWindow(w: NightWindow, d: Date) {
+  const f = hm(w.from);
+  const t = hm(w.to);
+  if (f === null || t === null || f === t) return false;
+  const m = d.getHours() * 60 + d.getMinutes();
+  const on = (day: number) => !w.days || w.days.includes(day);
+  if (f < t) return on(d.getDay()) && m >= f && m < t;
+  return (on(d.getDay()) && m >= f) || (on((d.getDay() + 6) % 7) && m < t); // past midnight: the day before's
+}
+export function nightNow(cfg: NightCfg | undefined, d = new Date()) {
+  if (!cfg?.night) return false;
+  return inWindow(cfg, d) || (cfg.more || []).some(w => inWindow(w, d));
+}
+
+// the album the overnight time showing now asks for (none: the slideshow's usual)
+export function nightAlbum(cfg: NightCfg | undefined, d = new Date()) {
+  if (!cfg?.night) return undefined;
+  if (inWindow(cfg, d)) return cfg.album;
+  return (cfg.more || []).find(w => inWindow(w, d))?.album;
+}

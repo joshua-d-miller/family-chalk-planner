@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Menu.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      The ☰ menu, only for getting places: every page this screen may open
@@ -49,6 +49,9 @@
                                   and 🖥️ This screen… and ↻ Reload at the
                                   bottom. This screen's menu and its look
                                   moved to ⚙️ Settings → This screen.
+
+ 1.3.0    2026-11-28   joshua    📷 Albums only with more than one album.
+                        claude
 ===============================================================================
 */
 
@@ -61,6 +64,7 @@ import type { Who } from '../lib/who.ts';
 import { CloseX } from './Sheet.tsx';
 import { openSettings, showSettings } from '../pages/Settings.tsx';
 import { PAGES, homeHref, isHome } from '../routes.ts';
+import { hidden, useAlbums } from '../lib/albums.ts';
 import { useShell } from './Shell.tsx';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -97,13 +101,14 @@ export function Menu({
   const rank = who?.rank || 0;
   const admin = who?.user?.role === 'admin';
   const mayOpen = (need: number, id: string) => (id === 'admin' ? admin : rank >= need);
+  const albums = useAlbums();
   const onBoard = isHome(here, who);
   // pinned for whom: this screen when nobody is signed in on it, else the person
   const forScreen = !who?.user;
   // the tiles: 📅 Calendar first, then the pages, then Settings and the admin console
   const tiles = [
     { id: 'calendar', title: 'Calendar', icon: '📅', href: homeHref(who), here: onBoard, pin: false },
-    ...PAGES.filter(p => p.group !== 'board' && mayOpen(p.need, p.id)).map(p => ({
+    ...PAGES.filter(p => p.group !== 'board' && mayOpen(p.need, p.id) && !hidden(p.id, albums)).map(p => ({
       id: p.id,
       title: p.title,
       icon: p.icon,

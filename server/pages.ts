@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | pages.ts
 ===============================================================================
- Version:   1.2.8
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-06
- Updated:   2026-11-24
+ Updated:   2026-11-28
 
  Purpose:
      The pages themselves: the board page (wall, tablet and phone chores),
@@ -66,6 +66,9 @@
 
  1.2.8    2026-11-24   joshua    A font file is always inside its package's
                         claude    folder.
+
+ 1.3.0    2026-11-28   joshua    /albums: the 📷 Albums page.
+                        claude
 ===============================================================================
 */
 
@@ -131,7 +134,8 @@ const fontsMissing = () =>
 // Each screen can be installed as an app (a home-screen icon): the wall     //
 // opens full-screen at "/", the iPad at "/edit", and each page at its own   //
 // address.                                                                  //
-type Kind = 'wall' | 'edit' | 'week' | 'chores' | 'meals' | 'reminders' | 'timers' | 'pantry' | 'jars' | 'settings';
+type Kind =
+  'wall' | 'edit' | 'week' | 'chores' | 'meals' | 'reminders' | 'timers' | 'pantry' | 'jars' | 'albums' | 'settings';
 const app = (name: string, path: string) => ({
   name,
   short_name: name,
@@ -141,7 +145,7 @@ const app = (name: string, path: string) => ({
   orientation: 'any'
 });
 // the screens (React). The board as it was before them stays at classic/ for a while, just in case.
-export const APP_PAGES = ['week', 'meals', 'reminders', 'timers', 'pantry', 'jars', 'settings'];
+export const APP_PAGES = ['week', 'meals', 'reminders', 'timers', 'pantry', 'jars', 'albums', 'settings'];
 const manifests = (title: string): Record<Kind, Record<string, string>> => ({
   week: app('Week', 'week'),
   meals: app('Meal plan', 'meals'),
@@ -149,6 +153,7 @@ const manifests = (title: string): Record<Kind, Record<string, string>> => ({
   timers: app('Timers', 'timers'),
   pantry: app('Pantry', 'pantry'),
   jars: app('Reward jars', 'jars'),
+  albums: app('Albums', 'albums'),
   settings: app('Settings', 'settings'),
   wall: {
     name: title,

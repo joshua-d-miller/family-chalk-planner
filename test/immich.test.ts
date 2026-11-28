@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | immich.test.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-17
+ Updated:   2026-11-28
 
  Purpose:
      Photos from Immich (from Colby Way's board): picked by an admin in
@@ -23,6 +23,9 @@
 
  1.1.0    2026-11-17   joshua    Which photos, a big album with a few copies,
                         claude    and the console's photo picker.
+
+ 1.3.0    2026-11-28   joshua    More albums.
+                        claude
 ===============================================================================
 */
 
@@ -96,6 +99,124 @@ test('an album by name: photos (no videos), Immich’s faces, WebP previews', as
   const img = await ed.api('/api/photos/img/' + p.photos[0].id);
   assert.equal(img.headers.get('content-type'), 'image/webp');
   assert.ok(im.calls.some(c => c.startsWith('GET /api/assets/') && !c.endsWith('?key')));
+});
+
+test('more albums: each kept on its own, shown by ?album=, only the ones the admin set up', async () => {
+  // a bad list is refused: an id twice, or both a link and an Immich album
+  for (const bad of [
+    [
+      { id: 'a', name: 'One', immich: 'trip' },
+      { id: 'a', name: 'Two', immich: 'kids' }
+    ],
+    [{ id: 'b', name: 'Both', immich: 'trip', url: 'https://example.com/x' }],
+    [{ id: 'Bad Id', name: 'Trip', immich: 'trip' }]
+  ]) {
+    const r = await ed.post('/api/board-settings', { values: { MORE_ALBUMS: JSON.stringify(bad) } });
+    assert.equal(r.status, 400, JSON.stringify(bad));
+  }
+  const s = await ed.post('/api/board-settings', {
+    values: {
+      MORE_ALBUMS: JSON.stringify([
+        { id: 'trip', name: 'Our trip', immich: 'trip' },
+        { id: 'faves', name: 'Favorites', immich: 'favorites' },
+        { id: 'nora', name: 'Nora', immich: 'person:Nora' },
+        { id: 'nobody', name: 'Nobody', immich: 'person:Zed' }
+      ])
+    }
+  });
+  assert.equal(s.status, 200);
+  await board.exited;
+  board = await startServer(PORT, {}, board.data);
+  assert.ok(board.up, board.output());
+  const own = await synced();
+  assert.deepEqual(
+    own.albums.map(a => [a.id, a.name]),
+    [
+      ['', 'Photos'],
+      ['trip', 'Our trip'],
+      ['faves', 'Favorites'],
+      ['nora', 'Nora'],
+      ['nobody', 'Nobody']
+    ]
+  );
+  // a person Immich knows: every photo they're in; someone it doesn't: an error that says so
+  const nora = await (await ed.api('/api/photos?album=nora')).json();
+  assert.equal(nora.photos.length, 1);
+  const nobody = await (await ed.api('/api/photos?album=nobody')).json();
+  assert.equal(nobody.photos.length, 0);
+  assert.match(nobody.error, /nobody named “Zed”/);
+  const trip = await (await ed.api('/api/photos?album=trip')).json();
+  assert.ok(trip.photos.length > 0);
+  assert.ok(
+    trip.photos.every(p => !own.photos.some(o => o.id === p.id)),
+    "the trip's own photos, not the kids'"
+  );
+  const img = await ed.api(`/api/photos/img/${trip.photos[0].id}?album=trip`);
+  assert.equal(img.status, 200);
+  assert.equal((await ed.api(`/api/photos/img/${trip.photos[0].id}`)).status, 404, 'not one of the board album’s');
+  assert.equal((await ed.api('/api/photos?album=nowhere')).status, 404);
+  assert.equal(own.albums.find(a => a.id === 'trip').count, trip.photos.length);
+  assert.ok(
+    trip.photos.every(p => p.album === 'trip'),
+    'each says which album it’s from'
+  );
+  // which album shows where: only albums the admin set up
+  const cfg = await (
+    await ed.post('/api/photos/settings', {
+      slides: 'trip',
+      polaroids: 'nowhere',
+      months: { 12: 'faves' },
+      more: [{ from: '09:00', to: '15:00', days: [1, 2, 3, 4, 5], album: 'trip' }]
+    })
+  ).json();
+  assert.equal(cfg.slides, 'trip');
+  assert.equal(cfg.polaroids, undefined, 'not an album: what was saved stays');
+  assert.deepEqual(cfg.months, { 12: 'faves' });
+  assert.equal(cfg.more[0].album, 'trip');
+  const kept = await (
+    await ed.post('/api/photos/settings', { more: [{ from: '09:00', to: '15:00', days: [1], album: 'x' }] })
+  ).json();
+  assert.equal(kept.more[0].days.length, 5, 'a time with an unknown album: the times as they were');
+  await ed.post('/api/photos/settings', { slides: '', months: {}, more: [] });
+  // (back to just the board's own album, for the tests after)
+  await ed.post('/api/board-settings', { values: { MORE_ALBUMS: '' } });
+  await board.exited;
+  board = await startServer(PORT, {}, board.data);
+});
+
+test('videos too (up to 2 minutes each), and Immich’s memories for today', async () => {
+  const s = await ed.post('/api/board-settings', {
+    values: {
+      IMMICH_ALBUM: 'kids',
+      IMMICH_VIDEOS: 'on',
+      MORE_ALBUMS: JSON.stringify([{ id: 'memories', name: 'Memories', immich: 'memories' }])
+    }
+  });
+  assert.equal(s.status, 200);
+  await board.exited;
+  board = await startServer(PORT, {}, board.data);
+  assert.ok(board.up, board.output());
+  const p = await synced();
+  const videos = p.photos.filter(x => x.video);
+  assert.equal(videos.length, 1, 'the 8-second one; the 5-minute one is left out');
+  assert.equal(videos[0].secs, 8.5);
+  const v = await ed.api('/api/photos/video/' + videos[0].id);
+  assert.equal(v.status, 200);
+  assert.equal(v.headers.get('content-type'), 'video/mp4');
+  const range = await ed.api(`/api/photos/video/${videos[0].id}`, { headers: { Range: 'bytes=0-3' } });
+  assert.equal(range.status, 206, 'a part of it, so it can be played');
+  assert.equal(
+    (await ed.api('/api/photos/video/' + p.photos.find(x => !x.video).id)).status,
+    404,
+    'a photo has no video'
+  );
+  assert.ok(im.calls.some(c => /\/video\/playback/.test(c)));
+  const mem = await (await ed.api('/api/photos?album=memories')).json();
+  assert.equal(mem.photos.length, 1, "today's memory: the trip photo");
+  // (photos only again, for the tests after)
+  await ed.post('/api/board-settings', { values: { IMMICH_VIDEOS: '', MORE_ALBUMS: '' } });
+  await board.exited;
+  board = await startServer(PORT, {}, board.data);
 });
 
 test('Favorites by default; an Immich share link needs no key', async () => {

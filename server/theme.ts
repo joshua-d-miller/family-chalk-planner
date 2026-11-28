@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Server | theme.ts
 ===============================================================================
- Version:   1.2.8
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-24
+ Updated:   2026-11-28
 
  Purpose:
      Board style ("theme"): a preset name plus the family's tweaks to it,
@@ -46,6 +46,9 @@
  1.2.8    2026-11-24   joshua    Only a listed tweak's name is ever kept (a
                         claude    "__proto__" one could crash the request
                                   before).
+
+ 1.3.0    2026-11-28   joshua    The chalk look: chalk, grid, grain, wear.
+                        claude
 ===============================================================================
 */
 
@@ -78,7 +81,13 @@ export const TWEAKS: Record<string, 'color' | 'font' | string[]> = {
   textC: 'color',
   lineC: 'color',
   lineS: ['solid', 'dashed', 'dotted'],
-  lineW: ['thin', 'normal', 'bold']
+  lineW: ['thin', 'normal', 'bold'],
+  // the chalk look (1.3.0): Clean (as before), Chalk marker or Stick chalk; the grid printed or by hand; stick
+  // chalk's grain; and how used the board looks
+  chalk: ['clean', 'marker', 'stick'],
+  grid: ['printed', 'hand'],
+  grain: ['light', 'normal', 'heavy'],
+  wear: ['clean', 'light', 'well']
 };
 // a tweak a style may hold: a known part, with a value that part can take
 // (a month can have its own style and tweaks too: server/month.ts)

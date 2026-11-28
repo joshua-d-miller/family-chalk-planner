@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Tools.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      The drawing tools on the strip, and the cards they open: writing,
@@ -34,6 +34,9 @@
 
  1.2.0    2026-11-21   joshua    "Discard your changes?" when it's closed
                         claude    with changes.
+
+ 1.3.0    2026-11-28   joshua    Path: dashes, dots, dashes and dots, hearts.
+                        claude    Writing from neat to very loose.
 ===============================================================================
 */
 
@@ -48,6 +51,9 @@ import { post } from '../../lib/api.ts';
 import { Thumb } from './Library.tsx';
 import { isPosca, SIZES, TEXT_SIZES } from './Draw.tsx';
 import type { Medium, Pen, Tool } from './Draw.tsx';
+import { DASHES } from '../trail.ts';
+
+const DASH_NAMES: Record<string, string> = { dash: 'Dashes', dots: 'Dots', dashdot: 'Dash dot', hearts: 'Hearts' };
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // --------- //
@@ -159,6 +165,19 @@ export function Tools({
             <Ic d="M14.5 4.5l5 5L10 19l-5 1 1-5zM12 7l5 5" />
             Posca
           </button>
+          <button
+            type="button"
+            className={'tool medium' + (pen.dash ? ' on' : '')}
+            id="dashBtn"
+            aria-label={`Path: ${pen.dash ? DASH_NAMES[pen.dash] : 'Off'} (tap for the next)`}
+            onClick={() => {
+              const next = ['', ...DASHES][(DASHES.indexOf(pen.dash || '') + 2) % (DASHES.length + 1)];
+              setPen({ ...pen, tool: 'pen', dash: next || undefined });
+            }}
+          >
+            <Ic d="M4 18c3-6 6-9 11-10M18 7h.01" dash />
+            {pen.dash ? DASH_NAMES[pen.dash] : 'Path'}
+          </button>
         </>
       )}
       <button
@@ -222,7 +241,7 @@ export function TextSheet({
 }: {
   item: ArtItem | null;
   color: string;
-  onSave: (t: { s: string; f: number; z: number; c: string }) => void;
+  onSave: (t: { s: string; f: number; z: number; c: string; n?: number }) => void;
   onDelete: () => void;
   onClose: () => void;
 }) {
@@ -230,7 +249,8 @@ export function TextSheet({
   const [f, setF] = useState(item?.f ?? 3);
   const [z, setZ] = useState(item?.z || 40);
   const [c, setC] = useState(item?.c || color);
-  const changed = useChanged({ s, f, z, c }); // (✕ with changes: "Discard your changes?")
+  const [n, setN] = useState(item?.n || 0); // how neat: 0 neat, 1 loose, 2 looser
+  const changed = useChanged({ s, f, z, c, n }); // (✕ with changes: "Discard your changes?")
   return (
     <Sheet title={item ? 'Change this writing' : 'Write on the board'} onClose={onClose} dirty={changed} id="textSheet">
       <textarea
@@ -252,6 +272,16 @@ export function TextSheet({
         options={TEXT_SIZES.map(([n, l]) => [String(n), l])}
         label="Size"
       />
+      <Segs
+        value={String(n)}
+        onChange={v => setN(+v)}
+        options={[
+          ['0', 'Neat'],
+          ['1', 'Loose'],
+          ['2', 'Very loose']
+        ]}
+        label="Writing"
+      />
       <Colors value={c} onChange={v => v && setC(v)} label="Color" />
       <div className="actions">
         {item && (
@@ -263,7 +293,7 @@ export function TextSheet({
         <Btn
           kind="go"
           id="tSave"
-          onClick={() => (s.trim() ? onSave({ s: s.replace(/\s+$/, ''), f, z, c }) : onClose())}
+          onClick={() => (s.trim() ? onSave({ s: s.replace(/\s+$/, ''), f, z, c, n: n || undefined }) : onClose())}
         >
           {item ? 'Save' : 'Put it up'}
         </Btn>

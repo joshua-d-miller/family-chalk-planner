@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Helpers | surface.ts
 ===============================================================================
- Version:   1.1.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-17
+ Updated:   2026-11-28
 
  Purpose:
      The board's surfaces (black slate, green chalkboard, cork...),
@@ -30,8 +30,13 @@
                         claude    chalkboards, felt letter board, brick,
                                   burlap, white barnwood, graph paper, and a
                                   photo of your own.
+
+ 1.3.0    2026-11-28   joshua    A used board's wear, a marker board's gloss.
+                        claude
 ===============================================================================
 */
+
+import { paintWear } from './chalk.ts';
 
 /* eslint-disable prefer-const -- kept as the board had it, so the textures stay exactly the same */
 
@@ -222,7 +227,9 @@ function paintSeason(g: CanvasRenderingContext2D, W: number, H: number, kind: st
 // sharp as the writing on it (2 or more on a 4K wall). Returns a CSS        //
 // background-image. The steps are kept as the board had them, so the        //
 // textures stay exactly the same.                                           //
-export function paintSurface(sf: Surface, season: string, scale = 1) {
+// wear: how used a chalkboard looks (🎨 Board style → Chalk: 0 clean, 1 lightly used, 2 well used);
+// gloss: a chalk-marker board's soft shine
+export function paintSurface(sf: Surface, season: string, scale = 1, wear = 0, gloss = false) {
   const W = 1252,
     H = 642,
     c = document.createElement('canvas');
@@ -294,6 +301,16 @@ export function paintSurface(sf: Surface, season: string, scale = 1) {
     for (i = 0; i < 260; i++) {
       g.fillStyle = 'rgba(' + sf.dust + ',' + (0.05 + rnd() * 0.12) + ')';
       g.fillRect(rnd() * W, rnd() * H, 1 + rnd() * 1.5, 1 + rnd() * 1.5);
+    }
+    paintWear(g, W, H, wear, sf.dust);
+    if (gloss) {
+      // a chalk-marker board: glossy, a soft reflection across it
+      const sh = g.createLinearGradient(0, 0, W, H);
+      sh.addColorStop(0.25, 'rgba(255,255,255,0)');
+      sh.addColorStop(0.45, 'rgba(255,255,255,0.045)');
+      sh.addColorStop(0.6, 'rgba(255,255,255,0)');
+      g.fillStyle = sh;
+      g.fillRect(0, 0, W, H);
     }
   } else if (sf.id === 'cork') {
     // cork: pressed granules of different sizes and shades, with dark pits between them

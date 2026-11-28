@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Pages | Chores.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-26
 
  Purpose:
      Chores: today's, this week's and this month's, a column per person
@@ -47,10 +47,14 @@
                         claude    came from (the week or the calendar).
                                   The chores stay in the family's words in
                                   another language.
+
+ 1.3.0    2026-11-26   joshua    Swipes through the pinned pages (lib/
+                        claude    swipePages.ts), not just back; its 2
+                                  quiet minutes are swipePages.ts' now.
 ===============================================================================
 */
 
-import { navigate } from '../lib/nav.ts';
+import { backToBoard, swipedFrom } from '../lib/swipePages.ts';
 import { useShell } from '../ui/Shell.tsx';
 import { useEffect, useMemo, useState } from 'react';
 import type { Chore, ChoreProgress, ChoresView, Every, HaTodoView, Person } from '../../../shared/chores.ts';
@@ -129,47 +133,9 @@ export function Chores({ who }: { who: Who | null }) {
     document.body.classList.add('chorespage');
     return () => document.body.classList.remove('chorespage');
   }, []);
-  // opened by a swipe on the board: a swipe (or 📅 Calendar) goes back, and the wall goes back by itself
-  const back = useMemo(() => {
-    try {
-      return sessionStorage.getItem('chalkFromBoard');
-    } catch {
-      return null;
-    }
-  }, []);
-  const goBack = () => {
-    try {
-      sessionStorage.removeItem('chalkFromBoard');
-    } catch {
-      /* fine */
-    }
-    navigate(back || './');
-  };
-  useEffect(() => {
-    if (!back) return;
-    let x0: number | null = null;
-    let y0 = 0;
-    let idle = setTimeout(goBack, 2 * 60 * 1000);
-    const down = (e: PointerEvent) => {
-      x0 = e.clientX;
-      y0 = e.clientY;
-      clearTimeout(idle);
-      idle = setTimeout(goBack, 2 * 60 * 1000);
-    };
-    const up = (e: PointerEvent) => {
-      if (x0 === null) return;
-      const dx = e.clientX - x0;
-      x0 = null;
-      if (Math.abs(dx) > 120 && Math.abs(e.clientY - y0) < Math.abs(dx) / 2) goBack();
-    };
-    addEventListener('pointerdown', down);
-    addEventListener('pointerup', up);
-    return () => {
-      clearTimeout(idle);
-      removeEventListener('pointerdown', down);
-      removeEventListener('pointerup', up);
-    };
-  }, [back]);
+  // opened by a swipe on the board: 📅 Calendar goes back (a swipe too, and 2 quiet minutes: swipePages.ts)
+  const back = useMemo(swipedFrom, []);
+  const goBack = () => backToBoard();
 
   const names = useMemo(() => Object.fromEntries((d?.people || []).map((p: Person) => [p.id, p.name])), [d]);
   const order = useMemo(() => Object.fromEntries((d?.people || []).map((p: Person, i: number) => [p.id, i])), [d]);

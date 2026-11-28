@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Alerts.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-26
 
  Purpose:
      What pops up on the board: a reminder whose time has come (from Colby
@@ -39,6 +39,9 @@
                                   Dates in the screen's language; the family's
                                   events, reminders and timers stay in their
                                   own words.
+
+ 1.3.0    2026-11-26   joshua    The day's card says good morning (with the
+                        claude    weather) after the overnight hours.
 ===============================================================================
 */
 
@@ -167,20 +170,22 @@ export function DayView({
   onClose,
   onEvent,
   onAdd,
-  cake = false
+  cake = false,
+  hello
 }: {
   date: string;
   events: BoardEvent[];
+  hello?: string; // the first tap after the overnight hours: good morning, and the weather now
   cake?: boolean; // a 🎂 on birthdays
   onClose: () => void;
   onEvent?: (e: BoardEvent) => void;
   onAdd?: () => void;
 }) {
   useEffect(() => {
-    if (onEvent) return;
+    if (onEvent && hello === undefined) return;
     const t = setTimeout(onClose, 30 * 1000);
     return () => clearTimeout(t);
-  }, [onClose, onEvent]);
+  }, [onClose, onEvent, hello]);
   const p = date.split('-').map(Number);
   const list = events.filter(e => e.start <= date && e.end >= date);
   return (
@@ -193,6 +198,11 @@ export function DayView({
       onClose={onClose}
       id="dayView"
     >
+      {hello !== undefined && (
+        <p className="hello">
+          <b>Good morning!</b> {hello && <span>{hello}</span>}
+        </p>
+      )}
       <div className={'daylist' + (onEvent ? '' : ' wall')} onClick={onEvent ? undefined : onClose}>
         {list.map((e, i) => {
           const c = e.color || e.calColor;

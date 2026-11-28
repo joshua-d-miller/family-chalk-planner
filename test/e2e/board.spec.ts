@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | board.spec.ts
 ===============================================================================
- Version:   1.2.7
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
- Updated:   2026-11-23
+ Updated:   2026-11-28
 
  Purpose:
      The board itself: this month on the tablet, moving between months,
@@ -52,9 +52,14 @@
 
  1.2.7    2026-11-23   joshua    An answer that's cut short doesn't crash
                         claude    the screen.
+
+ 1.3.0    2026-11-26   joshua    The month arrows fading on a family screen;
+                        claude    the month picker; what a screen does
+                                  overnight.
 ===============================================================================
 */
 
+import { readFileSync } from 'node:fs';
 import { test, expect, thisMonth, longPress } from './fixtures.ts';
 
 test('the tablet opens on this month, with weather, countdowns and no errors', async ({ as }) => {
@@ -267,16 +272,286 @@ test('⚙️ Settings → This screen hides the − / + / Fit buttons, and bring
   expect(page.errors).toEqual([]);
 });
 
-test('a tap on the month’s name reloads a screen that edits, but not the wall', async ({ as }) => {
+test('the month arrows: on a family screen they fade when nobody touches it, and a tap brings them back', async ({
+  as
+}) => {
   const fam = await as('family');
+  const next = fam.locator('#next');
+  const arrows = (value: string | null) =>
+    fam.evaluate(
+      v =>
+        fetch('api/arrows', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify({ value: v })
+        }).then(r => r.status),
+      value
+    );
+  try {
+    expect(await arrows(null)).toBe(200); // the family screen's usual: fading (the tests keep it always there)
+    await expect(next).not.toHaveClass(/faded/);
+    await expect(next).toHaveClass(/faded/, { timeout: 14_000 }); // quiet for 10 s
+    // a tap anywhere brings them back
+    await fam.mouse.click(600, 400);
+    await expect(next).not.toHaveClass(/faded/);
+    expect(await arrows('sideways')).toBe(400);
+    // ⚙️ Settings → This screen: always there
+    expect(await arrows('always')).toBe(200);
+    await fam.waitForTimeout(11_000);
+    await expect(next).not.toHaveClass(/faded/);
+    // none: the month's name picks the month instead
+    expect(await arrows('never')).toBe(200);
+    await expect(next).toHaveCount(0);
+  } finally {
+    await arrows('always'); // (as the other tests expect it)
+  }
+  // a wall has no arrows at all
+  const wall = await as('wall');
+  await expect(wall.locator('#next')).toHaveCount(0);
+});
+
+test('overnight a screen can show the slideshow, dim the calendar, go black, or do nothing', async ({ as }) => {
+  const fam = await as('family');
+  const call = (url: string, body: unknown) =>
+    fam.evaluate(
+      ([u, b]) =>
+        fetch(u as string, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify(b)
+        }).then(r => r.status),
+      [url, body] as const
+    );
+  const was = await fam.evaluate(() =>
+    fetch('api/photos')
+      .then(r => r.json())
+      .then(d => d.cfg)
+  );
+  // overnight hours from an hour ago to an hour from now (the screen's clock)
+  const [from, to] = await fam.evaluate(() =>
+    [-1, 1].map(h => new Date(Date.now() + h * 3600e3).toTimeString().slice(0, 5))
+  );
+  try {
+    expect(await call('api/photos/settings', { night: true, from, to })).toBe(200);
+    expect(await call('api/offhours', { value: 'sideways' })).toBe(400);
+    expect(await call('api/offhours', { value: 'black' })).toBe(200);
+    await fam.reload();
+    const cover = fam.locator('.offCover:not(.wake)'); // (.wake: the clear layer for the first tap after)
+    await expect(cover).toHaveClass(/black/);
+    await cover.click(); // a tap: the calendar for 5 minutes
+    await expect(cover).toHaveCount(0);
+    // the overnight hours end on a screen that's asleep: the first tap says good morning, with today's events
+    // (and nothing else opens). (Someone using it then, as just above, isn't stopped by it.)
+    await fam.reload();
+    await expect(cover).toHaveClass(/black/);
+    await call('api/photos/settings', { night: false });
+    await expect(cover).toHaveCount(0);
+    await fam.locator('.offCover.wake').click();
+    await expect(fam.locator('#dayView .hello')).toContainText('Good morning!');
+    await expect(fam.locator('#eventSheet, #monthPicker')).toHaveCount(0);
+    await fam.locator('#dayView').getByRole('button', { name: 'Close' }).click();
+    await expect(fam.locator('#dayView')).toHaveCount(0);
+    await expect(fam.locator('.offCover.wake')).toHaveCount(0);
+    await call('api/photos/settings', { night: true, from, to });
+    expect(await call('api/offhours', { value: 'clock' })).toBe(200);
+    await fam.reload();
+    await expect(cover).toHaveClass(/clock/);
+    await expect(cover.locator('.nightClock .t')).toHaveText(/^\d{1,2}:\d\d/);
+    expect(await call('api/offhours', { value: 'dim' })).toBe(200);
+    await fam.reload();
+    await expect(cover).toHaveClass(/dim/);
+    expect(await call('api/offhours', { value: 'none' })).toBe(200);
+    await fam.goto(new URL('edit?wx=rain', fam.url()).href); // (rain: the weather's layer shows)
+    await fam.waitForTimeout(800);
+    await expect(cover).toHaveCount(0);
+    await expect(fam.locator('#slides.on')).toHaveCount(0);
+    await expect(fam.locator('.slate .wx')).toHaveCount(1); // the weather's layer, while the calendar shows
+    // turn the screen off: Fully Kiosk does it (here a stand-in), and turns it on again once the hours are over
+    await fam.addInitScript(() => {
+      const w = window as unknown as { fully: unknown; screenWas?: string };
+      w.fully = { turnScreenOff: () => (w.screenWas = 'off'), turnScreenOn: () => (w.screenWas = 'on') };
+    });
+    expect(await call('api/offhours', { value: 'off' })).toBe(200);
+    await fam.reload();
+    await expect(cover).toHaveClass(/off/);
+    expect(await fam.evaluate(() => (window as unknown as { screenWas?: string }).screenWas)).toBe('off');
+    await expect(fam.locator('.slate .wx')).toHaveCount(0); // nothing moves under it (no weather)
+    expect(await call('api/offhours', { value: 'none' })).toBe(200); // (live: the hours are over for it)
+    await expect(cover).toHaveCount(0);
+    await expect.poll(() => fam.evaluate(() => (window as unknown as { screenWas?: string }).screenWas)).toBe('on');
+  } finally {
+    await call('api/offhours', { value: null }); // the slideshow, as the other tests expect
+    await call('api/photos/settings', { night: was.night, from: was.from, to: was.to });
+  }
+});
+
+test('a screen tells the admin console what it shows now, and whether it’s kept awake', async ({ as, board }) => {
+  const wall = await as('wall');
+  const status = async () => (await (await board.admin.api('/api/devices/status')).json()).status;
+  await expect
+    .poll(
+      async () => Object.values(await status()).some((s: unknown) => (s as { shows: string }).shows === 'calendar'),
+      {
+        timeout: 10_000
+      }
+    )
+    .toBe(true);
+  const bad = await wall.evaluate(() =>
+    fetch('api/screen-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+      body: JSON.stringify({ shows: 'fireworks', awake: 'kept' })
+    }).then(r => r.status)
+  );
+  expect(bad).toBe(400);
+  const admin = await as('admin', { path: '/admin' });
+  await admin.locator('[data-t="screens"]').click();
+  await expect(admin.locator('.nbot', { hasText: '📡 Now:' }).first()).toBeVisible();
+});
+
+test('the slideshow shows the album picked for it', async ({ as }) => {
+  const fam = await as('family');
+  const call = (url: string, body: unknown) =>
+    fam.evaluate(
+      ([u, b]) =>
+        fetch(u as string, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify(b)
+        }).then(r => r.status),
+      [url, body] as const
+    );
+  const was = await fam.evaluate(() =>
+    fetch('api/photos')
+      .then(r => r.json())
+      .then(d => d.cfg)
+  );
+  const [from, to] = await fam.evaluate(() =>
+    [-1, 1].map(h => new Date(Date.now() + h * 3600e3).toTimeString().slice(0, 5))
+  );
+  try {
+    await call('api/photos/settings', { night: true, from, to, slides: 'trip' });
+    await fam.goto(new URL('edit', fam.url()).href);
+    await expect(fam.locator('#slides.on')).toBeVisible();
+    await expect(fam.locator('#slides img').first()).toHaveAttribute('src', /\?album=trip$/);
+    // back to the board's own album
+    await call('api/photos/settings', { slides: '' });
+    await fam.reload();
+    await expect(fam.locator('#slides img').first()).not.toHaveAttribute('src', /album=/);
+  } finally {
+    await call('api/photos/settings', { night: was.night, from: was.from, to: was.to, slides: '' });
+  }
+});
+
+test('a video in the slideshow: a slide of its own, playing, and the next one when it ends', async ({ as }) => {
+  const fam = await as('family');
+  const call = (url: string, body: unknown) =>
+    fam.evaluate(
+      ([u, b]) =>
+        fetch(u as string, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify(b)
+        }).then(r => r.status),
+      [url, body] as const
+    );
+  const was = await fam.evaluate(() =>
+    fetch('api/photos')
+      .then(r => r.json())
+      .then(d => d.cfg)
+  );
+  const [from, to] = await fam.evaluate(() =>
+    [-1, 1].map(h => new Date(Date.now() + h * 3600e3).toTimeString().slice(0, 5))
+  );
+  // (the test album has no videos: here every photo is one, and each plays a 1-second clip)
+  await fam.route('**/api/photos', async route => {
+    try {
+      const r = await route.fetch();
+      const d = await r.json();
+      d.photos = d.photos.map((p: object) => ({ ...p, video: true, secs: 1 }));
+      await route.fulfill({ response: r, json: d });
+    } catch {
+      /* (asked for by the page being left: nobody's waiting for it) */
+    }
+  });
+  await fam.route('**/api/photos/video/**', route =>
+    route.fulfill({ contentType: 'video/webm', body: readFileSync(new URL('./clip.webm', import.meta.url)) })
+  );
+  try {
+    await call('api/photos/settings', { night: true, from, to });
+    await fam.goto(new URL('edit', fam.url()).href);
+    const shown = fam.locator('#slides .sl.on');
+    await expect(shown.locator('video')).toHaveAttribute('src', /api\/photos\/video\//);
+    const first = await shown.getAttribute('data-key');
+    await expect.poll(() => shown.getAttribute('data-key'), { timeout: 8000 }).not.toBe(first); // it ended, and the next one came on its own
+  } finally {
+    await call('api/photos/settings', { night: was.night, from: was.from, to: was.to });
+  }
+});
+
+test('a wall that’s been up all day starts again fresh once a night, while asleep', async ({ as }) => {
+  const fam = await as('family');
+  const call = (url: string, body: unknown) =>
+    fam.evaluate(
+      ([u, b]) =>
+        fetch(u as string, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify(b)
+        }).then(r => r.status),
+      [url, body] as const
+    );
+  const was = await fam.evaluate(() =>
+    fetch('api/photos')
+      .then(r => r.json())
+      .then(d => d.cfg)
+  );
+  // overnight hours that last nearly all day (from an hour ago until a minute before that)
+  const [from, to] = await fam.evaluate(() =>
+    [-60, -61].map(m => new Date(Date.now() + m * 60e3).toTimeString().slice(0, 5))
+  );
+  try {
+    await call('api/photos/settings', { night: true, from, to });
+    await call('api/offhours', { value: 'black' });
+    await fam.clock.install();
+    await fam.reload();
+    await expect(fam.locator('.offCover.black')).toBeVisible();
+    await fam.evaluate(() => ((window as unknown as { stay: number }).stay = 1));
+    await fam.clock.fastForward('19:00:00');
+    expect(await fam.evaluate(() => (window as unknown as { stay?: number }).stay)).toBe(1); // not yet
+    await Promise.all([fam.waitForEvent('load'), fam.clock.fastForward('02:00:00')]);
+    expect(await fam.evaluate(() => (window as unknown as { stay?: number }).stay)).toBeUndefined();
+  } finally {
+    await call('api/offhours', { value: null });
+    await call('api/photos/settings', { night: was.night, from: was.from, to: was.to });
+  }
+});
+
+test('a tap on the month’s name picks any month on a screen that edits (or starts it again), not on the wall', async ({
+  as
+}) => {
+  const fam = await as('family');
+  const name = await fam.locator('#monthName .mn').textContent();
+  await fam.locator('#monthName').click();
+  const pick = fam.locator('#monthPicker');
+  await expect(pick).toBeVisible();
+  await pick.getByRole('button', { name: 'Next year' }).click();
+  await pick.getByRole('button', { name: 'Mar', exact: true }).click();
+  await expect(pick).toHaveCount(0);
+  await expect(fam.locator('#monthName .mn')).toHaveText('March');
+  await expect(fam.locator('#monthName small')).toHaveText(String(new Date().getFullYear() + 1));
+  await fam.locator('#monthName').click();
+  await fam.locator('#monthPicker').getByRole('button', { name: 'This month' }).click();
+  await expect(fam.locator('#monthName .mn')).toHaveText(name!);
+  // ↻ Start the board again: what the tap used to do
   await fam.evaluate(() => ((window as unknown as { stay: number }).stay = 1));
-  await Promise.all([fam.waitForEvent('load'), fam.locator('#monthName').click()]);
+  await fam.locator('#monthName').click();
+  await Promise.all([fam.waitForEvent('load'), fam.locator('#mpReload').click()]);
   expect(await fam.evaluate(() => (window as unknown as { stay?: number }).stay)).toBeUndefined();
   const wall = await as('wall');
-  await wall.evaluate(() => ((window as unknown as { stay: number }).stay = 1));
   await wall.locator('#monthName').click();
   await wall.waitForTimeout(600);
-  expect(await wall.evaluate(() => (window as unknown as { stay?: number }).stay)).toBe(1);
+  await expect(wall.locator('#monthPicker')).toHaveCount(0);
 });
 
 test('every page has a ✕ back to the calendar, like the cards; a kid’s own Chores doesn’t', async ({ as, board }) => {
@@ -509,5 +784,220 @@ test('the art on a layer of its own over the calendar (not painted in with its l
     expect(t.errors).toEqual([]);
   } finally {
     await board.admin.post('/api/art/delete', { ym, ids: [stroke.id, ...pic.ids] });
+  }
+});
+
+test('the chalk look: stick chalk’s grain, a grid by hand, a used board; nothing else changes', async ({ as }) => {
+  const tab = await as('tablet');
+  const theme = await tab.evaluate(() => fetch('api/theme').then(r => r.json()));
+  const save = (o: Record<string, string>) =>
+    tab.evaluate(
+      t =>
+        fetch('api/theme', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify(t)
+        }).then(r => r.json()),
+      { ...theme, o: { ...(theme.o || {}), ...o } }
+    );
+  // before: as it always was
+  await expect(tab.locator('.handGrid')).toHaveCount(0);
+  expect(await tab.locator('.slate .cal').evaluate(e => getComputedStyle(e).maskImage || 'none')).toBe('none');
+  try {
+    const saved = await save({ chalk: 'stick', grid: 'hand', wear: 'well', grain: 'neon' });
+    expect(saved.o.chalk).toBe('stick');
+    expect(saved.o.grain).toBeUndefined(); // not a grain there is
+    await tab.reload();
+    await expect(tab.locator('.handGrid')).toHaveCount(1);
+    expect(await tab.locator('#slate').evaluate(e => e.style.getPropertyValue('--grain'))).toMatch(
+      /^url\(data:image\/png/
+    );
+    expect(await tab.locator('.slate .cal').evaluate(e => getComputedStyle(e).maskImage)).toMatch(/^url\(/);
+    if (process.env.SHOTS) await tab.locator('#board').screenshot({ path: process.env.SHOTS + '/chalk-stick.png' });
+  } finally {
+    await tab.evaluate(
+      t =>
+        fetch('api/theme', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify(t)
+        }),
+      theme
+    );
+  }
+  expect(tab.errors).toEqual([]);
+});
+
+test('a picture’s look: colored in with chalk marker or stick chalk, made once; an unknown look is as it is', async ({
+  as,
+  board
+}) => {
+  const { ym } = thisMonth();
+  const cake = (x: number, lk: string) => ({
+    k: 'g',
+    x,
+    y: 330,
+    w: 140,
+    h: 140,
+    src: '/api/clip/birthday-cake.svg',
+    mode: 'still',
+    lk
+  });
+  const pic = await (
+    await board.admin.post('/api/art/bulk', {
+      ym,
+      items: [cake(300, 'marker'), cake(470, 'chalk'), cake(640, 'sparkly')]
+    })
+  ).json();
+  try {
+    const art = await (await board.admin.api(`/api/art?ym=${ym}`)).json();
+    const mine = (art.items || art).filter((it: { id: number }) => pic.ids.includes(it.id));
+    expect(mine.map((it: { lk?: string }) => it.lk ?? null)).toEqual(['marker', 'chalk', null]);
+    const t = await as('tablet', { path: '/edit' });
+    const imgs = t.locator('.gifLayer img');
+    await expect(imgs).toHaveCount(3);
+    // the two with a look become their chalk copies (made on the screen); the third stays the picture itself
+    await expect
+      .poll(async () => await imgs.evaluateAll(l => l.map(i => (i as HTMLImageElement).src.slice(0, 5))))
+      .toEqual(['blob:', 'blob:', expect.stringMatching(/^http/)]);
+    if (process.env.SHOTS) await t.locator('#board').screenshot({ path: process.env.SHOTS + '/looks.png' });
+    expect(t.errors).toEqual([]);
+  } finally {
+    await board.admin.post('/api/art/delete', { ym, ids: pic.ids });
+  }
+});
+
+test('🖍 Look: each tap on a selected picture moves it to the next look, kept on the board', async ({ as, board }) => {
+  const { ym } = thisMonth();
+  await board.admin.post('/api/art/clear', { ym });
+  await board.admin.post('/api/art/bulk', {
+    ym,
+    items: [{ k: 'g', x: 300, y: 300, w: 120, h: 120, src: '/api/clip/birthday-cake.svg', mode: 'still' }]
+  });
+  const lookOf = async () =>
+    ((await (await board.admin.api(`/api/art?ym=${ym}`)).json()) as { k?: string; lk?: string }[]).find(
+      x => x.k === 'g'
+    )?.lk;
+  try {
+    const t = await as('tablet', { path: '/edit' });
+    await t.locator('#drawBtn').click();
+    const box = (await t.locator('.slate').boundingBox())!;
+    await t.locator('#selectBtn').click();
+    await t.mouse.click(box.x + (300 / 1252) * box.width, box.y + (300 / 642) * box.height);
+    await expect(t.locator('#lookBtn')).toContainText('Board style’s');
+    await t.locator('#lookBtn').click();
+    await expect.poll(lookOf).toBe('none');
+    await t.locator('#lookBtn').click();
+    await expect.poll(lookOf).toBe('marker');
+    await expect(t.locator('#lookBtn')).toContainText('Chalk marker');
+    expect(t.errors).toEqual([]);
+  } finally {
+    await board.admin.post('/api/art/clear', { ym });
+  }
+});
+
+test('flight paths: a dotted line, and a picture that flies along its path to the end', async ({ as, board }) => {
+  const { ym } = thisMonth();
+  await board.admin.post('/api/art/clear', { ym });
+  await board.admin.post('/api/art/bulk', {
+    ym,
+    items: [{ k: 'g', x: 200, y: 200, w: 100, h: 100, src: '/api/clip/birthday-cake.svg', mode: 'still' }]
+  });
+  type It = { k?: string; d?: string; g?: string; x?: number; y?: number; r?: number; p?: number[] };
+  const artOf = async () => (await (await board.admin.api(`/api/art?ym=${ym}`)).json()) as It[];
+  try {
+    const t = await as('tablet', { path: '/edit' });
+    await t.locator('#drawBtn').click();
+    const box = (await t.locator('.slate').boundingBox())!;
+    const at = (x: number, y: number) => [box.x + (x / 1252) * box.width, box.y + (y / 642) * box.height] as const;
+    const line = async (pts: [number, number][]) => {
+      await t.mouse.move(...at(...pts[0]));
+      await t.mouse.down();
+      for (const p of pts.slice(1)) await t.mouse.move(...at(...p), { steps: 5 });
+      await t.mouse.up();
+    };
+    // Path: dashes, then dots
+    await t.locator('#dashBtn').click();
+    await t.locator('#dashBtn').click();
+    await expect(t.locator('#dashBtn')).toHaveText(/Dots/);
+    await line([
+      [400, 450],
+      [600, 470],
+      [800, 450]
+    ]);
+    await expect.poll(async () => (await artOf()).find(x => x.p)?.d).toBe('dots');
+    await expect(t.locator('.slate > .artSvg .trail path[fill]')).toHaveCount(1);
+    // the picture flies to where its path ends, turned to go that way (here: straight down)
+    await t.locator('#selectBtn').click();
+    await t.mouse.click(...at(200, 200));
+    await t.locator('#pathBtn').click();
+    await expect(t.locator('.pathHint')).toBeVisible();
+    await line([
+      [300, 100],
+      [700, 100],
+      [700, 300],
+      [700, 380]
+    ]);
+    await expect.poll(async () => (await artOf()).filter(x => x.p).length).toBe(2);
+    const all = await artOf();
+    const cake = all.find(x => x.k === 'g')!;
+    const path = all.filter(x => x.p).at(-1)!;
+    expect(Math.abs(cake.x! - 700)).toBeLessThan(6);
+    expect(Math.abs(cake.y! - 380)).toBeLessThan(6);
+    expect(cake.r).toBe(90);
+    expect(path.d).toBe('dots'); // the Path style already picked
+    expect(cake.g).toBeTruthy();
+    expect(path.g).toBe(cake.g);
+    // a style the board doesn't know is a plain line
+    await board.admin.post('/api/art', { ym, stroke: { c: '#F2D479', w: 4, p: [40, 20, 60, 40], d: 'zigzag' } });
+    await expect.poll(async () => (await artOf()).filter(x => x.p && !x.d).length).toBe(1);
+    if (process.env.SHOTS) await t.locator('#board').screenshot({ path: process.env.SHOTS + '/paths.png' });
+    expect(t.errors).toEqual([]);
+  } finally {
+    await board.admin.post('/api/art/clear', { ym });
+  }
+});
+
+test('doodles: their own pack in Pictures; and words written loosely, each letter tipped', async ({ as, board }) => {
+  const { ym } = thisMonth();
+  await board.admin.post('/api/art/clear', { ym });
+  try {
+    const t = await as('tablet', { path: '/edit' });
+    await t.locator('#drawBtn').click();
+    await t.locator('#stampsBtn').click();
+    const lib = t.locator('#libSheet');
+    await lib.locator('#pack-doodles').click();
+    await expect.poll(() => lib.locator('.ptile').count()).toBe(29);
+    await expect(lib.locator('.ptile .ctile img[src*="/api/clip/dd-bee"]')).toBeVisible();
+    await lib.locator('.ptile').last().scrollIntoViewIfNeeded();
+    await expect
+      .poll(() =>
+        lib.locator('.ptile img').evaluateAll(l => l.filter(i => (i as HTMLImageElement).naturalWidth > 0).length)
+      )
+      .toBe(29);
+    if (process.env.SHOTS) await t.screenshot({ path: process.env.SHOTS + '/doodles.png' });
+    await lib.locator('#picBack').click();
+    await t.keyboard.press('Escape');
+    // writing, very loose: kept with the words; the letters are tipped (neat ones aren't)
+    const box = (await t.locator('.slate').boundingBox())!;
+    await t.locator('#textBtn').click();
+    await t.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await t.locator('#tText').fill('Party!');
+    await t.locator('#textSheet').getByRole('radio', { name: 'Very loose' }).click();
+    await t.locator('#tSave').click();
+    const words = async () =>
+      ((await (await board.admin.api(`/api/art?ym=${ym}`)).json()) as { k?: string; n?: number }[]).find(
+        x => x.k === 't'
+      );
+    await expect.poll(async () => (await words())?.n).toBe(2);
+    await expect(t.locator('.slate > .artSvg text tspan[rotate]').first()).toBeAttached();
+    if (process.env.SHOTS) await t.locator('.slate').screenshot({ path: process.env.SHOTS + '/loose.png' });
+    // a neatness the board doesn't know is neat
+    await board.admin.post('/api/art', { ym, stroke: { k: 't', s: 'Hi', x: 100, y: 100, c: '#EDEAE0', n: 9 } });
+    const all = (await (await board.admin.api(`/api/art?ym=${ym}`)).json()) as { s?: string; n?: number }[];
+    expect(all.find(x => x.s === 'Hi')?.n).toBeUndefined();
+    expect(t.errors).toEqual([]);
+  } finally {
+    await board.admin.post('/api/art/clear', { ym });
   }
 });

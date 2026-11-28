@@ -2,9 +2,9 @@
 ===============================================================================
  Family Chalk Planner | Tests | Browser | chores-jars-meals.spec.ts
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      Chores (tablet, phone, kid's tablet, wall), reward jars and the meal
@@ -29,10 +29,16 @@
 
  1.2.0    2026-11-21   joshua    The big jar from the Notes column: ★ Reward
                         claude    empties only that jar.
+
+ 1.3.0    2026-11-26   joshua    Swiping through the pinned pages and back.
+                        claude    A page swiped to goes back after 2 quiet
+                                  minutes, or stays when the screen says
+                                  Never.
 ===============================================================================
 */
 
 import { test, expect } from './fixtures.ts';
+import type { Page } from '@playwright/test';
 
 const names = { dad: 'Josh', mom: 'Tarin', kid1: 'Theo', kid2: 'Nora' };
 async function exampleChores(board) {
@@ -47,9 +53,30 @@ const doneOf = async (board, title) => {
   return c.each ? c.doneEach : c.done;
 };
 
+// this screen's (or person's) pinned pages: read, and set (they also hold its ★ pictures)
+const pinsOf = (page: Page): Promise<string[]> =>
+  page.evaluate(() =>
+    fetch('api/favorites')
+      .then(r => r.json())
+      .then(d => d.items || [])
+  );
+const setPins = (page: Page, items: string[]) =>
+  page.evaluate(
+    v =>
+      fetch('api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+        body: JSON.stringify({ items: v })
+      }).then(r => r.status),
+    items
+  );
+
 test('chores from the tablet: swipe across the board, tick one off, back to the calendar', async ({ as, board }) => {
   await exampleChores(board);
   const page = await as('tablet');
+  const before = await pinsOf(page);
+  await setPins(page, []); // nothing pinned: a swipe goes to Chores
+  await page.reload();
   const b = (await page.locator('.slate').boundingBox())!;
   await page.mouse.move(b.x + 800, b.y + 300);
   await page.mouse.down();
@@ -65,6 +92,122 @@ test('chores from the tablet: swipe across the board, tick one off, back to the 
   await expect(page.locator('.chitem', { hasText: 'Fold laundry' })).toContainText('0 of 3');
   await page.locator('#tabbar a', { hasText: 'Calendar' }).click(); // a tablet: the tab bar
   await expect(page).toHaveURL(/\/edit$/);
+  await setPins(page, before);
+});
+
+test('swiping goes through the pinned pages and back, and stops at the last one', async ({ as }) => {
+  const page = await as('tablet');
+  const before = await pinsOf(page);
+  const swipe = async (left: boolean) => {
+    const at = { x: 590, y: 420 };
+    await page.mouse.move(at.x + (left ? 200 : -200), at.y);
+    await page.mouse.down();
+    await page.mouse.move(at.x, at.y + 4, { steps: 6 });
+    await page.mouse.move(at.x + (left ? -200 : 200), at.y + 8, { steps: 6 });
+    await page.mouse.up();
+  };
+  try {
+    expect(await setPins(page, ['meals', 'pantry'])).toBe(200);
+    await page.reload();
+    await page.waitForTimeout(800);
+    await swipe(true);
+    await expect(page).toHaveURL(/\/meals$/);
+    // the dots: the calendar, meals, pantry, with meals lit
+    await expect(page.locator('.swipeDots i')).toHaveCount(3);
+    await expect(page.locator('.swipeDots i').nth(1)).toHaveClass(/on/);
+    await swipe(true);
+    await expect(page).toHaveURL(/\/pantry$/);
+    await swipe(true); // the last one: it doesn't go round
+    await page.waitForTimeout(400);
+    await expect(page).toHaveURL(/\/pantry$/);
+    await swipe(false);
+    await expect(page).toHaveURL(/\/meals$/);
+    await swipe(false);
+    await expect(page).toHaveURL(/\/edit$/);
+    await expect(page.locator('.swipeDots i').first()).toHaveClass(/on/); // back on the calendar
+    await swipe(false); // the calendar: a swipe to the right goes nowhere
+    await page.waitForTimeout(400);
+    await expect(page).toHaveURL(/\/edit$/);
+  } finally {
+    await setPins(page, before); // (the tablet is shared by the other tests)
+  }
+});
+
+test('a pinned 🗓️ Week isn’t in the swipe: it’s the calendar itself', async ({ as }) => {
+  const page = await as('tablet');
+  const before = await pinsOf(page);
+  try {
+    await setPins(page, ['week', 'meals']);
+    await page.reload();
+    await page.waitForTimeout(800);
+    await page.mouse.move(790, 420);
+    await page.mouse.down();
+    await page.mouse.move(590, 424, { steps: 6 });
+    await page.mouse.move(390, 428, { steps: 6 });
+    await page.mouse.up();
+    await expect(page).toHaveURL(/\/meals$/);
+  } finally {
+    await setPins(page, before);
+  }
+});
+
+test('a page swiped to goes back to the calendar after 2 quiet minutes', async ({ as }) => {
+  const page = await as('tablet');
+  const before = await pinsOf(page);
+  try {
+    await setPins(page, []); // nothing pinned: a swipe goes to Chores
+    await page.clock.install();
+    await page.reload();
+    const b = (await page.locator('.slate').boundingBox())!;
+    await page.mouse.move(b.x + 800, b.y + 300);
+    await page.mouse.down();
+    await page.mouse.move(b.x + 600, b.y + 305, { steps: 6 });
+    await page.mouse.move(b.x + 400, b.y + 310, { steps: 6 });
+    await page.mouse.up();
+    await expect(page).toHaveURL(/\/chores$/);
+    await page.clock.fastForward('01:30');
+    await page.mouse.click(600, 120); // a tap: the 2 minutes start again
+    await page.clock.fastForward('01:30');
+    await expect(page).toHaveURL(/\/chores$/);
+    await page.clock.fastForward('00:40');
+    await expect(page).toHaveURL(/\/edit$/);
+  } finally {
+    await setPins(page, before);
+  }
+});
+
+test('a page swiped to stays when this screen says Never (⚙️ Settings → This screen)', async ({ as }) => {
+  const page = await as('tablet');
+  const before = await pinsOf(page);
+  const backAfter = (v: number | null) =>
+    page.evaluate(
+      v =>
+        fetch('api/backafter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Chalk': '1' },
+          body: JSON.stringify({ value: v })
+        }).then(r => r.status),
+      v
+    );
+  try {
+    await setPins(page, []);
+    expect(await backAfter(7)).toBe(400); // only the choices on offer
+    expect(await backAfter(0)).toBe(200);
+    await page.clock.install();
+    await page.reload();
+    const b = (await page.locator('.slate').boundingBox())!;
+    await page.mouse.move(b.x + 800, b.y + 300);
+    await page.mouse.down();
+    await page.mouse.move(b.x + 600, b.y + 305, { steps: 6 });
+    await page.mouse.move(b.x + 400, b.y + 310, { steps: 6 });
+    await page.mouse.up();
+    await expect(page).toHaveURL(/\/chores$/);
+    await page.clock.fastForward('10:00');
+    await expect(page).toHaveURL(/\/chores$/);
+  } finally {
+    await backAfter(null);
+    await setPins(page, before);
+  }
 });
 
 test('change the chores: add one for the kids, each their own', async ({ as, board }) => {
