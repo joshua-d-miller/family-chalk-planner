@@ -110,6 +110,9 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   (Chalk marker / Stick chalk). Drawn once per picture, look and size, one at a time when the screen is idle, kept
   as a blob (`web/src/lib/pictureLook.ts`); a moving GIF and a low-power screen show pictures as they are.
   - To tune on a real screen: Stick chalk on pictures is still a little blotchy (the grain's coarse part).
+- **2026-11-28: lettering (8).** 🔤 Month title → Lettering (Outline as before, White outline with a gap, Inline,
+  Drop shadow, Neon) and Marker streaks; CSS only (board.css), saved with the title (`l`, `s`). Big events'
+  lettering: not done (they have their own large and extra-large writing).
 - **Timers and loops (part of 1):** checked all 17. Each is slow or stops by itself; the one fast one (250 ms)
   runs only while a timer counts down. Nothing to fix until off hours, which needs one "asleep" switch that the
   slideshow, weather, GIFs, Split View, title photos and Notes rotation respect while the screen is black. A

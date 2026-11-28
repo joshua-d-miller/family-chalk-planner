@@ -677,6 +677,25 @@ test('the board (new screen, tablet): the month’s title, its border and the bo
   await t.locator('#titleSheet').getByRole('button', { name: 'Save' }).click();
   await expect.poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).title?.f).toBe(42);
   await expect.poll(() => t.evaluate(() => document.fonts.check("400 40px 'Creepster'"))).toBe(true); // served by the board
+  // lettering: a white outline like a sticker, with marker streaks
+  await t.locator('#titleBtn').click();
+  await t.locator('#titleSheet').getByRole('radio', { name: 'White outline' }).click();
+  await t.locator('#titleStreaks').check();
+  await expect(t.locator('#monthName')).toHaveClass(/lt-sticker/);
+  await expect(t.locator('#monthName')).toHaveClass(/streaks/);
+  await t.locator('#titleSheet').getByRole('button', { name: 'Save' }).click();
+  await expect
+    .poll(async () => {
+      const ti = (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).title;
+      return [ti?.l, ti?.s];
+    })
+    .toEqual(['sticker', true]);
+  if (process.env.SHOTS) await t.locator('.titlerow').screenshot({ path: process.env.SHOTS + '/lettering.png' });
+  await t.locator('#titleBtn').click();
+  await t.locator('#titleSheet').getByRole('radio', { name: 'Outline', exact: true }).click();
+  await t.locator('#titleStreaks').uncheck();
+  await t.locator('#titleSheet').getByRole('button', { name: 'Save' }).click();
+  await expect.poll(async () => (await (await board.admin.api(`/api/meta?ym=${ym}`)).json()).title?.l).toBeUndefined();
   await t.locator('#borderBtn').click();
   await t
     .locator('#borderSheet')

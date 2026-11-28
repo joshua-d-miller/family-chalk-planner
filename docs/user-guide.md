@@ -10,6 +10,8 @@ The wall display only shows the board; everything is edited from a tablet or pho
 
 **The chalk look:** 🎨 Board style → **Chalk**. **Chalk:** Clean (as before), **Chalk marker** (bright and smooth on a glossy board) or **Stick chalk** (everything written catches the board's grain, as real chalk does); **Grain** sets how much. **Grid:** Printed (straight lines) or **By hand** in chalk. **How used it looks:** Clean, **Lightly used** or **Well used** (eraser swipes and dust on a chalkboard). A low-power screen keeps it plain.
 
+**The month's lettering:** 🔤 Month title → **Lettering**: an **Outline** in a second color (as before), a **White outline** like a sticker, **Inline**, a **Drop shadow** or **Neon**, and **Marker streaks** across the letters.
+
 **A picture's look:** select a picture while decorating and tap **🖍** in its bar for the next look: **Board style's** (Chalk marker colors pictures in, Stick chalk draws them in chalk, Clean leaves them), **As is**, **Chalk marker** (colored in with marker strokes), **Marker + highlight**, **White outline** (like a sticker), **Colored outline** or **Stick chalk**. A moving GIF plays as it is.
 
 **Any month in two taps:** on a screen that edits, tap the **month’s name**: pick the year with ‹ ›, then the month; **This month** comes back to today's, and **↻ Start the board again** reloads the board (what that tap used to do).

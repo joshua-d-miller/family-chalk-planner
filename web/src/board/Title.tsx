@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Title.tsx
 ===============================================================================
- Version:   0.13.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-07
+ Updated:   2026-11-28
 
  Purpose:
      The month's name above the calendar, in the month's own style (font,
@@ -31,6 +31,9 @@
                                   The new screens take over: /, /edit and
                                   /chores are the React board; the old one
                                   stays at /classic.
+
+ 1.3.0    2026-11-28   joshua    Lettering: a white outline like a sticker,
+                        claude    inline, a drop shadow or neon; streaks.
 ===============================================================================
 */
 
@@ -44,7 +47,8 @@ import { measure } from './geom.ts';
 // ------------- //
 // | The style | //
 // ------------- //
-export type TitleStyle = { f: number; c: string; o: string | null; z: number };
+// l: lettering, 'sticker' | 'inline' | 'shadow' | 'neon' (none: an outline, as before); s: marker streaks
+export type TitleStyle = { f: number; c: string; o: string | null; z: number; l?: string; s?: boolean };
 export const DEFAULT_TITLE: TitleStyle = { f: 7, c: '#F6B3CB', o: '#F3A35E', z: 68 };
 
 const MAX_W = 520;
@@ -118,19 +122,33 @@ export function Title({
   }, [text, style.f, style.z, style.o, fonts]);
 
   const outline = style.o ? readable(style.o, bg, 1.5) : null;
+  const fill = readable(style.c, bg, 3);
+  // the lettering (board.css): an outline (as before), a white one like a sticker, inline, a drop shadow or neon
+  const l = !hand && style.l ? ' lt-' + style.l : '';
+  const lit = l === ' lt-neon' || l === ' lt-shadow' || l === ' lt-inline'; // (these need no outline color)
   return (
     <h1
       id="monthName"
-      className={(hand ? 'hand' + (dashed ? ' dashed' : '') : '') + (outline ? '' : ' noout')}
+      className={
+        (hand ? 'hand' + (dashed ? ' dashed' : '') : '') +
+        (outline || lit || l ? '' : ' noout') +
+        l +
+        (style.s && !hand ? ' streaks' : '')
+      }
       style={
-        outline ? ({ '--tout': outline, '--toutw': Math.max(3, style.z / 15) + 'px' } as CSSProperties) : undefined
+        {
+          '--tout': outline || '#F3A35E',
+          '--toutw': Math.max(3, style.z / 15) + 'px',
+          '--tc': fill,
+          '--tboard': bg > 0.18 ? '#F4F1E8' : '#151617'
+        } as CSSProperties
       }
     >
       <span
         ref={ref}
         className="mn"
         data-text={text}
-        style={{ font: fontCss(style.f, fit.z), lineHeight: 1.2, color: readable(style.c, bg, 3), top: fit.dy }}
+        style={{ font: fontCss(style.f, fit.z), lineHeight: 1.2, color: fill, top: fit.dy }}
       >
         {text}
       </span>
