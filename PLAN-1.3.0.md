@@ -118,6 +118,9 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
 - **Older wall browsers (Chrome 100, Safari 15, Firefox 100):** pages and editors load on their own, with no blank
   moment when one opens.
 - **The Home Assistant add-on:** its own browser tests (they need a real Home Assistant).
+- **A real Immich (Colby's):** more albums, `person:` and `memories` albums, and videos (Videos too): that they
+  copy, play in the slideshow on the wall (H.264 MP4s play in Chrome, Fully Kiosk and Safari), and move on when
+  they end. The tests used a stand-in Immich and a WebM clip.
 
 ---
 
