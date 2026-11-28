@@ -4,6 +4,32 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
+## 1.3.0 — Screens that look after themselves
+- **New: what each screen does overnight.** In the overnight hours a screen can show the slideshow (as before), the
+  calendar dimmed, a big dim **night clock**, a black screen, **turn the screen off**, or do nothing. A family screen
+  picks in ⚙️ Settings → This screen; the wall's is in the admin console → 📺 Screens → 🌙 Overnight. A tap shows
+  the calendar for 5 minutes. Under a dark screen nothing else moves (no weather, no GIFs).
+- **New: turn the screen off.** In Fully Kiosk the screen really goes off, and comes back on when the overnight
+  hours end. Anywhere else the board stops keeping the screen awake, so the device's own screen sleep turns it
+  off (see the wall screens guide).
+- **New: 🌙 Overnight hours, a section of its own** in ⚙️ Settings, with the days they're for and up to 3 more
+  times (weekdays while everyone's out, say). A time past midnight belongs to the day it starts. Boards that
+  had overnight hours keep them, every day, as before.
+- **New: good morning.** When the overnight hours end, the first tap on a screen shows today's events and the
+  weather for 30 seconds.
+- **New: the month arrows can fade** when nobody's touching the screen (the usual on a family screen), stay, or
+  go: ⚙️ Settings → This screen → The month arrows. **Tap the month's name** to go to any month of any year;
+  ↻ Start the board again is there now too (what that tap used to do).
+- **New: swipe through your pinned pages.** From the calendar a swipe to the left goes to the first pinned page
+  (Chores when nothing's pinned), on through the others, and back to the right. Dots show where you are, and a
+  page you swiped to goes back to the calendar after 2 quiet minutes.
+- **New: 📡 Now in the admin console → 📺 Screens:** what each screen shows right now, and whether it's kept
+  awake. A screen that *can't be kept awake here* needs HTTPS (or its kiosk app's own setting).
+- **Quicker on the wall:** a wall downloads about 30% less when it starts. The editors, the pages and the Spanish
+  words load only on the screens that use them, ahead of time where they do, so nothing waits when you tap.
+- **Steadier:** a screen that's been up all day starts again fresh once a night while it's asleep (only while it
+  can reach the board), and one left open from before an update loads the new version instead of failing.
+
 ## 1.2.8 — Safer pictures, links and limits
 A security check-up, from GitHub's code scanning: nothing you do on the board changes.
 - **Fixed:** "Add from link" could be pointed at the board's own computer or your home network with an address

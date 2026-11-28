@@ -21,7 +21,13 @@ https://claude.ai/artifact/ELWuftRLPTaEZ5muo7zQEJ.
 **Order:** three betas, each tried on our board and Colby's for a few days before the next. The full release
 comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out of this release.
 
-## Saturday: start here
+## Released as 1.3.0 (2026-11-28): the screens work
+- **1.3.0 is the screens work** (decided 2026-11-28): speed, the month arrows and picker, swiping, the overnight
+  hours and what each screen does then, good morning, the nightly fresh start, 📡 Now in the console.
+- **Next release, 1.4.0: the chalk look** (beta 2 below: board styles, picture looks, lettering, flight paths,
+  doodles) **and the demo** on the site. The photos work planned for 1.4.0 moves to 1.5.0; kids and family after.
+
+## Saturday: start here (before the release)
 - **Betas 1 and 2 are combined** (decided 2026-11-26): one beta with the screens work and the chalk look.
   Kids and family stay a later beta (or 1.3.1).
 - **Next, in order:** the board styles and the grain (6 below), then picture looks (7), lettering (8), flight

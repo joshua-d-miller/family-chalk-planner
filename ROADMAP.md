@@ -2,7 +2,15 @@
 
 Plans for the next releases. Nothing here is built yet. The working plan for 1.3.0 is [PLAN-1.3.0.md](PLAN-1.3.0.md).
 
-## 1.3.0 — Screens, kids & family
+## Where things went
+- **1.3.0 (released 2026-11-28): the screens.** Speed, the month arrows and picker, swiping through pinned pages,
+  the overnight hours and what each screen does then, good morning, the nightly fresh start, 📡 Now in the
+  console. Details: [PLAN-1.3.0.md](PLAN-1.3.0.md).
+- **1.4.0: the chalk look and the demo** (the "Design, accessibility & sharpness" and board-style parts below,
+  and the demo on the site).
+- **1.5.0: photos** (with Colby). **After that: kids & family.**
+
+## 1.3.0 and after — Screens, kids & family (as first planned)
 
 Ship as betas first (beta.1: Screens, beta.2: Kids & family) on our board and Colby's.
 
@@ -134,7 +142,7 @@ Ship as betas first (beta.1: Screens, beta.2: Kids & family) on our board and Co
 - Existing boards don't change after updating unless someone turns a feature on. The exception is the arrows
   fading on family screens.
 
-## 1.4.0 — Photos (with Colby)
+## 1.5.0 — Photos (with Colby)
 
 - **Several photo sources:** Immich albums, Immich people, favorites and searches, plus iCloud and Google shared
   albums. Only the albums the admin approves ever show.
