@@ -105,6 +105,11 @@ comes after beta 3. The 1.4.0 photo work (several albums, 📷 Albums) stays out
   lines on a layer), how used it looks (eraser swipes, faint ghosts, dust, in the background). All in
   `web/src/lib/chalk.ts`, made once; off on a low-power screen. Board color and gloss strength as separate
   choices: not done (the backgrounds already have colors; the marker board has one gloss).
+- **2026-11-28: picture looks (7).** A picture's 🖍 Look (`lk`, checked on the server): Board style's, As is,
+  Chalk marker, Marker + highlight, White outline, Colored outline, Stick chalk; the board style picks the usual
+  (Chalk marker / Stick chalk). Drawn once per picture, look and size, one at a time when the screen is idle, kept
+  as a blob (`web/src/lib/pictureLook.ts`); a moving GIF and a low-power screen show pictures as they are.
+  - To tune on a real screen: Stick chalk on pictures is still a little blotchy (the grain's coarse part).
 - **Timers and loops (part of 1):** checked all 17. Each is slow or stops by itself; the one fast one (250 ms)
   runs only while a timer counts down. Nothing to fix until off hours, which needs one "asleep" switch that the
   slideshow, weather, GIFs, Split View, title photos and Notes rotation respect while the screen is black. A

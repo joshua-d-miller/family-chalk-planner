@@ -30,7 +30,7 @@
  Version   Date         Author    Description
  -------   ----------   -------   --------------------------------------------
  1.3.0     2026-11-28   joshua    New file (from the chalk mockups).
-                        claude
+                        claude    grainCanvas, for pictures' looks.
 ===============================================================================
 */
 
@@ -53,8 +53,10 @@ export function seeded(seed: number) {
 // where it skips: used as a CSS mask.                                      //
 export const GRAIN_TILE = 256;
 const STRENGTH = { light: [150, 105], normal: [115, 140], heavy: [70, 185] } as const;
-const grains = new Map<string, string>();
-export function grainTile(res: number, level: string) {
+const grains = new Map<string, { url: string; canvas: HTMLCanvasElement }>();
+export const grainTile = (res: number, level: string) => grain(res, level).url;
+export const grainCanvas = (res: number, level: string) => grain(res, level).canvas; // (a pattern, for pictures)
+function grain(res: number, level: string) {
   const key = res + level;
   const had = grains.get(key);
   if (had) return had;
@@ -99,9 +101,9 @@ export function grainTile(res: number, level: string) {
     img.data[i * 4 + 3] = (floor + span * k * k) * (r() < 0.06 ? 0.4 : 1); // (tiny pits)
   }
   ctx.putImageData(img, 0, 0);
-  const url = cv.toDataURL();
-  grains.set(key, url);
-  return url;
+  const made = { url: cv.toDataURL(), canvas: cv };
+  grains.set(key, made);
+  return made;
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //

@@ -827,3 +827,42 @@ test('the chalk look: stick chalk’s grain, a grid by hand, a used board; nothi
   }
   expect(tab.errors).toEqual([]);
 });
+
+test('a picture’s look: colored in with chalk marker or stick chalk, made once; an unknown look is as it is', async ({
+  as,
+  board
+}) => {
+  const { ym } = thisMonth();
+  const cake = (x: number, lk: string) => ({
+    k: 'g',
+    x,
+    y: 330,
+    w: 140,
+    h: 140,
+    src: '/api/clip/birthday-cake.svg',
+    mode: 'still',
+    lk
+  });
+  const pic = await (
+    await board.admin.post('/api/art/bulk', {
+      ym,
+      items: [cake(300, 'marker'), cake(470, 'chalk'), cake(640, 'sparkly')]
+    })
+  ).json();
+  try {
+    const art = await (await board.admin.api(`/api/art?ym=${ym}`)).json();
+    const mine = (art.items || art).filter((it: { id: number }) => pic.ids.includes(it.id));
+    expect(mine.map((it: { lk?: string }) => it.lk ?? null)).toEqual(['marker', 'chalk', null]);
+    const t = await as('tablet', { path: '/edit' });
+    const imgs = t.locator('.gifLayer img');
+    await expect(imgs).toHaveCount(3);
+    // the two with a look become their chalk copies (made on the screen); the third stays the picture itself
+    await expect
+      .poll(async () => await imgs.evaluateAll(l => l.map(i => (i as HTMLImageElement).src.slice(0, 5))))
+      .toEqual(['blob:', 'blob:', expect.stringMatching(/^http/)]);
+    if (process.env.SHOTS) await t.locator('#board').screenshot({ path: process.env.SHOTS + '/looks.png' });
+    expect(t.errors).toEqual([]);
+  } finally {
+    await board.admin.post('/api/art/delete', { ym, ids: pic.ids });
+  }
+});

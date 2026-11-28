@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Server | art.ts
 ===============================================================================
- Version:   0.16.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-06
- Updated:   2026-11-11
+ Updated:   2026-11-28
 
  Purpose:
      The art layer: chalk and Posca drawings, words, clipart, GIFs and
@@ -59,6 +59,9 @@
 
  0.16.0    2026-11-11   joshua    Pictures and words can be turned (r).
                         claude
+
+ 1.3.0    2026-11-28   joshua    A picture's 🖍 Look (lk), one it knows.
+                        claude
 ===============================================================================
 */
 
@@ -91,6 +94,8 @@ export type ArtItem = Record<string, unknown>;
 // -------------------------------- //
 // Anything missing or odd falls back to something safe; anything that can't //
 // be drawn is refused.                                                      //
+// a picture's 🖍 Look: as it is, or drawn in chalk (web/src/lib/pictureLook.ts)
+const LOOKS = ['none', 'marker', 'shine', 'sticker', 'doodle', 'chalk'];
 export function cleanItem(raw: unknown): ArtItem | null {
   if (!raw || typeof raw !== 'object') return null;
   const it = raw as Record<string, unknown>;
@@ -121,6 +126,8 @@ export function cleanItem(raw: unknown): ArtItem | null {
       w: size(it.w),
       h: size(it.h),
       mode: ['gentle', 'loop', 'still'].includes(it.mode as string) ? it.mode : 'gentle',
+      // its 🖍 Look (web/src/lib/pictureLook.ts); none: the board style's
+      ...(LOOKS.includes(it.lk as string) ? { lk: it.lk } : {}),
       ...turn,
       ...group,
       ...cover

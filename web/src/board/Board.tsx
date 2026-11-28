@@ -615,6 +615,8 @@ export function Board({
   // low-power screen (plainer chalk there)
   const wear = boardFit.low ? 0 : ({ light: 1, well: 2 } as Record<string, number>)[tv.wear] || 0;
   const gloss = tv.chalk === 'marker';
+  // pictures, unless each says otherwise: colored in with chalk marker, or in stick chalk, with the board
+  const picLook = tv.chalk === 'marker' ? 'marker' : tv.chalk === 'stick' ? 'chalk' : '';
   const bg = useMemo(() => {
     if (photoBg) return photoBackground(apiUrl(photoBg));
     try {
@@ -1113,12 +1115,23 @@ export function Board({
               bg={sf.lum}
               res={res}
               gifsPlay={!boardFit.low && !asleep}
+              look={picLook}
+              looks={!boardFit.low}
               under
               layer={artLayer}
               h={slateH}
             />
           )}
-          <Art items={front} bg={sf.lum} res={res} gifsPlay={!boardFit.low && !asleep} layer={artLayer} h={slateH} />
+          <Art
+            items={front}
+            bg={sf.lum}
+            res={res}
+            gifsPlay={!boardFit.low && !asleep}
+            look={picLook}
+            looks={!boardFit.low}
+            layer={artLayer}
+            h={slateH}
+          />
           {edit && drawing && (
             <DrawLayer
               art={view}

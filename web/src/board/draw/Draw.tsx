@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Drawing | Draw.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      Drawing on the board (a tablet): chalk or Posca lines (Apple Pencil
@@ -36,6 +36,9 @@
 
  1.2.0    2026-11-21   joshua    As tall as the slate on a screen that fills
                         claude    itself.
+
+ 1.3.0    2026-11-28   joshua    🖍 Look on a picture: the next look with each
+                        claude    tap.
 ===============================================================================
 */
 
@@ -47,6 +50,7 @@ import { hits, inRect, isClosedLine, unionBox, spin, xform } from '../geom.ts';
 import type { Box } from '../geom.ts';
 import { CHALK, POSCA } from '../../ui/Colors.tsx';
 import type { ArtEditor } from './useArt.ts';
+import { LOOKS } from '../../lib/pictureLook.ts';
 import './draw.css';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -393,6 +397,23 @@ export function DrawLayer({
             <button type="button" onClick={onRecolor}>
               🎨 Color
             </button>
+            {sel.every(it => it.k === 'g') && (
+              <button
+                type="button"
+                id="lookBtn"
+                aria-label={`Look: ${LOOKS.find(([v]) => v === (sel[0].lk || ''))?.[1] || ''} (tap for the next)`}
+                onClick={() => {
+                  const i = LOOKS.findIndex(([v]) => v === (sel[0].lk || ''));
+                  const next = LOOKS[(i + 1) % LOOKS.length][0];
+                  art.update(
+                    sel,
+                    sel.map(it => ({ ...it, lk: next || undefined }))
+                  );
+                }}
+              >
+                🖍 {LOOKS.find(([v]) => v === (sel[0].lk || ''))?.[1]}
+              </button>
+            )}
             <button type="button" aria-label="Make smaller" onClick={() => resize(1 / 1.2)}>
               −
             </button>

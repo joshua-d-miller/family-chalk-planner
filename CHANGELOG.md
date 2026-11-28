@@ -41,6 +41,9 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
   gloss) or **Stick chalk**, where everything written catches the board's grain like real chalk; a grid drawn
   **by hand**; and a board that looks **lightly** or **well used**, with eraser swipes and dust. Made once at the
   screen's own resolution, so it stays sharp and never slows a wall down.
+- **New: a look for each picture.** Select a picture and tap 🖍 for the next look: colored in with chalk marker
+  (with a highlight, or a white outline like a sticker), only its outline in its own colors, or stick chalk. The
+  board style picks the usual one. Each is drawn once, at the size it's shown, and kept.
 - **Quicker on the wall:** a wall downloads about 30% less when it starts. The editors, the pages and the Spanish
   words load only on the screens that use them, ahead of time where they do, so nothing waits when you tap.
 - **Steadier:** a screen that's been up all day starts again fresh once a night while it's asleep (only while it

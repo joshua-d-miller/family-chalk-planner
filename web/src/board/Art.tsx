@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | Board | Art.tsx
 ===============================================================================
- Version:   1.2.8
+ Version:   1.3.0
  Author:    Joshua D. Miller, Claude
  Created:   2026-11-07
- Updated:   2026-11-24
+ Updated:   2026-11-28
 
  Purpose:
      The art on a month: chalk and Posca lines, fills, words, clipart and
@@ -56,12 +56,16 @@
  1.2.8    2026-11-24   joshua    An animated emoji's still is asked for at
                         claude    the size it's shown on this screen: sharp,
                                   and light on a wall's memory.
+
+ 1.3.0    2026-11-28   joshua    A picture in its 🖍 Look (lib/pictureLook.ts),
+                        claude    or the board style's.
 ===============================================================================
 */
 
 import { fontShorthand } from '../../../shared/fonts.ts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { url } from '../lib/api.ts';
+import { useLook } from '../lib/pictureLook.ts';
 import { readable } from './color.ts';
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
@@ -87,9 +91,29 @@ export type ArtItem = {
   still?: string;
   mode?: string;
   g?: string; // things added together (a stamp, a copy) move as one
+  lk?: string; // a picture's 🖍 Look (lib/pictureLook.ts; none: the board style's, 'none': as it is)
   r?: number; // a picture or words, turned (degrees, -179 to 180)
   cv?: 'hide' | 'under'; // over events: hide them, or sit behind the writing (none: not asked yet)
 };
+
+// a picture (clipart, an emoji, a GIF), in its 🖍 Look (lib/pictureLook.ts)
+function Picture({ it, src, look, res }: { it: ArtItem; src: string; look: string; res: number }) {
+  const shown = useLook(src, look, it.w || 0, it.h || 0, res);
+  return (
+    <img
+      alt=""
+      decoding="async"
+      src={shown}
+      style={{
+        left: (it.x || 0) - (it.w || 0) / 2,
+        top: (it.y || 0) - (it.h || 0) / 2,
+        width: it.w,
+        height: it.h,
+        transform: it.r ? `rotate(${it.r}deg)` : undefined
+      }}
+    />
+  );
+}
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: //
 // -------------------- //
@@ -215,8 +239,12 @@ export function Art({
   gifsPlay,
   under = false,
   layer = false,
-  h = 642
+  h = 642,
+  look = '',
+  looks = true
 }: {
+  look?: string; // the board style's look for pictures (🎨 Board style → Chalk): each picture's own 🖍 Look first
+  looks?: boolean; // looks drawn at all (not on a low-power screen: as they are there)
   items: ArtItem[];
   bg: number;
   res: number;
@@ -319,25 +347,19 @@ export function Art({
       <div className={'gifLayer' + (under ? ' under' : '') + (layer ? ' own' : '')}>
         {items
           .filter(it => it.k === 'g')
-          .map(it => (
-            <img
-              key={it.id}
-              alt=""
-              decoding="async"
-              src={
-                gifsPlay && (it.mode === 'loop' || (it.mode === 'gentle' && playing.has(it.id)))
-                  ? src(it.src)
-                  : stillSrc(it.still, it.w || 0, it.h || 0, res)
-              }
-              style={{
-                left: (it.x || 0) - (it.w || 0) / 2,
-                top: (it.y || 0) - (it.h || 0) / 2,
-                width: it.w,
-                height: it.h,
-                transform: it.r ? `rotate(${it.r}deg)` : undefined
-              }}
-            />
-          ))}
+          .map(it => {
+            const moving = gifsPlay && (it.mode === 'loop' || (it.mode === 'gentle' && playing.has(it.id)));
+            return (
+              <Picture
+                key={it.id}
+                it={it}
+                src={moving ? src(it.src) : stillSrc(it.still, it.w || 0, it.h || 0, res)}
+                // (moving, a GIF is as it is: its look is for its still)
+                look={moving || !looks ? '' : it.lk === 'none' ? '' : it.lk || look}
+                res={res}
+              />
+            );
+          })}
       </div>
     </>
   );
