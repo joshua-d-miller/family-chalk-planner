@@ -98,7 +98,8 @@ const LATER = {
   meals: later(() => import('./pages/Meals.tsx').then(m => m.Meals)),
   pantry: later(() => import('./pages/Pantry.tsx').then(m => m.Pantry)),
   reminders: later(() => import('./pages/Reminders.tsx').then(m => m.Reminders)),
-  timers: later(() => import('./pages/Timers.tsx').then(m => m.Timers))
+  timers: later(() => import('./pages/Timers.tsx').then(m => m.Timers)),
+  albums: later(() => import('./pages/Albums.tsx').then(m => m.Albums))
 };
 // a page swiped to from the calendar: swipes go on through the pinned pages, or back (lib/swipePages.ts)
 function PageSwipes({ here }: { here: string }) {

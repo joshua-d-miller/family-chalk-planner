@@ -4,7 +4,7 @@
 ===============================================================================
  Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
- Updated:   2026-11-26
+ Updated:   2026-11-28
 
  Purpose:
      The new screens (React): the meal plan, reminders, timers, the
@@ -71,6 +71,9 @@
 
  1.3.0    2026-11-26   joshua    The overnight hours on chosen days, and
                         claude    another time.
+
+ 1.3.0    2026-11-28   joshua    📷 Albums.
+                        claude
 ===============================================================================
 */
 
@@ -870,4 +873,19 @@ test('board style: a style and colors just for this month', async ({ as, board }
   expect(theme.p).not.toBe('holiday');
   expect(theme.o?.lineC).toBeUndefined();
   await board.admin.post('/api/meta', { ym, look: null });
+});
+
+test('📷 Albums: every album with its cover; tap one to play it, tap again to stop', async ({ as }) => {
+  const page = await as('tablet', { path: '/albums' });
+  const tiles = page.locator('.albumTile');
+  await expect(tiles).toHaveCount(2);
+  await expect(tiles.nth(0)).toContainText('Photos');
+  await expect(tiles.nth(1)).toContainText('Our trip');
+  await expect(tiles.nth(1).locator('img')).toHaveAttribute('src', /\?album=trip$/);
+  await tiles.nth(1).click();
+  await expect(page.locator('#slides.on')).toBeVisible();
+  await expect(page.locator('#slides img').first()).toHaveAttribute('src', /\?album=trip$/);
+  await page.locator('#slides').click();
+  await expect(page.locator('#slides.on')).toHaveCount(0);
+  expect(page.errors).toEqual([]);
 });

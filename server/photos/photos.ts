@@ -495,6 +495,16 @@ export function setup({
     ])
   );
   type Src = typeof board;
+  // every album there is to show: the board's own first (id ''), then the more albums
+  const albumList = () => [
+    { id: '', name: 'Photos', count: board.state.list.length, cover: board.state.list[0]?.id || null },
+    ...[...more].map(([id, m]) => ({
+      id,
+      name: m.name,
+      count: m.src.state.list.length,
+      cover: m.src.state.list[0]?.id || null
+    }))
+  ];
   const srcOf = (q: unknown): Src | null => (!q ? board : more.get(String(q))?.src || null);
 
   // -------------- //
@@ -523,16 +533,13 @@ export function setup({
       offline: few && state.offline,
       few, // only the last few kept: pictures for picking come from /api/photos/thumb
       // every album there is to show (the 📷 Albums page, and what each part of the board shows)
-      albums: [
-        { id: '', name: 'Photos', count: board.state.list.length, cover: board.state.list[0]?.id || null },
-        ...[...more].map(([id, m]) => ({
-          id,
-          name: m.name,
-          count: m.src.state.list.length,
-          cover: m.src.state.list[0]?.id || null
-        }))
-      ]
+      albums: albumList()
     });
+  });
+
+  // just the albums (the ☰ menu: whether there's a 📷 Albums page; the page's covers)
+  app.get('/api/photos/albums', (_req, res) => {
+    res.json({ albums: albumList() });
   });
 
   app.get('/api/photos/img/:id', async (req, res) => {

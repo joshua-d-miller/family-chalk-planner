@@ -3,12 +3,10 @@
 Plans for the next releases. Nothing here is built yet. The working plan for 1.3.0 is [PLAN-1.3.0.md](PLAN-1.3.0.md).
 
 ## Where things went
-- **1.3.0 (released 2026-11-28): the screens.** Speed, the month arrows and picker, swiping through pinned pages,
-  the overnight hours and what each screen does then, good morning, the nightly fresh start, 📡 Now in the
-  console. Details: [PLAN-1.3.0.md](PLAN-1.3.0.md).
-- **1.4.0: the chalk look and the demo** (the "Design, accessibility & sharpness" and board-style parts below,
-  and the demo on the site).
-- **1.5.0: photos** (with Colby). **After that: kids & family.**
+- **1.3.0: the screens, the photos and the chalk look**, as first planned. The screens work and the photos
+  (more albums, which album shows where, 📷 Albums) are built; the chalk look is next, then the release. Details:
+  [PLAN-1.3.0.md](PLAN-1.3.0.md).
+- **After 1.3.0:** the demo on the site, then kids & family.
 
 ## 1.3.0 and after — Screens, kids & family (as first planned)
 

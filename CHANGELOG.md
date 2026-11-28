@@ -4,7 +4,7 @@ What changed in each release. `deploy/update.sh` installs the newest release; th
 one also appear on the GitHub Releases page. Versions follow [semantic versioning](https://semver.org/)
 (while below 1.0, a new minor version can change how things work).
 
-## 1.3.0 — Screens that look after themselves
+## 1.3.0 — Screens that look after themselves, and more albums
 - **New: what each screen does overnight.** In the overnight hours a screen can show the slideshow (as before), the
   calendar dimmed, a big dim **night clock**, a black screen, **turn the screen off**, or do nothing. A family screen
   picks in ⚙️ Settings → This screen; the wall's is in the admin console → 📺 Screens → 🌙 Overnight. A tap shows
@@ -23,6 +23,14 @@ one also appear on the GitHub Releases page. Versions follow [semantic versionin
 - **New: swipe through your pinned pages.** From the calendar a swipe to the left goes to the first pinned page
   (Chores when nothing's pinned), on through the others, and back to the right. Dots show where you are, and a
   page you swiped to goes back to the calendar after 2 quiet minutes.
+- **New: more photo albums.** Admin console → ⚙️ Board → Photos → **More albums**: up to 8 more, each a shared
+  album's link or an album on your Immich server (or Favorites, or "on this day"). Only albums set up there can
+  ever be shown.
+- **New: which album shows where.** ⚙️ Settings → Photos picks the album beside the month's name and the one in
+  the slideshow; a month can have one of its own (Christmas in December), and each overnight time can pick its
+  own.
+- **New: 📷 Albums**, a page with every album and its cover: tap one to play it full-screen, swipe for more, tap
+  to stop. It shows once there's more than one album.
 - **New: 📡 Now in the admin console → 📺 Screens:** what each screen shows right now, and whether it's kept
   awake. A screen that *can't be kept awake here* needs HTTPS (or its kiosk app's own setting).
 - **Quicker on the wall:** a wall downloads about 30% less when it starts. The editors, the pages and the Spanish

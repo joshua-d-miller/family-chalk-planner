@@ -2,10 +2,10 @@
 ===============================================================================
  Family Chalk Planner | Screens | UI | Shell.tsx
 ===============================================================================
- Version:   1.2.0
+ Version:   1.3.0
  Author:    Joshua D. Miller, Colby Way, Claude
  Created:   2026-11-07
- Updated:   2026-11-21
+ Updated:   2026-11-28
 
  Purpose:
      The bar that stays at the bottom while the pages change. A family
@@ -65,6 +65,9 @@
                         colby     column (Colby Way's dock): `dock`.
                                   A screen on the wall doesn't zoom and stays
                                   awake (useWallScreen).
+
+ 1.3.0    2026-11-28   joshua    A pinned 📷 Albums only with more than one
+                        claude    album.
 ===============================================================================
 */
 
@@ -73,6 +76,7 @@ import type { ReactNode } from 'react';
 import { useFavorites } from '../lib/favorites.ts';
 import { useMenuPref } from '../lib/menuStyle.ts';
 import { useWallScreen } from '../lib/wallScreen.ts';
+import { hidden, useAlbums } from '../lib/albums.ts';
 import type { DockBtn } from '../lib/menuStyle.ts';
 import { applyUiLook, useUiLook } from '../lib/uiLook.ts';
 import { SettingsHost } from '../pages/Settings.tsx';
@@ -292,9 +296,10 @@ export function usePins() {
   const { who } = useShell();
   const fav = useFavorites();
   const rank = who?.rank || 0;
+  const albums = useAlbums();
   return fav.items
     .map(id => PAGES.find(p => p.id === id))
-    .filter((p): p is (typeof PAGES)[number] => !!p && p.group === 'pages' && rank >= p.need)
+    .filter((p): p is (typeof PAGES)[number] => !!p && p.group === 'pages' && rank >= p.need && !hidden(p.id, albums))
     .slice(0, 3);
 }
 
